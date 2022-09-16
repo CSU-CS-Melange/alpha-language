@@ -6,3 +6,5 @@ Bundle-Version: 0.1.0.qualifier
 Require-Bundle: alpha.model;bundle-version="0.1.0"
 Automatic-Module-Name: alpha.codegen.basic
 Bundle-RequiredExecutionEnvironment: JavaSE-11
+Export-Package: alpha.codegen.basic,
+ alpha.codegen.basic.targetMapping
