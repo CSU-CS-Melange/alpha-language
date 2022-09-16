@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Basic Codegen Tests
+Bundle-SymbolicName: alpha.codegen.basic.tests
+Bundle-Version: 0.1.0.qualifier
+Require-Bundle: alpha.model,
+ alpha.model.xtext,
+ alpha.loader,
+ alpha.codegen.basic,
+ org.junit,
+ com.google.guava,
+ org.eclipse.xtext,
+ fr.irisa.cairn.jnimap.barvinok;resolution:=optional,
+ fr.irisa.cairn.jnimap.polylib;resolution:=optional
+Automatic-Module-Name: alpha.codegen.basic.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-11
