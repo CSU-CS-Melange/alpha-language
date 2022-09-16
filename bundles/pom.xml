@@ -30,6 +30,7 @@
     <module>alpha.commands.model.xtext.ui</module>
     <module>alpha.commands.ui</module>
     <module>alpha.interactive</module>
+    <module>alpha.codegen.basic</module>
   </modules>
 
 </project>
