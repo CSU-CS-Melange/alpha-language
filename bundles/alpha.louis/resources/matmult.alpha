@@ -1,0 +1,8 @@
+affine matmult [N]->{:N>10}
+    inputs
+        A, B : [N,N]
+    outputs
+        C : [N,N]
+    let
+    	C = A + B;
+.

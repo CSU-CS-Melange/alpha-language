@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Louis
+Bundle-SymbolicName: alpha.louis
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: alpha.louis
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: alpha.model;bundle-version="0.1.0",
+ alpha.model.xtext;bundle-version="0.1.0"
