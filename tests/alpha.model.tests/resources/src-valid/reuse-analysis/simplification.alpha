@@ -1,12 +1,12 @@
 package reuse.basic {
-	
+
 	affine sr_0 [N]->{ : 10<N }
 		inputs 
 			A, B, C : {[i] : 0<=i<3N}
 		outputs
 			Z : {[i,j] : 0<=i,j<N}
 		let
-			Z = reduce(min, (i,j,k->i,j), {:0<k} : 14[] + A[i+k] + B[i+j+k] + C[3N-i-k-1]);
+			Z = reduce(min, (i,j,k->i,j), {:0<k<N} : 14[] + A[i+k] + B[i+j+k] + C[3N-i-k-1]);
 	.
 	
 	affine sr_1 [N]->{ : 10<N }
@@ -15,20 +15,99 @@ package reuse.basic {
 		outputs
 			Z : {[i,j] : 0<=i,j<N}
 		locals
-			L : {[i,j,k] : 0<=i,j,k<3N}
+			L : {[i,j,k] : 0<=i,j,k<N}
 		let
-			Z = reduce(min, (i,j,k->i,j), {:0<k} : 14[] + A[i+k] + L[i,j,k]);
+			Z = reduce(min, (i,j,k->i,j), {:0<k<N} : 14[] + A[i+k] + L[i,j,k]);
 			
 			L[i,j,k] = B[i+j+k] + C[3N-i-k-1];
 	.
 	
+	// exercise 1 from max simplification paper
+	affine sr_2 [N]->{ : 10<N }
+		inputs 
+			X : {[i] : 0<=i<=2N}
+		outputs
+			Y : {[i] : 0<=i<=N}
+		let
+			Y = reduce(+, (i,j->i), {: i<=j<=2i} : X[i]);
+	.
+	
+	// exercise 2 from max simplification paper
+	affine sr_3 [N]->{ : 10<N }
+		inputs 
+			X : {[i] : 0<=i<=2N}
+		outputs
+			Y : {[i] : 0<=i<=N}
+		let
+			Y = reduce(max, (i,j->i), {: i<=j<=2i} : X[i]);
+	.
+	
+	affine sr_4 [N]->{ : 10<N }
+		inputs 
+			X : {[i,j] : 0<=i<=j<=2N}
+		outputs
+			Y : {[i,j] : 0<=i<=j<=N}
+		let
+			Y = reduce(+, (i,j,k,l->i,j), {: i<=k<=2i and i+j<=l<=2j} : X[k,l]);
+	.
+	
+	// exercise 3 from max simplification paper
+	affine sr_5 [N]->{ : 10<N }
+		inputs 
+			X : {[i,j] : 0<=i<=j<2N}
+		outputs
+			Y : {[i,j] : 0<=i<=j<N}
+		let
+			Y = reduce(max, (i,j,k,l->i,j), {: i<=k<=2i and i+j<=l<=2j} : X[k,l]);
+	.
+	
+	// ABFT: matmult
+	affine sr_6 [N]->{ : 10<N }
+		inputs
+			A, B : {[i,j]: 0<=i,j<N }
+		outputs
+			C : {[i,j]: 0<=i,j<N }
+			L1, L2, L3 : {[i]: 0<=i<N }
+		let
+			C[i,j] = reduce(+, (i,j,k->i,j), A[i,k] * B[k,j]);
+			
+			L1[i] = reduce(+, (i,j->i), C[i,j]);
+			L2[i] = reduce(+, (i,j->j), C[i,j]);
+	.
+	
+	// ABFT: jacobi 1D stencil (single trapezoidal tile) v1
+	affine sr_7 [H,L,M] -> {: 0<=L<M and 0<H and L+2H<M}
+		inputs
+			A : {[i] : L<=i<=M}
+			W : {[i] : 0<=i<=2}
+		outputs
+			Z : {[t,i] : 0<=t<=H and L+t<=i<=M-t}
+			C : {[t] : 0<=t<=H}
+		let
+			Z[t,i] = case {
+				{[t,i] : t=0} : A[i];
+				{[t,i] : t>0} : reduce(+, (t,i,p->t,i), W[p] * Z[t-1,i+p-1]);
+			};
+			
+			C = reduce(+, (t,i->t), Z[t,i]);
+	.
+	
+	// ABFT: jacobi 1D stencil (single trapezoidal tile) v2 
+	affine sr_8 [H,L,M] -> {: 0<=L<M and 0<H and L+2H<M}
+		inputs
+			A : {[i] : L<=i<=M}
+			W : {[i] : 0<=i<=2}
+		outputs
+			Z : {[t,i] : 0<=t<=H and L+t<=i<=M-t}
+			C : {[t,l,m] : 0<=t<=H and L+t<=l<m<=M-t}
+		let
+			Z[t,i] = case {
+				{[t,i] : t=0} : A[i];
+				{[t,i] : t>0} : reduce(+, (t,i,p->t,i), W[p] * Z[t-1,i+p-1]);
+			};
+			
+			C = reduce(+, (t,l,m,i->t,l,m), {: l<=i<=m} : Z[t,i]);
+	.
+	
+	
 }
-
-
-
-
-
-
-
-
-
