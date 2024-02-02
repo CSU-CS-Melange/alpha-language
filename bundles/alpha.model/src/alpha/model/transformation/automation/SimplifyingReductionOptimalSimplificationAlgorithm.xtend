@@ -46,7 +46,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 	
 	private def debug(String content) {
 		if (DEBUG)
