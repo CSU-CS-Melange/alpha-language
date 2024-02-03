@@ -6,11 +6,12 @@ package alpha.model
 
 import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
-import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
+import alpha.model.util.Show
+import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import fr.irisa.cairn.jnimap.runtime.JNIObject
 import java.util.LinkedList
 import java.util.List
@@ -70,6 +71,12 @@ class AlphaNode {
 		
 		if (next === null) this
 		else (this.eContents.get(next) as AlphaNode).getNode(nodeID);
+	}
+
+	op String toString() {
+		if (this instanceof AlphaCompleteVisitable) {
+			return Show.print(this as AlphaCompleteVisitable)
+		}
 	}
 }
 
