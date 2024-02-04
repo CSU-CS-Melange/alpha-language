@@ -10,6 +10,7 @@ import java.util.List
 import org.junit.Test
 
 import static org.junit.Assert.*
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 
 class FaceLatticeTest {
 	////////////////////////////////////////////////////////////
@@ -128,7 +129,9 @@ class FaceLatticeTest {
 	
 	/** Determines if two vertices are equal. */
 	def private static areVerticesEqual(ISLVertex v1, ISLVertex v2) {
-		val domainsEqual = v1.domain.isEqual(v2.domain)
+		val d1NoParamDivs = v1.domain.removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v1.domain.space.nbParams)
+		val d2NoParamDivs = v2.domain.removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v2.domain.space.nbParams)
+		val domainsEqual = d1NoParamDivs.isEqual(d2NoParamDivs)
 		val exprsEqual = v1.expr.isPlainEqual(v2.expr)
 		return domainsEqual && exprsEqual
 	}
@@ -412,6 +415,11 @@ class FaceLatticeTest {
 		assertFalse(lattice.isSimplicial)
 		assertFaceCounts(lattice, 0, 1)
 		assertRootHasChildren(lattice)  // Don't include any children, as the root has none.
+	}
+	
+	@Test
+	def testConstruction_1() {
+		val lattice = makeLattice("[N]->{[i,j,k] : 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}")
 	}
 	
 	// The following partially completed test does not currently work.

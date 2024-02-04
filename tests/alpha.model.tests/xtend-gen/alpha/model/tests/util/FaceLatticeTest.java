@@ -4,6 +4,7 @@ import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
+import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
 import fr.irisa.cairn.jnimap.isl.ISLVertices;
 import java.util.ArrayList;
@@ -150,7 +151,9 @@ public class FaceLatticeTest {
    * Determines if two vertices are equal.
    */
   private static boolean areVerticesEqual(final ISLVertex v1, final ISLVertex v2) {
-    final boolean domainsEqual = v1.getDomain().isEqual(v2.getDomain());
+    final ISLBasicSet d1NoParamDivs = v1.getDomain().removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v1.getDomain().getSpace().getNbParams());
+    final ISLBasicSet d2NoParamDivs = v2.getDomain().removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v2.getDomain().getSpace().getNbParams());
+    final boolean domainsEqual = d1NoParamDivs.isEqual(d2NoParamDivs);
     final boolean exprsEqual = v1.getExpr().isPlainEqual(v2.getExpr());
     return (domainsEqual && exprsEqual);
   }
@@ -416,5 +419,10 @@ public class FaceLatticeTest {
     Assert.assertFalse(lattice.isSimplicial());
     FaceLatticeTest.assertFaceCounts(lattice, 0, 1);
     FaceLatticeTest.assertRootHasChildren(lattice);
+  }
+
+  @Test
+  public void testConstruction_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k] : 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}");
   }
 }
