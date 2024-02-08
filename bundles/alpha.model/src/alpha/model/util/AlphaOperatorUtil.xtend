@@ -29,6 +29,15 @@ class AlphaOperatorUtil {
 		}
 	}
 	
+	static def boolean hasInverse(REDUCTION_OP op) {
+		try {
+			val invOp = reductionOPtoBinaryInverseOP(op)
+			return true
+		} catch (Exception e) {
+			return false
+		}
+	}
+	
 	static def BINARY_OP reductionOPtoBinaryInverseOP(REDUCTION_OP op) {
 		switch (op) {
 			case MIN,

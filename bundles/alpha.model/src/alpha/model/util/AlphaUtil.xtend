@@ -10,7 +10,6 @@ import alpha.model.AlphaVisitable
 import alpha.model.Equation
 import alpha.model.SystemBody
 import fr.irisa.cairn.jnimap.isl.ISLAff
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLErrorException
 import fr.irisa.cairn.jnimap.isl.ISLFactory
@@ -113,6 +112,20 @@ class AlphaUtil {
 		
 		return AlphaUtil.getContainerEquation(node.eContainer())
 	}
+	
+		def static AlphaPackage firstPackage(AlphaRoot root) {
+		if (root.elements.size > 0 && root.elements.get(0) instanceof AlphaPackage)
+			return root.elements.get(0) as AlphaPackage
+		return null
+	}
+	
+	def static AlphaSystem getSystem(AlphaPackage pkg, String name) {
+		val candidates = pkg.elements.map[s | s as AlphaSystem].filter[s | s.name == name].toList
+		if (candidates.size > 0)
+			return candidates.get(0)
+		return null
+	}
+	
 	/**
 	 * Selects an AlphaRoot that contains a given system name. The given system name may be
 	 * fully qualified or just the bare name. If the bare name cannot uniquely identify a 
@@ -345,13 +358,4 @@ class AlphaUtil {
 		return parseIntArray(intVecStr).toList
 	}
 	
-	def static isTrivial(ISLBasicSet set) {
-		var origin = ISLBasicSet.buildUniverse(set.space.copy)
-		for (i : 0..<set.space.nbIndices) {
-			val aff = ISLAff.buildZero(set.space.copy.toLocalSpace)
-			origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, i, 1).toEqualityConstraint)
-		}
-		
-		set.copy.toSet.subtract(origin.toSet).isEmpty
-	}
 }

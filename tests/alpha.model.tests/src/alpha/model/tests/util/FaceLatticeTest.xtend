@@ -11,7 +11,6 @@ import org.junit.Test
 
 import static org.junit.Assert.*
 
-import static extension alpha.model.util.AlphaUtil.isTrivial
 import static extension alpha.model.util.ISLUtil.*
 
 class FaceLatticeTest {

@@ -1,6 +1,5 @@
 package alpha.model.tests.util;
 
-import alpha.model.util.AlphaUtil;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
@@ -547,10 +546,10 @@ public class FaceLatticeTest {
     final Pair<FaceLattice.Label[], ISLBasicSet> ld2 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf((-1)), Integer.valueOf((-1)))), int.class))));
     final Pair<FaceLattice.Label[], ISLBasicSet> ld3 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(0))), int.class))));
     final Pair<FaceLattice.Label[], ISLBasicSet> ld4 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(0), Integer.valueOf((-1)))), int.class))));
-    Assert.assertTrue(AlphaUtil.isTrivial(ld1.getValue()));
-    Assert.assertTrue(AlphaUtil.isTrivial(ld2.getValue()));
-    Assert.assertTrue(AlphaUtil.isTrivial(ld3.getValue()));
-    Assert.assertFalse(AlphaUtil.isTrivial(ld4.getValue()));
+    Assert.assertTrue(ISLUtil.isTrivial(ld1.getValue()));
+    Assert.assertTrue(ISLUtil.isTrivial(ld2.getValue()));
+    Assert.assertTrue(ISLUtil.isTrivial(ld3.getValue()));
+    Assert.assertFalse(ISLUtil.isTrivial(ld4.getValue()));
     Assert.assertEquals(ld4.getValue().toString(), "[N] -> { [i, j] : j = 0 and i > 0 }");
   }
 
@@ -655,7 +654,7 @@ public class FaceLatticeTest {
       return Pair.<FaceLattice.Label[], ISLBasicSet>of(_key, _intersect);
     };
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Boolean> _function_2 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
-      boolean _isTrivial = AlphaUtil.isTrivial(ld.getValue());
+      boolean _isTrivial = ISLUtil.isTrivial(ld.getValue());
       return Boolean.valueOf((!_isTrivial));
     };
     final Iterable<Pair<FaceLattice.Label[], ISLBasicSet>> labelings = IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>filter(ListExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>>map(ListExtensions.<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>>map(lattice.enumerateAllPossibleLabelings(FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf(0), Integer.valueOf(1))), int.class))), IterableExtensions.size(facets)), _function), _function_1), _function_2);

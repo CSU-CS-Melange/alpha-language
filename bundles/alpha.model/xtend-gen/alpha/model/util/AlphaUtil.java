@@ -1,6 +1,7 @@
 package alpha.model.util;
 
 import alpha.model.AlphaConstant;
+import alpha.model.AlphaElement;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaNode;
 import alpha.model.AlphaPackage;
@@ -9,10 +10,10 @@ import alpha.model.AlphaSystem;
 import alpha.model.AlphaVisitable;
 import alpha.model.Equation;
 import alpha.model.SystemBody;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLErrorException;
 import fr.irisa.cairn.jnimap.isl.ISLFactory;
@@ -134,6 +135,31 @@ public class AlphaUtil {
       return null;
     }
     return AlphaUtil.getContainerEquation(node.eContainer());
+  }
+
+  public static AlphaPackage firstPackage(final AlphaRoot root) {
+    if (((root.getElements().size() > 0) && (root.getElements().get(0) instanceof AlphaPackage))) {
+      AlphaElement _get = root.getElements().get(0);
+      return ((AlphaPackage) _get);
+    }
+    return null;
+  }
+
+  public static AlphaSystem getSystem(final AlphaPackage pkg, final String name) {
+    final Function1<AlphaElement, AlphaSystem> _function = (AlphaElement s) -> {
+      return ((AlphaSystem) s);
+    };
+    final Function1<AlphaSystem, Boolean> _function_1 = (AlphaSystem s) -> {
+      String _name = s.getName();
+      return Boolean.valueOf(Objects.equal(_name, name));
+    };
+    final List<AlphaSystem> candidates = IterableExtensions.<AlphaSystem>toList(IterableExtensions.<AlphaSystem>filter(ListExtensions.<AlphaElement, AlphaSystem>map(pkg.getElements(), _function), _function_1));
+    int _size = candidates.size();
+    boolean _greaterThan = (_size > 0);
+    if (_greaterThan) {
+      return candidates.get(0);
+    }
+    return null;
   }
 
   /**
@@ -462,23 +488,6 @@ public class AlphaUtil {
 
   public static List<Integer> parseIntVector(final String intVecStr) {
     return IterableExtensions.<Integer>toList(((Iterable<Integer>)Conversions.doWrapArray(AlphaUtil.parseIntArray(intVecStr))));
-  }
-
-  public static boolean isTrivial(final ISLBasicSet set) {
-    boolean _xblockexpression = false;
-    {
-      ISLBasicSet origin = ISLBasicSet.buildUniverse(set.getSpace().copy());
-      int _nbIndices = set.getSpace().getNbIndices();
-      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _nbIndices, true);
-      for (final Integer i : _doubleDotLessThan) {
-        {
-          final ISLAff aff = ISLAff.buildZero(set.getSpace().copy().toLocalSpace());
-          origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint());
-        }
-      }
-      _xblockexpression = set.copy().toSet().subtract(origin.toSet()).isEmpty();
-    }
-    return _xblockexpression;
   }
 
   private static Iterable<AlphaConstant> gatherAlphaConstants(final EObject ap) {
