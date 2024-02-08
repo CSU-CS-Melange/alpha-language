@@ -360,6 +360,14 @@ public class AlphaUtil {
     }
   }
 
+  /**
+   * Renames all the indices of the given set to the default names,
+   * replacing any which may be present.
+   */
+  public static ISLSet renameIndices(final ISLSet set) {
+    return AlphaUtil.renameIndices(set, AlphaUtil.defaultDimNames(set));
+  }
+
   public static ISLSet renameIndices(final ISLSet set, final List<String> names) {
     final int n = set.getNbIndices();
     ISLSet res = set;

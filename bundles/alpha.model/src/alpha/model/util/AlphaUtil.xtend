@@ -270,6 +270,14 @@ class AlphaUtil {
 		}
 	}
 	
+	/**
+	 * Renames all the indices of the given set to the default names,
+	 * replacing any which may be present.
+	 */
+	static def renameIndices(ISLSet set) {
+		return renameIndices(set, set.defaultDimNames)
+	}
+	
 	static def renameIndices(ISLSet set, List<String> names) {
 		val n = set.getNbIndices()
 		var res = set;

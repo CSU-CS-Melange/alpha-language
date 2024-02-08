@@ -610,7 +610,6 @@ class UseEquation extends Equation {
  * will not be taken by ISL.
  * 
  */
-
 abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 	/*Internal object for always copying expression domain at getter */
 	JNIISLSet z__internal_cache_exprDom
@@ -627,10 +626,10 @@ abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 		return parentID
 	}
 	
-	op void setExpressionDomain(JNIISLSet dom) { this.setZ__internal_cache_exprDom(dom.coalesce) }
+	op void setExpressionDomain(JNIISLSet dom) { this.setZ__internal_cache_exprDom(dom.coalesce.ensureDomainIsNamed) }
 	op JNIISLSet getExpressionDomain() { if (z__internal_cache_exprDom !== null) z__internal_cache_exprDom.copy else null }
 	
-	op void setContextDomain(JNIISLSet dom) { this.setZ__internal_cache_contextDom(dom.coalesce) }
+	op void setContextDomain(JNIISLSet dom) { this.setZ__internal_cache_contextDom(dom.coalesce.ensureDomainIsNamed) }
 	op JNIISLSet getContextDomain() { if (z__internal_cache_contextDom !== null)  z__internal_cache_contextDom.copy else null }
 	
 	op AlphaExpression getExpression(IntegerQueue exprID) {
@@ -638,6 +637,24 @@ abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 		
 		if (next === null) this
 		else (this.eContents.get(next) as AlphaExpression).getExpression(exprID);
+	}
+	
+	/**
+	 * Depending on how the ISLSet was calculated (for either the expression domain or the context domain),
+	 * the indices of the set might not be named (or a subset of them might not be named).
+	 * In this case, issues may arise when trying to use the domain.
+	 * To counteract this, if there is not a name for every index,
+	 * then replace all the names with the default index names.
+	 */
+	op JNIISLSet ensureDomainIsNamed(JNIISLSet dom) {
+		val indexNames = dom.indexNames
+		val indexCount = dom.nbIndices
+		
+		if ((indexNames !== null) && (indexNames.size == indexCount)) {
+			return dom
+		}
+		
+		return AlphaUtil.renameIndices(dom)
 	}
 }
 

@@ -140,4 +140,20 @@ public interface AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 	 */
 	AlphaExpression getExpression(Queue<Integer> exprID);
 
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * <!-- begin-model-doc -->
+	 * *
+	 * Depending on how the ISLSet was calculated (for either the expression domain or the context domain),
+	 * the indices of the set might not be named (or a subset of them might not be named).
+	 * In this case, issues may arise when trying to use the domain.
+	 * To counteract this, if there is not a name for every index,
+	 * then replace all the names with the default index names.
+	 * <!-- end-model-doc -->
+	 * @model dataType="alpha.model.JNIISLSet" unique="false" domDataType="alpha.model.JNIISLSet" domUnique="false"
+	 * @generated
+	 */
+	ISLSet ensureDomainIsNamed(ISLSet dom);
+
 } // AlphaExpression
