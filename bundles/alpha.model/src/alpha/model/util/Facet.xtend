@@ -1,11 +1,13 @@
 package alpha.model.util
 
-import org.eclipse.xtend.lib.annotations.Data
-import fr.irisa.cairn.jnimap.isl.ISLMatrix
-import java.util.ArrayList
-import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMatrix
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import java.util.ArrayList
+import org.eclipse.xtend.lib.annotations.Data
+
+import static extension alpha.model.util.ISLUtil.transpose
 
 /**
  * Contains useful information about an <code>ISLBasicSet</code>.
@@ -67,16 +69,19 @@ class Facet {
 	/** The space that the set resides in. */
 	ISLSpace space
 	
+	/** The parent node of this facet in the lattice. */
+	Facet ancestor
+	
 	
 	////////////////////////////////////////////////////////////
 	// Construction
 	////////////////////////////////////////////////////////////
 	
 	/** Extract the information from the given set, assuming that no constraints were saturated to form it. */
-	new(ISLBasicSet basicSet) { this(basicSet, new ArrayList<Integer>(0)) }
+	new(ISLBasicSet basicSet) { this(basicSet, new ArrayList<Integer>(0), null) }
 	
 	/** Extract the information from the given set. */
-	new(ISLBasicSet basicSet, ArrayList<Integer> saturatedInequalityIndices) {
+	new(ISLBasicSet basicSet, ArrayList<Integer> saturatedInequalityIndices, Facet ancestor) {
 		equalities = DomainOperations.toISLEqualityMatrix(basicSet)
 		indexCount = basicSet.dim(ISLDimType.isl_dim_set)
 		indexInequalities = getInequalities(basicSet, indexCount, true)
@@ -87,7 +92,7 @@ class Facet {
 		parameterInequalities = getInequalities(basicSet, indexCount, false)
 		this.saturatedInequalityIndices = saturatedInequalityIndices
 		space = basicSet.space 
-
+		this.ancestor = ancestor
 		dimensionality = dimensionality(equalities, indexCount)
 	}
 	
@@ -118,7 +123,7 @@ class Facet {
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
-		return new Facet(basicSet, toSaturate)
+		return new Facet(basicSet, toSaturate, ancestor)
 	}
 	
 	
@@ -170,6 +175,25 @@ class Facet {
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
+	}
+	
+	/** Returns the normal vector (ISLAff) of the inequality characterizing the facet in its parent. */
+	def getNormalVector() {
+		val identityMapSpace = space.copy.toMapSpaceFromSetSpace
+		val maff = AffineFactorizer.toExpression(ancestor.indexInequalities.transpose, identityMapSpace)
+		// vectors should have no param dims or constant values
+		val normalVector = maff.getAff(characteristicInequalityIndex)
+		                       .dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+		                       .setConstant(0)
+		return normalVector	
+	}
+	
+	/** Returns the row index of the inequality characterizing the facet in its parent. */
+	def getCharacteristicInequalityIndex() {
+		val indices = saturatedInequalityIndices.toSet
+		indices.removeAll(ancestor.saturatedInequalityIndices.toSet)
+		val ineqIndex = indices.toList.get(0)
+		return ineqIndex
 	}
 	
 	/** Returns a string indicating which inequalities were saturated to form this face. */

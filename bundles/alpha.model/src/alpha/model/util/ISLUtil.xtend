@@ -4,6 +4,9 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLContext
+import fr.irisa.cairn.jnimap.isl.ISLMatrix
+
+import static extension alpha.model.matrix.MatrixOperations.transpose
 
 class ISLUtil {
 	
@@ -20,6 +23,11 @@ class ISLUtil {
 	/** Creates an ISLBasicSet from a string */
 	def static toISLAff(String descriptor) {
 		ISLAff.buildFromString(ISLContext.instance, descriptor)
+	}
+	
+	/** Transposes an ISLMatrix */
+	def static transpose(ISLMatrix matrix) {
+		ISLMatrix.buildFromLongMatrix(matrix.toLongMatrix.transpose)
 	}
 	
 }

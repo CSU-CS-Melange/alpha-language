@@ -1,9 +1,11 @@
 package alpha.model.util;
 
+import alpha.model.matrix.MatrixOperations;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
+import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 
 @SuppressWarnings("all")
 public class ISLUtil {
@@ -26,5 +28,12 @@ public class ISLUtil {
    */
   public static ISLAff toISLAff(final String descriptor) {
     return ISLAff.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Transposes an ISLMatrix
+   */
+  public static ISLMatrix transpose(final ISLMatrix matrix) {
+    return ISLMatrix.buildFromLongMatrix(MatrixOperations.transpose(matrix.toLongMatrix()));
   }
 }

@@ -1,10 +1,13 @@
 package alpha.model.util;
 
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
+import java.util.Set;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -92,16 +95,21 @@ public class Facet {
   private final ISLSpace space;
 
   /**
+   * The parent node of this facet in the lattice.
+   */
+  private final Facet ancestor;
+
+  /**
    * Extract the information from the given set, assuming that no constraints were saturated to form it.
    */
   public Facet(final ISLBasicSet basicSet) {
-    this(basicSet, new ArrayList<Integer>(0));
+    this(basicSet, new ArrayList<Integer>(0), null);
   }
 
   /**
    * Extract the information from the given set.
    */
-  public Facet(final ISLBasicSet basicSet, final ArrayList<Integer> saturatedInequalityIndices) {
+  public Facet(final ISLBasicSet basicSet, final ArrayList<Integer> saturatedInequalityIndices, final Facet ancestor) {
     this.equalities = DomainOperations.toISLEqualityMatrix(basicSet);
     this.indexCount = basicSet.dim(ISLDimType.isl_dim_set);
     this.indexInequalities = Facet.getInequalities(basicSet, this.indexCount, true);
@@ -112,6 +120,7 @@ public class Facet {
     this.parameterInequalities = Facet.getInequalities(basicSet, this.indexCount, false);
     this.saturatedInequalityIndices = saturatedInequalityIndices;
     this.space = basicSet.getSpace();
+    this.ancestor = ancestor;
     this.dimensionality = Facet.dimensionality(this.equalities, this.indexCount);
   }
 
@@ -140,7 +149,7 @@ public class Facet {
       ancestor.space.copy(), equalities, inequalities, 
       ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
       ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
-    return new Facet(basicSet, toSaturate);
+    return new Facet(basicSet, toSaturate, ancestor);
   }
 
   /**
@@ -194,6 +203,26 @@ public class Facet {
       this.space.copy(), this.equalities.copy(), allInequalities, 
       ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
       ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
+  }
+
+  /**
+   * Returns the normal vector (ISLAff) of the inequality characterizing the facet in its parent.
+   */
+  public ISLAff getNormalVector() {
+    final ISLSpace identityMapSpace = this.space.copy().toMapSpaceFromSetSpace();
+    final ISLMultiAff maff = AffineFactorizer.toExpression(ISLUtil.transpose(this.ancestor.indexInequalities), identityMapSpace);
+    final ISLAff normalVector = maff.getAff((this.getCharacteristicInequalityIndex()).intValue()).dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
+    return normalVector;
+  }
+
+  /**
+   * Returns the row index of the inequality characterizing the facet in its parent.
+   */
+  public Integer getCharacteristicInequalityIndex() {
+    final Set<Integer> indices = IterableExtensions.<Integer>toSet(this.saturatedInequalityIndices);
+    indices.removeAll(IterableExtensions.<Integer>toSet(this.ancestor.saturatedInequalityIndices));
+    final Integer ineqIndex = IterableExtensions.<Integer>toList(indices).get(0);
+    return ineqIndex;
   }
 
   /**
@@ -279,7 +308,8 @@ public class Facet {
     result = prime * result + this.parameterEqualityCount;
     result = prime * result + ((this.parameterInequalities== null) ? 0 : this.parameterInequalities.hashCode());
     result = prime * result + ((this.saturatedInequalityIndices== null) ? 0 : this.saturatedInequalityIndices.hashCode());
-    return prime * result + ((this.space== null) ? 0 : this.space.hashCode());
+    result = prime * result + ((this.space== null) ? 0 : this.space.hashCode());
+    return prime * result + ((this.ancestor== null) ? 0 : this.ancestor.hashCode());
   }
 
   @Override
@@ -328,6 +358,11 @@ public class Facet {
       if (other.space != null)
         return false;
     } else if (!this.space.equals(other.space))
+      return false;
+    if (this.ancestor == null) {
+      if (other.ancestor != null)
+        return false;
+    } else if (!this.ancestor.equals(other.ancestor))
       return false;
     return true;
   }
@@ -385,5 +420,10 @@ public class Facet {
   @Pure
   public ISLSpace getSpace() {
     return this.space;
+  }
+
+  @Pure
+  public Facet getAncestor() {
+    return this.ancestor;
   }
 }

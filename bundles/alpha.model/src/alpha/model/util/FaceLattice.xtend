@@ -4,6 +4,14 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import java.util.ArrayList
 import java.util.LinkedList
 import org.eclipse.xtend.lib.annotations.Accessors
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+
+import static extension alpha.model.util.AlphaUtil.renameDims
+import java.util.List
 
 /**
  * Constructs the face lattice of a given <code>ISLBasicSet</code>.
@@ -16,7 +24,7 @@ class FaceLattice {
 	
 	/** The information about the set which forms the root of the lattice. */
 	@Accessors(PUBLIC_GETTER)
-	val Facet rootInfo
+	Facet rootInfo
 	
 	/**
 	 * The storage of the lattice itself.
@@ -25,8 +33,31 @@ class FaceLattice {
 	 * Each layer is a list of all the sets which are in that layer.
 	 */
 	 @Accessors(PUBLIC_GETTER)
-	val ArrayList<ArrayList<Facet>> lattice
+	ArrayList<ArrayList<Facet>> lattice
 	
+	/** The way each facet can be labeled by one particular choice of reuse */
+	enum Label {
+		POS,
+		NEG,
+		ZERO
+	}
+	
+	////////////////////////////////////////////////////////////
+	// Static Helper Methods
+	////////////////////////////////////////////////////////////
+	
+	/** Converts decimal value to base radix and converts to a list of N digits padded with leading zeros */
+	def static int[] toPaddedDigitArray(int value, int radix, int N) {
+		val radixValue = Integer.toString(value, radix)
+		val digitArray = radixValue.toCharArray.map[v | Integer.parseInt(v.toString, radix)]
+		val padSize = N - digitArray.size
+		if (padSize < 0) {
+			throw new Exception("Value " + value + " in radix " + radix + " requires more than " + N + " digits") 
+		}
+		val pad = (0..<padSize).map[0]
+		
+		return pad + digitArray
+	}
 	
 	////////////////////////////////////////////////////////////
 	// Construction
@@ -39,6 +70,11 @@ class FaceLattice {
 	}
 	
 	/** Creates a new face lattice for the given set. */
+	def static create(ISLSet root) {
+		if (root.nbBasicSets > 1)
+			throw new Exception("Face lattice construction can only be done for a single basic set")
+		root.getBasicSetAt(0).create
+	}
 	def static create(ISLBasicSet root) {
 		// Set up the face lattice which is rooted at the given set.
 		val rootInfo = new Facet(root)
@@ -124,6 +160,82 @@ class FaceLattice {
 		return true
 	}
 	
+	/** Returns the domain D such that any vector within induces a particular labeling among the facets.
+	 *  Here, the word "face" refers to a node in the lattice and "facets" (with a 't') as the direct
+	 *  children of that particular "face".
+	 *  face:
+	 *  - facet1
+	 *  - facet2
+	 *  - facet3
+	 *  ...
+	 *  There are 3 possible labels for a facet: POS,NEG,ZERO.
+	 *  Each facet is said to be either an POS-facet, an NEG-facet, or an ZERO-facet.
+	 *  
+	 *  By definition, the linear space of each facet differs from its face by a single inequality constraint
+	 *  "c" (ISLConstraint). The index coefficients of "c" represent the normal vector "v" (ISLAff) to the facet.
+	 *  
+	 *  A particular facet can be made an:
+	 *  - POS-facet:  new constraint with coefficients of "v" that >0
+	 *  - NEG-facet:  new constraint with coefficients of "v" that <0
+	 *  - ZERO-facet: new constraint with coefficients of "v" that =0
+	 * 
+	 */
+	def getLabelingDomain(Facet face, Label[] labeling) {
+		val facets = getChildren(face)
+		val nbFacets = facets.size
+		if (nbFacets != labeling.size) {
+			throw new Exception("Must specify a label for every facet to get a labeling domain")
+		}
+		
+		// For each facet, build the constraint that induces its desired labeling
+		val normalVectors = facets.map[f | f.normalVector]
+		val constraints = (0..<nbFacets).map[i | normalVectors.get(i).toLabelInducingConstraint(face.space, labeling.get(i))]
+		
+		// Add all label inducing constraints to the current face's domain
+		var domain = ISLBasicSet.buildUniverse(face.space.copy)
+		for (constraint : constraints) {
+			domain = domain.addConstraint(constraint)
+		}
+		
+		// Finally drop any constraints involving parameters
+		// The param dim information is still needed to be able to pass a reuse vector from this
+		// space to simplification (without having to re-add this information later)
+		domain = domain.dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, face.space.nbParams)
+		
+		return labeling -> domain.removeRedundancies
+	}
+	
+	/** Creates a constraint in the specified "space" that induces a labeling "label" */
+	def ISLConstraint toLabelInducingConstraint(ISLAff vector, ISLSpace space, Label label) {
+		// The normal vectors are "just vectors", they have no parameter or constant information
+		// so that must be added back in here.
+		val vectorInAffineSpace = vector.copy.addDims(ISLDimType.isl_dim_param, space.nbParams)
+		                                     .renameDims(ISLDimType.isl_dim_param, space.paramNames)
+		
+		// POS- and NEG-constraints must be strictly greater than or less than zero so the constant
+		// value for these must be specified as -1, since ISLAff.toInequalityConstraint creates
+		// assumes a context of >=.
+		switch label {
+			case Label.POS  : vectorInAffineSpace.addConstant(-1).toInequalityConstraint
+			case Label.NEG : vectorInAffineSpace.negate.addConstant(-1).toInequalityConstraint
+			case Label.ZERO : vectorInAffineSpace.addConstant(0).toEqualityConstraint
+			default : throw new Exception("Label " + label + " is not supported")
+		}
+	}
+	
+	/** Creates the set of all possible label combinations */
+	def List<List<Label>> enumerateAllPossibleLabelings(Label[] validLabels, int nbFacets) {
+		// computes "a" (num valid labels) raised to the "b" (num facets) power
+		val numCombos = (0..<nbFacets).map[validLabels.size].reduce[v1,v2 | v1*v2]
+		//val numCombos = Math.pow(validLabels.size, nbFacets).intValue
+		
+		val labelings = (0..<numCombos).map[value | 
+			toPaddedDigitArray(value, validLabels.size, nbFacets).map[i | validLabels.get(i)].toList
+		].toList
+		
+		labelings
+	}
+
 	
 	////////////////////////////////////////////////////////////
 	// Private Methods

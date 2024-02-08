@@ -9,6 +9,8 @@ import alpha.model.AlphaSystem
 import alpha.model.AlphaVisitable
 import alpha.model.Equation
 import alpha.model.SystemBody
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLErrorException
 import fr.irisa.cairn.jnimap.isl.ISLFactory
@@ -305,6 +307,16 @@ class AlphaUtil {
 			
 		return res
 	}
+	static def renameDims(ISLAff aff, ISLDimType dimType, List<String> names) {
+		val n = aff.dim(dimType)
+		if (n > names.length) throw new RuntimeException("Need n or more names to rename n-d space.");
+		var res = aff;
+		for (i : 0..<n) {
+			res = res.setDimName(dimType, i, names.get(i))
+		}
+		
+		return res
+	}
 	
 	static def defaultDimNames(int n) {
 		defaultDimNames(0, n)
@@ -331,5 +343,15 @@ class AlphaUtil {
 	
 	static def parseIntVector(String intVecStr) {
 		return parseIntArray(intVecStr).toList
+	}
+	
+	def static isTrivial(ISLBasicSet set) {
+		var origin = ISLBasicSet.buildUniverse(set.space.copy)
+		for (i : 0..<set.space.nbIndices) {
+			val aff = ISLAff.buildZero(set.space.copy.toLocalSpace)
+			origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, i, 1).toEqualityConstraint)
+		}
+		
+		set.copy.toSet.subtract(origin.toSet).isEmpty
 	}
 }
