@@ -33,6 +33,8 @@ jobs:
         org.junit.runner.JUnitCore alpha.model.tests.AlphaCheckProgramTest
         org.junit.runner.JUnitCore alpha.model.tests.AlphaNormalizeTest
         org.junit.runner.JUnitCore alpha.model.tests.AlphaShowTest
+        org.junit.runner.JUnitCore alpha.model.tests.DomainOperationsTest
+        org.junit.runner.JUnitCore alpha.model.tests.SimplificationTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.DistributivityTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.FactorOutFromReductionTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.HigherOrderOperatorTest
