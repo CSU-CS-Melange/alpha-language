@@ -9,8 +9,16 @@ import alpha.model.AlphaSystem
 import alpha.model.AlphaVisitable
 import alpha.model.Equation
 import alpha.model.SystemBody
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLErrorException
 import fr.irisa.cairn.jnimap.isl.ISLFactory
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.JNIISLTools
 import java.util.LinkedList
 import java.util.List
@@ -19,13 +27,6 @@ import java.util.function.Supplier
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -315,6 +316,10 @@ class AlphaUtil {
 	
 	static def defaultDimNames(ISLSet set) {
 		defaultDimNames(set.nbIndices)
+	}
+	
+	static def defaultDimNames(ISLSpace space) {
+		defaultDimNames(space.nbIndices)
 	}
 	
 	static def parseIntArray(String intVecStr) {

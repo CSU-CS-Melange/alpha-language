@@ -19,6 +19,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.JNIISLTools;
 import fr.irisa.cairn.jnimap.runtime.JNIObject;
@@ -419,6 +420,10 @@ public class AlphaUtil {
 
   public static List<String> defaultDimNames(final ISLSet set) {
     return AlphaUtil.defaultDimNames(set.getNbIndices());
+  }
+
+  public static List<String> defaultDimNames(final ISLSpace space) {
+    return AlphaUtil.defaultDimNames(space.getNbIndices());
   }
 
   public static int[] parseIntArray(final String intVecStr) {

@@ -11,6 +11,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import java.util.LinkedList
 import java.util.List
 
+import static extension alpha.model.util.AlphaUtil.defaultDimNames
 import static extension alpha.model.util.AlphaUtil.renameIndices
 
 class AlphaPrintingUtil {
@@ -20,7 +21,10 @@ class AlphaPrintingUtil {
 	 */
 	static def String toShowString(ISLMultiAff maff) {
 		if (maff === null) return null;
-		val lhs = maff.domainSpace.getIndexNames.join(",")
+		var indexNames = maff.domainSpace.getIndexNames
+		if (indexNames === null)
+			indexNames = maff.domainSpace.defaultDimNames
+		val lhs = indexNames.join(",")
 		val rhs = maff.affs.join(",", [a|a.toAlphaString]);
 		
 		//due to a problem in Xtext parser, RHS starting with '-' need a space
@@ -69,9 +73,10 @@ class AlphaPrintingUtil {
 	 * Helper for printAff that collects positive/negative values of a given dim type
 	 */
 	private static def void toAlphaStringHelper(ISLAff aff, ISLDimType dimType, long commonD, List<String> posList, List<String> negList) {
-		
 		val n = aff.dim(dimType)
-		val names = aff.getDimNames(dimType)
+		var names = aff.getDimNames(dimType)
+		if (names === null)
+			names = aff.domainSpace.defaultDimNames
 
 		for (i : 0..< n) {
 			val coefficient = aff.getCoefficientVal(dimType, i)

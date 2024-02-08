@@ -29,7 +29,11 @@ public class AlphaPrintingUtil {
     if ((maff == null)) {
       return null;
     }
-    final String lhs = IterableExtensions.join(maff.getDomainSpace().getIndexNames(), ",");
+    List<String> indexNames = maff.getDomainSpace().getIndexNames();
+    if ((indexNames == null)) {
+      indexNames = AlphaUtil.defaultDimNames(maff.getDomainSpace());
+    }
+    final String lhs = IterableExtensions.join(indexNames, ",");
     final Function1<ISLAff, CharSequence> _function = (ISLAff a) -> {
       return AlphaPrintingUtil.toAlphaString(a);
     };
@@ -101,7 +105,10 @@ public class AlphaPrintingUtil {
    */
   private static void toAlphaStringHelper(final ISLAff aff, final ISLDimType dimType, final long commonD, final List<String> posList, final List<String> negList) {
     final int n = aff.dim(dimType);
-    final List<String> names = aff.getDimNames(dimType);
+    List<String> names = aff.getDimNames(dimType);
+    if ((names == null)) {
+      names = AlphaUtil.defaultDimNames(aff.getDomainSpace());
+    }
     ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, n, true);
     for (final Integer i : _doubleDotLessThan) {
       {
