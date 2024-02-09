@@ -36,6 +36,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
 import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
+import alpha.model.util.Show
 
 /**
  * Implementation of Theorem 5 in the original Simplifying Reductions paper.
@@ -200,7 +201,9 @@ class SimplifyingReductions {
 		}
 		
 		EcoreUtil.replace(targetReduce, mainCaseExpr)
-		AlphaInternalStateConstructor.recomputeContextDomain(reductionEquation)
+		
+		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
+		println(Show.print(containerSystemBody))
 		
 		if (!DISABLE_POST_PROCESSING) {
 			SimplifyExpressions.apply(containerSystemBody)
@@ -208,6 +211,10 @@ class SimplifyingReductions {
 			PropagateSimpleEquations.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
 		}
+		
+		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
+		println(Show.print(containerSystemBody))
+		println()
 	}
 	
 	

@@ -29,6 +29,7 @@ import java.util.TreeSet
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 import java.util.List
+import alpha.model.AlphaInternalStateConstructor
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -75,7 +76,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	static def apply(SystemBody body) {
 		val SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
 		SROSA.run();
-		
+		AlphaInternalStateConstructor.recomputeContextDomain(SROSA.optimizedPrograms)
 		return SROSA.optimizedPrograms
 	}
 	
