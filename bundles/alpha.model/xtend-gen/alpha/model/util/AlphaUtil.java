@@ -13,6 +13,7 @@ import alpha.model.SystemBody;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLErrorException;
 import fr.irisa.cairn.jnimap.isl.ISLFactory;
@@ -371,7 +372,7 @@ public class AlphaUtil {
   }
 
   public static ISLMultiAff renameOutputs(final ISLMultiAff maff) {
-    return AlphaUtil.renameOutputs(maff, AlphaUtil.defaultInputNames(maff));
+    return AlphaUtil.renameOutputs(maff, AlphaUtil.defaultOutputNames(maff));
   }
 
   public static ISLMultiAff renameInputs(final ISLMultiAff maff, final List<String> names) {
@@ -475,6 +476,21 @@ public class AlphaUtil {
     return res;
   }
 
+  public static ISLAff renameDims(final ISLAff aff, final ISLDimType dimType, final List<String> names) {
+    final int n = aff.dim(dimType);
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (n > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more names to rename n-d space.");
+    }
+    ISLAff res = aff;
+    ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, n, true);
+    for (final Integer i : _doubleDotLessThan) {
+      res = res.setDimName(dimType, (i).intValue(), names.get((i).intValue()));
+    }
+    return res;
+  }
+
   public static List<String> defaultDimNames(final int n) {
     return AlphaUtil.defaultDimNames(0, n);
   }
@@ -491,10 +507,7 @@ public class AlphaUtil {
   }
 
   public static List<String> defaultInputNames(final ISLMultiAff maff) {
-    final Function1<String, String> _function = (String s) -> {
-      return ("_" + s);
-    };
-    return ListExtensions.<String, String>map(AlphaUtil.defaultDimNames(maff.getNbInputs()), _function);
+    return AlphaUtil.defaultDimNames(maff.getNbInputs());
   }
 
   public static List<String> defaultOutputNames(final ISLMultiAff maff) {
