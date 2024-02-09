@@ -1108,7 +1108,7 @@ class JNIFunction extends CalculatorExpression {
 	JNIISLMultiAff z__internal_cache_islMAff
 	
 	op JNIISLMultiAff getISLMultiAff() { if (z__internal_cache_islMAff !== null) z__internal_cache_islMAff.copy else null }
-	op void setISLMultiAff(JNIISLMultiAff islMAff) { z__internal_cache_islMAff = islMAff }
+	op void setISLMultiAff(JNIISLMultiAff islMAff) { z__internal_cache_islMAff = islMAff.ensureDomainAndRangeAreNamed }
 	
 	op POLY_OBJECT_TYPE getType() { if (z__internal_cache_islMAff !== null) POLY_OBJECT_TYPE::FUNCTION else null }
 	op JNIObject getISLObject() { ISLMultiAff }
@@ -1119,6 +1119,30 @@ class JNIFunction extends CalculatorExpression {
 	
 	op String plainToString() {
 		alphaFunction.plainToString()
+	}
+	
+	/**
+	 * Sometimes the ISLMutliAff does not have any input or output 
+	 * names (i.e., is null). In this case, issues may arise when 
+	 * trying to use the domain and range. To counteract this, if 
+	 * there is not a name for every index, then replace all the 
+	 * names with the default index names.
+	 */
+	op JNIISLMultiAff ensureDomainAndRangeAreNamed(JNIISLMultiAff maff) {
+		val inputNames = maff.space.inputNames
+		val inputCount = maff.space.nbInputs
+		val outputNames = maff.space.outputNames
+		val outputCount = maff.space.nbOutputs
+		var retMaff = maff
+		
+		if ((inputNames === null) || (inputNames.size != inputCount)) {
+			retMaff = AlphaUtil.renameInputs(maff)
+		}
+		if ((outputNames === null) || (outputNames.size != outputCount)) {
+			retMaff = AlphaUtil.renameOutputs(maff)
+		}	
+		
+		return retMaff
 	}
 }
 

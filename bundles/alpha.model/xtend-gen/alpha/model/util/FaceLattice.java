@@ -245,34 +245,15 @@ public class FaceLattice {
    * Creates a constraint in the specified "space" that induces a labeling "label"
    */
   public ISLConstraint toLabelInducingConstraint(final ISLAff vector, final ISLSpace space, final FaceLattice.Label label) {
-    try {
-      ISLConstraint _xblockexpression = null;
-      {
-        final ISLAff vectorInAffineSpace = AlphaUtil.renameDims(vector.copy().addDims(ISLDimType.isl_dim_param, space.getNbParams()), ISLDimType.isl_dim_param, space.getParamNames());
-        ISLConstraint _switchResult = null;
-        if (label != null) {
-          switch (label) {
-            case POS:
-              _switchResult = vectorInAffineSpace.addConstant((-1)).toInequalityConstraint();
-              break;
-            case NEG:
-              _switchResult = vectorInAffineSpace.negate().addConstant((-1)).toInequalityConstraint();
-              break;
-            case ZERO:
-              _switchResult = vectorInAffineSpace.addConstant(0).toEqualityConstraint();
-              break;
-            default:
-              throw new Exception((("Label " + label) + " is not supported"));
-          }
-        } else {
-          throw new Exception((("Label " + label) + " is not supported"));
-        }
-        _xblockexpression = _switchResult;
-      }
-      return _xblockexpression;
-    } catch (Throwable _e) {
-      throw Exceptions.sneakyThrow(_e);
-    }
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method renameDims(ISLDimType, List<String>) is undefined for the type ISLAff"
+      + "\naddConstant cannot be resolved"
+      + "\ntoInequalityConstraint cannot be resolved"
+      + "\nnegate cannot be resolved"
+      + "\naddConstant cannot be resolved"
+      + "\ntoInequalityConstraint cannot be resolved"
+      + "\naddConstant cannot be resolved"
+      + "\ntoEqualityConstraint cannot be resolved");
   }
 
   /**

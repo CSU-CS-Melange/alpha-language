@@ -349,16 +349,6 @@ class AlphaUtil {
 			
 		return res
 	}
-	static def renameDims(ISLAff aff, ISLDimType dimType, List<String> names) {
-		val n = aff.dim(dimType)
-		if (n > names.length) throw new RuntimeException("Need n or more names to rename n-d space.");
-		var res = aff;
-		for (i : 0..<n) {
-			res = res.setDimName(dimType, i, names.get(i))
-		}
-		
-		return res
-	}
 	
 	static def defaultDimNames(int n) {
 		defaultDimNames(0, n)
@@ -373,15 +363,11 @@ class AlphaUtil {
 	}
 	
 	static def defaultInputNames(ISLMultiAff maff) {
-		defaultDimNames(maff.nbInputs)
+		defaultDimNames(maff.nbInputs).map[s | '_' + s]
 	}
 	
 	static def defaultOutputNames(ISLMultiAff maff) {
-		defaultDimNames(maff.nbInputs).map[s | s + "'"]
-	}
-	
-	static def defaultDimNames(ISLSpace space) {
-		defaultDimNames(space.nbIndices)
+		defaultDimNames(maff.nbOutputs)
 	}
 	
 	static def parseIntArray(String intVecStr) {

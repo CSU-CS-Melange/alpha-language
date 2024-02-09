@@ -28,6 +28,7 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
+import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -230,13 +231,17 @@ public class SimplifyingReductions {
       }
     }
     EcoreUtil.replace(this.targetReduce, mainCaseExpr);
-    AlphaInternalStateConstructor.recomputeContextDomain(this.reductionEquation);
+    AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
+    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
     if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
       SimplifyExpressions.apply(this.containerSystemBody);
       Normalize.apply(this.containerSystemBody);
       PropagateSimpleEquations.apply(this.containerSystemBody);
       Normalize.apply(this.containerSystemBody);
     }
+    AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
+    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
+    InputOutput.println();
   }
 
   /**

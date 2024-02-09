@@ -1,7 +1,9 @@
 package alpha.model.transformation.automation;
 
 import alpha.model.AbstractReduceExpression;
+import alpha.model.AlphaCompleteVisitable;
 import alpha.model.AlphaExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaNode;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
@@ -39,6 +41,7 @@ import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -233,6 +236,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   public static List<AlphaRoot> apply(final SystemBody body) {
     final SimplifyingReductionOptimalSimplificationAlgorithm SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
     SROSA.run();
+    AlphaInternalStateConstructor.recomputeContextDomain(((AlphaCompleteVisitable[])Conversions.unwrapArray(SROSA.optimizedPrograms, AlphaCompleteVisitable.class)));
     return SROSA.optimizedPrograms;
   }
 

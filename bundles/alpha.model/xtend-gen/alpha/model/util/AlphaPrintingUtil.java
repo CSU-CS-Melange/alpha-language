@@ -26,34 +26,8 @@ public class AlphaPrintingUtil {
    * ISLMultiAff to Alpha functions
    */
   public static String toShowString(final ISLMultiAff maff) {
-    if ((maff == null)) {
-      return null;
-    }
-    List<String> indexNames = maff.getDomainSpace().getIndexNames();
-    if ((indexNames == null)) {
-      indexNames = AlphaUtil.defaultDimNames(maff.getDomainSpace());
-    }
-    final String lhs = IterableExtensions.join(indexNames, ",");
-    final Function1<ISLAff, CharSequence> _function = (ISLAff a) -> {
-      return AlphaPrintingUtil.toAlphaString(a);
-    };
-    final String rhs = IterableExtensions.<ISLAff>join(maff.getAffs(), ",", _function);
-    String _xifexpression = null;
-    boolean _startsWith = rhs.startsWith("-");
-    if (_startsWith) {
-      _xifexpression = " ";
-    } else {
-      _xifexpression = "";
-    }
-    final String offset = _xifexpression;
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("(");
-    _builder.append(lhs);
-    _builder.append("->");
-    _builder.append(offset);
-    _builder.append(rhs);
-    _builder.append(")");
-    return _builder.toString();
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method or field defaultDimNames is undefined for the type ISLSpace");
   }
 
   public static String toAShowString(final ISLMultiAff maff) {
@@ -104,48 +78,8 @@ public class AlphaPrintingUtil {
    * Helper for printAff that collects positive/negative values of a given dim type
    */
   private static void toAlphaStringHelper(final ISLAff aff, final ISLDimType dimType, final long commonD, final List<String> posList, final List<String> negList) {
-    final int n = aff.dim(dimType);
-    List<String> names = aff.getDimNames(dimType);
-    if ((names == null)) {
-      names = AlphaUtil.defaultDimNames(aff.getDomainSpace());
-    }
-    ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, n, true);
-    for (final Integer i : _doubleDotLessThan) {
-      {
-        final ISLVal coefficient = aff.getCoefficientVal(dimType, (i).intValue());
-        long _numerator = coefficient.getNumerator();
-        long _multiply = (_numerator * commonD);
-        long _denominator = coefficient.getDenominator();
-        final long coef = (_multiply / _denominator);
-        if ((coef > 1)) {
-          StringConcatenation _builder = new StringConcatenation();
-          _builder.append(coef);
-          String _get = names.get((i).intValue());
-          _builder.append(_get);
-          posList.add(_builder.toString());
-        } else {
-          if ((coef == 1)) {
-            posList.add(names.get((i).intValue()));
-          } else {
-            if ((coef < (-1))) {
-              StringConcatenation _builder_1 = new StringConcatenation();
-              _builder_1.append(coef);
-              String _get_1 = names.get((i).intValue());
-              _builder_1.append(_get_1);
-              negList.add(_builder_1.toString());
-            } else {
-              if ((coef == (-1))) {
-                StringConcatenation _builder_2 = new StringConcatenation();
-                _builder_2.append("-");
-                String _get_2 = names.get((i).intValue());
-                _builder_2.append(_get_2);
-                negList.add(_builder_2.toString());
-              }
-            }
-          }
-        }
-      }
-    }
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method or field defaultDimNames is undefined for the type ISLSpace");
   }
 
   private static void toAlphaStringHelperForDiv(final ISLAff aff, final long commonD, final List<String> posList, final List<String> negList) {
