@@ -116,4 +116,20 @@ public interface JNIFunction extends CalculatorExpression {
 	 */
 	String plainToString();
 
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * <!-- begin-model-doc -->
+	 * *
+	 * Sometimes the ISLMutliAff does not have any input or output
+	 * names (i.e., is null). In this case, issues may arise when
+	 * trying to use the domain and range. To counteract this, if
+	 * there is not a name for every index, then replace all the
+	 * names with the default index names.
+	 * <!-- end-model-doc -->
+	 * @model dataType="alpha.model.JNIISLMultiAff" unique="false" maffDataType="alpha.model.JNIISLMultiAff" maffUnique="false"
+	 * @generated
+	 */
+	ISLMultiAff ensureDomainAndRangeAreNamed(ISLMultiAff maff);
+
 } // JNIFunction

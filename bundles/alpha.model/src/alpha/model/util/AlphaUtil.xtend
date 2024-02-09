@@ -312,6 +312,25 @@ class AlphaUtil {
 			
 		return res
 	}
+	static def renameInputs(ISLMultiAff maff) {
+		return renameInputs(maff, maff.defaultInputNames)
+	}
+	static def renameOutputs(ISLMultiAff maff) {
+		return renameOutputs(maff, maff.defaultOutputNames)
+	}
+	static def renameInputs(ISLMultiAff maff, List<String> names) {
+		val nbDims = maff.getNbInputs
+		if (nbDims > names.length)   throw new RuntimeException("Need n or more index names to rename n-d space.")
+		
+		return (0..<nbDims).fold(maff, [_maff, dim | _maff.setDimName(ISLDimType.isl_dim_in,  dim, names.get(dim))])
+	}
+	static def renameOutputs(ISLMultiAff maff, List<String> names) {
+		val nbDims = maff.getNbOutputs
+		if (nbDims > names.length)   throw new RuntimeException("Need n or more index names to rename n-d space.")
+		
+		return (0..<nbDims).fold(maff, [_maff, dim | _maff.setDimName(ISLDimType.isl_dim_out,  dim, names.get(dim))])
+	}
+	
 	
 	static def defaultDimNames(int n) {
 		defaultDimNames(0, n)
@@ -323,6 +342,14 @@ class AlphaUtil {
 	
 	static def defaultDimNames(ISLSet set) {
 		defaultDimNames(set.nbIndices)
+	}
+	
+	static def defaultInputNames(ISLMultiAff maff) {
+		defaultDimNames(maff.nbInputs)
+	}
+	
+	static def defaultOutputNames(ISLMultiAff maff) {
+		defaultDimNames(maff.nbInputs).map[s | s + "'"]
 	}
 	
 	static def parseIntArray(String intVecStr) {

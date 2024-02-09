@@ -414,6 +414,40 @@ public class AlphaUtil {
     return res;
   }
 
+  public static ISLMultiAff renameInputs(final ISLMultiAff maff) {
+    return AlphaUtil.renameInputs(maff, AlphaUtil.defaultInputNames(maff));
+  }
+
+  public static ISLMultiAff renameOutputs(final ISLMultiAff maff) {
+    return AlphaUtil.renameOutputs(maff, AlphaUtil.defaultOutputNames(maff));
+  }
+
+  public static ISLMultiAff renameInputs(final ISLMultiAff maff, final List<String> names) {
+    final int nbDims = maff.getNbInputs();
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (nbDims > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
+      return _maff.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+    };
+    return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, nbDims, true), maff, _function);
+  }
+
+  public static ISLMultiAff renameOutputs(final ISLMultiAff maff, final List<String> names) {
+    final int nbDims = maff.getNbOutputs();
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (nbDims > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
+      return _maff.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+    };
+    return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, nbDims, true), maff, _function);
+  }
+
   public static List<String> defaultDimNames(final int n) {
     return AlphaUtil.defaultDimNames(0, n);
   }
@@ -427,6 +461,17 @@ public class AlphaUtil {
 
   public static List<String> defaultDimNames(final ISLSet set) {
     return AlphaUtil.defaultDimNames(set.getNbIndices());
+  }
+
+  public static List<String> defaultInputNames(final ISLMultiAff maff) {
+    return AlphaUtil.defaultDimNames(maff.getNbInputs());
+  }
+
+  public static List<String> defaultOutputNames(final ISLMultiAff maff) {
+    final Function1<String, String> _function = (String s) -> {
+      return (s + "\'");
+    };
+    return ListExtensions.<String, String>map(AlphaUtil.defaultDimNames(maff.getNbInputs()), _function);
   }
 
   public static int[] parseIntArray(final String intVecStr) {

@@ -8,9 +8,13 @@ import alpha.model.JNIFunction;
 import alpha.model.ModelPackage;
 import alpha.model.POLY_OBJECT_TYPE;
 
+import alpha.model.util.AlphaUtil;
+
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 
 import fr.irisa.cairn.jnimap.runtime.JNIObject;
+
+import java.util.List;
 
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.common.notify.NotificationChain;
@@ -172,7 +176,7 @@ public class JNIFunctionImpl extends CalculatorExpressionImpl implements JNIFunc
 	 * @generated
 	 */
 	public void setISLMultiAff(final ISLMultiAff islMAff) {
-		this.setZ__internal_cache_islMAff(islMAff);
+		this.setZ__internal_cache_islMAff(this.ensureDomainAndRangeAreNamed(islMAff));
 	}
 
 	/**
@@ -218,6 +222,26 @@ public class JNIFunctionImpl extends CalculatorExpressionImpl implements JNIFunc
 	 */
 	public String plainToString() {
 		return this.getAlphaFunction().plainToString();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public ISLMultiAff ensureDomainAndRangeAreNamed(final ISLMultiAff maff) {
+		final List<String> inputNames = maff.getSpace().getInputNames();
+		final int inputCount = maff.getSpace().getNbInputs();
+		final List<String> outputNames = maff.getSpace().getOutputNames();
+		final int outputCount = maff.getSpace().getNbOutputs();
+		ISLMultiAff retMaff = maff;
+		if (((inputNames == null) || (inputNames.size() != inputCount))) {
+			retMaff = AlphaUtil.renameInputs(maff);
+		}
+		if (((outputNames == null) || (outputNames.size() != outputCount))) {
+			retMaff = AlphaUtil.renameOutputs(maff);
+		}
+		return retMaff;
 	}
 
 	/**

@@ -815,6 +815,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	private ModelPackageImpl() {
 		super(eNS_URI, ModelFactory.eINSTANCE);
 	}
+
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -3918,6 +3919,9 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		op = addEOperation(alphaExpressionEClass, this.getAlphaExpression(), "getExpression", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getIntegerQueue(), "exprID", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		op = addEOperation(alphaExpressionEClass, this.getJNIISLSet(), "ensureDomainIsNamed", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getJNIISLSet(), "dom", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		initEClass(restrictExpressionEClass, RestrictExpression.class, "RestrictExpression", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getRestrictExpression_DomainExpr(), this.getCalculatorExpression(), null, "domainExpr", null, 0, 1, RestrictExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getRestrictExpression_Expr(), this.getAlphaExpression(), null, "expr", null, 0, 1, RestrictExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -4226,6 +4230,9 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		addEParameter(op, this.getCalculatorExpressionVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(jniFunctionEClass, this.getString(), "plainToString", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		op = addEOperation(jniFunctionEClass, this.getJNIISLMultiAff(), "ensureDomainAndRangeAreNamed", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getJNIISLMultiAff(), "maff", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		initEClass(jniFunctionInArrayNotationEClass, JNIFunctionInArrayNotation.class, "JNIFunctionInArrayNotation", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getJNIFunctionInArrayNotation_ArrayNotation(), this.getString(), "arrayNotation", null, 0, -1, JNIFunctionInArrayNotation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
