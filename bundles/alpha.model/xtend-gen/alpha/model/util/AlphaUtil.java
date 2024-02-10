@@ -19,6 +19,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.JNIISLTools;
 import fr.irisa.cairn.jnimap.runtime.JNIObject;
@@ -448,6 +449,53 @@ public class AlphaUtil {
     return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, nbDims, true), maff, _function);
   }
 
+  public static ISLSpace renameSpaceInputs(final ISLSpace space) {
+    return AlphaUtil.renameSpaceInputs(space, AlphaUtil.defaultInputNames(space));
+  }
+
+  public static ISLSpace renameSpaceOutputs(final ISLSpace space) {
+    return AlphaUtil.renameSpaceOutputs(space, AlphaUtil.defaultOutputNames(space));
+  }
+
+  public static ISLSpace renameSpaceInputs(final ISLSpace space, final List<String> names) {
+    final int nbDims = space.getNbInputs();
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (nbDims > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    final Function2<ISLSpace, Integer, ISLSpace> _function = (ISLSpace _space, Integer dim) -> {
+      return _space.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+    };
+    return IterableExtensions.<Integer, ISLSpace>fold(new ExclusiveRange(0, nbDims, true), space, _function);
+  }
+
+  public static ISLSpace renameSpaceOutputs(final ISLSpace space, final List<String> names) {
+    final int nbDims = space.getNbOutputs();
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (nbDims > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    final Function2<ISLSpace, Integer, ISLSpace> _function = (ISLSpace _space, Integer dim) -> {
+      return _space.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+    };
+    return IterableExtensions.<Integer, ISLSpace>fold(new ExclusiveRange(0, nbDims, true), space, _function);
+  }
+
+  public static ISLSpace renameSpaceParams(final ISLSpace space, final List<String> names) {
+    final int nbDims = space.getNbParams();
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (nbDims > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    final Function2<ISLSpace, Integer, ISLSpace> _function = (ISLSpace _space, Integer dim) -> {
+      return _space.setDimName(ISLDimType.isl_dim_param, (dim).intValue(), names.get((dim).intValue()));
+    };
+    return IterableExtensions.<Integer, ISLSpace>fold(new ExclusiveRange(0, nbDims, true), space, _function);
+  }
+
   public static List<String> defaultDimNames(final int n) {
     return AlphaUtil.defaultDimNames(0, n);
   }
@@ -468,10 +516,15 @@ public class AlphaUtil {
   }
 
   public static List<String> defaultOutputNames(final ISLMultiAff maff) {
-    final Function1<String, String> _function = (String s) -> {
-      return (s + "\'");
-    };
-    return ListExtensions.<String, String>map(AlphaUtil.defaultDimNames(maff.getNbInputs()), _function);
+    return AlphaUtil.defaultDimNames(maff.getNbOutputs());
+  }
+
+  public static List<String> defaultInputNames(final ISLSpace space) {
+    return AlphaUtil.defaultDimNames(space.getNbInputs());
+  }
+
+  public static List<String> defaultOutputNames(final ISLSpace space) {
+    return AlphaUtil.defaultDimNames(space.getNbOutputs());
   }
 
   public static int[] parseIntArray(final String intVecStr) {

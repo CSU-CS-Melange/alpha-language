@@ -7,6 +7,17 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 
+import static extension alpha.model.util.ISLUtil.transpose
+import static extension fr.irisa.cairn.jnimap.isl.ISLMatrix.buildFromLongMatrix
+import static extension alpha.model.util.AlphaUtil.renameSpaceInputs
+import static extension alpha.model.util.AlphaUtil.renameSpaceOutputs
+import static extension alpha.model.util.AlphaUtil.renameSpaceParams
+import static extension alpha.model.util.DomainOperations.toISLInequalityMatrix
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLAff
+
 /**
  * Contains useful information about an <code>ISLBasicSet</code>.
  * Intended for use with the <code>FaceLattice</code> class.
@@ -171,6 +182,62 @@ class Facet {
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
+	}
+	
+	/** Creates the potentially unbounded linear space of this facet 
+	 *  from the union of saturated constraints */
+	def toLinearSpace() {
+		val ineqMatrix = ISLBasicSet.buildUniverse(space.copy).toISLInequalityMatrix
+		return ISLBasicSet.fromConstraintMatrices(
+				space.copy, equalities.copy, ineqMatrix,
+				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
+				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
+			.removeRedundancies
+	}
+	
+	/** Returns the normal vector (ISLAff) of the inequality characterizing the facet in its parent. */
+	def getNormalVector(Facet parent) {
+		val vecSpace = ISLSpace.alloc(space.context, space.nbParams, space.nbIndices, 1)
+		                     .renameSpaceInputs(parent.space.indexNames)
+		                     .renameSpaceOutputs
+		                     .renameSpaceParams(parent.space.paramNames)
+		val inequality = getCharacteristicInequality(parent)
+		
+		val normalVector = AffineFactorizer.toExpression(inequality.transpose, vecSpace).getAff(0)
+		
+		// get the component of this vector in the parents's domain
+		// This may not be 100% correct yet
+		val vector = normalVector.copy
+		val ineq = vector.copy.toInequalityConstraint.toBasicSet
+		val lp = parent.toLinearSpace
+		val matrix = ineq.copy.intersect(lp.copy).toISLInequalityMatrix
+		val componentInParent = AffineFactorizer.toExpression(matrix.transpose, vecSpace)
+		                                        .getAff(0)
+		                                        .dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+		                                        .setConstant(0)
+//		println(normalVector)
+//		println(componentInParent)
+//		println
+		// vectors should have no param dims or constant values
+		return componentInParent
+	}
+	
+	/** Returns the row index of the inequality characterizing the facet in its parent.
+	 *  If more than one inequality is saturated relative to its parent then the first
+	 *  one is returned.
+	 * */
+	def getCharacteristicInequalityIndex(Facet parent) {
+		val indices = saturatedInequalityIndices.toSet
+		indices.removeAll(parent.saturatedInequalityIndices.toSet)
+		val ineqIndex = indices.toList.get(0)
+		return ineqIndex
+	}
+	
+	def getCharacteristicInequality(Facet parent) {
+		val idx = getCharacteristicInequalityIndex(parent)
+		val row = lattice.rootInfo.indexInequalities.toLongMatrix.get(idx)
+		val matrix = #[row].buildFromLongMatrix
+		return matrix
 	}
 	
 	/** Returns a string indicating which inequalities were saturated to form this face. */

@@ -26,6 +26,7 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLSpace
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -330,6 +331,31 @@ class AlphaUtil {
 		
 		return (0..<nbDims).fold(maff, [_maff, dim | _maff.setDimName(ISLDimType.isl_dim_out,  dim, names.get(dim))])
 	}
+
+	static def renameSpaceInputs(ISLSpace space) {
+		return renameSpaceInputs(space, space.defaultInputNames)
+	}
+	static def renameSpaceOutputs(ISLSpace space) {
+		return renameSpaceOutputs(space, space.defaultOutputNames)
+	}
+	static def renameSpaceInputs(ISLSpace space, List<String> names) {
+		val nbDims = space.getNbInputs
+		if (nbDims > names.length)   throw new RuntimeException("Need n or more index names to rename n-d space.")
+		
+		return (0..<nbDims).fold(space, [_space, dim | _space.setDimName(ISLDimType.isl_dim_in,  dim, names.get(dim))])
+	}
+	static def renameSpaceOutputs(ISLSpace space, List<String> names) {
+		val nbDims = space.getNbOutputs
+		if (nbDims > names.length)   throw new RuntimeException("Need n or more index names to rename n-d space.")
+		
+		return (0..<nbDims).fold(space, [_space, dim | _space.setDimName(ISLDimType.isl_dim_out,  dim, names.get(dim))])
+	}
+	static def renameSpaceParams(ISLSpace space, List<String> names) {
+		val nbDims = space.getNbParams
+		if (nbDims > names.length)   throw new RuntimeException("Need n or more index names to rename n-d space.")
+		
+		return (0..<nbDims).fold(space, [_space, dim | _space.setDimName(ISLDimType.isl_dim_param,  dim, names.get(dim))])
+	}
 	
 	
 	static def defaultDimNames(int n) {
@@ -349,7 +375,15 @@ class AlphaUtil {
 	}
 	
 	static def defaultOutputNames(ISLMultiAff maff) {
-		defaultDimNames(maff.nbInputs).map[s | s + "'"]
+		defaultDimNames(maff.nbOutputs)
+	}
+	
+	static def defaultInputNames(ISLSpace space) {
+		defaultDimNames(space.nbInputs)
+	}
+	
+	static def defaultOutputNames(ISLSpace space) {
+		defaultDimNames(space.nbOutputs)
 	}
 	
 	static def parseIntArray(String intVecStr) {

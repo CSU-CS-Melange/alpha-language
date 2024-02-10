@@ -159,7 +159,6 @@ class FaceLattice {
 		val layersWithStrangeKFacets = (0..<lattice.size).filter[k |
 			val kFacets = lattice.get(k)
 			val expectedSaturations = rootInfo.dimensionality - k
-			
 			val strangeKFacets = kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.size != expectedSaturations]
 			!strangeKFacets.empty
 		]

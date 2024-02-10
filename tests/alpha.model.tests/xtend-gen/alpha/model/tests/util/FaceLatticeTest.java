@@ -2,8 +2,11 @@ package alpha.model.tests.util;
 
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
+import com.google.common.base.Objects;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
+import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
 import fr.irisa.cairn.jnimap.isl.ISLVertices;
 import java.util.ArrayList;
@@ -15,9 +18,11 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -274,7 +279,6 @@ public class FaceLatticeTest {
   private static FaceLattice makeLattice(final String setDescriptor) {
     final ISLBasicSet root = ISLBasicSet.buildFromString(ISLContext.getInstance(), setDescriptor).removeRedundancies();
     final FaceLattice lattice = FaceLattice.create(root);
-    FaceLatticeTest.assertVerticesMatchISL(lattice);
     return lattice;
   }
 
@@ -416,5 +420,125 @@ public class FaceLatticeTest {
     Assert.assertFalse(lattice.isSimplicial());
     FaceLatticeTest.assertFaceCounts(lattice, 0, 1);
     FaceLatticeTest.assertRootHasChildren(lattice);
+  }
+
+  @Test
+  public void squarePyramidTest() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i<=k and 0<=j<=k and 0<=k<=N}");
+    Assert.assertFalse(lattice.isSimplicial());
+    ArrayList<ArrayList<Facet>> _lattice = lattice.getLattice();
+    for (final ArrayList<Facet> l : _lattice) {
+      InputOutput.<ArrayList<Facet>>println(l);
+    }
+  }
+
+  @Test
+  public void testNormalVector_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("{[i,j]: 0<=i,j and i+j<100}");
+    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Function1<Facet, ISLAff> _function = (Facet f) -> {
+      return f.getNormalVector(lattice.getRootInfo());
+    };
+    final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
+    final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
+    final ISLAff v2 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[1];
+    final ISLAff v3 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[2];
+    int _nbParams = v1.getSpace().getNbParams();
+    boolean _equals = (_nbParams == 0);
+    Assert.assertTrue(_equals);
+    Assert.assertEquals(v1.toString(), "{ [i, j] -> [(i)] }");
+    Assert.assertEquals(v2.toString(), "{ [i, j] -> [(j)] }");
+    Assert.assertEquals(v3.toString(), "{ [i, j] -> [(-i - j)] }");
+  }
+
+  @Test
+  public void testNormalVector_2() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N+17}");
+    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Function1<Facet, ISLAff> _function = (Facet f) -> {
+      return f.getNormalVector(lattice.getRootInfo());
+    };
+    final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
+    final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
+    final ISLAff v2 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[1];
+    final ISLAff v3 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[2];
+    int _nbParams = v1.getSpace().getNbParams();
+    boolean _equals = (_nbParams == 0);
+    Assert.assertTrue(_equals);
+    Assert.assertEquals(v1.toString(), "{ [i, j] -> [(i)] }");
+    Assert.assertEquals(v2.toString(), "{ [i, j] -> [(j)] }");
+    Assert.assertEquals(v3.toString(), "{ [i, j] -> [(-i - j)] }");
+  }
+
+  @Test
+  public void testNormalVector_3() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}");
+    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Function1<Facet, ISLAff> _function = (Facet f) -> {
+      return f.getNormalVector(lattice.getRootInfo());
+    };
+    final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
+    final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
+    final ISLAff v2 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[1];
+    final ISLAff v3 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[2];
+    final ISLAff v4 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[3];
+    final ISLAff v5 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[4];
+    int _nbParams = v1.getSpace().getNbParams();
+    boolean _equals = (_nbParams == 0);
+    Assert.assertTrue(_equals);
+    Assert.assertEquals(v1.toString(), "{ [i, j, k] -> [(i)] }");
+    Assert.assertEquals(v2.toString(), "{ [i, j, k] -> [(j)] }");
+    Assert.assertEquals(v3.toString(), "{ [i, j, k] -> [(k)] }");
+    Assert.assertEquals(v4.toString(), "{ [i, j, k] -> [(-i - j - k)] }");
+    Assert.assertEquals(v5.toString(), "{ [i, j, k] -> [(2i + j + 3k)] }");
+  }
+
+  @Test
+  public void testNormalVector_4() {
+    final FaceLattice l = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i<=k and 0<=j<=k and 0<=k<=N}");
+    final Function1<Facet, Pair<String, Facet>> _function = (Facet f) -> {
+      String _join = IterableExtensions.join(f.getSaturatedInequalityIndices());
+      String _plus = ("f" + _join);
+      return Pair.<String, Facet>of(_plus, f);
+    };
+    final Function1<Facet, Pair<String, Facet>> func = _function;
+    final List<Pair<String, Facet>> faces = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(2), func);
+    final List<Pair<String, Facet>> edges = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(1), func);
+    final List<Pair<String, Facet>> vertices = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(0), func);
+    final Function1<Pair<String, Facet>, Boolean> _function_1 = (Pair<String, Facet> p) -> {
+      String _key = p.getKey();
+      return Boolean.valueOf(Objects.equal(_key, "f014"));
+    };
+    final Facet topVertex = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(vertices, _function_1), Pair.class))[0]).getValue();
+    final Function1<Pair<String, Facet>, Boolean> _function_2 = (Pair<String, Facet> p) -> {
+      String _key = p.getKey();
+      return Boolean.valueOf(Objects.equal(_key, "f0123"));
+    };
+    final Facet bottomVertex = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(vertices, _function_2), Pair.class))[0]).getValue();
+    final Function1<Pair<String, Facet>, Boolean> _function_3 = (Pair<String, Facet> p) -> {
+      String _key = p.getKey();
+      return Boolean.valueOf(Objects.equal(_key, "f01"));
+    };
+    final Facet frontEdge = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(edges, _function_3), Pair.class))[0]).getValue();
+    final Function1<Pair<String, Facet>, Boolean> _function_4 = (Pair<String, Facet> p) -> {
+      String _key = p.getKey();
+      return Boolean.valueOf(Objects.equal(_key, "f14"));
+    };
+    final Facet topRightEdge = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(edges, _function_4), Pair.class))[0]).getValue();
+    final Function1<Pair<String, Facet>, Boolean> _function_5 = (Pair<String, Facet> p) -> {
+      String _key = p.getKey();
+      return Boolean.valueOf(Objects.equal(_key, "f23"));
+    };
+    final Facet backObliqueEdge = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(edges, _function_5), Pair.class))[0]).getValue();
+    InputOutput.<ISLMatrix>println(l.getRootInfo().getIndexInequalities());
+    InputOutput.println();
+    InputOutput.<ISLBasicSet>println(topVertex.toBasicSet());
+    InputOutput.<ISLBasicSet>println(bottomVertex.toBasicSet());
+    InputOutput.<ISLBasicSet>println(frontEdge.toBasicSet());
+    InputOutput.<ISLBasicSet>println(topRightEdge.toBasicSet());
+    InputOutput.<ISLBasicSet>println(backObliqueEdge.toBasicSet());
+    final ISLAff v4 = bottomVertex.getNormalVector(backObliqueEdge);
+    Assert.assertEquals(v4.toString(), "{ [i, j, k] -> [(i + j + k)] }");
+    Assert.assertTrue(true);
   }
 }

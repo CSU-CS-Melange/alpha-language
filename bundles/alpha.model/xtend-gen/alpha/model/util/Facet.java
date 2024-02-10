@@ -1,11 +1,16 @@
 package alpha.model.util;
 
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
 import org.eclipse.xtend.lib.annotations.Data;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
@@ -197,6 +202,52 @@ public class Facet {
       this.space.copy(), this.equalities.copy(), allInequalities, 
       ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
       ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
+  }
+
+  /**
+   * Creates the potentially unbounded linear space of this facet
+   *  from the union of saturated constraints
+   */
+  public ISLBasicSet toLinearSpace() {
+    final ISLMatrix ineqMatrix = DomainOperations.toISLInequalityMatrix(ISLBasicSet.buildUniverse(this.space.copy()));
+    return ISLBasicSet.fromConstraintMatrices(
+      this.space.copy(), this.equalities.copy(), ineqMatrix, 
+      ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
+      ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
+  }
+
+  /**
+   * Returns the normal vector (ISLAff) of the inequality characterizing the facet in its parent.
+   */
+  public ISLAff getNormalVector(final Facet parent) {
+    final ISLSpace vecSpace = AlphaUtil.renameSpaceParams(AlphaUtil.renameSpaceOutputs(AlphaUtil.renameSpaceInputs(ISLSpace.alloc(this.space.getContext(), this.space.getNbParams(), this.space.getNbIndices(), 1), parent.space.getIndexNames())), parent.space.getParamNames());
+    final ISLMatrix inequality = this.getCharacteristicInequality(parent);
+    final ISLAff normalVector = AffineFactorizer.toExpression(ISLUtil.transpose(inequality), vecSpace).getAff(0);
+    final ISLAff vector = normalVector.copy();
+    final ISLBasicSet ineq = vector.copy().toInequalityConstraint().toBasicSet();
+    final ISLBasicSet lp = parent.toLinearSpace();
+    final ISLMatrix matrix = DomainOperations.toISLInequalityMatrix(ineq.copy().intersect(lp.copy()));
+    final ISLAff componentInParent = AffineFactorizer.toExpression(ISLUtil.transpose(matrix), vecSpace).getAff(0).dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
+    return componentInParent;
+  }
+
+  /**
+   * Returns the row index of the inequality characterizing the facet in its parent.
+   *  If more than one inequality is saturated relative to its parent then the first
+   *  one is returned.
+   */
+  public Integer getCharacteristicInequalityIndex(final Facet parent) {
+    final Set<Integer> indices = IterableExtensions.<Integer>toSet(this.saturatedInequalityIndices);
+    indices.removeAll(IterableExtensions.<Integer>toSet(parent.saturatedInequalityIndices));
+    final Integer ineqIndex = IterableExtensions.<Integer>toList(indices).get(0);
+    return ineqIndex;
+  }
+
+  public ISLMatrix getCharacteristicInequality(final Facet parent) {
+    final Integer idx = this.getCharacteristicInequalityIndex(parent);
+    final long[] row = this.lattice.getRootInfo().indexInequalities.toLongMatrix()[(idx).intValue()];
+    final ISLMatrix matrix = ISLMatrix.buildFromLongMatrix(((long[][])Conversions.unwrapArray(Collections.<long[]>unmodifiableList(CollectionLiterals.<long[]>newArrayList(row)), long[].class)));
+    return matrix;
   }
 
   /**
