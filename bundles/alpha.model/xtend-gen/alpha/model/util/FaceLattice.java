@@ -3,11 +3,15 @@ package alpha.model.util;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
+import org.eclipse.xtext.xbase.lib.CollectionExtensions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Pure;
 
@@ -20,8 +24,8 @@ public class FaceLattice {
   /**
    * The information about the set which forms the root of the lattice.
    */
-  @Accessors(AccessorType.PUBLIC_GETTER)
-  private final Facet rootInfo;
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PRIVATE_SETTER })
+  private Facet rootInfo;
 
   /**
    * The storage of the lattice itself.
@@ -35,8 +39,8 @@ public class FaceLattice {
   /**
    * Constructs a new, empty lattice.
    */
-  private FaceLattice(final Facet rootInfo) {
-    this.rootInfo = rootInfo;
+  private FaceLattice() {
+    this.rootInfo = null;
     ArrayList<ArrayList<Facet>> _arrayList = new ArrayList<ArrayList<Facet>>();
     this.lattice = _arrayList;
   }
@@ -45,8 +49,9 @@ public class FaceLattice {
    * Creates a new face lattice for the given set.
    */
   public static FaceLattice create(final ISLBasicSet root) {
-    final Facet rootInfo = new Facet(root);
-    final FaceLattice lattice = new FaceLattice(rootInfo);
+    final FaceLattice lattice = new FaceLattice();
+    final Facet rootInfo = new Facet(root, lattice);
+    lattice.rootInfo = rootInfo;
     final LinkedList<ArrayList<Integer>> toSaturate = new LinkedList<ArrayList<Integer>>();
     ArrayList<Integer> _arrayList = new ArrayList<Integer>();
     toSaturate.add(_arrayList);
@@ -77,6 +82,7 @@ public class FaceLattice {
         }
       }
     }
+    lattice.removeRedundancies();
     return lattice;
   }
 
@@ -148,9 +154,83 @@ public class FaceLattice {
     return true;
   }
 
+  private void removeRedundancies() {
+    int _size = this.lattice.size();
+    final Function1<Integer, Boolean> _function = (Integer k) -> {
+      boolean _xblockexpression = false;
+      {
+        final ArrayList<Facet> kFacets = this.lattice.get((k).intValue());
+        int _dimensionality = this.rootInfo.getDimensionality();
+        final int expectedSaturations = (_dimensionality - (k).intValue());
+        final Function1<Facet, Boolean> _function_1 = (Facet kFacet) -> {
+          int _size_1 = kFacet.getSaturatedInequalityIndices().size();
+          return Boolean.valueOf((_size_1 != expectedSaturations));
+        };
+        final Iterable<Facet> strangeKFacets = IterableExtensions.<Facet>filter(kFacets, _function_1);
+        boolean _isEmpty = IterableExtensions.isEmpty(strangeKFacets);
+        _xblockexpression = (!_isEmpty);
+      }
+      return Boolean.valueOf(_xblockexpression);
+    };
+    final Iterable<Integer> layersWithStrangeKFacets = IterableExtensions.<Integer>filter(new ExclusiveRange(0, _size, true), _function);
+    for (final Integer k : layersWithStrangeKFacets) {
+      {
+        final ArrayList<Facet> kFacets = this.lattice.get((k).intValue());
+        int _dimensionality = this.rootInfo.getDimensionality();
+        final int expectedSaturations = (_dimensionality - (k).intValue());
+        final Function1<Facet, Boolean> _function_1 = (Facet kFacet) -> {
+          int _size_1 = kFacet.getSaturatedInequalityIndices().size();
+          return Boolean.valueOf((_size_1 != expectedSaturations));
+        };
+        final Iterable<Facet> strangeKFacets = IterableExtensions.<Facet>filter(kFacets, _function_1);
+        final Function1<Facet, Iterable<Facet>> _function_2 = (Facet strangeKFacet) -> {
+          final Function1<Facet, Boolean> _function_3 = (Facet kFacet) -> {
+            return Boolean.valueOf(IterableExtensions.<Integer>toSet(kFacet.getSaturatedInequalityIndices()).containsAll(IterableExtensions.<Integer>toSet(strangeKFacet.getSaturatedInequalityIndices())));
+          };
+          return IterableExtensions.<Facet>filter(kFacets, _function_3);
+        };
+        final Iterable<Iterable<Facet>> duplicateKFacetsForStrangeKFacets = IterableExtensions.<Facet, Iterable<Facet>>map(strangeKFacets, _function_2);
+        final Function2<Iterable<Facet>, Iterable<Facet>, Iterable<Facet>> _function_3 = (Iterable<Facet> fs1, Iterable<Facet> fs2) -> {
+          return Iterables.<Facet>concat(fs1, fs2);
+        };
+        final Function1<Facet, Set<Integer>> _function_4 = (Facet kFacet) -> {
+          return IterableExtensions.<Integer>toSet(kFacet.getSaturatedInequalityIndices());
+        };
+        final Set<Set<Integer>> duplicateIndices = IterableExtensions.<Set<Integer>>toSet(IterableExtensions.<Facet, Set<Integer>>map(IterableExtensions.<Iterable<Facet>>reduce(duplicateKFacetsForStrangeKFacets, _function_3), _function_4));
+        final Function1<Iterable<Facet>, HashSet<Integer>> _function_5 = (Iterable<Facet> duplicateKFacetsForStrangeKFacet) -> {
+          final HashSet<Integer> union = new HashSet<Integer>();
+          for (final Facet kFacet : duplicateKFacetsForStrangeKFacet) {
+            union.addAll(kFacet.getSaturatedInequalityIndices());
+          }
+          return union;
+        };
+        final Set<HashSet<Integer>> uniqueKFacetsIndices = IterableExtensions.<HashSet<Integer>>toSet(IterableExtensions.<Iterable<Facet>, HashSet<Integer>>map(duplicateKFacetsForStrangeKFacets, _function_5));
+        final Function1<HashSet<Integer>, Facet> _function_6 = (HashSet<Integer> ids) -> {
+          Facet _xblockexpression = null;
+          {
+            final ArrayList<Integer> idsArr = new ArrayList<Integer>();
+            idsArr.addAll(ids);
+            _xblockexpression = Facet.createFace(this.rootInfo, idsArr);
+          }
+          return _xblockexpression;
+        };
+        final Iterable<Facet> uniqueKFacets = IterableExtensions.<HashSet<Integer>, Facet>map(uniqueKFacetsIndices, _function_6);
+        final Function1<Facet, Boolean> _function_7 = (Facet kFacet) -> {
+          return Boolean.valueOf(duplicateIndices.contains(IterableExtensions.<Integer>toSet(kFacet.getSaturatedInequalityIndices())));
+        };
+        CollectionExtensions.<Facet>removeAll(kFacets, IterableExtensions.<Facet>filter(kFacets, _function_7));
+        Iterables.<Facet>addAll(kFacets, uniqueKFacets);
+      }
+    }
+  }
+
   @Pure
   public Facet getRootInfo() {
     return this.rootInfo;
+  }
+
+  private void setRootInfo(final Facet rootInfo) {
+    this.rootInfo = rootInfo;
   }
 
   @Pure

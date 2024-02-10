@@ -91,17 +91,19 @@ public class Facet {
    */
   private final ISLSpace space;
 
+  private final FaceLattice lattice;
+
   /**
    * Extract the information from the given set, assuming that no constraints were saturated to form it.
    */
-  public Facet(final ISLBasicSet basicSet) {
-    this(basicSet, new ArrayList<Integer>(0));
+  public Facet(final ISLBasicSet basicSet, final FaceLattice lattice) {
+    this(basicSet, new ArrayList<Integer>(0), lattice);
   }
 
   /**
    * Extract the information from the given set.
    */
-  public Facet(final ISLBasicSet basicSet, final ArrayList<Integer> saturatedInequalityIndices) {
+  public Facet(final ISLBasicSet basicSet, final ArrayList<Integer> saturatedInequalityIndices, final FaceLattice lattice) {
     this.equalities = DomainOperations.toISLEqualityMatrix(basicSet);
     this.indexCount = basicSet.dim(ISLDimType.isl_dim_set);
     this.indexInequalities = Facet.getInequalities(basicSet, this.indexCount, true);
@@ -113,6 +115,7 @@ public class Facet {
     this.saturatedInequalityIndices = saturatedInequalityIndices;
     this.space = basicSet.getSpace();
     this.dimensionality = Facet.dimensionality(this.equalities, this.indexCount);
+    this.lattice = lattice;
   }
 
   /**
@@ -140,7 +143,7 @@ public class Facet {
       ancestor.space.copy(), equalities, inequalities, 
       ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
       ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
-    return new Facet(basicSet, toSaturate);
+    return new Facet(basicSet, toSaturate, ancestor.lattice);
   }
 
   /**
@@ -279,7 +282,8 @@ public class Facet {
     result = prime * result + this.parameterEqualityCount;
     result = prime * result + ((this.parameterInequalities== null) ? 0 : this.parameterInequalities.hashCode());
     result = prime * result + ((this.saturatedInequalityIndices== null) ? 0 : this.saturatedInequalityIndices.hashCode());
-    return prime * result + ((this.space== null) ? 0 : this.space.hashCode());
+    result = prime * result + ((this.space== null) ? 0 : this.space.hashCode());
+    return prime * result + ((this.lattice== null) ? 0 : this.lattice.hashCode());
   }
 
   @Override
@@ -328,6 +332,11 @@ public class Facet {
       if (other.space != null)
         return false;
     } else if (!this.space.equals(other.space))
+      return false;
+    if (this.lattice == null) {
+      if (other.lattice != null)
+        return false;
+    } else if (!this.lattice.equals(other.lattice))
       return false;
     return true;
   }
@@ -385,5 +394,10 @@ public class Facet {
   @Pure
   public ISLSpace getSpace() {
     return this.space;
+  }
+
+  @Pure
+  public FaceLattice getLattice() {
+    return this.lattice;
   }
 }

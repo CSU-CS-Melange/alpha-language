@@ -67,16 +67,17 @@ class Facet {
 	/** The space that the set resides in. */
 	ISLSpace space
 	
+	FaceLattice lattice
 	
 	////////////////////////////////////////////////////////////
 	// Construction
 	////////////////////////////////////////////////////////////
 	
 	/** Extract the information from the given set, assuming that no constraints were saturated to form it. */
-	new(ISLBasicSet basicSet) { this(basicSet, new ArrayList<Integer>(0)) }
+	new(ISLBasicSet basicSet, FaceLattice lattice) { this(basicSet, new ArrayList<Integer>(0), lattice) }
 	
 	/** Extract the information from the given set. */
-	new(ISLBasicSet basicSet, ArrayList<Integer> saturatedInequalityIndices) {
+	new(ISLBasicSet basicSet, ArrayList<Integer> saturatedInequalityIndices, FaceLattice lattice) {
 		equalities = DomainOperations.toISLEqualityMatrix(basicSet)
 		indexCount = basicSet.dim(ISLDimType.isl_dim_set)
 		indexInequalities = getInequalities(basicSet, indexCount, true)
@@ -87,8 +88,8 @@ class Facet {
 		parameterInequalities = getInequalities(basicSet, indexCount, false)
 		this.saturatedInequalityIndices = saturatedInequalityIndices
 		space = basicSet.space 
-
 		dimensionality = dimensionality(equalities, indexCount)
+		this.lattice = lattice
 	}
 	
 	/** Saturates the given index inequalities from the ancestor to form a potential face. */
@@ -118,7 +119,7 @@ class Facet {
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
-		return new Facet(basicSet, toSaturate)
+		return new Facet(basicSet, toSaturate, ancestor.lattice)
 	}
 	
 	

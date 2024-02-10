@@ -4,6 +4,7 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import java.util.ArrayList
 import java.util.LinkedList
 import org.eclipse.xtend.lib.annotations.Accessors
+import java.util.HashSet
 
 /**
  * Constructs the face lattice of a given <code>ISLBasicSet</code>.
@@ -15,8 +16,8 @@ class FaceLattice {
 	////////////////////////////////////////////////////////////
 	
 	/** The information about the set which forms the root of the lattice. */
-	@Accessors(PUBLIC_GETTER)
-	val Facet rootInfo
+	@Accessors(PUBLIC_GETTER, PRIVATE_SETTER)
+	var Facet rootInfo
 	
 	/**
 	 * The storage of the lattice itself.
@@ -33,16 +34,17 @@ class FaceLattice {
 	////////////////////////////////////////////////////////////
 	
 	/** Constructs a new, empty lattice. */
-	private new(Facet rootInfo) { 
-		this.rootInfo = rootInfo
+	private new() { 
+		rootInfo = null
 		lattice = new ArrayList<ArrayList<Facet>>
 	}
 	
 	/** Creates a new face lattice for the given set. */
 	def static create(ISLBasicSet root) {
 		// Set up the face lattice which is rooted at the given set.
-		val rootInfo = new Facet(root)
-		val lattice = new FaceLattice(rootInfo)
+		val lattice = new FaceLattice
+		val rootInfo = new Facet(root, lattice)
+		lattice.rootInfo = rootInfo
 		
 		// The lattice will be populated by iterating through the power set of all constraints.
 		// A queue of constraint combinations to check will be used to avoid recursion.
@@ -73,6 +75,8 @@ class FaceLattice {
 				}
 			}
 		}
+		
+		lattice.removeRedundancies
 		
 		return lattice
 	}
@@ -150,4 +154,69 @@ class FaceLattice {
 		lattice.get(layerIndex).add(face)
 		return true
 	}
+	
+	def private removeRedundancies() {
+		val layersWithStrangeKFacets = (0..<lattice.size).filter[k |
+			val kFacets = lattice.get(k)
+			val expectedSaturations = rootInfo.dimensionality - k
+			
+			val strangeKFacets = kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.size != expectedSaturations]
+			!strangeKFacets.empty
+		]
+		for (k : layersWithStrangeKFacets) {
+			val kFacets = lattice.get(k)
+			val expectedSaturations = rootInfo.dimensionality - k
+			
+			val strangeKFacets = kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.size != expectedSaturations]
+			
+			val duplicateKFacetsForStrangeKFacets = strangeKFacets.map[ strangeKFacet |
+				kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.toSet.containsAll(strangeKFacet.saturatedInequalityIndices.toSet)]
+			]
+			
+			val duplicateIndices = duplicateKFacetsForStrangeKFacets.reduce[fs1, fs2 | fs1 + fs2]
+			                                                        .map[kFacet | kFacet.saturatedInequalityIndices.toSet]
+			                                                        .toSet
+			
+			val uniqueKFacetsIndices = duplicateKFacetsForStrangeKFacets.map[duplicateKFacetsForStrangeKFacet |
+				val union = new HashSet<Integer>
+				for (kFacet : duplicateKFacetsForStrangeKFacet) {
+					union.addAll(kFacet.saturatedInequalityIndices)
+				}
+				return union
+			].toSet
+			
+			val uniqueKFacets = uniqueKFacetsIndices.map[ids |
+				val idsArr = new ArrayList<Integer>
+				idsArr.addAll(ids) 
+				Facet.createFace(rootInfo, idsArr)
+			]
+			
+			kFacets.removeAll(kFacets.filter[kFacet | duplicateIndices.contains(kFacet.saturatedInequalityIndices.toSet)])
+			kFacets.addAll(uniqueKFacets)
+			
+//			println(k + '           : ' + kFacets)
+//			println(k + '  (strange): ' + strangeKFacets)
+//			println(k + '      (dup): ' + duplicateKFacetsForStrangeKFacets)
+//			println(k + '    (dupId): ' + duplicateIndices)
+//			println(k + ' (uniqueId): ' + uniqueKFacetsIndices)
+//			println(k + '   (unique): ' + uniqueKFacets)
+//			println()
+			
+			
+		}
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
