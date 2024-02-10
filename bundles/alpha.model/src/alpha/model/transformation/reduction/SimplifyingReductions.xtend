@@ -17,6 +17,8 @@ import alpha.model.util.AffineFunctionOperations
 import alpha.model.util.AlphaOperatorUtil
 import alpha.model.util.AlphaUtil
 import alpha.model.util.DomainOperations
+import alpha.model.util.FaceLattice
+import alpha.model.util.FaceLattice.Label
 import fr.irisa.cairn.jnimap.isl.ISLContext
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
@@ -31,6 +33,11 @@ import java.util.TreeSet
 import java.util.function.Function
 import org.eclipse.emf.ecore.util.EcoreUtil
 
+import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
+import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
+import static extension alpha.model.util.ISLUtil.isTrivial
+import alpha.model.util.Show
+
 /**
  * Implementation of Theorem 5 in the original Simplifying Reductions paper.
  * 
@@ -38,7 +45,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  */
 class SimplifyingReductions {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 
 	/**
 	 * Setting this variable to true disables all the
@@ -194,7 +201,9 @@ class SimplifyingReductions {
 		}
 		
 		EcoreUtil.replace(targetReduce, mainCaseExpr)
-		AlphaInternalStateConstructor.recomputeContextDomain(reductionEquation)
+		
+		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
+		println(Show.print(containerSystemBody))
 		
 		if (!DISABLE_POST_PROCESSING) {
 			SimplifyExpressions.apply(containerSystemBody)
@@ -202,6 +211,10 @@ class SimplifyingReductions {
 			PropagateSimpleEquations.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
 		}
+		
+		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
+		println(Show.print(containerSystemBody))
+		println()
 	}
 	
 	
@@ -354,15 +367,42 @@ class SimplifyingReductions {
 			return vectors;
 		}
 		
-		val nbParams = are.contextDomain.nbParams
-		for (row : areSS) {
-			
-			val rowNoParams = MatrixOperations.removeColumns(row, (0..<nbParams))
-			val rowNeg = MatrixOperations.scalarMultiplication(rowNoParams, -1);
-			if (testLegality(are, rowNeg))
-				vectors.add(rowNeg);
-			if (testLegality(are, rowNoParams))
-				vectors.add(rowNoParams);
+		// construct reuse space
+		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
+		
+		// construct face lattice
+		val lattice = FaceLattice.create(are.body.contextDomain)
+		val face = lattice.rootInfo
+		val facets = lattice.getChildren(face).toList
+		
+		// identify valid labels
+		val validLabels = new ArrayList<FaceLattice.Label>
+		validLabels.addAll(#[Label.POS, Label.ZERO])
+		if (AlphaOperatorUtil.hasInverse(are.operator)) {
+			validLabels.add(Label.NEG)
+		}
+		// enumerate all valid labelings
+		val labelings = lattice.enumerateAllPossibleLabelings(validLabels, facets.size).toList
+		
+		// find the labelings that have none-empty domains 
+		val labelingInducingDomains = labelings.map[l | lattice.getLabelingDomain(face, l)]
+		                                       .filter[ld | ! ld.value.isTrivial]
+		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
+		                                       .filter[ld | ! ld.value.isTrivial]
+		                                       .toList
+		
+		// select the reuse vector for each labeling domain (closest to the origin)
+		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin]
+		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]
+		vectors.addAll(validReuseVectors.map[lv | lv.value])
+		
+		if (DEBUG) {
+			for (f : facets) {
+				debug('(candidateReuse) facet-' + facets.indexOf(f) + ': ' + f.toBasicSet)
+			}                      
+			for (lv : validReuseVectors) {
+				debug('(candidateReuse) labeling ' + lv.key.toString + ' induced by ' + lv.value.toString)
+			}
 		}
 		
 		return vectors;

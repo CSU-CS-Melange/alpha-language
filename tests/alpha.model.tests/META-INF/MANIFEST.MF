@@ -17,4 +17,6 @@ Require-Bundle: alpha.model,
  alpha.commands.groovy,
  alpha.commands,
  fr.irisa.cairn.jnimap.barvinok;resolution:=optional,
- fr.irisa.cairn.jnimap.polylib;resolution:=optional
+ fr.irisa.cairn.jnimap.polylib;resolution:=optional,
+ alpha.targetmapping;bundle-version="0.1.0",
+ alpha.targetmapping.xtext;bundle-version="0.1.0"

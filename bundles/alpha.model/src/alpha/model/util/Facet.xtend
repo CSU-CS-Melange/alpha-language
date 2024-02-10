@@ -1,11 +1,13 @@
 package alpha.model.util
 
-import org.eclipse.xtend.lib.annotations.Data
-import fr.irisa.cairn.jnimap.isl.ISLMatrix
-import java.util.ArrayList
-import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMatrix
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import java.util.ArrayList
+import org.eclipse.xtend.lib.annotations.Data
+
+import static extension alpha.model.util.ISLUtil.transpose
 
 import static extension alpha.model.util.ISLUtil.transpose
 import static extension fr.irisa.cairn.jnimap.isl.ISLMatrix.buildFromLongMatrix
@@ -78,6 +80,7 @@ class Facet {
 	/** The space that the set resides in. */
 	ISLSpace space
 	
+
 	FaceLattice lattice
 	
 	////////////////////////////////////////////////////////////
@@ -85,6 +88,7 @@ class Facet {
 	////////////////////////////////////////////////////////////
 	
 	/** Extract the information from the given set, assuming that no constraints were saturated to form it. */
+
 	new(ISLBasicSet basicSet, FaceLattice lattice) { this(basicSet, new ArrayList<Integer>(0), lattice) }
 	
 	/** Extract the information from the given set. */
@@ -130,6 +134,7 @@ class Facet {
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
+
 		return new Facet(basicSet, toSaturate, ancestor.lattice)
 	}
 	
@@ -229,6 +234,7 @@ class Facet {
 	def getCharacteristicInequalityIndex(Facet parent) {
 		val indices = saturatedInequalityIndices.toSet
 		indices.removeAll(parent.saturatedInequalityIndices.toSet)
+
 		val ineqIndex = indices.toList.get(0)
 		return ineqIndex
 	}

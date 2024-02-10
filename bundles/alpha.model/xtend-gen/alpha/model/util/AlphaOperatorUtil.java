@@ -11,6 +11,7 @@ import alpha.model.REDUCTION_OP;
 import alpha.model.RealExpression;
 import com.google.common.base.Objects;
 import java.util.Arrays;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 
 @SuppressWarnings("all")
 public class AlphaOperatorUtil {
@@ -46,6 +47,19 @@ public class AlphaOperatorUtil {
       }
     }
     return _switchResult;
+  }
+
+  public static boolean hasInverse(final REDUCTION_OP op) {
+    try {
+      final BINARY_OP invOp = AlphaOperatorUtil.reductionOPtoBinaryInverseOP(op);
+      return true;
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        return false;
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
   }
 
   public static BINARY_OP reductionOPtoBinaryInverseOP(final REDUCTION_OP op) {

@@ -88,6 +88,7 @@ public class MatrixPackageImpl extends EPackageImpl implements MatrixPackage {
 	private MatrixPackageImpl() {
 		super(eNS_URI, MatrixFactory.eINSTANCE);
 	}
+
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

@@ -1,7 +1,9 @@
 package alpha.model.transformation.automation;
 
 import alpha.model.AbstractReduceExpression;
+import alpha.model.AlphaCompleteVisitable;
 import alpha.model.AlphaExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaNode;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
@@ -30,6 +32,7 @@ import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -37,8 +40,11 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
@@ -49,11 +55,6 @@ import org.eclipse.xtext.xbase.lib.Pair;
  * a number of places in the original paper that discuss
  * a linear space (named L_P) = rays in vertex representation.
  * Cases where this linear space is meaningful are not supported.
- * 
- * Also, the cost metric is simplified to use the number of times
- * dimension saving simplifications are applied (SR,
- * HigherOrderOperator, and Idempotence). When there is a tie, it
- * selects the program with fewer equations.
  */
 @SuppressWarnings("all")
 public class SimplifyingReductionOptimalSimplificationAlgorithm {
@@ -64,8 +65,14 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
     protected Set<String> exploredEquations = new TreeSet<String>();
 
+    protected SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext parent;
+
+    protected LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> children;
+
     public DynamicProgrammingContext(final ProgramState state) {
       this.state = state;
+      LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> _linkedList = new LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext>();
+      this.children = _linkedList;
     }
 
     protected boolean markFinishedEquation(final String eqName) {
@@ -93,6 +100,32 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         copy.excludedEquations.add(ee);
       }
       return copy;
+    }
+
+    public boolean isLeaf() {
+      return this.children.isEmpty();
+    }
+
+    public List<ProgramState> leafStates() {
+      boolean _isLeaf = this.isLeaf();
+      if (_isLeaf) {
+        return Collections.<ProgramState>unmodifiableList(CollectionLiterals.<ProgramState>newArrayList(this.state));
+      }
+      final ArrayList<ProgramState> states = new ArrayList<ProgramState>();
+      final Consumer<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> _function = (SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext c) -> {
+        states.addAll(c.leafStates());
+      };
+      this.children.forEach(_function);
+      return states;
+    }
+
+    public boolean addChild(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child) {
+      boolean _xblockexpression = false;
+      {
+        child.parent = this;
+        _xblockexpression = this.children.add(child);
+      }
+      return _xblockexpression;
     }
   }
 
@@ -180,7 +213,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
   protected final int systemBodyID;
 
-  protected AlphaRoot optimizedProgram;
+  protected List<AlphaRoot> optimizedPrograms;
 
   protected SimplifyingReductionOptimalSimplificationAlgorithm(final SystemBody body) {
     this.originalProgram = AlphaUtil.getContainerRoot(body);
@@ -188,8 +221,8 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     this.systemBodyID = body.getSystem().getSystemBodies().indexOf(body);
   }
 
-  public static AlphaRoot apply(final AlphaSystem system) {
-    AlphaRoot _xifexpression = null;
+  public static List<AlphaRoot> apply(final AlphaSystem system) {
+    List<AlphaRoot> _xifexpression = null;
     int _size = system.getSystemBodies().size();
     boolean _equals = (_size == 1);
     if (_equals) {
@@ -200,24 +233,29 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     return _xifexpression;
   }
 
-  public static AlphaRoot apply(final SystemBody body) {
+  public static List<AlphaRoot> apply(final SystemBody body) {
     final SimplifyingReductionOptimalSimplificationAlgorithm SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
     SROSA.run();
-    return SROSA.optimizedProgram;
+    AlphaInternalStateConstructor.recomputeContextDomain(((AlphaCompleteVisitable[])Conversions.unwrapArray(SROSA.optimizedPrograms, AlphaCompleteVisitable.class)));
+    return SROSA.optimizedPrograms;
   }
 
   /**
    * Entry point to the algorithm
    */
-  private AlphaRoot run() {
-    AlphaRoot _xblockexpression = null;
+  private List<AlphaRoot> run() {
+    List<AlphaRoot> _xblockexpression = null;
     {
       final ProgramState state = this.preprocessing();
       this.debug("After Preprocessing", state);
       final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext = new SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext(state);
       this.exploreDPcontext(DPcontext);
       this.debug("After DP", DPcontext.state);
-      _xblockexpression = this.optimizedProgram = DPcontext.state.root;
+      final List<ProgramState> ls = IterableExtensions.<ProgramState>toList(DPcontext.leafStates());
+      final Function1<ProgramState, AlphaRoot> _function = (ProgramState s) -> {
+        return s.root;
+      };
+      _xblockexpression = this.optimizedPrograms = ListExtensions.<ProgramState, AlphaRoot>map(DPcontext.leafStates(), _function);
     }
     return _xblockexpression;
   }
@@ -279,6 +317,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
       return;
     }
     final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext childContext = context.copy();
+    childContext.parent = context;
     final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
       return Boolean.valueOf((!Objects.equal(e, eq)));
     };
@@ -318,29 +357,16 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
       context.markFinishedEquation(eq);
       return;
     }
-    int _size = candidates.size();
-    final ArrayList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> childContexts = new ArrayList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext>(_size);
     for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step : candidates) {
       {
         this.debug(String.format("Applying Step: %s", step.description()));
         final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child = childContext.copy();
         this.applyDPStep(child, step);
         this.exploreDPcontext(child);
-        childContexts.add(child);
+        context.children.add(child);
       }
     }
-    final Function1<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext, Integer> _function_2 = (SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext c) -> {
-      int _size_1 = this.getBody(c.state).getStandardEquations().size();
-      return Integer.valueOf(((c.state.nbSR * 1000) - _size_1));
-    };
-    final ProgramState bestChildState = IterableExtensions.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext, Integer>maxBy(childContexts, _function_2).state;
-    if ((bestChildState.nbSR > context.state.nbSR)) {
-      context.state = bestChildState;
-      this.excludeExploredEquationsInChildContext(context, childContext);
-      context.markFinishedEquation(eq);
-    } else {
-      context.markFinishedEquation(eq);
-    }
+    context.markFinishedEquation(eq);
   }
 
   /**

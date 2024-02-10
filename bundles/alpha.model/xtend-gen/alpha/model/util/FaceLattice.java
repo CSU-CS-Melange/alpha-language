@@ -1,18 +1,28 @@
 package alpha.model.util;
 
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
+import fr.irisa.cairn.jnimap.isl.ISLConstraint;
+import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.CollectionExtensions;
+import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Pure;
 
 /**
@@ -21,6 +31,17 @@ import org.eclipse.xtext.xbase.lib.Pure;
  */
 @SuppressWarnings("all")
 public class FaceLattice {
+  /**
+   * The way each facet can be labeled by one particular choice of reuse
+   */
+  public enum Label {
+    POS,
+
+    NEG,
+
+    ZERO;
+  }
+
   /**
    * The information about the set which forms the root of the lattice.
    */
@@ -34,7 +55,32 @@ public class FaceLattice {
    * Each layer is a list of all the sets which are in that layer.
    */
   @Accessors(AccessorType.PUBLIC_GETTER)
-  private final ArrayList<ArrayList<Facet>> lattice;
+  private ArrayList<ArrayList<Facet>> lattice;
+
+  /**
+   * Converts decimal value to base radix and converts to a list of N digits padded with leading zeros
+   */
+  public static int[] toPaddedDigitArray(final int value, final int radix, final int N) {
+    try {
+      final String radixValue = Integer.toString(value, radix);
+      final Function1<Character, Integer> _function = (Character v) -> {
+        return Integer.valueOf(Integer.parseInt(v.toString(), radix));
+      };
+      final List<Integer> digitArray = ListExtensions.<Character, Integer>map(((List<Character>)Conversions.doWrapArray(radixValue.toCharArray())), _function);
+      int _size = digitArray.size();
+      final int padSize = (N - _size);
+      if ((padSize < 0)) {
+        throw new Exception((((((("Value " + Integer.valueOf(value)) + " in radix ") + Integer.valueOf(radix)) + " requires more than ") + Integer.valueOf(N)) + " digits"));
+      }
+      final Function1<Integer, Integer> _function_1 = (Integer it) -> {
+        return Integer.valueOf(0);
+      };
+      final Iterable<Integer> pad = IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, padSize, true), _function_1);
+      return ((int[])Conversions.unwrapArray(Iterables.<Integer>concat(pad, digitArray), int.class));
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
 
   /**
    * Constructs a new, empty lattice.
@@ -48,6 +94,23 @@ public class FaceLattice {
   /**
    * Creates a new face lattice for the given set.
    */
+  public static FaceLattice create(final ISLSet root) {
+    try {
+      FaceLattice _xblockexpression = null;
+      {
+        int _nbBasicSets = root.getNbBasicSets();
+        boolean _greaterThan = (_nbBasicSets > 1);
+        if (_greaterThan) {
+          throw new Exception("Face lattice construction can only be done for a single basic set");
+        }
+        _xblockexpression = FaceLattice.create(root.getBasicSetAt(0));
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
   public static FaceLattice create(final ISLBasicSet root) {
     final FaceLattice lattice = new FaceLattice();
     final Facet rootInfo = new Facet(root, lattice);
@@ -132,6 +195,114 @@ public class FaceLattice {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Returns the domain D such that any vector within induces a particular labeling among the facets.
+   *  Here, the word "face" refers to a node in the lattice and "facets" (with a 't') as the direct
+   *  children of that particular "face".
+   *  face:
+   *  - facet1
+   *  - facet2
+   *  - facet3
+   *  ...
+   *  There are 3 possible labels for a facet: POS,NEG,ZERO.
+   *  Each facet is said to be either an POS-facet, an NEG-facet, or an ZERO-facet.
+   * 
+   *  By definition, the linear space of each facet differs from its face by a single inequality constraint
+   *  "c" (ISLConstraint). The index coefficients of "c" represent the normal vector "v" (ISLAff) to the facet.
+   * 
+   *  A particular facet can be made an:
+   *  - POS-facet:  new constraint with coefficients of "v" that >0
+   *  - NEG-facet:  new constraint with coefficients of "v" that <0
+   *  - ZERO-facet: new constraint with coefficients of "v" that =0
+   */
+  public Pair<FaceLattice.Label[], ISLBasicSet> getLabelingDomain(final Facet face, final FaceLattice.Label[] labeling) {
+    try {
+      final Iterable<Facet> facets = this.getChildren(face);
+      final int nbFacets = IterableExtensions.size(facets);
+      int _size = ((List<FaceLattice.Label>)Conversions.doWrapArray(labeling)).size();
+      boolean _notEquals = (nbFacets != _size);
+      if (_notEquals) {
+        throw new Exception("Must specify a label for every facet to get a labeling domain");
+      }
+      final Function1<Facet, ISLAff> _function = (Facet f) -> {
+        return f.getNormalVector(face);
+      };
+      final Iterable<ISLAff> normalVectors = IterableExtensions.<Facet, ISLAff>map(facets, _function);
+      final Function1<Integer, ISLConstraint> _function_1 = (Integer i) -> {
+        return this.toLabelInducingConstraint(((ISLAff[])Conversions.unwrapArray(normalVectors, ISLAff.class))[(i).intValue()], face.getSpace(), labeling[(i).intValue()]);
+      };
+      final Iterable<ISLConstraint> constraints = IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, nbFacets, true), _function_1);
+      ISLBasicSet domain = ISLBasicSet.buildUniverse(face.getSpace().copy());
+      for (final ISLConstraint constraint : constraints) {
+        domain = domain.addConstraint(constraint);
+      }
+      domain = domain.dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, face.getSpace().getNbParams());
+      ISLBasicSet _removeRedundancies = domain.removeRedundancies();
+      return Pair.<FaceLattice.Label[], ISLBasicSet>of(labeling, _removeRedundancies);
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Creates a constraint in the specified "space" that induces a labeling "label"
+   */
+  public ISLConstraint toLabelInducingConstraint(final ISLAff vector, final ISLSpace space, final FaceLattice.Label label) {
+    try {
+      ISLConstraint _xblockexpression = null;
+      {
+        final ISLAff vectorInAffineSpace = AlphaUtil.renameDims(vector.copy().addDims(ISLDimType.isl_dim_param, space.getNbParams()), ISLDimType.isl_dim_param, space.getParamNames());
+        ISLConstraint _switchResult = null;
+        if (label != null) {
+          switch (label) {
+            case POS:
+              _switchResult = vectorInAffineSpace.addConstant((-1)).toInequalityConstraint();
+              break;
+            case NEG:
+              _switchResult = vectorInAffineSpace.negate().addConstant((-1)).toInequalityConstraint();
+              break;
+            case ZERO:
+              _switchResult = vectorInAffineSpace.addConstant(0).toEqualityConstraint();
+              break;
+            default:
+              throw new Exception((("Label " + label) + " is not supported"));
+          }
+        } else {
+          throw new Exception((("Label " + label) + " is not supported"));
+        }
+        _xblockexpression = _switchResult;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Creates the set of all possible label combinations
+   */
+  public List<List<FaceLattice.Label>> enumerateAllPossibleLabelings(final FaceLattice.Label[] validLabels, final int nbFacets) {
+    List<List<FaceLattice.Label>> _xblockexpression = null;
+    {
+      final Function1<Integer, Integer> _function = (Integer it) -> {
+        return Integer.valueOf(((List<FaceLattice.Label>)Conversions.doWrapArray(validLabels)).size());
+      };
+      final Function2<Integer, Integer, Integer> _function_1 = (Integer v1, Integer v2) -> {
+        return Integer.valueOf(((v1).intValue() * (v2).intValue()));
+      };
+      final Integer numCombos = IterableExtensions.<Integer>reduce(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, nbFacets, true), _function), _function_1);
+      final Function1<Integer, List<FaceLattice.Label>> _function_2 = (Integer value) -> {
+        final Function1<Integer, FaceLattice.Label> _function_3 = (Integer i) -> {
+          return validLabels[(i).intValue()];
+        };
+        return IterableExtensions.<FaceLattice.Label>toList(ListExtensions.<Integer, FaceLattice.Label>map(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray((value).intValue(), ((List<FaceLattice.Label>)Conversions.doWrapArray(validLabels)).size(), nbFacets))), _function_3));
+      };
+      final List<List<FaceLattice.Label>> labelings = IterableExtensions.<List<FaceLattice.Label>>toList(IterableExtensions.<Integer, List<FaceLattice.Label>>map(new ExclusiveRange(0, (numCombos).intValue(), true), _function_2));
+      _xblockexpression = labelings;
+    }
+    return _xblockexpression;
   }
 
   /**

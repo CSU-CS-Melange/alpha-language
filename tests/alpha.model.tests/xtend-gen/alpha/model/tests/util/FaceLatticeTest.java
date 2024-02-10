@@ -2,11 +2,14 @@ package alpha.model.tests.util;
 
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
+import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
-import fr.irisa.cairn.jnimap.isl.ISLContext;
+import fr.irisa.cairn.jnimap.isl.ISLConstraint;
+import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
 import fr.irisa.cairn.jnimap.isl.ISLVertices;
 import java.util.ArrayList;
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -155,7 +159,9 @@ public class FaceLatticeTest {
    * Determines if two vertices are equal.
    */
   private static boolean areVerticesEqual(final ISLVertex v1, final ISLVertex v2) {
-    final boolean domainsEqual = v1.getDomain().isEqual(v2.getDomain());
+    final ISLBasicSet d1NoDivParam = v1.getDomain().removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v1.getDomain().getSpace().getNbParams());
+    final ISLBasicSet d2NoDivParam = v2.getDomain().removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v2.getDomain().getSpace().getNbParams());
+    final boolean domainsEqual = d1NoDivParam.isEqual(d2NoDivParam);
     final boolean exprsEqual = v1.getExpr().isPlainEqual(v2.getExpr());
     return (domainsEqual && exprsEqual);
   }
@@ -277,9 +283,39 @@ public class FaceLatticeTest {
    * Creates a face lattice from a desired set.
    */
   private static FaceLattice makeLattice(final String setDescriptor) {
-    final ISLBasicSet root = ISLBasicSet.buildFromString(ISLContext.getInstance(), setDescriptor).removeRedundancies();
+    final ISLBasicSet root = ISLUtil.toISLBasicSet(setDescriptor).removeRedundancies();
     final FaceLattice lattice = FaceLattice.create(root);
     return lattice;
+  }
+
+  /**
+   * Creates a list of FaceLattice.Label enum values from an integer list
+   */
+  private static FaceLattice.Label[] toLabels(final int[] labels) {
+    final Function1<Integer, FaceLattice.Label> _function = (Integer l) -> {
+      FaceLattice.Label _switchResult = null;
+      if (l != null) {
+        switch (l) {
+          case 1:
+            _switchResult = FaceLattice.Label.POS;
+            break;
+          case (-1):
+            _switchResult = FaceLattice.Label.NEG;
+            break;
+          case 0:
+            _switchResult = FaceLattice.Label.ZERO;
+            break;
+        }
+      }
+      return _switchResult;
+    };
+    return ((FaceLattice.Label[])Conversions.unwrapArray(ListExtensions.<Integer, FaceLattice.Label>map(((List<Integer>)Conversions.doWrapArray(labels)), _function), FaceLattice.Label.class));
+  }
+
+  @Test
+  public void testConstruction() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}");
+    Assert.assertTrue((lattice != null));
   }
 
   @Test
@@ -491,6 +527,154 @@ public class FaceLatticeTest {
     Assert.assertEquals(v3.toString(), "{ [i, j, k] -> [(k)] }");
     Assert.assertEquals(v4.toString(), "{ [i, j, k] -> [(-i - j - k)] }");
     Assert.assertEquals(v5.toString(), "{ [i, j, k] -> [(2i + j + 3k)] }");
+  }
+
+  @Test
+  public void testLabelInducingConstraint_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j] : 0<=i,j and i+j<N }");
+    final ISLSpace space = lattice.getRootInfo().getSpace();
+    final ISLAff aff = ISLUtil.toISLAff("{[i,j]->[2i+7j]}");
+    final ISLConstraint opConstraint = lattice.toLabelInducingConstraint(aff, space, FaceLattice.Label.POS);
+    final ISLConstraint iopConstraint = lattice.toLabelInducingConstraint(aff, space, FaceLattice.Label.NEG);
+    final ISLConstraint invConstraint = lattice.toLabelInducingConstraint(aff, space, FaceLattice.Label.ZERO);
+    String _string = opConstraint.toString();
+    boolean _equals = Objects.equal(_string, "[N] -> { [i, j] : -1 + 2i + 7j >= 0 }");
+    Assert.assertTrue(_equals);
+    String _string_1 = iopConstraint.toString();
+    boolean _equals_1 = Objects.equal(_string_1, "[N] -> { [i, j] : -1 - 2i - 7j >= 0 }");
+    Assert.assertTrue(_equals_1);
+    String _string_2 = invConstraint.toString();
+    boolean _equals_2 = Objects.equal(_string_2, "[N] -> { [i, j] : 2i + 7j = 0 }");
+    Assert.assertTrue(_equals_2);
+  }
+
+  @Test
+  public void testLabelingDomain_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}");
+    final Facet face = lattice.getRootInfo();
+    final int nbParams = face.getSpace().getNbParams();
+    final Pair<FaceLattice.Label[], ISLBasicSet> ld1 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(1), Integer.valueOf(1))), int.class))));
+    final Pair<FaceLattice.Label[], ISLBasicSet> ld2 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf((-1)), Integer.valueOf((-1)))), int.class))));
+    final Pair<FaceLattice.Label[], ISLBasicSet> ld3 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(0))), int.class))));
+    final Pair<FaceLattice.Label[], ISLBasicSet> ld4 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(0), Integer.valueOf((-1)))), int.class))));
+    Assert.assertTrue(ISLUtil.isTrivial(ld1.getValue()));
+    Assert.assertTrue(ISLUtil.isTrivial(ld2.getValue()));
+    Assert.assertTrue(ISLUtil.isTrivial(ld3.getValue()));
+    Assert.assertFalse(ISLUtil.isTrivial(ld4.getValue()));
+    Assert.assertEquals(ld4.getValue().toString(), "[N] -> { [i, j] : j = 0 and i > 0 }");
+  }
+
+  @Test
+  public void testEnumerateLabels_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i,j,k and i+j+k<N}");
+    final List<FaceLattice.Label> validLabels1 = Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.NEG, FaceLattice.Label.ZERO));
+    final List<FaceLattice.Label> validLabels2 = Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.ZERO));
+    final List<List<FaceLattice.Label>> l1 = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels1, FaceLattice.Label.class)), 2);
+    final List<List<FaceLattice.Label>> l2 = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels2, FaceLattice.Label.class)), 2);
+    Assert.assertEquals(l1.size(), (3 * 3));
+    Assert.assertEquals(l2.size(), (2 * 2));
+    final List<List<FaceLattice.Label>> l3 = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels1, FaceLattice.Label.class)), 5);
+    final List<List<FaceLattice.Label>> l4 = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels2, FaceLattice.Label.class)), 5);
+    Assert.assertEquals(l3.size(), ((((3 * 3) * 3) * 3) * 3));
+    Assert.assertEquals(l4.size(), ((((2 * 2) * 2) * 2) * 2));
+  }
+
+  @Test
+  public void testEnumerateLabels_2() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i,j,k and i+j+k<N}");
+    final List<FaceLattice.Label> validLabels = Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.ZERO));
+    final List<List<FaceLattice.Label>> l2Facets = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels, FaceLattice.Label.class)), 2);
+    final List<List<FaceLattice.Label>> l3Facets = lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels, FaceLattice.Label.class)), 3);
+    Assert.assertEquals(l2Facets.size(), 4);
+    Assert.assertEquals(l3Facets.size(), 8);
+  }
+
+  @Test
+  public void testToDigitArray_1() {
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(13, 10, 4))).toString(), "[0, 0, 1, 3]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(1345, 10, 4))).toString(), "[1, 3, 4, 5]");
+  }
+
+  @Test
+  public void testToDigitArray_2() {
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(13, 16, 2))).toString(), "[0, 13]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(17, 16, 2))).toString(), "[1, 1]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(0, 16, 2))).toString(), "[0, 0]");
+    try {
+      Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(256, 16, 2))).toString(), "[1, 0, 0]");
+      Assert.fail("It is not be possible to represent 256 in base 16 with 2 digits");
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        Assert.assertTrue(true);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+  }
+
+  @Test
+  public void testToDigitArray_3() {
+    try {
+      FaceLattice.toPaddedDigitArray(256, 16, 2);
+      Assert.fail("It is not be possible to represent 256 in base 16 with 2 digits");
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        Assert.assertTrue(true);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+  }
+
+  @Test
+  public void testToDigitArray_4() {
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(12345, 16, 4))).toString(), "[3, 0, 3, 9]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(12345, 27, 3))).toString(), "[16, 25, 6]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(12346, 27, 5))).toString(), "[0, 0, 16, 25, 7]");
+    try {
+      FaceLattice.toPaddedDigitArray(12345, 10, 4);
+      Assert.fail("It is not be possible to represent 12345 in base 10 with 4 digits");
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        Assert.assertTrue(true);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+  }
+
+  @Test
+  public void testToDigitArray_5() {
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(15, 3, 3))).toString(), "[1, 2, 0]");
+    Assert.assertEquals(((List<Integer>)Conversions.doWrapArray(FaceLattice.toPaddedDigitArray(15, 3, 10))).toString(), "[0, 0, 0, 0, 0, 0, 0, 1, 2, 0]");
+  }
+
+  @Test
+  public void testFeasibleReuse_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i<=N and i<=j<2i}");
+    final Facet face = lattice.getRootInfo();
+    final Iterable<Facet> facets = lattice.getChildren(face);
+    final int nbParams = face.getSpace().getNbParams();
+    final ISLBasicSet reuseSpace = ISLUtil.toISLBasicSet("[N]->{[i,j]: j=0}");
+    final Function1<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>> _function = (List<FaceLattice.Label> label) -> {
+      return lattice.getLabelingDomain(face, ((FaceLattice.Label[])Conversions.unwrapArray(label, FaceLattice.Label.class)));
+    };
+    final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>> _function_1 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
+      FaceLattice.Label[] _key = ld.getKey();
+      ISLBasicSet _intersect = ld.getValue().intersect(reuseSpace.copy());
+      return Pair.<FaceLattice.Label[], ISLBasicSet>of(_key, _intersect);
+    };
+    final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Boolean> _function_2 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
+      boolean _isTrivial = ISLUtil.isTrivial(ld.getValue());
+      return Boolean.valueOf((!_isTrivial));
+    };
+    final Iterable<Pair<FaceLattice.Label[], ISLBasicSet>> labelings = IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>filter(ListExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>>map(ListExtensions.<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>>map(lattice.enumerateAllPossibleLabelings(FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf(0), Integer.valueOf(1))), int.class))), IterableExtensions.size(facets)), _function), _function_1), _function_2);
+    final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, String> _function_3 = (Pair<FaceLattice.Label[], ISLBasicSet> l) -> {
+      return ((List<FaceLattice.Label>)Conversions.doWrapArray(l.getKey())).toString();
+    };
+    final String labelingKeys = IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>, String>map(labelings, _function_3).toString();
+    Assert.assertTrue(labelingKeys.contains(((List<FaceLattice.Label>)Conversions.doWrapArray(FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf(1), Integer.valueOf(1))), int.class))))).toString()));
+    Assert.assertTrue(labelingKeys.contains(((List<FaceLattice.Label>)Conversions.doWrapArray(FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf((-1)), Integer.valueOf((-1)))), int.class))))).toString()));
   }
 
   @Test

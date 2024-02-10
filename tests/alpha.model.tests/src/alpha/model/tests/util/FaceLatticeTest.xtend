@@ -1,15 +1,17 @@
 package alpha.model.tests.util
 
 import alpha.model.util.FaceLattice
+import alpha.model.util.FaceLattice.Label
 import alpha.model.util.Facet
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet
-import fr.irisa.cairn.jnimap.isl.ISLContext
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLVertex
 import java.util.ArrayList
 import java.util.List
 import org.junit.Test
 
 import static org.junit.Assert.*
+
+import static extension alpha.model.util.ISLUtil.*
 
 class FaceLatticeTest {
 	////////////////////////////////////////////////////////////
@@ -128,7 +130,9 @@ class FaceLatticeTest {
 	
 	/** Determines if two vertices are equal. */
 	def private static areVerticesEqual(ISLVertex v1, ISLVertex v2) {
-		val domainsEqual = v1.domain.isEqual(v2.domain)
+		val d1NoDivParam = v1.domain.removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v1.domain.space.nbParams)
+		val d2NoDivParam = v2.domain.removeDivsInvolvingDims(ISLDimType.isl_dim_param, 0, v2.domain.space.nbParams)
+		val domainsEqual = d1NoDivParam.isEqual(d2NoDivParam)
 		val exprsEqual = v1.expr.isPlainEqual(v2.expr)
 		return domainsEqual && exprsEqual
 	}
@@ -253,15 +257,30 @@ class FaceLatticeTest {
 	
 	/** Creates a face lattice from a desired set. */
 	def private static makeLattice(String setDescriptor) {
-		val root = ISLBasicSet.buildFromString(ISLContext.instance, setDescriptor).removeRedundancies()
+		val root = setDescriptor.toISLBasicSet.removeRedundancies()
 		val lattice = FaceLattice.create(root)
 		//assertVerticesMatchISL(lattice)
 		return lattice
 	}
 	
+	/** Creates a list of FaceLattice.Label enum values from an integer list */
+	def private static Label[] toLabels(int[] labels) {
+		labels.map[l | switch l { 
+			case 1 : Label.POS
+			case -1 : Label.NEG
+			case 0 : Label.ZERO
+		}]
+	}
+	
 	////////////////////////////////////////////////////////////
 	// Unit Tests
 	////////////////////////////////////////////////////////////
+
+	@Test
+	def testConstruction() {
+		val lattice = makeLattice("[N]->{[i,j,k]: 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}")
+		assertTrue(lattice !== null)
+	}
 
 	@Test
 	def testEmptySet() {
@@ -478,6 +497,158 @@ class FaceLatticeTest {
 	}
 	
 	@Test
+	def testLabelInducingConstraint_1() {
+		val lattice = makeLattice('[N]->{[i,j] : 0<=i,j and i+j<N }')
+		val space = lattice.rootInfo.space
+		val aff = '{[i,j]->[2i+7j]}'.toISLAff
+		
+		val opConstraint = lattice.toLabelInducingConstraint(aff, space, Label.POS)
+		val iopConstraint = lattice.toLabelInducingConstraint(aff, space, Label.NEG)
+		val invConstraint = lattice.toLabelInducingConstraint(aff, space, Label.ZERO)
+		
+		/*
+		 *  POS-constraint should 2i+7j > 0
+		 *  NEG-constraint should 2i+7j < 0
+		 * ZERO-constraint should 2i+7j = 0
+		 */
+		assertTrue(opConstraint.toString == '[N] -> { [i, j] : -1 + 2i + 7j >= 0 }')
+		assertTrue(iopConstraint.toString == '[N] -> { [i, j] : -1 - 2i - 7j >= 0 }')
+		assertTrue(invConstraint.toString == '[N] -> { [i, j] : 2i + 7j = 0 }')
+	}
+	
+	@Test
+	def testLabelingDomain_1() {
+		val lattice = makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}")
+		
+		val face = lattice.rootInfo
+		val nbParams = face.space.nbParams
+		
+		// empty cases
+		val ld1 = lattice.getLabelingDomain(face, #[1,1,1].toLabels)
+		val ld2 = lattice.getLabelingDomain(face, #[-1,-1,-1].toLabels)
+		val ld3 = lattice.getLabelingDomain(face, #[0,0,0].toLabels)
+		
+		val ld4 = lattice.getLabelingDomain(face, #[1,0,-1].toLabels)
+		
+		assertTrue(ld1.value.isTrivial)
+		assertTrue(ld2.value.isTrivial)
+		assertTrue(ld3.value.isTrivial)
+		
+		assertFalse(ld4.value.isTrivial)
+		assertEquals(ld4.value.toString, '[N] -> { [i, j] : j = 0 and i > 0 }')
+	}
+	
+	@Test
+	def testEnumerateLabels_1() {
+		val lattice = makeLattice("[N]->{[i,j,k]: 0<=i,j,k and i+j+k<N}")
+		val validLabels1 = #[Label.POS, Label.NEG, Label.ZERO]
+		val validLabels2 = #[Label.POS, Label.ZERO]
+		
+		val l1 = lattice.enumerateAllPossibleLabelings(validLabels1, 2)
+		val l2 = lattice.enumerateAllPossibleLabelings(validLabels2, 2)
+		assertEquals(l1.size, 3*3)
+		assertEquals(l2.size, 2*2)
+		
+		val l3 = lattice.enumerateAllPossibleLabelings(validLabels1, 5)
+		val l4 = lattice.enumerateAllPossibleLabelings(validLabels2, 5)
+		assertEquals(l3.size, 3*3*3*3*3)
+		assertEquals(l4.size, 2*2*2*2*2)
+	}
+	
+	@Test
+	def testEnumerateLabels_2() {
+		val lattice = makeLattice("[N]->{[i,j,k]: 0<=i,j,k and i+j+k<N}")
+		val validLabels = #[Label.POS, Label.ZERO]
+		
+		val l2Facets = lattice.enumerateAllPossibleLabelings(validLabels, 2)
+		val l3Facets = lattice.enumerateAllPossibleLabelings(validLabels, 3)
+		
+		assertEquals(l2Facets.size, 4)
+		assertEquals(l3Facets.size, 8)
+	}
+	
+	@Test
+	def testToDigitArray_1() {
+		assertEquals(FaceLattice.toPaddedDigitArray(13, 10, 4).toString, '[0, 0, 1, 3]')
+		assertEquals(FaceLattice.toPaddedDigitArray(1345, 10, 4).toString, '[1, 3, 4, 5]')
+	}
+	
+	@Test
+	def testToDigitArray_2() {
+		assertEquals(FaceLattice.toPaddedDigitArray(13, 16, 2).toString, '[0, 13]')
+		assertEquals(FaceLattice.toPaddedDigitArray(17, 16, 2).toString, '[1, 1]')
+		assertEquals(FaceLattice.toPaddedDigitArray(0, 16, 2).toString, '[0, 0]')
+		try {
+		    assertEquals(FaceLattice.toPaddedDigitArray(256, 16, 2).toString, '[1, 0, 0]')
+		    fail("It is not be possible to represent 256 in base 16 with 2 digits");
+		} catch (Exception e) {
+			assertTrue(true)
+		}
+	}
+	
+	@Test
+	def testToDigitArray_3() {
+		try {
+		    FaceLattice.toPaddedDigitArray(256, 16, 2)
+		    fail("It is not be possible to represent 256 in base 16 with 2 digits");
+		} catch (Exception e) {
+			assertTrue(true)
+		}
+	}
+	
+	@Test
+	def testToDigitArray_4() {
+		assertEquals(FaceLattice.toPaddedDigitArray(12345, 16, 4).toString, '[3, 0, 3, 9]')
+		assertEquals(FaceLattice.toPaddedDigitArray(12345, 27, 3).toString, '[16, 25, 6]')
+		assertEquals(FaceLattice.toPaddedDigitArray(12346, 27, 5).toString, '[0, 0, 16, 25, 7]')
+		try {
+		    FaceLattice.toPaddedDigitArray(12345, 10, 4)
+		    fail("It is not be possible to represent 12345 in base 10 with 4 digits");
+		} catch (Exception e) {
+			assertTrue(true)
+		}
+	}
+	
+	@Test
+	def testToDigitArray_5() {
+		assertEquals(FaceLattice.toPaddedDigitArray(15, 3, 3).toString, '[1, 2, 0]')
+		assertEquals(FaceLattice.toPaddedDigitArray(15, 3, 10).toString, '[0, 0, 0, 0, 0, 0, 0, 1, 2, 0]')
+	}
+	
+	@Test
+	def testFeasibleReuse_1() {
+		val lattice = makeLattice("[N]->{[i,j]: 0<=i<=N and i<=j<2i}")
+		
+		val face = lattice.rootInfo
+		val facets = lattice.getChildren(face)
+		val nbParams = face.space.nbParams
+
+		// Check that the only two non-empty cases are indeed non-empty
+		val reuseSpace = '[N]->{[i,j]: j=0}'.toISLBasicSet
+		val labelings = lattice.enumerateAllPossibleLabelings(#[-1,0,1].toLabels, facets.size)
+		                       .map[label | lattice.getLabelingDomain(face, label)]
+		                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
+		                       .filter[ld | !ld.value.isTrivial]
+		
+		val labelingKeys = labelings.map[l | l.key.toString].toString
+		assertTrue(labelingKeys.contains(#[-1,1,1].toLabels.toString))
+		assertTrue(labelingKeys.contains(#[1,-1,-1].toLabels.toString))
+	}
+		
+	// The following partially completed test does not currently work.
+	// The set represents a pyramid with a square base.
+	// The issue is that saturating certain combinations of constraints
+	// causes additional constraints to be saturated.
+	// The face lattice code does not currently handle this correctly,
+	// resulting in many vertex nodes having the wrong number of saturated inequalities.
+//	@Test
+//	def squarePyramidTest() {
+//		val lattice = makeLattice("[N]->{[i,j,k]: 0<=i<=k and 0<=j<=k and 0<=k<=N}")
+//		assertFalse(lattice.isSimplicial)
+//		assertFaceCounts(lattice, 5, 8, 5, 1)
+//		assertRootHasChildren(lattice, 0..4)
+
+	@Test
 	def testNormalVector_4() {
 		val l = makeLattice("[N]->{[i,j,k]: 0<=i<=k and 0<=j<=k and 0<=k<=N}")
 		val func = [Facet f | 'f'+f.saturatedInequalityIndices.join -> f]
@@ -519,3 +690,4 @@ class FaceLatticeTest {
 	}
 	
 }
+

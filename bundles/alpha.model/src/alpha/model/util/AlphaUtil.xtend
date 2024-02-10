@@ -9,8 +9,17 @@ import alpha.model.AlphaSystem
 import alpha.model.AlphaVisitable
 import alpha.model.Equation
 import alpha.model.SystemBody
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLErrorException
 import fr.irisa.cairn.jnimap.isl.ISLFactory
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.JNIISLTools
 import java.util.LinkedList
 import java.util.List
@@ -19,15 +28,7 @@ import java.util.function.Supplier
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-
 /**
  * Utility methods for analysis and transformation of Alpha programs.
  * 
@@ -111,6 +112,20 @@ class AlphaUtil {
 		
 		return AlphaUtil.getContainerEquation(node.eContainer())
 	}
+	
+		def static AlphaPackage firstPackage(AlphaRoot root) {
+		if (root.elements.size > 0 && root.elements.get(0) instanceof AlphaPackage)
+			return root.elements.get(0) as AlphaPackage
+		return null
+	}
+	
+	def static AlphaSystem getSystem(AlphaPackage pkg, String name) {
+		val candidates = pkg.elements.map[s | s as AlphaSystem].filter[s | s.name == name].toList
+		if (candidates.size > 0)
+			return candidates.get(0)
+		return null
+	}
+	
 	/**
 	 * Selects an AlphaRoot that contains a given system name. The given system name may be
 	 * fully qualified or just the bare name. If the bare name cannot uniquely identify a 
@@ -263,6 +278,7 @@ class AlphaUtil {
 		return renameIndices(set, set.defaultDimNames)
 	}
 	
+	
 	static def renameIndices(ISLSet set, List<String> names) {
 		val n = set.getNbIndices()
 		var res = set;
@@ -358,6 +374,18 @@ class AlphaUtil {
 	}
 	
 	
+	static def renameDims(ISLAff aff, ISLDimType dimType, List<String> names) {
+        val n = aff.dim(dimType)
+        if (n > names.length) throw new RuntimeException("Need n or more names to rename n-d space.");
+        var res = aff;
+        for (i : 0..<n) {
+                res = res.setDimName(dimType, i, names.get(i))
+        }
+        
+        return res
+}
+	
+	
 	static def defaultDimNames(int n) {
 		defaultDimNames(0, n)
 	}
@@ -396,4 +424,5 @@ class AlphaUtil {
 	static def parseIntVector(String intVecStr) {
 		return parseIntArray(intVecStr).toList
 	}
+	
 }

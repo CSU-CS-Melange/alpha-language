@@ -28,6 +28,8 @@ import java.util.Set
 import java.util.TreeSet
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
+import java.util.List
+import alpha.model.AlphaInternalStateConstructor
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -37,11 +39,6 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  * a number of places in the original paper that discuss
  * a linear space (named L_P) = rays in vertex representation.
  * Cases where this linear space is meaningful are not supported.
- *  
- * Also, the cost metric is simplified to use the number of times
- * dimension saving simplifications are applied (SR, 
- * HigherOrderOperator, and Idempotence). When there is a tie, it 
- * selects the program with fewer equations.
  * 
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
@@ -61,7 +58,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	protected final  AlphaRoot originalProgram;
 	protected final String systemName;
 	protected final  int systemBodyID;
-	protected AlphaRoot optimizedProgram;
+	protected List<AlphaRoot> optimizedPrograms;
 	
 	protected new (SystemBody body) {
 		originalProgram = AlphaUtil.getContainerRoot(body);
@@ -79,8 +76,8 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	static def apply(SystemBody body) {
 		val SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
 		SROSA.run();
-		
-		return SROSA.optimizedProgram
+		AlphaInternalStateConstructor.recomputeContextDomain(SROSA.optimizedPrograms)
+		return SROSA.optimizedPrograms
 	}
 	
 	/**
@@ -95,7 +92,8 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		exploreDPcontext(DPcontext)
 		
 		debug("After DP", DPcontext.state)
-		optimizedProgram = DPcontext.state.root
+		val ls = DPcontext.leafStates.toList
+		optimizedPrograms = DPcontext.leafStates.map[s|s.root]
 	}
 	
 	/**
@@ -155,6 +153,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		//The child context has all but the target equation put in the excluded list
 		//This is to explore only the equations added as a result of transforming the target equation
 		val childContext = context.copy
+		childContext.parent = context
 		childContext.excludedEquations.addAll(context.state.body.standardEquations.filter[e|e != eq].map[e|e.variable.name])
 		
 		while(!sideEffectFreeTransformations(childContext.state.body, eq.variable.name)) {}
@@ -190,30 +189,21 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 				context.state = childContext.state;
 				context.excludeExploredEquationsInChildContext(childContext)
 			}
+			
 			context.markFinishedEquation(eq)
 			return
 		}
 		
 		//Otherwise apply the DP step and
-		val childContexts = new ArrayList<DynamicProgrammingContext>(candidates.size) 
 		for (step : candidates) {
 			debug(String.format("Applying Step: %s", step.description))
 			val child = childContext.copy
 			child.applyDPStep(step)
 			exploreDPcontext(child)
-			childContexts.add(child)
+			context.children.add(child)
 		}
 		
-		//use number of application of SR as the main cost metric, then number of equations as tie breaker
-		val bestChildState = childContexts.maxBy[c|c.state.nbSR*1000-c.state.body.standardEquations.size].state
-		
-		if (bestChildState.nbSR > context.state.nbSR) {
-			context.state = bestChildState;
-			context.excludeExploredEquationsInChildContext(childContext)
-			context.markFinishedEquation(eq)
-		} else {
-			context.markFinishedEquation(eq)
-		}
+		context.markFinishedEquation(eq)
 	}
 	
 	/**
@@ -288,9 +278,12 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		protected ProgramState state;
 		protected Set<String> excludedEquations = new TreeSet<String>();
 		protected Set<String> exploredEquations = new TreeSet<String>();
+		protected DynamicProgrammingContext parent;
+		protected LinkedList<DynamicProgrammingContext> children;
 		
 		new (ProgramState state) {
 			this.state = state;
+			this.children = new LinkedList<DynamicProgrammingContext>
 		}
 		
 		protected def markFinishedEquation(String eqName) {
@@ -310,6 +303,24 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 				copy.excludedEquations.add(ee)
 			
 			return copy
+		}
+		
+		def isLeaf() {
+			children.empty
+		}
+	
+		def List<ProgramState> leafStates() {
+			if (isLeaf) {
+				return #[state]
+			}
+			val states = new ArrayList<ProgramState>
+			children.forEach[c|states.addAll(c.leafStates)]
+			return states
+		}
+	
+		def addChild(DynamicProgrammingContext child) {
+			child.parent = this
+			children.add(child)
 		}
 	}
 	
