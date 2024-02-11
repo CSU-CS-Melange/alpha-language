@@ -281,13 +281,14 @@ class Facet {
 		// at least one index variable (the rank of said matrix).
 		
 		// Take the set of equality constraints,
-		// drop any rows which do not involve at least one constraint,
+		// drop any rows which do not involve at least one index,
 		// then compute the rank of the remaining matrix.
 		val linearlyIndependentIndexEqualities =
 			(equalities.nbRows >.. 0)
 			.reject[row | constraintInvolvesIndex(equalities, row, indexCount)]
 			.fold(equalities.copy(), [mat, row | mat.dropRows(row, 1)])
 			.rank
+
 
 		return indexCount - linearlyIndependentIndexEqualities
 	}

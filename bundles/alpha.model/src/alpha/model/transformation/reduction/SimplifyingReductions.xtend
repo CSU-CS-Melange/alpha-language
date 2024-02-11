@@ -203,7 +203,7 @@ class SimplifyingReductions {
 		EcoreUtil.replace(targetReduce, mainCaseExpr)
 		
 		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
-		println(Show.print(containerSystemBody))
+//		println(Show.print(containerSystemBody))
 		
 		if (!DISABLE_POST_PROCESSING) {
 			SimplifyExpressions.apply(containerSystemBody)
@@ -213,8 +213,8 @@ class SimplifyingReductions {
 		}
 		
 		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
-		println(Show.print(containerSystemBody))
-		println()
+//		println(Show.print(containerSystemBody))
+//		println()
 	}
 	
 	
@@ -374,6 +374,9 @@ class SimplifyingReductions {
 		val lattice = FaceLattice.create(are.body.contextDomain)
 		val face = lattice.rootInfo
 		val facets = lattice.getChildren(face).toList
+		
+		if (facets.size == 0) 
+			return vectors
 		
 		// identify valid labels
 		val validLabels = new ArrayList<FaceLattice.Label>

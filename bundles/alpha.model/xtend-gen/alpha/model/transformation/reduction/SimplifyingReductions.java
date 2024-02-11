@@ -28,7 +28,6 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
-import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -232,7 +231,6 @@ public class SimplifyingReductions {
     }
     EcoreUtil.replace(this.targetReduce, mainCaseExpr);
     AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
-    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
     if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
       SimplifyExpressions.apply(this.containerSystemBody);
       Normalize.apply(this.containerSystemBody);
@@ -240,8 +238,6 @@ public class SimplifyingReductions {
       Normalize.apply(this.containerSystemBody);
     }
     AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
-    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
-    InputOutput.println();
   }
 
   /**
@@ -385,6 +381,11 @@ public class SimplifyingReductions {
     final FaceLattice lattice = FaceLattice.create(are.getBody().getContextDomain());
     final Facet face = lattice.getRootInfo();
     final List<Facet> facets = IterableExtensions.<Facet>toList(lattice.getChildren(face));
+    int _size = facets.size();
+    boolean _equals = (_size == 0);
+    if (_equals) {
+      return vectors;
+    }
     final ArrayList<FaceLattice.Label> validLabels = new ArrayList<FaceLattice.Label>();
     validLabels.addAll(Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.ZERO)));
     boolean _hasInverse = AlphaOperatorUtil.hasInverse(are.getOperator());

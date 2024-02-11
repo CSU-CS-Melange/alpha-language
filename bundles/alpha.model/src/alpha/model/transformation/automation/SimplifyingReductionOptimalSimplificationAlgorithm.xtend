@@ -31,6 +31,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import java.util.List
 import alpha.model.AlphaInternalStateConstructor
 
+import static extension alpha.model.util.ISLUtil.dimensionality
+
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
  * 
@@ -43,7 +45,7 @@ import alpha.model.AlphaInternalStateConstructor
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 	
 	private def debug(String content) {
 		if (DEBUG)
@@ -240,10 +242,15 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		
 		val candidates = new LinkedList<DynamicProgrammingStep>();
 		
-		//SimplifyingReductions
-		val vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
-		for (vec : vectors) {
-			candidates.add(new StepSimplifyingReduction(targetRE, vec, nbParams));
+		//SimplifyingReductions if the dimensionality of the reduction body is bigger 
+		// than the answer space
+		val answerDimensionality = targetRE.contextDomain.dimensionality
+		val reBodyDimensionality = targetRE.body.contextDomain.dimensionality
+		if (answerDimensionality < reBodyDimensionality) {
+			val vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
+			for (vec : vectors) {
+				candidates.add(new StepSimplifyingReduction(targetRE, vec, nbParams));
+			}
 		}
 		
 		//Idempotent

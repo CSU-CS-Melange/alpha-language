@@ -27,6 +27,7 @@ import alpha.model.transformation.reduction.SameOperatorSimplification;
 import alpha.model.transformation.reduction.SimplifyingReductions;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
+import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -192,7 +193,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     }
   }
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
 
   private void debug(final String content) {
     if (SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG) {
@@ -408,10 +409,15 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     final int nbParams = targetRE.getExpressionDomain().getNbParams();
     final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetRE);
     final LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidates = new LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>();
-    final LinkedList<long[]> vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
-    for (final long[] vec : vectors) {
-      SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction _stepSimplifyingReduction = new SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction(targetRE, vec, nbParams);
-      candidates.add(_stepSimplifyingReduction);
+    final Integer answerDimensionality = ISLUtil.dimensionality(targetRE.getContextDomain());
+    final Integer reBodyDimensionality = ISLUtil.dimensionality(targetRE.getBody().getContextDomain());
+    boolean _lessThan = (answerDimensionality.compareTo(reBodyDimensionality) < 0);
+    if (_lessThan) {
+      final LinkedList<long[]> vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
+      for (final long[] vec : vectors) {
+        SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction _stepSimplifyingReduction = new SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction(targetRE, vec, nbParams);
+        candidates.add(_stepSimplifyingReduction);
+      }
     }
     boolean _testLegality = Idempotence.testLegality(targetRE, SSAR);
     if (_testLegality) {
