@@ -80,7 +80,7 @@ class ISLUtil {
 			.reject[row | constraintInvolvesIndex(eqMatrix, row, set.nbIndices)]
 			.fold(eqMatrix.copy(), [mat, row | mat.dropRows(row, 1)])
 			.rank
-
+	
 		val ineqMatrix = setNoRedundancies.toISLInequalityMatrix
 		                                  .dropCols(set.nbParams + set.nbIndices, 1)
 		val ineqRows = (0..<ineqMatrix.nbRows).map[r | ineqMatrix.toLongMatrix.get(r)].toList

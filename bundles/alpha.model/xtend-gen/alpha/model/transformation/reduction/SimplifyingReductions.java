@@ -88,7 +88,7 @@ public class SimplifyingReductions {
     private BINARY_OP invOP;
   }
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   /**
    * Setting this variable to true disables all the

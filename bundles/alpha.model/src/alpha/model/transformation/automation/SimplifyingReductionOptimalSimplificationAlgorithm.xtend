@@ -32,6 +32,10 @@ import java.util.List
 import alpha.model.AlphaInternalStateConstructor
 
 import static extension alpha.model.util.ISLUtil.dimensionality
+import static extension alpha.model.util.AlphaUtil.*
+import static extension java.lang.String.format
+import java.util.Map
+import java.util.HashMap
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -45,7 +49,9 @@ import static extension alpha.model.util.ISLUtil.dimensionality
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
+	
+	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
 	
 	private def debug(String content) {
 		if (DEBUG)
@@ -61,6 +67,15 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	protected final String systemName;
 	protected final  int systemBodyID;
 	protected List<AlphaRoot> optimizedPrograms;
+	protected Map<AlphaRoot, List<DynamicProgrammingStep>> pathsToOptimizedPrograms;
+	
+	def getOptimizedPrograms() {
+		optimizedPrograms
+	}
+	
+	def getPathsToOptimizedPrograms() {
+		pathsToOptimizedPrograms
+	}
 	
 	protected new (SystemBody body) {
 		originalProgram = AlphaUtil.getContainerRoot(body);
@@ -79,7 +94,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		val SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
 		SROSA.run();
 		AlphaInternalStateConstructor.recomputeContextDomain(SROSA.optimizedPrograms)
-		return SROSA.optimizedPrograms
+		return SROSA
 	}
 	
 	/**
@@ -94,8 +109,17 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		exploreDPcontext(DPcontext)
 		
 		debug("After DP", DPcontext.state)
-		val ls = DPcontext.leafStates.toList
-		optimizedPrograms = DPcontext.leafStates.map[s|s.root]
+		//optimizedPrograms = DPcontext.leafStates.map[s | s.root]
+		val statesSteps = DPcontext.stepsToLeafStates
+		pathsToOptimizedPrograms = new HashMap<AlphaRoot, List<DynamicProgrammingStep>>
+		statesSteps.forEach[stateSteps | 
+			val root = stateSteps.key.root
+			val steps = stateSteps.value
+			pathsToOptimizedPrograms.put(root, steps)
+		]
+		//optimizedPrograms = DPcontext.stepsToLeafStates.map[stateSteps | stateSteps.key.root]
+		optimizedPrograms = statesSteps.map[stateSteps | stateSteps.key.root]
+		println
 	}
 	
 	/**
@@ -120,18 +144,25 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		new ProgramState(copyProg);
 	}
 	
+	String INDENT = ''
+	
 	/**
 	 * The algorithm optimizes each equation one by one. There are some 
 	 * cases where the order and choice of reuse vectors influences schedulability,
 	 * but this is not considered in the current implementation.
 	 */
 	private def void exploreDPcontext(DynamicProgrammingContext DPcontext) {
+		val old_INDENT = INDENT
+		INDENT = '+-- ' + INDENT 
 		while (DPcontext.hasNext) {
 			val eq = DPcontext.getNext
 			debug(String.format("Optimizing Equation: %s", eq.variable.name))
+			val stepStr = DPcontext.step === null ? '' : DPcontext.step.description
+			println(String.format("%sequ %s (%s)", INDENT, eq.variable.name, stepStr))
 			
 			optimizeEquation(DPcontext, eq)
 		}
+		INDENT = old_INDENT
 	}
 	
 	/**
@@ -155,6 +186,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		//The child context has all but the target equation put in the excluded list
 		//This is to explore only the equations added as a result of transforming the target equation
 		val childContext = context.copy
+		
 		childContext.parent = context
 		childContext.excludedEquations.addAll(context.state.body.standardEquations.filter[e|e != eq].map[e|e.variable.name])
 		
@@ -200,6 +232,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		for (step : candidates) {
 			debug(String.format("Applying Step: %s", step.description))
 			val child = childContext.copy
+			child.step = step
 			child.applyDPStep(step)
 			exploreDPcontext(child)
 			context.children.add(child)
@@ -263,9 +296,11 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			candidates.add(new StepHigherOrderOperator(targetRE));
 		}
 		
-		//Decomposition with side-effects
-		for (pair : SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE)) {
-			candidates.add(new StepReductionDecomposition(targetRE, pair.key, pair.value))
+		if (DO_DECOMPOSITION_WITH_SIDE_EFFECTS) {
+			//Decomposition with side-effects
+			for (pair : SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE)) {
+				candidates.add(new StepReductionDecomposition(targetRE, pair.key, pair.value))
+			}
 		}
 		
 		return candidates;
@@ -287,10 +322,16 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		protected Set<String> exploredEquations = new TreeSet<String>();
 		protected DynamicProgrammingContext parent;
 		protected LinkedList<DynamicProgrammingContext> children;
+		protected DynamicProgrammingStep step;
 		
-		new (ProgramState state) {
+		new(ProgramState state) {
 			this.state = state;
 			this.children = new LinkedList<DynamicProgrammingContext>
+		}
+		
+		new(ProgramState state, DynamicProgrammingStep step) {
+			this(state)
+			this.step = step
 		}
 		
 		protected def markFinishedEquation(String eqName) {
@@ -324,6 +365,23 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			children.forEach[c|states.addAll(c.leafStates)]
 			return states
 		}
+		
+		/** Gives the list of leafs and the steps it took to get to each leaf state */
+		def List<Pair<ProgramState, List<DynamicProgrammingStep>>> stepsToLeafStates() {
+			if (isLeaf) {
+				return #[state -> #[step]]
+			}
+			
+			val ret = new ArrayList<Pair<ProgramState, List<DynamicProgrammingStep>>>
+			for (child : children) {
+				val steps = child.stepsToLeafStates.map[pair |
+					// add current step to the front
+					pair.key -> (#[step] + pair.value).toList  
+				]
+				ret.addAll(steps)
+			}
+			ret
+		}
 	
 		def addChild(DynamicProgrammingContext child) {
 			child.parent = this
@@ -351,17 +409,33 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		ReductionDecomposition.apply(re, step.innerProjection, step.outerProjection)
 	}
 	
-	protected static abstract class DynamicProgrammingStep {
+	static abstract class DynamicProgrammingStep {
 		protected val EList<Integer> nodeID
+		protected AbstractReduceExpression re;
 		
 		new (AbstractReduceExpression targetRE) {
-			nodeID = targetRE.nodeID	
+			nodeID = targetRE.nodeID
+			re = targetRE	
 		}
 		
 		abstract def String description();
 	}
 	
-	protected static class StepSimplifyingReduction extends DynamicProgrammingStep  {
+	static class StepBeginEquation extends DynamicProgrammingStep  {
+		
+		new(AbstractReduceExpression targetRE) {
+			super(targetRE)
+		}
+		
+		override description() {
+			val eq = re.getContainerEquation
+			val eqVarName = (eq instanceof StandardEquation) ? (eq as StandardEquation).variable.name : null 
+			val toEqStr = (eqVarName !== null) ? 'to %s'.format(eqVarName) : ''
+			String.format("Optimize equation %s", toEqStr);
+		}
+	}
+	
+	static class StepSimplifyingReduction extends DynamicProgrammingStep  {
 		long[] reuseDepNoParams;
 		
 		new(AbstractReduceExpression targetRE, long[] reuseDepNoParams, int nbParams) {
@@ -370,11 +444,14 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		}
 		
 		override description() {
-			String.format("Apply SimplifyingReduction with: %s", MatrixOperations.toString(reuseDepNoParams));
+			val eq = re.getContainerEquation
+			val eqVarName = (eq instanceof StandardEquation) ? (eq as StandardEquation).variable.name : null 
+			val toEqStr = (eqVarName !== null) ? 'to %s'.format(eqVarName) : ''
+			String.format("Apply SimplifyingReduction%s with: %s", toEqStr, MatrixOperations.toString(reuseDepNoParams));
 		}
 	}
 		
-	protected static class StepIdempotence extends DynamicProgrammingStep {
+	static class StepIdempotence extends DynamicProgrammingStep {
 		
 		new(AbstractReduceExpression targetRE) {
 			super(targetRE)
@@ -385,7 +462,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		}
 	}
 	
-	protected static class StepHigherOrderOperator extends DynamicProgrammingStep {
+	static class StepHigherOrderOperator extends DynamicProgrammingStep {
 		
 		new(AbstractReduceExpression targetRE) {
 			super(targetRE)
@@ -396,19 +473,24 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		}
 	}
 	
-	protected static class StepReductionDecomposition extends DynamicProgrammingStep {
+	static class StepReductionDecomposition extends DynamicProgrammingStep {
 		
 		ISLMultiAff innerProjection
 		ISLMultiAff outerProjection
+		
+		ISLMultiAff _inner
+		ISLMultiAff _outer
 		
 		new(AbstractReduceExpression targetRE, ISLMultiAff innerF, ISLMultiAff outerF) {
 			super(targetRE)
 			innerProjection = innerF;
 			outerProjection = outerF;
+			_inner = innerF.copy
+			_outer = outerF.copy
 		}
 		
 		override description() {
-			String.format("Apply ReductionDecomposition with %s o %s", outerProjection, innerProjection);
+			String.format("Apply ReductionDecomposition with %s o %s", _outer, _inner);
 		}
 	}
 	

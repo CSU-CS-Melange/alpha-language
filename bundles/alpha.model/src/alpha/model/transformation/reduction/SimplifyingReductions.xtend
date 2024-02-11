@@ -45,7 +45,7 @@ import alpha.model.util.Show
  */
 class SimplifyingReductions {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 
 	/**
 	 * Setting this variable to true disables all the
