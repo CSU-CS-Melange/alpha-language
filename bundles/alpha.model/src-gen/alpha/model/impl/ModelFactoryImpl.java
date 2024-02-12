@@ -4,6 +4,9 @@ package alpha.model.impl;
 
 import alpha.model.*;
 
+import alpha.model.util.FaceLattice;
+import alpha.model.util.Facet;
+
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
@@ -171,6 +174,10 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 				return createIntegerQueueFromString(eDataType, initialValue);
 			case ModelPackage.STRING:
 				return createStringFromString(eDataType, initialValue);
+			case ModelPackage.FACET:
+				return createFacetFromString(eDataType, initialValue);
+			case ModelPackage.FACE_LATTICE:
+				return createFaceLatticeFromString(eDataType, initialValue);
 			case ModelPackage.INT:
 				return createintFromString(eDataType, initialValue);
 			case ModelPackage.FLOAT:
@@ -222,6 +229,10 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 				return convertIntegerQueueToString(eDataType, instanceValue);
 			case ModelPackage.STRING:
 				return convertStringToString(eDataType, instanceValue);
+			case ModelPackage.FACET:
+				return convertFacetToString(eDataType, instanceValue);
+			case ModelPackage.FACE_LATTICE:
+				return convertFaceLatticeToString(eDataType, instanceValue);
 			case ModelPackage.INT:
 				return convertintToString(eDataType, instanceValue);
 			case ModelPackage.FLOAT:
@@ -1116,6 +1127,42 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 	 * @generated
 	 */
 	public String convertStringToString(EDataType eDataType, Object instanceValue) {
+		return super.convertToString(eDataType, instanceValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public Facet createFacetFromString(EDataType eDataType, String initialValue) {
+		return (Facet)super.createFromString(eDataType, initialValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public String convertFacetToString(EDataType eDataType, Object instanceValue) {
+		return super.convertToString(eDataType, instanceValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public FaceLattice createFaceLatticeFromString(EDataType eDataType, String initialValue) {
+		return (FaceLattice)super.createFromString(eDataType, initialValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public String convertFaceLatticeToString(EDataType eDataType, Object instanceValue) {
 		return super.convertToString(eDataType, instanceValue);
 	}
 

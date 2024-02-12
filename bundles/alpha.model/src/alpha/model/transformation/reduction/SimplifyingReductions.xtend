@@ -19,6 +19,7 @@ import alpha.model.util.AlphaUtil
 import alpha.model.util.DomainOperations
 import alpha.model.util.FaceLattice
 import alpha.model.util.FaceLattice.Label
+import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLContext
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
@@ -36,7 +37,9 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
 import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
-import alpha.model.util.Show
+import static extension alpha.model.util.AffineFunctionOperations.computeKernel
+import static extension alpha.model.util.AffineFunctionOperations.toLinearPartOnlyMatrix
+import static extension alpha.model.util.AffineFunctionOperations.isUniform
 
 /**
  * Implementation of Theorem 5 in the original Simplifying Reductions paper.
@@ -45,7 +48,7 @@ import alpha.model.util.Show
  */
 class SimplifyingReductions {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 
 	/**
 	 * Setting this variable to true disables all the
@@ -100,8 +103,34 @@ class SimplifyingReductions {
 		apply(reduce, reduce.longVecToMultiAff(reuseDepNoParams));
 	}
 	
+	static def long[] asLongVector(ISLMultiAff reuseDep) {
+		// reuseDep is a uniform function
+		reuseDep.getAffs.map[aff | aff.getConstant]
+	}
+	
 	protected def void simplify() {
 		val BE = computeBasicElements(targetReduce, reuseDep)
+		
+		// compute the labelings of the facets induced by reuseDep
+		val facet = targetReduce.facet
+		val children = facet.getChildren
+		val labelings = targetReduce.facet.getLabeling(reuseDep.asLongVector)
+		val nbChildFacets = labelings.length
+		val posFacets = (0..<nbChildFacets).filter[i | labelings.get(i) == Label.POS].map[i | children.get(i)]
+		val negFacets = (0..<nbChildFacets).filter[i | labelings.get(i) == Label.NEG].map[i | children.get(i)]
+		
+		val posDomains = posFacets.map[f | f.toBasicSet].toList
+		val negDomains = negFacets.map[f | f.toBasicSet].toList
+		
+		
+		println
+		/*
+		 * Xadd and Xsub should be split into individual facets
+		 * right now their body domains are the unions of facets
+		 * 
+		 * DE - DE' should equal the union of the Label.POS facets
+		 * and DE' - DE be the unions of the Label.NEG facets
+		 */
 		
 		//Xadd = reduce( op, proj, (DE - DE') : E )
 		val XaddName = defineXaddEquationName.apply(this)
@@ -212,9 +241,9 @@ class SimplifyingReductions {
 			Normalize.apply(containerSystemBody)
 		}
 		
-		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
-//		println(Show.print(containerSystemBody))
-//		println()
+//		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
+		println(Show.print(containerSystemBody))
+		println()
 	}
 	
 	
@@ -371,9 +400,11 @@ class SimplifyingReductions {
 		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
 		
 		// construct face lattice
-		val lattice = FaceLattice.create(are.body.contextDomain)
-		val face = lattice.rootInfo
-		val facets = lattice.getChildren(face).toList
+//		val lattice = FaceLattice.create(are.body.contextDomain)
+//		val face = lattice.rootInfo
+		val face = are.facet
+		val facets = face.getChildren.toList
+		
 		
 		if (facets.size == 0) 
 			return vectors
@@ -385,10 +416,10 @@ class SimplifyingReductions {
 			validLabels.add(Label.NEG)
 		}
 		// enumerate all valid labelings
-		val labelings = lattice.enumerateAllPossibleLabelings(validLabels, facets.size).toList
+		val labelings = face.enumerateAllPossibleLabelings(validLabels, facets.size).toList
 		
 		// find the labelings that have none-empty domains 
-		val labelingInducingDomains = labelings.map[l | lattice.getLabelingDomain(face, l)]
+		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
 		                                       .filter[ld | ! ld.value.isTrivial]
 		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
 		                                       .filter[ld | ! ld.value.isTrivial]

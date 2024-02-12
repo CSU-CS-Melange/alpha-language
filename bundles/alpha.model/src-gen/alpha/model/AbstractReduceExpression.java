@@ -2,6 +2,8 @@
  */
 package alpha.model;
 
+import alpha.model.util.Facet;
+
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 
 /**
@@ -16,6 +18,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
  *   <li>{@link alpha.model.AbstractReduceExpression#getOperator <em>Operator</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getProjectionExpr <em>Projection Expr</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getBody <em>Body</em>}</li>
+ *   <li>{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}</li>
  * </ul>
  *
  * @see alpha.model.ModelPackage#getAbstractReduceExpression()
@@ -93,6 +96,28 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	void setBody(AlphaExpression value);
 
 	/**
+	 * Returns the value of the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Zinternal facet</em>' attribute.
+	 * @see #setZ__internal_facet(Facet)
+	 * @see alpha.model.ModelPackage#getAbstractReduceExpression_Z__internal_facet()
+	 * @model unique="false" dataType="alpha.model.Facet"
+	 * @generated
+	 */
+	Facet getZ__internal_facet();
+
+	/**
+	 * Sets the value of the '{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Zinternal facet</em>' attribute.
+	 * @see #getZ__internal_facet()
+	 * @generated
+	 */
+	void setZ__internal_facet(Facet value);
+
+	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model kind="operation" dataType="alpha.model.JNIISLMultiAff" unique="false"
@@ -107,5 +132,21 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	 * @generated
 	 */
 	void accept(AlphaExpressionVisitor visitor);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model kind="operation" dataType="alpha.model.Facet" unique="false"
+	 * @generated
+	 */
+	Facet getFacet();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model facetDataType="alpha.model.Facet" facetUnique="false"
+	 * @generated
+	 */
+	void setFacet(Facet facet);
 
 } // AbstractReduceExpression

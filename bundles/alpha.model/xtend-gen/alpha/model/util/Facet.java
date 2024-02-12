@@ -7,6 +7,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -15,6 +16,7 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Pure;
 
 /**
@@ -151,6 +153,22 @@ public class Facet {
     return new Facet(basicSet, toSaturate, ancestor.lattice);
   }
 
+  public Iterable<Facet> getChildren() {
+    return this.lattice.getChildren(this);
+  }
+
+  public Pair<FaceLattice.Label[], ISLBasicSet> getLabelingDomain(final FaceLattice.Label[] labeling) {
+    return this.lattice.getLabelingDomain(this, labeling);
+  }
+
+  public List<List<FaceLattice.Label>> enumerateAllPossibleLabelings(final FaceLattice.Label[] validLabels, final int nbFacets) {
+    return this.lattice.enumerateAllPossibleLabelings(validLabels, nbFacets);
+  }
+
+  public FaceLattice.Label[] getLabeling(final long[] vector) {
+    return this.lattice.getLabeling(this, vector);
+  }
+
   /**
    * Returns <code>true</code> if this set is a child face of the given set, and <code>false</code> otherwise.
    */
@@ -229,6 +247,19 @@ public class Facet {
     final ISLMatrix matrix = DomainOperations.toISLInequalityMatrix(ineq.copy().intersect(lp.copy()));
     final ISLAff componentInParent = AffineFactorizer.toExpression(ISLUtil.transpose(matrix), vecSpace).getAff(0).dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
     return componentInParent;
+  }
+
+  public long[] getLongNormalVector(final Facet parent) {
+    Iterable<Long> _xblockexpression = null;
+    {
+      final int nbIndices = this.space.getNbIndices();
+      final ISLAff vec = this.getNormalVector(parent);
+      final Function1<Integer, Long> _function = (Integer i) -> {
+        return Long.valueOf(vec.getCoefficientVal(ISLDimType.isl_dim_in, (i).intValue()).asLong());
+      };
+      _xblockexpression = IterableExtensions.<Integer, Long>map(new ExclusiveRange(0, nbIndices, true), _function);
+    }
+    return ((long[])Conversions.unwrapArray(_xblockexpression, long.class));
   }
 
   /**

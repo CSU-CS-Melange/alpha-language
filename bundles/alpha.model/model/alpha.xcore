@@ -6,6 +6,8 @@ package alpha.model
 
 import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
+import alpha.model.util.Facet
+import alpha.model.util.FaceLattice
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
@@ -30,6 +32,8 @@ type ISL_FORMAT wraps ISL_FORMAT
 type ListVariableExpression wraps List<VariableExpression> 
 type IntegerQueue wraps Queue<Integer>
 type String wraps String
+type Facet wraps Facet
+type FaceLattice wraps FaceLattice
 type int wraps Integer
 type float wraps Float
 type double wraps Double
@@ -770,6 +774,7 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	REDUCTION_OP operator
 	contains JNIFunction projectionExpr
 	contains AlphaExpression body
+	Facet z__internal_facet
 	
 	op JNIISLMultiAff getProjection() {
 		if (projectionExpr.^type != POLY_OBJECT_TYPE.FUNCTION ) null
@@ -779,6 +784,9 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	op void accept(AlphaExpressionVisitor visitor) {
 		visitor.visitAbstractReduceExpression(this)
 	}
+	
+	op Facet getFacet() { if (z__internal_facet === null) FaceLattice.create(body.contextDomain).rootInfo else z__internal_facet }
+	op void setFacet(Facet facet) { z__internal_facet = facet }
 }
 class ReduceExpression extends AbstractReduceExpression {
 	

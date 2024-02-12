@@ -11,6 +11,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.util.DomainOperations.*
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 
 class ISLUtil {
 	

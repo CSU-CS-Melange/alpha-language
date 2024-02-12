@@ -1,5 +1,6 @@
 package alpha.model.util;
 
+import alpha.model.matrix.MatrixOperations;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -303,6 +304,52 @@ public class FaceLattice {
       _xblockexpression = labelings;
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Identifies the labels induced by a particular vector
+   */
+  public FaceLattice.Label[] getLabeling(final Facet facet, final long[] reuseVector) {
+    final Iterable<Facet> children = this.getChildren(facet);
+    final Function1<Facet, long[]> _function = (Facet f) -> {
+      return f.getLongNormalVector(facet);
+    };
+    final Iterable<long[]> normalVectors = IterableExtensions.<Facet, long[]>map(children, _function);
+    final Function1<long[], FaceLattice.Label> _function_1 = (long[] normalVector) -> {
+      try {
+        FaceLattice.Label _xblockexpression = null;
+        {
+          final long dotProduct = MatrixOperations.innerProduct(reuseVector, normalVector);
+          FaceLattice.Label _switchResult = null;
+          boolean _matched = false;
+          if ((dotProduct > 0)) {
+            _matched=true;
+            _switchResult = FaceLattice.Label.POS;
+          }
+          if (!_matched) {
+            if ((dotProduct < 0)) {
+              _matched=true;
+              _switchResult = FaceLattice.Label.NEG;
+            }
+          }
+          if (!_matched) {
+            if ((dotProduct == 0)) {
+              _matched=true;
+              _switchResult = FaceLattice.Label.ZERO;
+            }
+          }
+          if (!_matched) {
+            throw new Exception(("Failed to get labeling for " + reuseVector));
+          }
+          _xblockexpression = _switchResult;
+        }
+        return _xblockexpression;
+      } catch (Throwable _e) {
+        throw Exceptions.sneakyThrow(_e);
+      }
+    };
+    final Iterable<FaceLattice.Label> labelings = IterableExtensions.<long[], FaceLattice.Label>map(normalVectors, _function_1);
+    return ((FaceLattice.Label[])Conversions.unwrapArray(labelings, FaceLattice.Label.class));
   }
 
   /**

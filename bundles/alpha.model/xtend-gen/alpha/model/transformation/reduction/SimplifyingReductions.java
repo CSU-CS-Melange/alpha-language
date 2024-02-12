@@ -28,6 +28,8 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
+import alpha.model.util.Show;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -88,7 +90,7 @@ public class SimplifyingReductions {
     private BINARY_OP invOP;
   }
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
 
   /**
    * Setting this variable to true disables all the
@@ -159,8 +161,44 @@ public class SimplifyingReductions {
     SimplifyingReductions.apply(reduce, SimplifyingReductions.longVecToMultiAff(reduce, reuseDepNoParams));
   }
 
+  public static long[] asLongVector(final ISLMultiAff reuseDep) {
+    final Function1<ISLAff, Long> _function = (ISLAff aff) -> {
+      return Long.valueOf(aff.getConstant());
+    };
+    return ((long[])Conversions.unwrapArray(ListExtensions.<ISLAff, Long>map(reuseDep.getAffs(), _function), long.class));
+  }
+
   protected void simplify() {
     final SimplifyingReductions.BasicElements BE = SimplifyingReductions.computeBasicElements(this.targetReduce, this.reuseDep);
+    final Facet facet = this.targetReduce.getFacet();
+    final Iterable<Facet> children = facet.getChildren();
+    final FaceLattice.Label[] labelings = this.targetReduce.getFacet().getLabeling(SimplifyingReductions.asLongVector(this.reuseDep));
+    final int nbChildFacets = labelings.length;
+    final Function1<Integer, Boolean> _function = (Integer i) -> {
+      FaceLattice.Label _get = labelings[(i).intValue()];
+      return Boolean.valueOf(Objects.equal(_get, FaceLattice.Label.POS));
+    };
+    final Function1<Integer, Facet> _function_1 = (Integer i) -> {
+      return ((Facet[])Conversions.unwrapArray(children, Facet.class))[(i).intValue()];
+    };
+    final Iterable<Facet> posFacets = IterableExtensions.<Integer, Facet>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, nbChildFacets, true), _function), _function_1);
+    final Function1<Integer, Boolean> _function_2 = (Integer i) -> {
+      FaceLattice.Label _get = labelings[(i).intValue()];
+      return Boolean.valueOf(Objects.equal(_get, FaceLattice.Label.NEG));
+    };
+    final Function1<Integer, Facet> _function_3 = (Integer i) -> {
+      return ((Facet[])Conversions.unwrapArray(children, Facet.class))[(i).intValue()];
+    };
+    final Iterable<Facet> negFacets = IterableExtensions.<Integer, Facet>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, nbChildFacets, true), _function_2), _function_3);
+    final Function1<Facet, ISLBasicSet> _function_4 = (Facet f) -> {
+      return f.toBasicSet();
+    };
+    final List<ISLBasicSet> posDomains = IterableExtensions.<ISLBasicSet>toList(IterableExtensions.<Facet, ISLBasicSet>map(posFacets, _function_4));
+    final Function1<Facet, ISLBasicSet> _function_5 = (Facet f) -> {
+      return f.toBasicSet();
+    };
+    final List<ISLBasicSet> negDomains = IterableExtensions.<ISLBasicSet>toList(IterableExtensions.<Facet, ISLBasicSet>map(negFacets, _function_5));
+    InputOutput.println();
     final String XaddName = SimplifyingReductions.defineXaddEquationName.apply(this);
     {
       final ISLSet restrictDom = BE.origDE.copy().subtract(BE.DEp.copy());
@@ -237,7 +275,8 @@ public class SimplifyingReductions {
       PropagateSimpleEquations.apply(this.containerSystemBody);
       Normalize.apply(this.containerSystemBody);
     }
-    AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
+    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
+    InputOutput.println();
   }
 
   /**
@@ -378,9 +417,8 @@ public class SimplifyingReductions {
       return vectors;
     }
     final ISLBasicSet reuseSpace = DomainOperations.toBasicSetFromKernel(areSS, are.getBody().getContextDomain().getSpace());
-    final FaceLattice lattice = FaceLattice.create(are.getBody().getContextDomain());
-    final Facet face = lattice.getRootInfo();
-    final List<Facet> facets = IterableExtensions.<Facet>toList(lattice.getChildren(face));
+    final Facet face = are.getFacet();
+    final List<Facet> facets = IterableExtensions.<Facet>toList(face.getChildren());
     int _size = facets.size();
     boolean _equals = (_size == 0);
     if (_equals) {
@@ -392,9 +430,9 @@ public class SimplifyingReductions {
     if (_hasInverse) {
       validLabels.add(FaceLattice.Label.NEG);
     }
-    final List<List<FaceLattice.Label>> labelings = IterableExtensions.<List<FaceLattice.Label>>toList(lattice.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels, FaceLattice.Label.class)), facets.size()));
+    final List<List<FaceLattice.Label>> labelings = IterableExtensions.<List<FaceLattice.Label>>toList(face.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels, FaceLattice.Label.class)), facets.size()));
     final Function1<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>> _function = (List<FaceLattice.Label> l) -> {
-      return lattice.getLabelingDomain(face, ((FaceLattice.Label[])Conversions.unwrapArray(l, FaceLattice.Label.class)));
+      return face.getLabelingDomain(((FaceLattice.Label[])Conversions.unwrapArray(l, FaceLattice.Label.class)));
     };
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Boolean> _function_1 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
       boolean _isTrivial = ISLUtil.isTrivial(ld.getValue());

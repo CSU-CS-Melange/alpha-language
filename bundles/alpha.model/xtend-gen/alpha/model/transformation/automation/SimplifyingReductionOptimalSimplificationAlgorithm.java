@@ -291,7 +291,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     }
   }
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
 
   public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
 
@@ -413,14 +413,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
       {
         final StandardEquation eq = this.getNext(DPcontext);
         this.debug(String.format("Optimizing Equation: %s", eq.getVariable().getName()));
-        String _xifexpression = null;
-        if ((DPcontext.step == null)) {
-          _xifexpression = "";
-        } else {
-          _xifexpression = DPcontext.step.description();
-        }
-        final String stepStr = _xifexpression;
-        InputOutput.<String>println(String.format("%sequ %s (%s)", this.INDENT, eq.getVariable().getName(), stepStr));
         this.optimizeEquation(DPcontext, eq);
       }
     }

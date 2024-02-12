@@ -13,6 +13,8 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 
 import static extension alpha.model.util.AlphaUtil.renameDims
 import java.util.List
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import alpha.model.matrix.MatrixOperations
 
 /**
  * Constructs the face lattice of a given <code>ISLBasicSet</code>.
@@ -240,6 +242,24 @@ class FaceLattice {
 		labelings
 	}
 
+	/** Identifies the labels induced by a particular vector */
+	def Label[] getLabeling(Facet facet, long[] reuseVector) {
+		val children = getChildren(facet)
+		val normalVectors = children.map[f | f.getLongNormalVector(facet)]
+		val labelings = normalVectors
+			.map[normalVector |
+				val dotProduct = MatrixOperations.innerProduct(reuseVector, normalVector)  
+				switch dotProduct {
+					case dotProduct > 0 : Label.POS 
+					case dotProduct < 0 : Label.NEG
+					case dotProduct == 0 : Label.ZERO
+					default: 
+						// this should never happen
+						throw new Exception("Failed to get labeling for " + reuseVector) 
+			}]
+		
+		return labelings
+	}
 	
 	////////////////////////////////////////////////////////////
 	// Private Methods

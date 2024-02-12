@@ -3031,4 +3031,13 @@ public class MatrixOperations {
 		
 		return res;
 	}
+	
+	public static long innerProduct(long[] vecA, long[] vecB) {
+		long res = 0;
+		for (int i=0; i < vecA.length; i++) {
+			res += vecA[i] * vecB[i];
+		}
+		
+		return res;
+	}
 }

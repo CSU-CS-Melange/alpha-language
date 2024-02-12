@@ -49,7 +49,7 @@ import java.util.HashMap
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 	
 	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
 	
@@ -157,8 +157,8 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		while (DPcontext.hasNext) {
 			val eq = DPcontext.getNext
 			debug(String.format("Optimizing Equation: %s", eq.variable.name))
-			val stepStr = DPcontext.step === null ? '' : DPcontext.step.description
-			println(String.format("%sequ %s (%s)", INDENT, eq.variable.name, stepStr))
+//			val stepStr = DPcontext.step === null ? '' : DPcontext.step.description
+//			println(String.format("%sequ %s (%s)", INDENT, eq.variable.name, stepStr))
 			
 			optimizeEquation(DPcontext, eq)
 		}
@@ -228,7 +228,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			return
 		}
 		
-		//Otherwise apply the DP step and
+		//Otherwise apply the DP step and recurse
 		for (step : candidates) {
 			debug(String.format("Applying Step: %s", step.description))
 			val child = childContext.copy

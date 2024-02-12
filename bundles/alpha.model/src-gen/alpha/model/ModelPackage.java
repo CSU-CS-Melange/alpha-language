@@ -1739,13 +1739,22 @@ public interface ModelPackage extends EPackage {
 	int ABSTRACT_REDUCE_EXPRESSION__BODY = ALPHA_EXPRESSION_FEATURE_COUNT + 2;
 
 	/**
+	 * The feature id for the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET = ALPHA_EXPRESSION_FEATURE_COUNT + 3;
+
+	/**
 	 * The number of structural features of the '<em>Abstract Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 3;
+	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 4;
 
 	/**
 	 * The meta object id for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.
@@ -1819,6 +1828,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int REDUCE_EXPRESSION__BODY = ABSTRACT_REDUCE_EXPRESSION__BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_EXPRESSION__ZINTERNAL_FACET = ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET;
 
 	/**
 	 * The number of structural features of the '<em>Reduce Expression</em>' class.
@@ -1901,6 +1919,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_REDUCE_EXPRESSION__BODY = REDUCE_EXPRESSION__BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_REDUCE_EXPRESSION__ZINTERNAL_FACET = REDUCE_EXPRESSION__ZINTERNAL_FACET;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -1994,6 +2021,15 @@ public interface ModelPackage extends EPackage {
 	int ARG_REDUCE_EXPRESSION__BODY = ABSTRACT_REDUCE_EXPRESSION__BODY;
 
 	/**
+	 * The feature id for the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET = ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET;
+
+	/**
 	 * The number of structural features of the '<em>Arg Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -2074,6 +2110,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_ARG_REDUCE_EXPRESSION__BODY = ARG_REDUCE_EXPRESSION__BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zinternal facet</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET = ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -4625,6 +4670,26 @@ public interface ModelPackage extends EPackage {
 	int STRING = 93;
 
 	/**
+	 * The meta object id for the '<em>Facet</em>' data type.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see alpha.model.util.Facet
+	 * @see alpha.model.impl.ModelPackageImpl#getFacet()
+	 * @generated
+	 */
+	int FACET = 94;
+
+	/**
+	 * The meta object id for the '<em>Face Lattice</em>' data type.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see alpha.model.util.FaceLattice
+	 * @see alpha.model.impl.ModelPackageImpl#getFaceLattice()
+	 * @generated
+	 */
+	int FACE_LATTICE = 95;
+
+	/**
 	 * The meta object id for the '<em>int</em>' data type.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -4632,7 +4697,7 @@ public interface ModelPackage extends EPackage {
 	 * @see alpha.model.impl.ModelPackageImpl#getint()
 	 * @generated
 	 */
-	int INT = 94;
+	int INT = 96;
 
 	/**
 	 * The meta object id for the '<em>float</em>' data type.
@@ -4642,7 +4707,7 @@ public interface ModelPackage extends EPackage {
 	 * @see alpha.model.impl.ModelPackageImpl#getfloat()
 	 * @generated
 	 */
-	int FLOAT = 95;
+	int FLOAT = 97;
 
 	/**
 	 * The meta object id for the '<em>double</em>' data type.
@@ -4652,7 +4717,7 @@ public interface ModelPackage extends EPackage {
 	 * @see alpha.model.impl.ModelPackageImpl#getdouble()
 	 * @generated
 	 */
-	int DOUBLE = 96;
+	int DOUBLE = 98;
 
 	/**
 	 * The meta object id for the '<em>boolean</em>' data type.
@@ -4662,7 +4727,7 @@ public interface ModelPackage extends EPackage {
 	 * @see alpha.model.impl.ModelPackageImpl#getboolean()
 	 * @generated
 	 */
-	int BOOLEAN = 97;
+	int BOOLEAN = 99;
 
 
 	/**
@@ -5642,6 +5707,17 @@ public interface ModelPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getAbstractReduceExpression_Body();
+
+	/**
+	 * Returns the meta object for the attribute '{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Zinternal facet</em>'.
+	 * @see alpha.model.AbstractReduceExpression#getZ__internal_facet()
+	 * @see #getAbstractReduceExpression()
+	 * @generated
+	 */
+	EAttribute getAbstractReduceExpression_Z__internal_facet();
 
 	/**
 	 * Returns the meta object for class '{@link alpha.model.ReduceExpression <em>Reduce Expression</em>}'.
@@ -6968,6 +7044,28 @@ public interface ModelPackage extends EPackage {
 	EDataType getString();
 
 	/**
+	 * Returns the meta object for data type '{@link alpha.model.util.Facet <em>Facet</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for data type '<em>Facet</em>'.
+	 * @see alpha.model.util.Facet
+	 * @model instanceClass="alpha.model.util.Facet"
+	 * @generated
+	 */
+	EDataType getFacet();
+
+	/**
+	 * Returns the meta object for data type '{@link alpha.model.util.FaceLattice <em>Face Lattice</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for data type '<em>Face Lattice</em>'.
+	 * @see alpha.model.util.FaceLattice
+	 * @model instanceClass="alpha.model.util.FaceLattice"
+	 * @generated
+	 */
+	EDataType getFaceLattice();
+
+	/**
 	 * Returns the meta object for data type '{@link java.lang.Integer <em>int</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -7836,6 +7934,14 @@ public interface ModelPackage extends EPackage {
 		 * @generated
 		 */
 		EReference ABSTRACT_REDUCE_EXPRESSION__BODY = eINSTANCE.getAbstractReduceExpression_Body();
+
+		/**
+		 * The meta object literal for the '<em><b>Zinternal facet</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET = eINSTANCE.getAbstractReduceExpression_Z__internal_facet();
 
 		/**
 		 * The meta object literal for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.
@@ -8956,6 +9062,26 @@ public interface ModelPackage extends EPackage {
 		 * @generated
 		 */
 		EDataType STRING = eINSTANCE.getString();
+
+		/**
+		 * The meta object literal for the '<em>Facet</em>' data type.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see alpha.model.util.Facet
+		 * @see alpha.model.impl.ModelPackageImpl#getFacet()
+		 * @generated
+		 */
+		EDataType FACET = eINSTANCE.getFacet();
+
+		/**
+		 * The meta object literal for the '<em>Face Lattice</em>' data type.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see alpha.model.util.FaceLattice
+		 * @see alpha.model.impl.ModelPackageImpl#getFaceLattice()
+		 * @generated
+		 */
+		EDataType FACE_LATTICE = eINSTANCE.getFaceLattice();
 
 		/**
 		 * The meta object literal for the '<em>int</em>' data type.

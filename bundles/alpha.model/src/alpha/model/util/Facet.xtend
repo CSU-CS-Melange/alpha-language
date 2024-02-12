@@ -19,6 +19,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLAff
+import alpha.model.util.FaceLattice.Label
 
 /**
  * Contains useful information about an <code>ISLBasicSet</code>.
@@ -80,7 +81,6 @@ class Facet {
 	/** The space that the set resides in. */
 	ISLSpace space
 	
-
 	FaceLattice lattice
 	
 	////////////////////////////////////////////////////////////
@@ -142,6 +142,22 @@ class Facet {
 	////////////////////////////////////////////////////////////
 	// Public Methods
 	////////////////////////////////////////////////////////////
+	
+	def getChildren() {
+		lattice.getChildren(this)
+	}
+	
+	def getLabelingDomain(Label[] labeling) {
+		lattice.getLabelingDomain(this, labeling)
+	}
+	
+	def enumerateAllPossibleLabelings(Label[] validLabels, int nbFacets) {
+		lattice.enumerateAllPossibleLabelings(validLabels, nbFacets)
+	}
+	
+	def getLabeling(long[] vector) {
+		lattice.getLabeling(this, vector)
+	} 
 	
 	/** Returns <code>true</code> if this set is a child face of the given set, and <code>false</code> otherwise. */
 	def isChildOf(Facet other) {
@@ -225,6 +241,13 @@ class Facet {
 //		println
 		// vectors should have no param dims or constant values
 		return componentInParent
+	}
+	
+	def long[] getLongNormalVector(Facet parent) {
+		val nbIndices = space.nbIndices
+		val vec = getNormalVector(parent)
+		
+		(0..<nbIndices).map[i | vec.getCoefficientVal(ISLDimType.isl_dim_in, i).asLong]
 	}
 	
 	/** Returns the row index of the inequality characterizing the facet in its parent.
