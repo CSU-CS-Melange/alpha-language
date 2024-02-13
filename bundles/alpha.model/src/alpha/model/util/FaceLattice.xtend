@@ -282,7 +282,7 @@ class FaceLattice {
 	
 	/** Returns <code>true</code> if the root has at least one thick face, and <code>false</code> otherwise. */
 	def hasThickFaces() {
-		return rootInfo.effectivelySaturatedInequalities.nbRows > 0
+		return rootInfo.thickEqualities.nbRows > 0
 	}
 	
 	////////////////////////////////////////////////////////////

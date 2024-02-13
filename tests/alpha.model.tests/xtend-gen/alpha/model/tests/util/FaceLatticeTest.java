@@ -777,15 +777,11 @@ public class FaceLatticeTest {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=k<=-N+i+j and k<=2N-2i+j and -5+2N+i-2j<=k<=2N+i-2j}");
     final int dim = lattice.getRootInfo().getDimensionality();
     Assert.assertEquals(dim, 2);
-    final Consumer<ArrayList<Facet>> _function = (ArrayList<Facet> l) -> {
-      InputOutput.<String>println(l.toString());
-    };
-    lattice.getLattice().forEach(_function);
     FaceLatticeTest.assertFaceCounts(lattice, 3, 3, 1);
     final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
-    final Consumer<Facet> _function_1 = (Facet f) -> {
+    final Consumer<Facet> _function = (Facet f) -> {
       Assert.assertTrue(f.hasThickFaces());
     };
-    facets.forEach(_function_1);
+    facets.forEach(_function);
   }
 }

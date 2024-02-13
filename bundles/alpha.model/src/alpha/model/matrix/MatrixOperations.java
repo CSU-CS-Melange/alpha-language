@@ -748,6 +748,9 @@ public class MatrixOperations {
 	 * @return alpha*X
 	 */
 	public static long[] scalarMultiplication(long[] X, long alpha) {
+		if (X.length == 0) {
+			return X;
+		}
 		long[] res = new long[X.length];
 
 		for (int i = 0; i < X.length; i++) {
@@ -767,6 +770,9 @@ public class MatrixOperations {
 	 * @return alpha*X
 	 */
 	public static double[] scalarMultiplication(double[] X, double alpha) {
+		if (X.length == 0) {
+			return X;
+		}
 		double[] res = new double[X.length];
 
 		for (int i = 0; i < X.length; i++) {
@@ -786,6 +792,9 @@ public class MatrixOperations {
 	 * @return alpha*A
 	 */
 	public static long[][] scalarMultiplication(long[][] A, long alpha) {
+		if (A.length == 0) {
+			return A;
+		}
 		long[][] res = new long[A.length][A[0].length];
 
 		for (int i = 0; i < A.length; i++) {
@@ -805,6 +814,9 @@ public class MatrixOperations {
 	 * @return alpha*A
 	 */
 	public static double[][] scalarMultiplication(double[][] A, double alpha) {
+		if (A.length == 0) {
+			return A;
+		}
 		double[][] res = new double[A.length][A[0].length];
 
 		for (int i = 0; i < A.length; i++) {

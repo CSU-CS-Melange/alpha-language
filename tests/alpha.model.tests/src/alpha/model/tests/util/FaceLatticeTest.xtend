@@ -681,10 +681,7 @@ class FaceLatticeTest {
 		val faces = l.lattice.get(2).map(func)
 		val edges = l.lattice.get(1).map(func)
 		val vertices = l.lattice.get(0).map(func)
-//		
-//		edges.forEach[f | println(f.key + ' -> ' + f.value.toBasicSet)]
-//		println
-		
+
 		val topVertex = vertices.filter[p | p.key == 'f014'].get(0).value
 		val bottomVertex = vertices.filter[p | p.key == 'f0123'].get(0).value
 		val frontEdge = edges.filter[p | p.key == 'f01'].get(0).value
@@ -743,8 +740,6 @@ class FaceLatticeTest {
 		val lattice = makeLattice("[N]->{[i,j,k]: 0<=k<=-N+i+j and k<=2N-2i+j and -5+2N+i-2j<=k<=2N+i-2j}")
 		val dim = lattice.rootInfo.dimensionality
 		assertEquals(dim, 2)
-		
-		lattice.lattice.forEach[l | println(l.toString)]
 		assertFaceCounts(lattice, 3, 3, 1)
 		
 		val facets = lattice.getChildren(lattice.rootInfo)
