@@ -4,6 +4,7 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import java.util.ArrayList
 import java.util.LinkedList
 import org.eclipse.xtend.lib.annotations.Accessors
+
 import java.util.HashSet
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLAff
@@ -16,6 +17,9 @@ import java.util.List
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import alpha.model.matrix.MatrixOperations
 
+import java.util.Collection
+
+
 /**
  * Constructs the face lattice of a given <code>ISLBasicSet</code>.
  * Usage: to create the face lattice, call the static function: <code>FaceLattice.create(root)</code>.
@@ -26,7 +30,7 @@ class FaceLattice {
 	////////////////////////////////////////////////////////////
 	
 	/** The information about the set which forms the root of the lattice. */
-	@Accessors(PUBLIC_GETTER, PRIVATE_SETTER)
+	@Accessors(PUBLIC_GETTER)
 	var Facet rootInfo
 	
 	/**
@@ -79,6 +83,18 @@ class FaceLattice {
 		root.getBasicSetAt(0).create
 	}
 	def static create(ISLBasicSet root) {
+		return create(root, true)
+	}
+	
+	/**
+	 * Creates a new face lattice for the given set.
+	 * 
+	 * @param   root        The set to use as the root of the lattice.  
+	 * @param   fullLattice If <code>true</code>, generate the full lattice.
+	 *                      Otherwise, only generate the partial lattice from saturating exactly one inequality.
+	 * @returns An instance of the face lattice (or partial lattice) for the root.
+	 */
+	def static create(ISLBasicSet root, boolean fullLattice) {
 		// Set up the face lattice which is rooted at the given set.
 		val lattice = new FaceLattice
 		val rootInfo = new Facet(root, lattice)
@@ -98,7 +114,8 @@ class FaceLattice {
 			
 			// If the face was valid and the maximum number of constraints haven't been saturated,
 			// queue up more sets of constraints to try saturating.
-			val hasChildren = isValidFace && (currentConstraints.size < rootInfo.dimensionality)
+			// Skip this if we're only generating the partial lattice.
+			val hasChildren = fullLattice && isValidFace && (currentConstraints.size < rootInfo.dimensionality)
 			if (hasChildren) {
 				// The next constraint sets are created by adding a single constraint to this set.
 				// To avoid duplicating faces, only try saturating constraints whose index is
@@ -114,6 +131,7 @@ class FaceLattice {
 			}
 		}
 		
+		// There may be some redundant facets, so remove them.
 		lattice.removeRedundancies
 		
 		return lattice
@@ -259,6 +277,12 @@ class FaceLattice {
 			}]
 		
 		return labelings
+		
+	}
+	
+	/** Returns <code>true</code> if the root has at least one thick face, and <code>false</code> otherwise. */
+	def hasThickFaces() {
+		return rootInfo.effectivelySaturatedInequalities.nbRows > 0
 	}
 	
 	////////////////////////////////////////////////////////////
@@ -267,7 +291,8 @@ class FaceLattice {
 	
 	/**
 	 * Checks if a face is valid to add to the lattice, and adds it if so.
-	 * @returns Returns <code>true</code> if the face was valid and added, and <code>false</code> otherwise.
+	 * @returns Returns <code>true</code> if the face was valid, didn't exist already, and was added.
+	 * 			Otherwise, returns <code>false</code>.
 	 */
 	def private checkAddFace(ArrayList<Integer> toSaturate) {
 		// Create the proposed face by saturating the indicated inequality constraints,
@@ -277,64 +302,85 @@ class FaceLattice {
 			return false
 		}
 		
+		// Make sure there is a layer of the lattice for this new face.
 		// Lattice layer indices match the dimensionality of the faces in that layer.
 		// Be careful to avoid out of bounds accesses!
 		val layerIndex = Integer.max(0, face.dimensionality)
 		while (lattice.size <= layerIndex) {
 			lattice.add(new ArrayList<Facet>)
 		}
-		lattice.get(layerIndex).add(face)
+		val layer = lattice.get(layerIndex)
+		
+		// Make sure the face doesn't already exist.
+		if (layer.exists[other | face.isDuplicateOf(other)]) {
+			return false
+		}
+		
+		layer.add(face)
 		return true
 	}
 	
+	/** Removes all redundant facets from the entire lattice. */
 	def private removeRedundancies() {
-		val layersWithStrangeKFacets = (0..<lattice.size).filter[k |
-			val kFacets = lattice.get(k)
-			val expectedSaturations = rootInfo.dimensionality - k
-			val strangeKFacets = kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.size != expectedSaturations]
-			!strangeKFacets.empty
-		]
-		for (k : layersWithStrangeKFacets) {
-			val kFacets = lattice.get(k)
-			val expectedSaturations = rootInfo.dimensionality - k
-			
-			val strangeKFacets = kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.size != expectedSaturations]
-			
-			val duplicateKFacetsForStrangeKFacets = strangeKFacets.map[ strangeKFacet |
-				kFacets.filter[kFacet | kFacet.saturatedInequalityIndices.toSet.containsAll(strangeKFacet.saturatedInequalityIndices.toSet)]
-			]
-			
-			val duplicateIndices = duplicateKFacetsForStrangeKFacets.reduce[fs1, fs2 | fs1 + fs2]
-			                                                        .map[kFacet | kFacet.saturatedInequalityIndices.toSet]
-			                                                        .toSet
-			
-			val uniqueKFacetsIndices = duplicateKFacetsForStrangeKFacets.map[duplicateKFacetsForStrangeKFacet |
-				val union = new HashSet<Integer>
-				for (kFacet : duplicateKFacetsForStrangeKFacet) {
-					union.addAll(kFacet.saturatedInequalityIndices)
-				}
-				return union
-			].toSet
-			
-			val uniqueKFacets = uniqueKFacetsIndices.map[ids |
-				val idsArr = new ArrayList<Integer>
-				idsArr.addAll(ids) 
-				Facet.createFace(rootInfo, idsArr)
-			]
-			
-			kFacets.removeAll(kFacets.filter[kFacet | duplicateIndices.contains(kFacet.saturatedInequalityIndices.toSet)])
-			kFacets.addAll(uniqueKFacets)
-			
-//			println(k + '           : ' + kFacets)
-//			println(k + '  (strange): ' + strangeKFacets)
-//			println(k + '      (dup): ' + duplicateKFacetsForStrangeKFacets)
-//			println(k + '    (dupId): ' + duplicateIndices)
-//			println(k + ' (uniqueId): ' + uniqueKFacetsIndices)
-//			println(k + '   (unique): ' + uniqueKFacets)
-//			println()
-			
-			
+		(0 ..< lattice.size).forEach[dimension | removeRedundancies(dimension)]
+	}
+	
+	/** Removes all redundant facets from a specific layer of the lattice. */
+	def private removeRedundancies(int dimension) {
+		if ((dimension < 0) || (dimension >= lattice.size)) {
+			return
 		}
+		val currentLayer = lattice.get(dimension)
+		
+		// When saturating an inequality, the dimensionality of the facet will decrease by at least one.
+		// If it decreases by more than one, then there were other inequalities which were also saturated.
+		// However, the way saturated inequalities is tracked here does not account for this.
+		// To detect this scenario, we check if the number of intentionally saturated inequalities
+		// is less than the reduction in dimensionality.
+		// That is, if we start with a k-dimensional polyhedron and saturate d inequalities,
+		// if the facet's dimensionality is less than (k-d), then additional inequalities must have been saturated.
+		// In other words, this scenario happens if the difference in the root's dimension and a facet's dimension
+		// is greater than the number of intentionally saturated inequalities.
+		val expectedSaturations = rootInfo.dimensionality - dimension
+		val facetsWithAdditionalSaturations = new ArrayList<Facet>(
+			currentLayer
+			.filter[facet | facet.saturatedInequalityIndices.size < expectedSaturations]
+			.toList)
+		if (facetsWithAdditionalSaturations.empty) {
+			return
+		}
+		
+		// The result of this scenario is that the lattice currently contains multiple facets
+		// which represent the same set of points. For any of the facets we've found already,
+		// this will be all supersets of that facet at the current layer.
+		// We can then take the union of all the supersets and add a new facet of that union.
+		facetsWithAdditionalSaturations
+			.map[facet | facet.getUnionOfSupersets(currentLayer)]
+			.forEach[toSaturate | checkAddFace(toSaturate)]
+		
+		// We need to remove any facets which are a subset of another facet.
+		// Get the saturated inequalities for each facet,
+		// then find the list of all facets whose inequalities are subsets of that list.
+		// Flatten this and remove duplicates.
+		// Wrap this in an ArrayList to avoid recomputation.
+		val toRemove = new ArrayList<Facet>(
+			currentLayer
+			.filter[facet | currentLayer.exists[other | facet.isStrictSubsetOf(other)]]
+			.toList)
+		currentLayer.removeAll(toRemove)
+	}
+	
+	/**
+	 * Gets all facets which are a superset of the given one,
+	 * returning the union of their saturated inequalities.
+	 */
+	def private static getUnionOfSupersets(Facet facet, Collection<Facet> toSearch) {
+		return new ArrayList<Integer>(
+			toSearch
+			.filter[other | facet.isStrictSubsetOf(other)]
+			.map[superset | superset.saturatedInequalityIndices]
+			.flatten
+			.toSet)
 	}
 }
 

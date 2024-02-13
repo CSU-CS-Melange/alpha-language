@@ -31,15 +31,36 @@ class FaceLatticeTest {
 		(0 ..< faceCounts.length).forEach[dim | assertEquals(latticeStorage.get(dim).size, faceCounts.get(dim))]
 	}
 	
+	def private static assertFaceHasNoChildren(FaceLattice lattice, List<Integer> saturatedInequalities) {
+		val face = getFaceBySaturatedInequalities(lattice, saturatedInequalities)
+		assertNotNull(face)
+
+		val children = lattice.getChildren(face)
+		assertEquals(0, children.size)
+	}
+	
 	/**
 	 * Asserts that a face exists in the lattice, and that it has the correct child faces.
-	 * Reminder: a child node saturates all the inequalities of its parents, plus one more.
+	 * In this case, a child node saturates all the inequalities of its parents, plus exactly one more.
 	 * 
 	 * @param lattice               The lattice to check.
 	 * @param saturatedInequalities The inequalities that the desired face saturates.
 	 * @param addedInequalities     The additional inequalities that the children can saturate (one per child).
 	 */
 	def private static assertFaceHasChildren(FaceLattice lattice, List<Integer> saturatedInequalities, int... addedInequalities) {
+		val wrappedAddedInequalities = addedInequalities.map[index | #[index]]
+		assertFaceHasChildren(lattice, saturatedInequalities, wrappedAddedInequalities)
+	}
+	
+	/**
+	 * Asserts that a face exists in the lattice, and that it has the correct child faces.
+	 * Reminder: a child node saturates all the inequalities of its parents, plus one more.
+	 * 
+	 * @param lattice               The lattice to check.
+	 * @param saturatedInequalities The inequalities that the desired face saturates.
+	 * @param addedInequalities     The list additional inequalities that the children can saturate (one list per child).
+	 */
+	def private static assertFaceHasChildren(FaceLattice lattice, List<Integer> saturatedInequalities, List<Integer>... addedInequalities) {
 		val face = getFaceBySaturatedInequalities(lattice, saturatedInequalities)
 		assertNotNull(face)
 
@@ -48,7 +69,7 @@ class FaceLatticeTest {
 		
 		for (addedInequality: addedInequalities) {
 			val childInequalities = new ArrayList<Integer>(saturatedInequalities)
-			childInequalities.add(addedInequality)
+			childInequalities.addAll(addedInequality)
 			
 			assertTrue(children.exists[child | faceSaturatesInequalities(child, childInequalities)])
 		}
@@ -71,7 +92,7 @@ class FaceLatticeTest {
 	 * @param vertices A list of lists, where each sub-list indicates the saturated inequalities that make up a vertex.
 	 */
 	def private static assertVerticesExist(FaceLattice lattice, List<Integer>... vertices) {
-		vertices.forEach[vertex | assertFaceHasChildren(lattice, vertex, #[])]
+		vertices.forEach[vertex | assertFaceHasNoChildren(lattice, vertex)]
 	}
 	
 	/**
@@ -79,6 +100,11 @@ class FaceLatticeTest {
 	 * exactly match the vertices that ISL calculates for the same set.
 	 */
 	def private static assertVerticesMatchISL(FaceLattice lattice) {
+		// This assertion only works for input sets without thick faces
+		if (lattice.hasThickFaces) {
+			return
+		}
+		
 		// If the root set is empty, just check that the lattice is empty.
 		if (lattice.rootInfo.empty) {
 			val nonNullLattice = lattice.lattice ?: new ArrayList
@@ -301,7 +327,7 @@ class FaceLatticeTest {
 	
 	@Test
 	def testLineSegment_3() {
-		assertLineSegment("{[i,j,k]: 0<=i,j,k and i=j and j=k and k<=50}")
+		assertLineSegment("[N]->{[i,j,k]: 0<=i,j,k and i=j and j=k and k<=N}")
 	}
 	
 	@Test
@@ -362,7 +388,7 @@ class FaceLatticeTest {
 	
 	@Test
 	def testNonSimplex_2() {
-		val lattice = makeLattice("[N]->{[i,j]: 0<i<20 and i<j<N}")
+		val lattice = makeLattice("[N,M]->{[i,j]: 0<i<M and i<j<2N}")
 		assertFalse(lattice.isSimplicial)
 		assertFaceCounts(lattice, 5, 4, 1)
 		assertRootHasChildren(lattice, 0..3)
@@ -392,8 +418,8 @@ class FaceLatticeTest {
 		assertRootHasChildren(lattice, 0, 1)
 		
 		// Check that the 1-faces have no children.
-		assertFaceHasChildren(lattice, #[0])
-		assertFaceHasChildren(lattice, #[1])
+		assertFaceHasNoChildren(lattice, #[0])
+		assertFaceHasNoChildren(lattice, #[1])
 	}
 	
 	@Test
@@ -446,7 +472,7 @@ class FaceLatticeTest {
 	
 	@Test
 	def testNormalVector_1() {
-		val lattice = makeLattice("{[i,j]: 0<=i,j and i+j<100}")
+		val lattice = makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}")
 		val facets = lattice.getChildren(lattice.rootInfo)
 		val norms = facets.map[f|f.getNormalVector(lattice.rootInfo)]
 		val v1 = norms.get(0)
@@ -703,5 +729,27 @@ class FaceLatticeTest {
 		assertTrue(true)
 		
 	}
+	
+	@Test
+	def testThickEquality_1() {
+		val lattice = makeLattice("[N]->{[i,j]: 0<=i<2 and -N+10<j<N}")
+		val dim = lattice.rootInfo.dimensionality
+		
+		assertEquals(dim, 1)
+	}
+	
+	@Test
+	def testThickEquality_2() {
+		val lattice = makeLattice("[N]->{[i,j,k]: 0<=k<=-N+i+j and k<=2N-2i+j and -5+2N+i-2j<=k<=2N+i-2j}")
+		val dim = lattice.rootInfo.dimensionality
+		assertEquals(dim, 2)
+		
+		lattice.lattice.forEach[l | println(l.toString)]
+		assertFaceCounts(lattice, 3, 3, 1)
+		
+		val facets = lattice.getChildren(lattice.rootInfo)
+		facets.forEach[f | assertTrue(f.hasThickFaces)]
+	}
+	
 }
 

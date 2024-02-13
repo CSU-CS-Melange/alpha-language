@@ -50,23 +50,46 @@ public class FaceLatticeTest {
     new ExclusiveRange(0, _length, true).forEach(_function);
   }
 
+  private static void assertFaceHasNoChildren(final FaceLattice lattice, final List<Integer> saturatedInequalities) {
+    final Facet face = FaceLatticeTest.getFaceBySaturatedInequalities(lattice, ((int[])Conversions.unwrapArray(saturatedInequalities, int.class)));
+    Assert.assertNotNull(face);
+    final Iterable<Facet> children = lattice.getChildren(face);
+    Assert.assertEquals(0, IterableExtensions.size(children));
+  }
+
   /**
    * Asserts that a face exists in the lattice, and that it has the correct child faces.
-   * Reminder: a child node saturates all the inequalities of its parents, plus one more.
+   * In this case, a child node saturates all the inequalities of its parents, plus exactly one more.
    * 
    * @param lattice               The lattice to check.
    * @param saturatedInequalities The inequalities that the desired face saturates.
    * @param addedInequalities     The additional inequalities that the children can saturate (one per child).
    */
   private static void assertFaceHasChildren(final FaceLattice lattice, final List<Integer> saturatedInequalities, final int... addedInequalities) {
+    final Function1<Integer, List<Integer>> _function = (Integer index) -> {
+      return Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(index));
+    };
+    final List<List<Integer>> wrappedAddedInequalities = ListExtensions.<Integer, List<Integer>>map(((List<Integer>)Conversions.doWrapArray(addedInequalities)), _function);
+    FaceLatticeTest.assertFaceHasChildren(lattice, saturatedInequalities, ((List<Integer>[])Conversions.unwrapArray(wrappedAddedInequalities, List.class)));
+  }
+
+  /**
+   * Asserts that a face exists in the lattice, and that it has the correct child faces.
+   * Reminder: a child node saturates all the inequalities of its parents, plus one more.
+   * 
+   * @param lattice               The lattice to check.
+   * @param saturatedInequalities The inequalities that the desired face saturates.
+   * @param addedInequalities     The list additional inequalities that the children can saturate (one list per child).
+   */
+  private static void assertFaceHasChildren(final FaceLattice lattice, final List<Integer> saturatedInequalities, final List<Integer>... addedInequalities) {
     final Facet face = FaceLatticeTest.getFaceBySaturatedInequalities(lattice, ((int[])Conversions.unwrapArray(saturatedInequalities, int.class)));
     Assert.assertNotNull(face);
     final Iterable<Facet> children = lattice.getChildren(face);
     Assert.assertEquals(addedInequalities.length, IterableExtensions.size(children));
-    for (final int addedInequality : addedInequalities) {
+    for (final List<Integer> addedInequality : addedInequalities) {
       {
         final ArrayList<Integer> childInequalities = new ArrayList<Integer>(saturatedInequalities);
-        childInequalities.add(Integer.valueOf(addedInequality));
+        childInequalities.addAll(addedInequality);
         final Function1<Facet, Boolean> _function = (Facet child) -> {
           return Boolean.valueOf(FaceLatticeTest.faceSaturatesInequalities(child, ((int[])Conversions.unwrapArray(childInequalities, int.class))));
         };
@@ -93,7 +116,7 @@ public class FaceLatticeTest {
    */
   private static void assertVerticesExist(final FaceLattice lattice, final List<Integer>... vertices) {
     final Consumer<List<Integer>> _function = (List<Integer> vertex) -> {
-      FaceLatticeTest.assertFaceHasChildren(lattice, vertex, new int[] {});
+      FaceLatticeTest.assertFaceHasNoChildren(lattice, vertex);
     };
     ((List<List<Integer>>)Conversions.doWrapArray(vertices)).forEach(_function);
   }
@@ -103,6 +126,10 @@ public class FaceLatticeTest {
    * exactly match the vertices that ISL calculates for the same set.
    */
   private static void assertVerticesMatchISL(final FaceLattice lattice) {
+    boolean _hasThickFaces = lattice.hasThickFaces();
+    if (_hasThickFaces) {
+      return;
+    }
     boolean _isEmpty = lattice.getRootInfo().isEmpty();
     if (_isEmpty) {
       ArrayList<ArrayList<Facet>> _elvis = null;
@@ -338,7 +365,7 @@ public class FaceLatticeTest {
 
   @Test
   public void testLineSegment_3() {
-    FaceLatticeTest.assertLineSegment("{[i,j,k]: 0<=i,j,k and i=j and j=k and k<=50}");
+    FaceLatticeTest.assertLineSegment("[N]->{[i,j,k]: 0<=i,j,k and i=j and j=k and k<=N}");
   }
 
   @Test
@@ -397,7 +424,7 @@ public class FaceLatticeTest {
 
   @Test
   public void testNonSimplex_2() {
-    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<i<20 and i<j<N}");
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N,M]->{[i,j]: 0<i<M and i<j<2N}");
     Assert.assertFalse(lattice.isSimplicial());
     FaceLatticeTest.assertFaceCounts(lattice, 5, 4, 1);
     IntegerRange _upTo = new IntegerRange(0, 3);
@@ -423,8 +450,8 @@ public class FaceLatticeTest {
     Assert.assertFalse(lattice.isSimplicial());
     FaceLatticeTest.assertFaceCounts(lattice, 0, 2, 1);
     FaceLatticeTest.assertRootHasChildren(lattice, 0, 1);
-    FaceLatticeTest.assertFaceHasChildren(lattice, Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0))));
-    FaceLatticeTest.assertFaceHasChildren(lattice, Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))));
+    FaceLatticeTest.assertFaceHasNoChildren(lattice, Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0))));
+    FaceLatticeTest.assertFaceHasNoChildren(lattice, Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))));
   }
 
   @Test
@@ -471,7 +498,7 @@ public class FaceLatticeTest {
 
   @Test
   public void testNormalVector_1() {
-    final FaceLattice lattice = FaceLatticeTest.makeLattice("{[i,j]: 0<=i,j and i+j<100}");
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}");
     final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
     final Function1<Facet, ISLAff> _function = (Facet f) -> {
       return f.getNormalVector(lattice.getRootInfo());
@@ -736,5 +763,29 @@ public class FaceLatticeTest {
     final ISLSet set = ISLUtil.toISLSet("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j; [0,j,k]; [i,j,k]: 0<=i,j,k<N; }");
     InputOutput.<Integer>println(ISLUtil.dimensionality(set));
     Assert.assertTrue(true);
+  }
+
+  @Test
+  public void testThickEquality_1() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i<2 and -N+10<j<N}");
+    final int dim = lattice.getRootInfo().getDimensionality();
+    Assert.assertEquals(dim, 1);
+  }
+
+  @Test
+  public void testThickEquality_2() {
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=k<=-N+i+j and k<=2N-2i+j and -5+2N+i-2j<=k<=2N+i-2j}");
+    final int dim = lattice.getRootInfo().getDimensionality();
+    Assert.assertEquals(dim, 2);
+    final Consumer<ArrayList<Facet>> _function = (ArrayList<Facet> l) -> {
+      InputOutput.<String>println(l.toString());
+    };
+    lattice.getLattice().forEach(_function);
+    FaceLatticeTest.assertFaceCounts(lattice, 3, 3, 1);
+    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Consumer<Facet> _function_1 = (Facet f) -> {
+      Assert.assertTrue(f.hasThickFaces());
+    };
+    facets.forEach(_function_1);
   }
 }
