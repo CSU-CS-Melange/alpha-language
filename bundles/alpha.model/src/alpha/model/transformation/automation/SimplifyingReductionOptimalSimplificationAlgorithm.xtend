@@ -1,6 +1,7 @@
 package alpha.model.transformation.automation
 
 import alpha.model.AbstractReduceExpression
+import alpha.model.AlphaInternalStateConstructor
 import alpha.model.AlphaRoot
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
@@ -23,19 +24,21 @@ import alpha.model.util.AShow
 import alpha.model.util.AlphaUtil
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import java.util.ArrayList
+import java.util.HashMap
 import java.util.LinkedList
+import java.util.List
+import java.util.Map
 import java.util.Set
 import java.util.TreeSet
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
-import java.util.List
-import alpha.model.AlphaInternalStateConstructor
 
-import static extension alpha.model.util.ISLUtil.dimensionality
+import static extension alpha.model.transformation.SplitReduction.hasConvexBody
 import static extension alpha.model.util.AlphaUtil.*
+import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import java.util.Map
-import java.util.HashMap
+import alpha.model.util.Show
+import alpha.model.transformation.SplitReduction
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -49,9 +52,9 @@ import java.util.HashMap
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false
 	
-	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
+	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false
 	
 	private def debug(String content) {
 		if (DEBUG)
@@ -60,7 +63,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	private def debug(String content, ProgramState state) {
 		debug(content)
 		if (DEBUG)
-			System.out.println(AShow.print(state.body.getContainerSystem))
+			System.out.println(AShow.print(state.body))
 	}
 	
 	protected final  AlphaRoot originalProgram;
@@ -141,17 +144,25 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		new ProgramState(copyProg);
 	}
 	
+	
+	var INDENT = '+-'
+	
 	/**
 	 * The algorithm optimizes each equation one by one. There are some 
 	 * cases where the order and choice of reuse vectors influences schedulability,
 	 * but this is not considered in the current implementation.
 	 */
 	private def void exploreDPcontext(DynamicProgrammingContext DPcontext) {
+		val OLD_INDENT = INDENT 
 		while (DPcontext.hasNext) {
+			INDENT += '+-'
 			val eq = DPcontext.getNext
-			debug(String.format("Optimizing Equation: %s", eq.variable.name))
+//			debug(String.format("Optimizing Equation: %s", eq.variable.name))
+			println(String.format("%s equation: %s", INDENT, eq.variable.name))
 			optimizeEquation(DPcontext, eq)
+			
 		}
+		INDENT = OLD_INDENT
 	}
 	
 	/**
@@ -198,7 +209,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			context.markFinishedEquation(eq)
 			return
 		}
-		
+			
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
 		
 		debug(String.format("Number of DP step candidates: %d", candidates.size))
@@ -218,7 +229,13 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		}
 		
 		//Otherwise apply the DP step and recurse
-		for (step : candidates) {
+		val limit = 1
+		val numCandidates = candidates.size()
+		val candidatesToExplore = (0..<numCandidates)
+			.filter[i | i < limit]
+			.map[i | candidates.get(i)]
+		
+		for (step : candidatesToExplore) {
 			debug(String.format("Applying Step: %s", step.description))
 			val child = childContext.copy
 			child.step = step

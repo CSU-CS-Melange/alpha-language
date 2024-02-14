@@ -219,41 +219,30 @@ class SimplifyingReductions {
 		}
 		
 		EcoreUtil.replace(targetReduce, mainCaseExpr)
-		val mainEqu = mainCaseExpr.getContainerEquation as StandardEquation
-		
 		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
 		
-		
-		
-		println('start:' + Show.print(containerSystem))
-		println
+//		println('start:' + Show.print(containerSystem))
+//		println
 		if (!DISABLE_POST_PROCESSING) {
 			SimplifyExpressions.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
-			
+			PropagateSimpleEquations.apply(containerSystemBody)
+			Normalize.apply(containerSystemBody)
+
 			// The bodies of the residual reduction Xadd and Xsub are unions of subsets of the facets
 			SplitReduction.counter = 0
 			while (containerSystemBody.hasNonConvexReduceExpressions) {
 				SplitReduction.apply(containerSystemBody)
-				if (SplitReduction.counter > 10) {
+				if (SplitReduction.counter > 1000) {
 					throw new Exception("You appear to be caught in an infinite loop")
 				}
 			}
-			
-			PropagateSimpleEquations.apply(containerSystemBody)
-			Normalize.apply(containerSystemBody)
 		}
-		println('end:' + Show.print(containerSystem))
-		println
+//		println('end:' + Show.print(containerSystem))
+//		println
 		
-		val allConvex = EcoreUtil2.getAllContentsOfType(containerSystemBody, ReduceExpression)
-			.reject[re | re.body.contextDomain.nbBasicSets == 1]
-			.map[re | re.getContainerEquation as StandardEquation].map[eq | eq.variable.name].toList
-		if (allConvex.size > 0)
-			throw new Exception('oh no more processing is needed, you missed something')
 	}
 	
-	static int _c = 0
 	/**
 	 * 'Struct' for storing basic elements (domains and functions)
 	 * used in the transformation. The primary purpose of this class
@@ -407,8 +396,6 @@ class SimplifyingReductions {
 		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
 		
 		// construct face lattice
-//		val lattice = FaceLattice.create(are.body.contextDomain)
-//		val face = lattice.rootInfo
 		val face = are.facet
 		val facets = face.getChildren.toList
 		

@@ -22,17 +22,27 @@ class SplitReduction {
 	
 	public static int counter = 0
 	
-	static def void apply(AlphaSystem system) {
+	static def apply(AlphaSystem system) {
 		system.systemBodies.forEach[apply]
 	}
 	
 	static def void apply(SystemBody body) {
+		applyAndReport(body)
+	}
+	
+	static def applyAndReport(SystemBody body) {
+		transform(body)	
+	}
+	
+	static def applyAndReport(ReduceExpression re) {
+		transform(re)	
+	}
+	
+	static private def transform(SystemBody body) {
 		counter += 1
 		val system = body.getContainerSystem
 		
 		NormalizeReduction.apply(body)
-		println(Show.print(system))
-		println
 		
 		// Identify all of the equations that need to substituted after SplitUnionIntoCase. These
 		// are guaranteed to be StandardEquations since NormalizeReduction was called previously.
@@ -53,6 +63,22 @@ class SplitReduction {
 		RemoveUnusedEquations.apply(system)
 		Normalize.apply(body)
 	}
+	
+	static private def transform(ReduceExpression re) {
+		val eq = re.getContainerEquation
+		// Create separate reduction equations for each convex piece
+		SplitUnionIntoCase.apply(re)
+		PermutationCaseReduce.apply(re)
+		val newEqs = NormalizeReduction.applyAndReport(eq)
+		return newEqs
+		
+//		// Remove any references to the old union equation
+//		nonConvexEqus.forEach[equ | SubstituteByDef.apply(body, equ.variable)]
+//		RemoveUnusedEquations.apply(system)
+//		Normalize.apply(body)
+	}
+	
+	
 
 	def static hasConvexBody(ReduceExpression re) {
 		re.body.contextDomain.nbBasicSets == 1

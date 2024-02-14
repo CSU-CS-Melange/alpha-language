@@ -29,7 +29,6 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
-import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -50,7 +49,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Function;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -247,55 +245,26 @@ public class SimplifyingReductions {
         }
       }
       EcoreUtil.replace(this.targetReduce, mainCaseExpr);
-      Equation _containerEquation = AlphaUtil.getContainerEquation(mainCaseExpr);
-      final StandardEquation mainEqu = ((StandardEquation) _containerEquation);
       AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
-      String _print = Show.<AlphaSystem>print(this.containerSystem);
-      String _plus = ("start:" + _print);
-      InputOutput.<String>println(_plus);
-      InputOutput.println();
       if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
         SimplifyExpressions.apply(this.containerSystemBody);
+        Normalize.apply(this.containerSystemBody);
+        PropagateSimpleEquations.apply(this.containerSystemBody);
         Normalize.apply(this.containerSystemBody);
         SplitReduction.counter = 0;
         while (SplitReduction.hasNonConvexReduceExpressions(this.containerSystemBody)) {
           {
             SplitReduction.apply(this.containerSystemBody);
-            if ((SplitReduction.counter > 10)) {
+            if ((SplitReduction.counter > 1000)) {
               throw new Exception("You appear to be caught in an infinite loop");
             }
           }
         }
-        PropagateSimpleEquations.apply(this.containerSystemBody);
-        Normalize.apply(this.containerSystemBody);
-      }
-      String _print_1 = Show.<AlphaSystem>print(this.containerSystem);
-      String _plus_1 = ("end:" + _print_1);
-      InputOutput.<String>println(_plus_1);
-      InputOutput.println();
-      final Function1<ReduceExpression, Boolean> _function = (ReduceExpression re) -> {
-        int _nbBasicSets = re.getBody().getContextDomain().getNbBasicSets();
-        return Boolean.valueOf((_nbBasicSets == 1));
-      };
-      final Function1<ReduceExpression, StandardEquation> _function_1 = (ReduceExpression re) -> {
-        Equation _containerEquation_1 = AlphaUtil.getContainerEquation(re);
-        return ((StandardEquation) _containerEquation_1);
-      };
-      final Function1<StandardEquation, String> _function_2 = (StandardEquation eq) -> {
-        return eq.getVariable().getName();
-      };
-      final List<String> allConvex = IterableExtensions.<String>toList(IterableExtensions.<StandardEquation, String>map(IterableExtensions.<ReduceExpression, StandardEquation>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(this.containerSystemBody, ReduceExpression.class), _function), _function_1), _function_2));
-      int _size = allConvex.size();
-      boolean _greaterThan = (_size > 0);
-      if (_greaterThan) {
-        throw new Exception("oh no more processing is needed, you missed something");
       }
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
   }
-
-  private static int _c = 0;
 
   /**
    * Computes BasicElements while performing all the legality tests.

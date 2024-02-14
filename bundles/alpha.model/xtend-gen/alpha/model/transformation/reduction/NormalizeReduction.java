@@ -29,6 +29,8 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 public class NormalizeReduction extends AbstractAlphaCompleteVisitor {
   private List<AbstractReduceExpression> targetREs = new LinkedList<AbstractReduceExpression>();
 
+  private List<StandardEquation> newEqs = new LinkedList<StandardEquation>();
+
   public static Function<StandardEquation, String> defineNormalizeReductionEquationName = ((Function<StandardEquation, String>) (StandardEquation se) -> {
     String _xblockexpression = null;
     {
@@ -70,6 +72,16 @@ public class NormalizeReduction extends AbstractAlphaCompleteVisitor {
     };
     visitor.targetREs.forEach(_function);
     return visitor.targetREs.size();
+  }
+
+  public static List<AbstractReduceExpression> applyAndReport(final AlphaVisitable av) {
+    final NormalizeReduction visitor = new NormalizeReduction();
+    visitor.accept(av);
+    final Consumer<AbstractReduceExpression> _function = (AbstractReduceExpression are) -> {
+      NormalizeReduction.transform(are);
+    };
+    visitor.targetREs.forEach(_function);
+    return visitor.targetREs;
   }
 
   private static StandardEquation transform(final AbstractReduceExpression are) {

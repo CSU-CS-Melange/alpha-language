@@ -22,6 +22,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 class NormalizeReduction extends AbstractAlphaCompleteVisitor {
 	
 	List<AbstractReduceExpression> targetREs = new LinkedList()
+	List<StandardEquation> newEqs = new LinkedList()
 	
 	public static Function<StandardEquation, String> defineNormalizeReductionEquationName = [se|
 		val origName = se.variable.name
@@ -57,6 +58,14 @@ class NormalizeReduction extends AbstractAlphaCompleteVisitor {
 		visitor.targetREs.forEach[are|transform(are)]
 		
 		return visitor.targetREs.size
+	}
+	static def applyAndReport(AlphaVisitable av) {
+		val visitor = new NormalizeReduction()
+		visitor.accept(av)
+		
+		visitor.targetREs.forEach[are|transform(are)]
+		
+		return visitor.targetREs
 	}
 	
 	private static def transform(AbstractReduceExpression are) {

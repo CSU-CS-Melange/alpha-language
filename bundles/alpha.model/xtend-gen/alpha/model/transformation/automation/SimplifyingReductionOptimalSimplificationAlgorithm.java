@@ -46,7 +46,9 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -290,7 +292,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     }
   }
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
 
@@ -303,7 +305,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   private void debug(final String content, final ProgramState state) {
     this.debug(content);
     if (SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG) {
-      System.out.println(AShow.print(AlphaUtil.getContainerSystem(this.getBody(state))));
+      System.out.println(AShow.print(this.getBody(state)));
     }
   }
 
@@ -401,19 +403,25 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     return _xblockexpression;
   }
 
+  private String INDENT = "+-";
+
   /**
    * The algorithm optimizes each equation one by one. There are some
    * cases where the order and choice of reuse vectors influences schedulability,
    * but this is not considered in the current implementation.
    */
   private void exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
+    final String OLD_INDENT = this.INDENT;
     while (this.hasNext(DPcontext)) {
       {
+        String _INDENT = this.INDENT;
+        this.INDENT = (_INDENT + "+-");
         final StandardEquation eq = this.getNext(DPcontext);
-        this.debug(String.format("Optimizing Equation: %s", eq.getVariable().getName()));
+        InputOutput.<String>println(String.format("%s equation: %s", this.INDENT, eq.getVariable().getName()));
         this.optimizeEquation(DPcontext, eq);
       }
     }
+    this.INDENT = OLD_INDENT;
   }
 
   /**
@@ -475,7 +483,16 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
       context.markFinishedEquation(eq);
       return;
     }
-    for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step : candidates) {
+    final int limit = 1;
+    final int numCandidates = candidates.size();
+    final Function1<Integer, Boolean> _function_2 = (Integer i) -> {
+      return Boolean.valueOf(((i).intValue() < limit));
+    };
+    final Function1<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> _function_3 = (Integer i) -> {
+      return candidates.get((i).intValue());
+    };
+    final Iterable<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidatesToExplore = IterableExtensions.<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, numCandidates, true), _function_2), _function_3);
+    for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step : candidatesToExplore) {
       {
         this.debug(String.format("Applying Step: %s", step.description()));
         final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child = childContext.copy();

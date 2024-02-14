@@ -1,5 +1,6 @@
 package alpha.model.transformation;
 
+import alpha.model.AbstractReduceExpression;
 import alpha.model.AlphaSystem;
 import alpha.model.Equation;
 import alpha.model.ReduceExpression;
@@ -8,13 +9,12 @@ import alpha.model.SystemBody;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.transformation.reduction.PermutationCaseReduce;
 import alpha.model.util.AlphaUtil;
-import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 /**
@@ -25,20 +25,31 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 public class SplitReduction {
   public static int counter = 0;
 
-  public static void apply(final AlphaSystem system) {
+  public static Object apply(final AlphaSystem system) {
     final Consumer<SystemBody> _function = (SystemBody it) -> {
       SplitReduction.apply(it);
     };
     system.getSystemBodies().forEach(_function);
+    return null;
   }
 
   public static void apply(final SystemBody body) {
+    SplitReduction.applyAndReport(body);
+  }
+
+  public static void applyAndReport(final SystemBody body) {
+    SplitReduction.transform(body);
+  }
+
+  public static List<AbstractReduceExpression> applyAndReport(final ReduceExpression re) {
+    return SplitReduction.transform(re);
+  }
+
+  private static void transform(final SystemBody body) {
     int _counter = SplitReduction.counter;
     SplitReduction.counter = (_counter + 1);
     final AlphaSystem system = AlphaUtil.getContainerSystem(body);
     NormalizeReduction.apply(body);
-    InputOutput.<String>println(Show.<AlphaSystem>print(system));
-    InputOutput.println();
     final ArrayList<StandardEquation> nonConvexEqus = new ArrayList<StandardEquation>();
     final Function1<ReduceExpression, Boolean> _function = (ReduceExpression it) -> {
       return Boolean.valueOf(SplitReduction.hasConvexBody(it));
@@ -58,6 +69,14 @@ public class SplitReduction {
     nonConvexEqus.forEach(_function_2);
     RemoveUnusedEquations.apply(system);
     Normalize.apply(body);
+  }
+
+  private static List<AbstractReduceExpression> transform(final ReduceExpression re) {
+    final Equation eq = AlphaUtil.getContainerEquation(re);
+    SplitUnionIntoCase.apply(re);
+    PermutationCaseReduce.apply(re);
+    final List<AbstractReduceExpression> newEqs = NormalizeReduction.applyAndReport(eq);
+    return newEqs;
   }
 
   public static boolean hasConvexBody(final ReduceExpression re) {
