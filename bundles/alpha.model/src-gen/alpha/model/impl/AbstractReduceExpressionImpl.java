@@ -289,7 +289,7 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 		Facet _z__internal_facet = this.getZ__internal_facet();
 		boolean _tripleEquals = (_z__internal_facet == null);
 		if (_tripleEquals) {
-			_xifexpression = FaceLattice.create(this.getBody().getContextDomain()).getRootInfo();
+			_xifexpression = FaceLattice.create(this.getBody().getContextDomain(), true).getRootInfo();
 		}
 		else {
 			_xifexpression = this.getZ__internal_facet();

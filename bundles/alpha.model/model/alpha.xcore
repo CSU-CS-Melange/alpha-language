@@ -8,6 +8,7 @@ import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Facet
 import alpha.model.util.FaceLattice
+import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
@@ -660,6 +661,10 @@ abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 		
 		return AlphaUtil.renameIndices(dom)
 	}
+	
+	op String toString() {
+		return Show.print(this)
+	}
 }
 
 class RestrictExpression extends AlphaExpression {
@@ -785,7 +790,7 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 		visitor.visitAbstractReduceExpression(this)
 	}
 	
-	op Facet getFacet() { if (z__internal_facet === null) FaceLattice.create(body.contextDomain).rootInfo else z__internal_facet }
+	op Facet getFacet() { if (z__internal_facet === null) FaceLattice.create(body.contextDomain, true).rootInfo else z__internal_facet }
 	op void setFacet(Facet facet) { z__internal_facet = facet }
 }
 class ReduceExpression extends AbstractReduceExpression {

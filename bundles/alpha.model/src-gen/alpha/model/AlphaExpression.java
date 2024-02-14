@@ -156,4 +156,12 @@ public interface AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 	 */
 	ISLSet ensureDomainIsNamed(ISLSet dom);
 
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model dataType="alpha.model.String" unique="false"
+	 * @generated
+	 */
+	String toString();
+
 } // AlphaExpression

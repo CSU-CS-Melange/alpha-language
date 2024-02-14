@@ -15,6 +15,8 @@ import alpha.model.util.AlphaUtil;
 import com.google.common.base.Objects;
 import java.util.function.Consumer;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 
 /**
  * Replaces a VariableExpression with the definition of the corresponding StandardEquation.
@@ -79,6 +81,17 @@ public class SubstituteByDef extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void outVariableExpression(final VariableExpression ve) {
+    try {
+      Variable _variable = ve.getVariable();
+      Variable _variable_1 = this.substituteEquation.getVariable();
+      final boolean b = Objects.equal(_variable, _variable_1);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.println();
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
     Variable _variable = ve.getVariable();
     Variable _variable_1 = this.substituteEquation.getVariable();
     boolean _equals = Objects.equal(_variable, _variable_1);

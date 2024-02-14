@@ -29,13 +29,29 @@ import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
 import fr.irisa.cairn.jnimap.isl.ISLSpace
+import org.eclipse.emf.ecore.util.EcoreUtil.Copier
+
 /**
  * Utility methods for analysis and transformation of Alpha programs.
  * 
  */
 class AlphaUtil {
 	
-	
+	/**
+	  * Returns a self-contained copy of the eObject.
+	  * @param eObject the object to copy.
+	  * @return the copy.
+	  * @see Copier
+	  */
+	 def public static <T extends EObject> T copyAE(T eObject) {
+		val Copier copier = new Copier();
+		val EObject result = copier.copy(eObject);
+		copier.copyReferences();
+		
+		val T t = result as T;
+		return t;
+	 }
+		
 	/**
 	 * Given a name candidate, ensures that it does not conflict
 	 * with existing variables. If a variable is in conflict,

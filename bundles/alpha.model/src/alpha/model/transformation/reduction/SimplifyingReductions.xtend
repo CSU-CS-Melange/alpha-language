@@ -7,12 +7,14 @@ import alpha.model.BINARY_OP
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
+import alpha.model.Variable
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult
 import alpha.model.factory.AlphaUserFactory
 import alpha.model.matrix.MatrixOperations
 import alpha.model.transformation.Normalize
 import alpha.model.transformation.PropagateSimpleEquations
 import alpha.model.transformation.SimplifyExpressions
+import alpha.model.transformation.SplitReduction
 import alpha.model.util.AffineFunctionOperations
 import alpha.model.util.AlphaOperatorUtil
 import alpha.model.util.AlphaUtil
@@ -33,13 +35,13 @@ import java.util.LinkedList
 import java.util.TreeSet
 import java.util.function.Function
 import org.eclipse.emf.ecore.util.EcoreUtil
+import org.eclipse.xtext.EcoreUtil2
 
+import static extension alpha.model.transformation.SplitReduction.hasNonConvexReduceExpressions
+import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
 import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
-import static extension alpha.model.util.AffineFunctionOperations.computeKernel
-import static extension alpha.model.util.AffineFunctionOperations.toLinearPartOnlyMatrix
-import static extension alpha.model.util.AffineFunctionOperations.isUniform
 
 /**
  * Implementation of Theorem 5 in the original Simplifying Reductions paper.
@@ -48,7 +50,7 @@ import static extension alpha.model.util.AffineFunctionOperations.isUniform
  */
 class SimplifyingReductions {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 
 	/**
 	 * Setting this variable to true disables all the
@@ -107,40 +109,26 @@ class SimplifyingReductions {
 		// reuseDep is a uniform function
 		reuseDep.getAffs.map[aff | aff.getConstant]
 	}
-	
+	static int __c = 0
 	protected def void simplify() {
 		val BE = computeBasicElements(targetReduce, reuseDep)
 		
-		// compute the labelings of the facets induced by reuseDep
-		val facet = targetReduce.facet
-		val children = facet.getChildren
-		val labelings = targetReduce.facet.getLabeling(reuseDep.asLongVector)
-		val nbChildFacets = labelings.length
-		val posFacets = (0..<nbChildFacets).filter[i | labelings.get(i) == Label.POS].map[i | children.get(i)]
-		val negFacets = (0..<nbChildFacets).filter[i | labelings.get(i) == Label.NEG].map[i | children.get(i)]
-		
-		val posDomains = posFacets.map[f | f.toBasicSet].toList
-		val negDomains = negFacets.map[f | f.toBasicSet].toList
-		
-		
-		println
-		/*
-		 * Xadd and Xsub should be split into individual facets
-		 * right now their body domains are the unions of facets
-		 * 
-		 * DE - DE' should equal the union of the Label.POS facets
-		 * and DE' - DE be the unions of the Label.NEG facets
-		 */
-		
+		// need an individual variable for each facet contributing to Xadd and Xsub
+		// the variable domains are ISLSets
+		// which propogates down to the context domain of the reduce exprs despite the
+		// fact that the expression domains of the bodies are the single convex facets
+		// themselves
 		//Xadd = reduce( op, proj, (DE - DE') : E )
 		val XaddName = defineXaddEquationName.apply(this)
+		var XaddVar = null as Variable
+		var Xadd = null as ReduceExpression
 		{
 			val restrictDom = BE.origDE.copy.subtract(BE.DEp.copy)
 			val restrictExpr = AlphaUserFactory.createRestrictExpression(restrictDom, EcoreUtil.copy(targetReduce.body))
-			val Xadd = AlphaUserFactory.createReduceExpression(targetReduce.operator, targetReduce.projection, restrictExpr);
+			Xadd = AlphaUserFactory.createReduceExpression(targetReduce.operator, targetReduce.projection, restrictExpr);
 			
 			val XaddDom = restrictDom.copy.apply(targetReduce.projection.toMap)
-			val XaddVar = AlphaUserFactory.createVariable(XaddName, XaddDom)
+			XaddVar = AlphaUserFactory.createVariable(XaddName, XaddDom)
 			val XaddEq = AlphaUserFactory.createStandardEquation(XaddVar, Xadd);
 			containerSystem.locals.add(XaddVar)
 			containerSystemBody.equations.add(XaddEq)
@@ -149,22 +137,23 @@ class SimplifyingReductions {
 		
 		//Xsub = reduce( op, proj, proj^-1(Dint) : (DE - DE') : E )
 		val XsubName = defineXsubEquationName.apply(this)
+		var XsubVar = null as Variable
+		var Xsub = null as ReduceExpression
 		if (!BE.Dsub.isEmpty) {
 			val restrictDom = BE.DEp.copy.subtract(BE.origDE.copy)
 			val DintPreimage = BE.Dint.copy.preimage(targetReduce.projection)
 			val depExpr = AlphaUserFactory.createDependenceExpression(reuseDep.copy, EcoreUtil.copy(targetReduce.body))
 			val innerRestrict = AlphaUserFactory.createRestrictExpression(restrictDom, depExpr)
 			val outerRestrict = AlphaUserFactory.createRestrictExpression(DintPreimage, innerRestrict)
-			val Xsub = AlphaUserFactory.createReduceExpression(targetReduce.operator, targetReduce.projection, outerRestrict);
+			Xsub = AlphaUserFactory.createReduceExpression(targetReduce.operator, targetReduce.projection, outerRestrict);
 			
 			val XsubDom = restrictDom.copy.apply(targetReduce.projection.toMap).intersect(BE.Dint.copy)
-			val XsubVar = AlphaUserFactory.createVariable(XsubName, XsubDom)
+			XsubVar = AlphaUserFactory.createVariable(XsubName, XsubDom)
 			val XsubEq = AlphaUserFactory.createStandardEquation(XsubVar, Xsub);
 			containerSystem.locals.add(XsubVar)
 			containerSystemBody.equations.add(XsubEq)
 			AlphaInternalStateConstructor.recomputeContextDomain(XsubEq)
 		}
-		
 		
 		//Creating the main CaseExpression of the transformed reduction
 		val mainCaseExpr = AlphaUserFactory.createCaseExpression
@@ -230,23 +219,41 @@ class SimplifyingReductions {
 		}
 		
 		EcoreUtil.replace(targetReduce, mainCaseExpr)
+		val mainEqu = mainCaseExpr.getContainerEquation as StandardEquation
 		
 		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
-//		println(Show.print(containerSystemBody))
 		
+		
+		
+		println('start:' + Show.print(containerSystem))
+		println
 		if (!DISABLE_POST_PROCESSING) {
 			SimplifyExpressions.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
+			
+			// The bodies of the residual reduction Xadd and Xsub are unions of subsets of the facets
+			SplitReduction.counter = 0
+			while (containerSystemBody.hasNonConvexReduceExpressions) {
+				SplitReduction.apply(containerSystemBody)
+				if (SplitReduction.counter > 10) {
+					throw new Exception("You appear to be caught in an infinite loop")
+				}
+			}
+			
 			PropagateSimpleEquations.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
 		}
+		println('end:' + Show.print(containerSystem))
+		println
 		
-//		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
-		println(Show.print(containerSystemBody))
-		println()
+		val allConvex = EcoreUtil2.getAllContentsOfType(containerSystemBody, ReduceExpression)
+			.reject[re | re.body.contextDomain.nbBasicSets == 1]
+			.map[re | re.getContainerEquation as StandardEquation].map[eq | eq.variable.name].toList
+		if (allConvex.size > 0)
+			throw new Exception('oh no more processing is needed, you missed something')
 	}
 	
-	
+	static int _c = 0
 	/**
 	 * 'Struct' for storing basic elements (domains and functions)
 	 * used in the transformation. The primary purpose of this class

@@ -784,4 +784,15 @@ public class FaceLatticeTest {
     };
     facets.forEach(_function);
   }
+
+  @Test
+  public void testAsdf() {
+    final ISLSet set = ISLUtil.toISLSet("[N] -> { [i, j, k, l] : N >= 11 and j < N and k <= 2i and i + j <= l <= 2j and ((i >= 5 and j <= 1 + i and k >= -3 + 2i) or (i <= 4 and k > i and l >= -3 + 2j)) }");
+    final Consumer<ISLBasicSet> _function = (ISLBasicSet s) -> {
+      final FaceLattice l = FaceLatticeTest.makeLattice(s.toString());
+      final Facet root = l.getRootInfo();
+      InputOutput.<Integer>println(Integer.valueOf(root.getDimensionality()));
+    };
+    set.getBasicSets().forEach(_function);
+  }
 }

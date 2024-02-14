@@ -746,5 +746,19 @@ class FaceLatticeTest {
 		facets.forEach[f | assertTrue(f.hasThickFaces)]
 	}
 	
+	@Test
+	def testAsdf() {
+		val set = '[N] -> { [i, j, k, l] : N >= 11 and j < N and k <= 2i and i + j <= l <= 2j and ((i >= 5 and j <= 1 + i and k >= -3 + 2i) or (i <= 4 and k > i and l >= -3 + 2j)) }'.toISLSet
+		set.getBasicSets.forEach[s |
+			val l = makeLattice(s.toString)
+			val root = l.rootInfo
+			println(root.dimensionality)
+		]
+		
+		
+		
+		
+	}
+	
 }
 

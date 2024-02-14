@@ -7,6 +7,7 @@ import alpha.model.AlphaExpressionVisitor;
 import alpha.model.ModelPackage;
 
 import alpha.model.util.AlphaUtil;
+import alpha.model.util.Show;
 
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
@@ -256,6 +257,15 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public String toString() {
+		return Show.<AlphaExpression>print(this);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public void accept(AlphaExpressionVisitor visitor) {
 		// TODO: implement this method
 		// Ensure that you remove @generated or mark it @generated NOT
@@ -332,24 +342,6 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 				return !getExpressionID().isEmpty();
 		}
 		return super.eIsSet(featureID);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	@Override
-	public String toString() {
-		if (eIsProxy()) return super.toString();
-
-		StringBuilder result = new StringBuilder(super.toString());
-		result.append(" (z__internal_cache_exprDom: ");
-		result.append(z__internal_cache_exprDom);
-		result.append(", z__internal_cache_contextDom: ");
-		result.append(z__internal_cache_contextDom);
-		result.append(')');
-		return result.toString();
 	}
 
 } //AlphaExpressionImpl

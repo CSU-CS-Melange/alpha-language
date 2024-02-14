@@ -21,6 +21,7 @@ import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.PropagateSimpleEquations;
 import alpha.model.transformation.SimplifyExpressions;
+import alpha.model.transformation.SplitReduction;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaOperatorUtil;
 import alpha.model.util.AlphaUtil;
@@ -29,7 +30,6 @@ import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
-import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Function;
 import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -90,7 +91,7 @@ public class SimplifyingReductions {
     private BINARY_OP invOP;
   }
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   /**
    * Setting this variable to true disables all the
@@ -168,116 +169,133 @@ public class SimplifyingReductions {
     return ((long[])Conversions.unwrapArray(ListExtensions.<ISLAff, Long>map(reuseDep.getAffs(), _function), long.class));
   }
 
+  private static int __c = 0;
+
   protected void simplify() {
-    final SimplifyingReductions.BasicElements BE = SimplifyingReductions.computeBasicElements(this.targetReduce, this.reuseDep);
-    final Facet facet = this.targetReduce.getFacet();
-    final Iterable<Facet> children = facet.getChildren();
-    final FaceLattice.Label[] labelings = this.targetReduce.getFacet().getLabeling(SimplifyingReductions.asLongVector(this.reuseDep));
-    final int nbChildFacets = labelings.length;
-    final Function1<Integer, Boolean> _function = (Integer i) -> {
-      FaceLattice.Label _get = labelings[(i).intValue()];
-      return Boolean.valueOf(Objects.equal(_get, FaceLattice.Label.POS));
-    };
-    final Function1<Integer, Facet> _function_1 = (Integer i) -> {
-      return ((Facet[])Conversions.unwrapArray(children, Facet.class))[(i).intValue()];
-    };
-    final Iterable<Facet> posFacets = IterableExtensions.<Integer, Facet>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, nbChildFacets, true), _function), _function_1);
-    final Function1<Integer, Boolean> _function_2 = (Integer i) -> {
-      FaceLattice.Label _get = labelings[(i).intValue()];
-      return Boolean.valueOf(Objects.equal(_get, FaceLattice.Label.NEG));
-    };
-    final Function1<Integer, Facet> _function_3 = (Integer i) -> {
-      return ((Facet[])Conversions.unwrapArray(children, Facet.class))[(i).intValue()];
-    };
-    final Iterable<Facet> negFacets = IterableExtensions.<Integer, Facet>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, nbChildFacets, true), _function_2), _function_3);
-    final Function1<Facet, ISLBasicSet> _function_4 = (Facet f) -> {
-      return f.toBasicSet();
-    };
-    final List<ISLBasicSet> posDomains = IterableExtensions.<ISLBasicSet>toList(IterableExtensions.<Facet, ISLBasicSet>map(posFacets, _function_4));
-    final Function1<Facet, ISLBasicSet> _function_5 = (Facet f) -> {
-      return f.toBasicSet();
-    };
-    final List<ISLBasicSet> negDomains = IterableExtensions.<ISLBasicSet>toList(IterableExtensions.<Facet, ISLBasicSet>map(negFacets, _function_5));
-    InputOutput.println();
-    final String XaddName = SimplifyingReductions.defineXaddEquationName.apply(this);
-    {
-      final ISLSet restrictDom = BE.origDE.copy().subtract(BE.DEp.copy());
-      final RestrictExpression restrictExpr = AlphaUserFactory.createRestrictExpression(restrictDom, EcoreUtil.<AlphaExpression>copy(this.targetReduce.getBody()));
-      final ReduceExpression Xadd = AlphaUserFactory.createReduceExpression(this.targetReduce.getOperator(), this.targetReduce.getProjection(), restrictExpr);
-      final ISLSet XaddDom = restrictDom.copy().apply(this.targetReduce.getProjection().toMap());
-      final Variable XaddVar = AlphaUserFactory.createVariable(XaddName, XaddDom);
-      final StandardEquation XaddEq = AlphaUserFactory.createStandardEquation(XaddVar, Xadd);
-      this.containerSystem.getLocals().add(XaddVar);
-      this.containerSystemBody.getEquations().add(XaddEq);
-      AlphaInternalStateConstructor.recomputeContextDomain(XaddEq);
-    }
-    final String XsubName = SimplifyingReductions.defineXsubEquationName.apply(this);
-    boolean _isEmpty = BE.Dsub.isEmpty();
-    boolean _not = (!_isEmpty);
-    if (_not) {
-      final ISLSet restrictDom = BE.DEp.copy().subtract(BE.origDE.copy());
-      final ISLSet DintPreimage = BE.Dint.copy().preimage(this.targetReduce.getProjection());
-      final DependenceExpression depExpr = AlphaUserFactory.createDependenceExpression(this.reuseDep.copy(), EcoreUtil.<AlphaExpression>copy(this.targetReduce.getBody()));
-      final RestrictExpression innerRestrict = AlphaUserFactory.createRestrictExpression(restrictDom, depExpr);
-      final RestrictExpression outerRestrict = AlphaUserFactory.createRestrictExpression(DintPreimage, innerRestrict);
-      final ReduceExpression Xsub = AlphaUserFactory.createReduceExpression(this.targetReduce.getOperator(), this.targetReduce.getProjection(), outerRestrict);
-      final ISLSet XsubDom = restrictDom.copy().apply(this.targetReduce.getProjection().toMap()).intersect(BE.Dint.copy());
-      final Variable XsubVar = AlphaUserFactory.createVariable(XsubName, XsubDom);
-      final StandardEquation XsubEq = AlphaUserFactory.createStandardEquation(XsubVar, Xsub);
-      this.containerSystem.getLocals().add(XsubVar);
-      this.containerSystemBody.getEquations().add(XsubEq);
-      AlphaInternalStateConstructor.recomputeContextDomain(XsubEq);
-    }
-    final CaseExpression mainCaseExpr = AlphaUserFactory.createCaseExpression();
-    final BINARY_OP binaryOp = AlphaOperatorUtil.reductionOPtoBinaryOP(this.targetReduce.getOperator());
-    final VariableExpression XaddRef = AlphaUserFactory.createVariableExpression(this.containerSystem.getVariable(XaddName));
-    final VariableExpression Xref = AlphaUserFactory.createVariableExpression(this.reductionEquation.getVariable());
-    final DependenceExpression reuseExpr = AlphaUserFactory.createDependenceExpression(BE.reuseDepProjected.copy(), Xref);
-    {
-      final ISLSet restrictDom_1 = BE.Dadd.copy().subtract(BE.Dint.copy());
-      final RestrictExpression branch1expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, EcoreUtil.<VariableExpression>copy(XaddRef));
-      mainCaseExpr.getExprs().add(branch1expr);
-    }
-    {
-      final ISLSet restrictDom_1 = BE.Dint.copy().subtract(BE.Dadd.copy().union(BE.Dsub.copy()));
-      final RestrictExpression branch2expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, EcoreUtil.<DependenceExpression>copy(reuseExpr));
-      mainCaseExpr.getExprs().add(branch2expr);
-    }
-    {
-      final ISLSet restrictDom_1 = BE.Dadd.copy().intersect(BE.Dint.copy().subtract(BE.Dsub.copy()));
-      final BinaryExpression binaryExpr = AlphaUserFactory.createBinaryExpression(binaryOp, EcoreUtil.<VariableExpression>copy(XaddRef), EcoreUtil.<DependenceExpression>copy(reuseExpr));
-      final RestrictExpression branch3expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExpr);
-      mainCaseExpr.getExprs().add(branch3expr);
-    }
-    boolean _isEmpty_1 = BE.Dsub.isEmpty();
-    boolean _not_1 = (!_isEmpty_1);
-    if (_not_1) {
-      final VariableExpression XsubRef = AlphaUserFactory.createVariableExpression(this.containerSystem.getVariable(XsubName));
+    try {
+      final SimplifyingReductions.BasicElements BE = SimplifyingReductions.computeBasicElements(this.targetReduce, this.reuseDep);
+      final String XaddName = SimplifyingReductions.defineXaddEquationName.apply(this);
+      Variable XaddVar = ((Variable) null);
+      ReduceExpression Xadd = ((ReduceExpression) null);
       {
-        final ISLSet restrictDom_1 = BE.Dsub.copy().intersect(BE.Dint.copy().subtract(BE.Dadd.copy()));
-        final BinaryExpression binaryExpr = AlphaUserFactory.createBinaryExpression(BE.invOP, EcoreUtil.<DependenceExpression>copy(reuseExpr), EcoreUtil.<VariableExpression>copy(XsubRef));
-        final RestrictExpression branch4expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExpr);
-        mainCaseExpr.getExprs().add(branch4expr);
+        final ISLSet restrictDom = BE.origDE.copy().subtract(BE.DEp.copy());
+        final RestrictExpression restrictExpr = AlphaUserFactory.createRestrictExpression(restrictDom, EcoreUtil.<AlphaExpression>copy(this.targetReduce.getBody()));
+        Xadd = AlphaUserFactory.createReduceExpression(this.targetReduce.getOperator(), this.targetReduce.getProjection(), restrictExpr);
+        final ISLSet XaddDom = restrictDom.copy().apply(this.targetReduce.getProjection().toMap());
+        XaddVar = AlphaUserFactory.createVariable(XaddName, XaddDom);
+        final StandardEquation XaddEq = AlphaUserFactory.createStandardEquation(XaddVar, Xadd);
+        this.containerSystem.getLocals().add(XaddVar);
+        this.containerSystemBody.getEquations().add(XaddEq);
+        AlphaInternalStateConstructor.recomputeContextDomain(XaddEq);
+      }
+      final String XsubName = SimplifyingReductions.defineXsubEquationName.apply(this);
+      Variable XsubVar = ((Variable) null);
+      ReduceExpression Xsub = ((ReduceExpression) null);
+      boolean _isEmpty = BE.Dsub.isEmpty();
+      boolean _not = (!_isEmpty);
+      if (_not) {
+        final ISLSet restrictDom = BE.DEp.copy().subtract(BE.origDE.copy());
+        final ISLSet DintPreimage = BE.Dint.copy().preimage(this.targetReduce.getProjection());
+        final DependenceExpression depExpr = AlphaUserFactory.createDependenceExpression(this.reuseDep.copy(), EcoreUtil.<AlphaExpression>copy(this.targetReduce.getBody()));
+        final RestrictExpression innerRestrict = AlphaUserFactory.createRestrictExpression(restrictDom, depExpr);
+        final RestrictExpression outerRestrict = AlphaUserFactory.createRestrictExpression(DintPreimage, innerRestrict);
+        Xsub = AlphaUserFactory.createReduceExpression(this.targetReduce.getOperator(), this.targetReduce.getProjection(), outerRestrict);
+        final ISLSet XsubDom = restrictDom.copy().apply(this.targetReduce.getProjection().toMap()).intersect(BE.Dint.copy());
+        XsubVar = AlphaUserFactory.createVariable(XsubName, XsubDom);
+        final StandardEquation XsubEq = AlphaUserFactory.createStandardEquation(XsubVar, Xsub);
+        this.containerSystem.getLocals().add(XsubVar);
+        this.containerSystemBody.getEquations().add(XsubEq);
+        AlphaInternalStateConstructor.recomputeContextDomain(XsubEq);
+      }
+      final CaseExpression mainCaseExpr = AlphaUserFactory.createCaseExpression();
+      final BINARY_OP binaryOp = AlphaOperatorUtil.reductionOPtoBinaryOP(this.targetReduce.getOperator());
+      final VariableExpression XaddRef = AlphaUserFactory.createVariableExpression(this.containerSystem.getVariable(XaddName));
+      final VariableExpression Xref = AlphaUserFactory.createVariableExpression(this.reductionEquation.getVariable());
+      final DependenceExpression reuseExpr = AlphaUserFactory.createDependenceExpression(BE.reuseDepProjected.copy(), Xref);
+      {
+        final ISLSet restrictDom_1 = BE.Dadd.copy().subtract(BE.Dint.copy());
+        final RestrictExpression branch1expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, EcoreUtil.<VariableExpression>copy(XaddRef));
+        mainCaseExpr.getExprs().add(branch1expr);
       }
       {
-        final ISLSet restrictDom_1 = BE.Dadd.copy().intersect(BE.Dint.copy().intersect(BE.Dsub.copy()));
-        final BinaryExpression binaryExprAdd = AlphaUserFactory.createBinaryExpression(binaryOp, XaddRef, reuseExpr);
-        final BinaryExpression binaryExprSub = AlphaUserFactory.createBinaryExpression(BE.invOP, binaryExprAdd, XsubRef);
-        final RestrictExpression branch5expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExprSub);
-        mainCaseExpr.getExprs().add(branch5expr);
+        final ISLSet restrictDom_1 = BE.Dint.copy().subtract(BE.Dadd.copy().union(BE.Dsub.copy()));
+        final RestrictExpression branch2expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, EcoreUtil.<DependenceExpression>copy(reuseExpr));
+        mainCaseExpr.getExprs().add(branch2expr);
       }
+      {
+        final ISLSet restrictDom_1 = BE.Dadd.copy().intersect(BE.Dint.copy().subtract(BE.Dsub.copy()));
+        final BinaryExpression binaryExpr = AlphaUserFactory.createBinaryExpression(binaryOp, EcoreUtil.<VariableExpression>copy(XaddRef), EcoreUtil.<DependenceExpression>copy(reuseExpr));
+        final RestrictExpression branch3expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExpr);
+        mainCaseExpr.getExprs().add(branch3expr);
+      }
+      boolean _isEmpty_1 = BE.Dsub.isEmpty();
+      boolean _not_1 = (!_isEmpty_1);
+      if (_not_1) {
+        final VariableExpression XsubRef = AlphaUserFactory.createVariableExpression(this.containerSystem.getVariable(XsubName));
+        {
+          final ISLSet restrictDom_1 = BE.Dsub.copy().intersect(BE.Dint.copy().subtract(BE.Dadd.copy()));
+          final BinaryExpression binaryExpr = AlphaUserFactory.createBinaryExpression(BE.invOP, EcoreUtil.<DependenceExpression>copy(reuseExpr), EcoreUtil.<VariableExpression>copy(XsubRef));
+          final RestrictExpression branch4expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExpr);
+          mainCaseExpr.getExprs().add(branch4expr);
+        }
+        {
+          final ISLSet restrictDom_1 = BE.Dadd.copy().intersect(BE.Dint.copy().intersect(BE.Dsub.copy()));
+          final BinaryExpression binaryExprAdd = AlphaUserFactory.createBinaryExpression(binaryOp, XaddRef, reuseExpr);
+          final BinaryExpression binaryExprSub = AlphaUserFactory.createBinaryExpression(BE.invOP, binaryExprAdd, XsubRef);
+          final RestrictExpression branch5expr = AlphaUserFactory.createRestrictExpression(restrictDom_1, binaryExprSub);
+          mainCaseExpr.getExprs().add(branch5expr);
+        }
+      }
+      EcoreUtil.replace(this.targetReduce, mainCaseExpr);
+      Equation _containerEquation = AlphaUtil.getContainerEquation(mainCaseExpr);
+      final StandardEquation mainEqu = ((StandardEquation) _containerEquation);
+      AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
+      String _print = Show.<AlphaSystem>print(this.containerSystem);
+      String _plus = ("start:" + _print);
+      InputOutput.<String>println(_plus);
+      InputOutput.println();
+      if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
+        SimplifyExpressions.apply(this.containerSystemBody);
+        Normalize.apply(this.containerSystemBody);
+        SplitReduction.counter = 0;
+        while (SplitReduction.hasNonConvexReduceExpressions(this.containerSystemBody)) {
+          {
+            SplitReduction.apply(this.containerSystemBody);
+            if ((SplitReduction.counter > 10)) {
+              throw new Exception("You appear to be caught in an infinite loop");
+            }
+          }
+        }
+        PropagateSimpleEquations.apply(this.containerSystemBody);
+        Normalize.apply(this.containerSystemBody);
+      }
+      String _print_1 = Show.<AlphaSystem>print(this.containerSystem);
+      String _plus_1 = ("end:" + _print_1);
+      InputOutput.<String>println(_plus_1);
+      InputOutput.println();
+      final Function1<ReduceExpression, Boolean> _function = (ReduceExpression re) -> {
+        int _nbBasicSets = re.getBody().getContextDomain().getNbBasicSets();
+        return Boolean.valueOf((_nbBasicSets == 1));
+      };
+      final Function1<ReduceExpression, StandardEquation> _function_1 = (ReduceExpression re) -> {
+        Equation _containerEquation_1 = AlphaUtil.getContainerEquation(re);
+        return ((StandardEquation) _containerEquation_1);
+      };
+      final Function1<StandardEquation, String> _function_2 = (StandardEquation eq) -> {
+        return eq.getVariable().getName();
+      };
+      final List<String> allConvex = IterableExtensions.<String>toList(IterableExtensions.<StandardEquation, String>map(IterableExtensions.<ReduceExpression, StandardEquation>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(this.containerSystemBody, ReduceExpression.class), _function), _function_1), _function_2));
+      int _size = allConvex.size();
+      boolean _greaterThan = (_size > 0);
+      if (_greaterThan) {
+        throw new Exception("oh no more processing is needed, you missed something");
+      }
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
     }
-    EcoreUtil.replace(this.targetReduce, mainCaseExpr);
-    AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
-    if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
-      SimplifyExpressions.apply(this.containerSystemBody);
-      Normalize.apply(this.containerSystemBody);
-      PropagateSimpleEquations.apply(this.containerSystemBody);
-      Normalize.apply(this.containerSystemBody);
-    }
-    InputOutput.<String>println(Show.<SystemBody>print(this.containerSystemBody));
-    InputOutput.println();
   }
+
+  private static int _c = 0;
 
   /**
    * Computes BasicElements while performing all the legality tests.

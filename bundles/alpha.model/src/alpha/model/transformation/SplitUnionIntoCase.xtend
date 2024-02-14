@@ -10,6 +10,13 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.xtext.EcoreUtil2
 import alpha.model.AlphaInternalStateConstructor
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import alpha.model.AbstractReduceExpression
+
+import static extension alpha.model.factory.AlphaUserFactory.createRestrictExpression
+import static extension org.eclipse.emf.ecore.util.EcoreUtil.copy
+import static extension org.eclipse.emf.ecore.util.EcoreUtil.replace
+import alpha.model.CaseExpression
+import java.util.ArrayList
 
 /**
  * Transforms a RestrictExpression with restrict domain being unions of polyhedra
@@ -73,6 +80,43 @@ class SplitUnionIntoCase {
 		}
 	}
 	
+//	static def toRestrictByContextDomain(AlphaExpression expr) {
+//		val re = expr.contextDomain.copy.createRestrictExpression(expr.copy)
+//		expr.replace(re)
+//	}
+//	
+//	static def isRestrictExpression(AlphaExpression expr) {
+//		(expr instanceof RestrictExpression) || (expr instanceof AutoRestrictExpression) 
+//	}
+//	
+//	static def apply(CaseExpression ce) {
+//		val exprs = new ArrayList<AlphaExpression>
+//		exprs.addAll(ce.exprs)
+//		
+//		exprs.reject[isRestrictExpression]
+//		     .forEach[e | e.toRestrictByContextDomain]
+//		AlphaInternalStateConstructor.recomputeContextDomain(ce)
+//		
+//		exprs.clear
+//		exprs.addAll(ce.exprs)
+//		val res = exprs.filter[e | e instanceof RestrictExpression].map[re | re as RestrictExpression]
+//		val ares = exprs.filter[e | e instanceof AutoRestrictExpression].map[are | are as AutoRestrictExpression]
+//		res.forEach[apply]
+//		ares.forEach[apply]
+//	}
+	
+	static def apply(AbstractReduceExpression are) {
+		val body = are.body
+		if (body instanceof RestrictExpression) {
+			body.apply
+			return
+		}
+		
+		val re = body.contextDomain.createRestrictExpression(body.copy)
+		body.replace(re)
+		AlphaInternalStateConstructor.recomputeContextDomain(are)
+		re.apply
+	}
 	
 	/**
 	 * Implementation of the transformation.

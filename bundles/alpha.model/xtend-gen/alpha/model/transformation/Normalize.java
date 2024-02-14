@@ -339,6 +339,11 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
+  public static boolean childOfCaseExpression(final AlphaExpression expr) {
+    EObject _eContainer = expr.eContainer();
+    return (_eContainer instanceof CaseExpression);
+  }
+
   @Override
   public void outRestrictExpression(final RestrictExpression re) {
     boolean _invalidState = this.invalidState(re);
@@ -350,8 +355,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     if (_invalidState_1) {
       return;
     }
-    boolean _isEqual = re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain());
-    if (_isEqual) {
+    if ((re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re)))) {
       this.debug("redundant restrict", "D : E -> E");
       EcoreUtil.replace(re, re.getExpr());
     }
@@ -415,11 +419,14 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     }
     EObject _eContainer = be.eContainer();
     final AlphaCompleteVisitable origContainer = ((AlphaCompleteVisitable) _eContainer);
-    this.binaryExpressionRules(be, be.getLeft());
-    this.binaryExpressionRules(be, be.getRight());
-    EObject _eContainer_1 = be.eContainer();
-    boolean _notEquals = (!Objects.equal(origContainer, _eContainer_1));
-    if (_notEquals) {
+    final boolean bothCase = ((be.getLeft() instanceof CaseExpression) && (be.getRight() instanceof CaseExpression));
+    if ((!bothCase)) {
+      this.binaryExpressionRules(be, be.getLeft());
+      this.binaryExpressionRules(be, be.getRight());
+    } else {
+      this.binaryExpressionRules(be, EcoreUtil.<AlphaExpression>copy(be.getLeft()));
+    }
+    if (((!Objects.equal(origContainer, be.eContainer())) || bothCase)) {
       this.reapply(origContainer);
     }
   }

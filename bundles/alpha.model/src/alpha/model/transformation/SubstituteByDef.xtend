@@ -74,6 +74,11 @@ class SubstituteByDef extends AbstractAlphaCompleteVisitor  {
 	}
 	
 	override outVariableExpression(VariableExpression ve) {
+		try {
+			val b = ve.variable == substituteEquation.variable
+		} catch (Exception e) {
+			println
+		}
 		if (ve.variable == substituteEquation.variable) {
 			val substituteExpr = AlphaUserFactory.createRestrictExpression(substituteEquation.variable.domain, EcoreUtil.copy(substituteEquation.expr))
 			EcoreUtil.replace(ve, substituteExpr)

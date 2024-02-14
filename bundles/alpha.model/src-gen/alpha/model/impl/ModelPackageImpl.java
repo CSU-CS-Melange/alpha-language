@@ -3969,6 +3969,8 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		op = addEOperation(alphaExpressionEClass, this.getJNIISLSet(), "ensureDomainIsNamed", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getJNIISLSet(), "dom", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		addEOperation(alphaExpressionEClass, this.getString(), "toString", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		initEClass(restrictExpressionEClass, RestrictExpression.class, "RestrictExpression", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getRestrictExpression_DomainExpr(), this.getCalculatorExpression(), null, "domainExpr", null, 0, 1, RestrictExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getRestrictExpression_Expr(), this.getAlphaExpression(), null, "expr", null, 0, 1, RestrictExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

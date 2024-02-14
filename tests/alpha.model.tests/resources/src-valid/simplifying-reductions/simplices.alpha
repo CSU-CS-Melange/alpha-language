@@ -1,0 +1,31 @@
+package simplification.optimal {
+	
+	// Exercise 1 from the max simplification paper
+	affine ex_2d [N]->{ : 10<N }
+		inputs 
+			X : {[i]: 0<=i<=2N}
+		outputs
+			Y : {[i]: 0<=i<=N }
+		let
+			Y[i] = reduce(+, (i,j->i), {: i<=j<=2j} : X[j]);
+	.
+	
+	affine ex_3d [N]->{ : 10<N }
+		inputs 
+			X : {[k]: 0<=k<=N}
+		outputs
+			Y : { [i, j] : j >= N - i and j >= -2N + 2i and 2j <= 2N + i }
+		let
+			Y[i,j] = reduce(+, (i,j,k->i,j), {: 0<=k<=2N-2i+j and k<=2N+i-2j and k<=-N+i+j}: X[k]);
+	.
+	
+	// Motivating example (4D) from the max simplification paper with addition op
+	affine ex_4d [N]->{ : 10<N }
+		inputs 
+			X : {[i,j] : 0<=i<=j<=2N}
+		outputs
+			Y : {[i,j] : 0<=i<=j<=N}
+		let
+			Y = reduce(+, (i,j,k,l->i,j), {: i<=k<=2i and i+j<=l<=2j} : X[k,l]);
+	.
+}

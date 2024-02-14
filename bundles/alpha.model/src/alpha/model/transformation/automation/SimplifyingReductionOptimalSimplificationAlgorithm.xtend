@@ -60,7 +60,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	private def debug(String content, ProgramState state) {
 		debug(content)
 		if (DEBUG)
-			System.out.println(AShow.print(state.body))
+			System.out.println(AShow.print(state.body.getContainerSystem))
 	}
 	
 	protected final  AlphaRoot originalProgram;
@@ -109,7 +109,6 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		exploreDPcontext(DPcontext)
 		
 		debug("After DP", DPcontext.state)
-		//optimizedPrograms = DPcontext.leafStates.map[s | s.root]
 		val statesSteps = DPcontext.stepsToLeafStates
 		pathsToOptimizedPrograms = new HashMap<AlphaRoot, List<DynamicProgrammingStep>>
 		statesSteps.forEach[stateSteps | 
@@ -117,9 +116,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			val steps = stateSteps.value
 			pathsToOptimizedPrograms.put(root, steps)
 		]
-		//optimizedPrograms = DPcontext.stepsToLeafStates.map[stateSteps | stateSteps.key.root]
 		optimizedPrograms = statesSteps.map[stateSteps | stateSteps.key.root]
-		println
 	}
 	
 	/**
@@ -144,25 +141,17 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		new ProgramState(copyProg);
 	}
 	
-	String INDENT = ''
-	
 	/**
 	 * The algorithm optimizes each equation one by one. There are some 
 	 * cases where the order and choice of reuse vectors influences schedulability,
 	 * but this is not considered in the current implementation.
 	 */
 	private def void exploreDPcontext(DynamicProgrammingContext DPcontext) {
-		val old_INDENT = INDENT
-		INDENT = '+-- ' + INDENT 
 		while (DPcontext.hasNext) {
 			val eq = DPcontext.getNext
 			debug(String.format("Optimizing Equation: %s", eq.variable.name))
-//			val stepStr = DPcontext.step === null ? '' : DPcontext.step.description
-//			println(String.format("%sequ %s (%s)", INDENT, eq.variable.name, stepStr))
-			
 			optimizeEquation(DPcontext, eq)
 		}
-		INDENT = old_INDENT
 	}
 	
 	/**
@@ -279,6 +268,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		// than the answer space
 		val answerDimensionality = targetRE.contextDomain.dimensionality
 		val reBodyDimensionality = targetRE.body.contextDomain.dimensionality
+
 		if (answerDimensionality < reBodyDimensionality) {
 			val vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
 			for (vec : vectors) {

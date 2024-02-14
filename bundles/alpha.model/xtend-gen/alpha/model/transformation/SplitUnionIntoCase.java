@@ -1,5 +1,6 @@
 package alpha.model.transformation;
 
+import alpha.model.AbstractReduceExpression;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaSystem;
@@ -97,6 +98,18 @@ public class SplitUnionIntoCase {
     if (_lessThan) {
       throw new IllegalArgumentException("[SplitUnionIntoCase] Target AutoRestrictExpression must have unions of polyhedra as its (inferred) restrict domain.");
     }
+  }
+
+  public static void apply(final AbstractReduceExpression are) {
+    final AlphaExpression body = are.getBody();
+    if ((body instanceof RestrictExpression)) {
+      SplitUnionIntoCase.apply(((RestrictExpression)body));
+      return;
+    }
+    final RestrictExpression re = AlphaUserFactory.createRestrictExpression(body.getContextDomain(), EcoreUtil.<AlphaExpression>copy(body));
+    EcoreUtil.replace(body, re);
+    AlphaInternalStateConstructor.recomputeContextDomain(are);
+    SplitUnionIntoCase.apply(re);
   }
 
   /**

@@ -82,6 +82,11 @@ class FaceLattice {
 			throw new Exception("Face lattice construction can only be done for a single basic set")
 		root.getBasicSetAt(0).create
 	}
+	def static create(ISLSet root, boolean fullLattice) {
+		if (root.nbBasicSets > 1)
+			throw new Exception("Face lattice construction can only be done for a single basic set")
+		root.getBasicSetAt(0).create(fullLattice)
+	}
 	def static create(ISLBasicSet root) {
 		return create(root, true)
 	}

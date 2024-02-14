@@ -47,7 +47,6 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -304,7 +303,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   private void debug(final String content, final ProgramState state) {
     this.debug(content);
     if (SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG) {
-      System.out.println(AShow.print(this.getBody(state)));
+      System.out.println(AShow.print(AlphaUtil.getContainerSystem(this.getBody(state))));
     }
   }
 
@@ -354,26 +353,29 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   /**
    * Entry point to the algorithm
    */
-  private void run() {
-    final ProgramState state = this.preprocessing();
-    this.debug("After Preprocessing", state);
-    final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext = new SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext(state);
-    this.exploreDPcontext(DPcontext);
-    this.debug("After DP", DPcontext.state);
-    final List<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> statesSteps = DPcontext.stepsToLeafStates();
-    HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> _hashMap = new HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>();
-    this.pathsToOptimizedPrograms = _hashMap;
-    final Consumer<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> _function = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
-      final AlphaRoot root = stateSteps.getKey().root;
-      final List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> steps = stateSteps.getValue();
-      this.pathsToOptimizedPrograms.put(root, steps);
-    };
-    statesSteps.forEach(_function);
-    final Function1<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot> _function_1 = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
-      return stateSteps.getKey().root;
-    };
-    this.optimizedPrograms = ListExtensions.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot>map(statesSteps, _function_1);
-    InputOutput.println();
+  private List<AlphaRoot> run() {
+    List<AlphaRoot> _xblockexpression = null;
+    {
+      final ProgramState state = this.preprocessing();
+      this.debug("After Preprocessing", state);
+      final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext = new SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext(state);
+      this.exploreDPcontext(DPcontext);
+      this.debug("After DP", DPcontext.state);
+      final List<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> statesSteps = DPcontext.stepsToLeafStates();
+      HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> _hashMap = new HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>();
+      this.pathsToOptimizedPrograms = _hashMap;
+      final Consumer<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> _function = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
+        final AlphaRoot root = stateSteps.getKey().root;
+        final List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> steps = stateSteps.getValue();
+        this.pathsToOptimizedPrograms.put(root, steps);
+      };
+      statesSteps.forEach(_function);
+      final Function1<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot> _function_1 = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
+        return stateSteps.getKey().root;
+      };
+      _xblockexpression = this.optimizedPrograms = ListExtensions.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot>map(statesSteps, _function_1);
+    }
+    return _xblockexpression;
   }
 
   /**
@@ -399,16 +401,12 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     return _xblockexpression;
   }
 
-  private String INDENT = "";
-
   /**
    * The algorithm optimizes each equation one by one. There are some
    * cases where the order and choice of reuse vectors influences schedulability,
    * but this is not considered in the current implementation.
    */
   private void exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
-    final String old_INDENT = this.INDENT;
-    this.INDENT = ("+-- " + this.INDENT);
     while (this.hasNext(DPcontext)) {
       {
         final StandardEquation eq = this.getNext(DPcontext);
@@ -416,7 +414,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         this.optimizeEquation(DPcontext, eq);
       }
     }
-    this.INDENT = old_INDENT;
   }
 
   /**

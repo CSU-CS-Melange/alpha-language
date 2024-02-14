@@ -112,6 +112,23 @@ public class FaceLattice {
     }
   }
 
+  public static FaceLattice create(final ISLSet root, final boolean fullLattice) {
+    try {
+      FaceLattice _xblockexpression = null;
+      {
+        int _nbBasicSets = root.getNbBasicSets();
+        boolean _greaterThan = (_nbBasicSets > 1);
+        if (_greaterThan) {
+          throw new Exception("Face lattice construction can only be done for a single basic set");
+        }
+        _xblockexpression = FaceLattice.create(root.getBasicSetAt(0), fullLattice);
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
   public static FaceLattice create(final ISLBasicSet root) {
     return FaceLattice.create(root, true);
   }
