@@ -47,7 +47,7 @@ public class FaceLattice {
    * The information about the set which forms the root of the lattice.
    */
   @Accessors(AccessorType.PUBLIC_GETTER)
-  private Facet rootInfo;
+  public Facet rootInfo;
 
   /**
    * The storage of the lattice itself.
@@ -56,7 +56,7 @@ public class FaceLattice {
    * Each layer is a list of all the sets which are in that layer.
    */
   @Accessors(AccessorType.PUBLIC_GETTER)
-  private ArrayList<ArrayList<Facet>> lattice;
+  public ArrayList<ArrayList<Facet>> lattice;
 
   /**
    * Converts decimal value to base radix and converts to a list of N digits padded with leading zeros

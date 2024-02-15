@@ -29,6 +29,7 @@ import alpha.model.transformation.reduction.SimplifyingReductions;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
+import alpha.model.util.Show;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -43,9 +44,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -77,10 +80,13 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
     protected SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step;
 
+    protected boolean result;
+
     public DynamicProgrammingContext(final ProgramState state) {
       this.state = state;
       LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> _linkedList = new LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext>();
       this.children = _linkedList;
+      this.result = true;
     }
 
     public DynamicProgrammingContext(final ProgramState state, final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step) {
@@ -236,7 +242,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         final String eqVarName = _xifexpression;
         String _xifexpression_1 = null;
         if ((eqVarName != null)) {
-          _xifexpression_1 = String.format("to %s", eqVarName);
+          _xifexpression_1 = String.format(" to %s", eqVarName);
         } else {
           _xifexpression_1 = "";
         }
@@ -244,6 +250,10 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         _xblockexpression = String.format("Apply SimplifyingReduction%s with: %s", toEqStr, MatrixOperations.toString(this.reuseDepNoParams));
       }
       return _xblockexpression;
+    }
+
+    public long[] getReuseDepNoParams() {
+      return this.reuseDepNoParams;
     }
   }
 
@@ -292,9 +302,13 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     }
   }
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
 
   public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
+
+  public static boolean THROTTLE = true;
+
+  public static int THROTTLE_LIMIT = 1;
 
   private void debug(final String content) {
     if (SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG) {
@@ -403,25 +417,69 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     return _xblockexpression;
   }
 
-  private String INDENT = "+-";
+  private String INDENT = "";
+
+  public String pprintln(final Object o) {
+    return InputOutput.<String>println(String.format("%s%s", this.INDENT, o.toString()));
+  }
+
+  public int min(final int a, final int b) {
+    int _xifexpression = (int) 0;
+    if ((a < b)) {
+      _xifexpression = a;
+    } else {
+      _xifexpression = b;
+    }
+    return _xifexpression;
+  }
 
   /**
    * The algorithm optimizes each equation one by one. There are some
    * cases where the order and choice of reuse vectors influences schedulability,
    * but this is not considered in the current implementation.
    */
-  private void exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
-    final String OLD_INDENT = this.INDENT;
+  private boolean exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
+    InputOutput.<String>println(Show.<SystemBody>print(this.getBody(DPcontext.state)));
     while (this.hasNext(DPcontext)) {
       {
-        String _INDENT = this.INDENT;
-        this.INDENT = (_INDENT + "+-");
+        final Function1<StandardEquation, String> _function = (StandardEquation eq) -> {
+          return eq.getVariable().getName();
+        };
+        final List<String> remainingEqs = ListExtensions.<StandardEquation, String>map(this.getAll(DPcontext), _function);
         final StandardEquation eq = this.getNext(DPcontext);
-        InputOutput.<String>println(String.format("%s equation: %s", this.INDENT, eq.getVariable().getName()));
-        this.optimizeEquation(DPcontext, eq);
+        InputOutput.<String>println(Show.<SystemBody>print(this.getBody(DPcontext.state)));
+        InputOutput.<String>println(String.format("%s%s", this.debugPrefix(eq), eq.getVariable().getName()));
+        this.debug(String.format("Optimizing Equation: %s", eq.getVariable().getName()));
+        String _name = eq.getVariable().getName();
+        boolean _equals = Objects.equal(_name, "Y_add_NR_sub_NR2");
+        if (_equals) {
+          InputOutput.println();
+        }
+        final boolean result = this.optimizeEquation(DPcontext, eq);
+        DPcontext.result = (DPcontext.result && result);
       }
     }
-    this.INDENT = OLD_INDENT;
+    return DPcontext.result;
+  }
+
+  private int dimensionality(final StandardEquation eq) {
+    return (this.dimensionality(eq, eq.getExpr())).intValue();
+  }
+
+  private Integer _dimensionality(final StandardEquation eq, final ReduceExpression re) {
+    return Integer.valueOf(re.getFacet().getDimensionality());
+  }
+
+  private Integer _dimensionality(final StandardEquation eq, final Object o) {
+    return ISLUtil.dimensionality(eq.getVariable().getDomain());
+  }
+
+  private String debugPrefix(final StandardEquation eq) {
+    int _dimensionality = this.dimensionality(eq);
+    final Function1<Integer, String> _function = (Integer it) -> {
+      return "+--";
+    };
+    return IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _dimensionality, true), _function));
   }
 
   /**
@@ -433,76 +491,127 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
    * In this implementation, there is a data structure named DynamicProgrammingContext
    * that keeps track of the equations that should be explored. This is used to only optimize
    * an equation and new equations that are introduced during the process of optimizing this equation.
+   * 
+   * Returns true if equation was completely optimized (all dimensions are reuse have been
+   * exploited), or false otherwise
    */
-  private void optimizeEquation(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context, final StandardEquation eq) {
-    AlphaExpression _expr = eq.getExpr();
-    boolean _not = (!(_expr instanceof ReduceExpression));
-    if (_not) {
-      this.debug(String.format("Not an Equation with ReduceExpression: %s", eq.getVariable().getName()));
-      context.markFinishedEquation(eq);
-      return;
-    }
-    final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext childContext = context.copy();
-    childContext.parent = context;
-    final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
-      return Boolean.valueOf((!Objects.equal(e, eq)));
-    };
-    final Function1<StandardEquation, String> _function_1 = (StandardEquation e) -> {
-      return e.getVariable().getName();
-    };
-    Iterables.<String>addAll(childContext.excludedEquations, IterableExtensions.<StandardEquation, String>map(IterableExtensions.<StandardEquation>filter(this.getBody(context.state).getStandardEquations(), _function), _function_1));
-    while ((!this.sideEffectFreeTransformations(this.getBody(childContext.state), eq.getVariable().getName()))) {
-    }
-    this.debug("After Side-Effect Free Transformations", childContext.state);
-    final StandardEquation targetEq = this.getBody(childContext.state).getStandardEquation(eq.getVariable().getName());
-    AlphaExpression _expr_1 = targetEq.getExpr();
-    boolean _not_1 = (!(_expr_1 instanceof ReduceExpression));
-    if (_not_1) {
-      this.debug(String.format("Finished Exploring Equation: %s", eq.getVariable().getName()));
-      childContext.markFinishedEquation(eq);
-      this.exploreDPcontext(childContext);
-      if ((childContext.state.nbSR > context.state.nbSR)) {
-        context.state = childContext.state;
-        this.excludeExploredEquationsInChildContext(context, childContext);
+  private boolean optimizeEquation(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context, final StandardEquation eq) {
+    boolean _xblockexpression = false;
+    {
+      AlphaExpression _expr = eq.getExpr();
+      boolean _not = (!(_expr instanceof ReduceExpression));
+      if (_not) {
+        this.debug(String.format("Not an Equation with ReduceExpression: %s", eq.getVariable().getName()));
+        context.markFinishedEquation(eq);
+        return true;
       }
-      context.markFinishedEquation(eq);
-      return;
-    }
-    AlphaExpression _expr_2 = targetEq.getExpr();
-    final LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr_2));
-    this.debug(String.format("Number of DP step candidates: %d", Integer.valueOf(candidates.size())));
-    boolean _isEmpty = candidates.isEmpty();
-    if (_isEmpty) {
-      this.debug(String.format("Finished Exploring Equation: %s", eq.getVariable().getName()));
-      childContext.markFinishedEquation(eq);
-      this.exploreDPcontext(childContext);
-      if ((childContext.state.nbSR > context.state.nbSR)) {
-        context.state = childContext.state;
-        this.excludeExploredEquationsInChildContext(context, childContext);
+      final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext childContext = context.copy();
+      childContext.parent = context;
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
+        return Boolean.valueOf((!Objects.equal(e, eq)));
+      };
+      final Function1<StandardEquation, String> _function_1 = (StandardEquation e) -> {
+        return e.getVariable().getName();
+      };
+      Iterables.<String>addAll(childContext.excludedEquations, IterableExtensions.<StandardEquation, String>map(IterableExtensions.<StandardEquation>filter(this.getBody(context.state).getStandardEquations(), _function), _function_1));
+      while ((!this.sideEffectFreeTransformations(this.getBody(childContext.state), eq.getVariable().getName()))) {
       }
-      context.markFinishedEquation(eq);
-      return;
+      this.debug("After Side-Effect Free Transformations", childContext.state);
+      final StandardEquation targetEq = this.getBody(childContext.state).getStandardEquation(eq.getVariable().getName());
+      AlphaExpression _expr_1 = targetEq.getExpr();
+      boolean _not_1 = (!(_expr_1 instanceof ReduceExpression));
+      if (_not_1) {
+        this.debug(String.format("Finished Exploring Equation: %s", eq.getVariable().getName()));
+        childContext.markFinishedEquation(eq);
+        this.exploreDPcontext(childContext);
+        if ((childContext.state.nbSR > context.state.nbSR)) {
+          context.state = childContext.state;
+          this.excludeExploredEquationsInChildContext(context, childContext);
+        }
+        context.markFinishedEquation(eq);
+        return true;
+      }
+      AlphaExpression _expr_2 = targetEq.getExpr();
+      final ReduceExpression targetRE = ((ReduceExpression) _expr_2);
+      final LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> allCandidates = this.enumerateCandidates(targetRE);
+      List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidates = ((List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>) null);
+      if (SimplifyingReductionOptimalSimplificationAlgorithm.THROTTLE) {
+        final int numCandidates = allCandidates.size();
+        final Function1<Integer, Boolean> _function_2 = (Integer i) -> {
+          int _min = this.min(SimplifyingReductionOptimalSimplificationAlgorithm.THROTTLE_LIMIT, numCandidates);
+          return Boolean.valueOf(((i).intValue() < _min));
+        };
+        final Function1<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> _function_3 = (Integer i) -> {
+          return allCandidates.get((i).intValue());
+        };
+        candidates = IterableExtensions.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>toList(IterableExtensions.<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, numCandidates, true), _function_2), _function_3));
+      }
+      this.debug(String.format("Number of DP step candidates: %d", Integer.valueOf(candidates.size())));
+      boolean _isEmpty = candidates.isEmpty();
+      if (_isEmpty) {
+        this.debug(String.format("Finished Exploring Equation: %s", eq.getVariable().getName()));
+        childContext.markFinishedEquation(eq);
+        this.exploreDPcontext(childContext);
+        if ((childContext.state.nbSR > context.state.nbSR)) {
+          context.state = childContext.state;
+          this.excludeExploredEquationsInChildContext(context, childContext);
+        }
+        context.markFinishedEquation(eq);
+        Equation _containerEquation = AlphaUtil.getContainerEquation(targetRE);
+        String _name = ((StandardEquation) _containerEquation).getVariable().getName();
+        boolean _equals = Objects.equal(_name, "Y_add_NR_sub_NR2");
+        if (_equals) {
+          InputOutput.println();
+        }
+        final boolean isGood = this.isOptimallySimplified(targetRE);
+        return (isGood && true);
+      }
+      for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step : candidates) {
+        {
+          this.debug(String.format("Applying Step: %s", step.description()));
+          final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child = childContext.copy();
+          child.step = step;
+          this.applyDPStep(child, step);
+          final boolean result = this.exploreDPcontext(child);
+          context.children.add(child);
+          if (result) {
+            context.markFinishedEquation(eq);
+            return result;
+          }
+        }
+      }
+      _xblockexpression = context.markFinishedEquation(eq);
     }
-    final int limit = 1;
-    final int numCandidates = candidates.size();
-    final Function1<Integer, Boolean> _function_2 = (Integer i) -> {
-      return Boolean.valueOf(((i).intValue() < limit));
-    };
-    final Function1<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> _function_3 = (Integer i) -> {
-      return candidates.get((i).intValue());
-    };
-    final Iterable<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidatesToExplore = IterableExtensions.<Integer, SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, numCandidates, true), _function_2), _function_3);
-    for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step : candidatesToExplore) {
+    return _xblockexpression;
+  }
+
+  /**
+   * Returns true if the dimensionality reduce expression's body's context domain is the same
+   * as the dimensionality of the LHS of the container equation.
+   * The parent of the expression is guaranteed to be a Standard Equation since NormalizeReduction
+   * has been systematically called.
+   */
+  protected boolean isOptimallySimplified(final ReduceExpression re) {
+    try {
+      boolean _xblockexpression = false;
       {
-        this.debug(String.format("Applying Step: %s", step.description()));
-        final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child = childContext.copy();
-        child.step = step;
-        this.applyDPStep(child, step);
-        this.exploreDPcontext(child);
-        context.children.add(child);
+        EObject _eContainer = re.eContainer();
+        boolean _not = (!(_eContainer instanceof StandardEquation));
+        if (_not) {
+          String _print = Show.<ReduceExpression>print(re);
+          String _plus = ("Reduction has not been normalized: " + _print);
+          throw new Exception(_plus);
+        }
+        Equation _containerEquation = AlphaUtil.getContainerEquation(re);
+        final StandardEquation eq = ((StandardEquation) _containerEquation);
+        final int lhsDim = eq.getVariable().getDomain().getNbIndices();
+        final Integer rhsDim = ISLUtil.dimensionality(re.getBody().getContextDomain());
+        _xblockexpression = (lhsDim >= (rhsDim).intValue());
       }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
     }
-    context.markFinishedEquation(eq);
   }
 
   /**
@@ -592,6 +701,14 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     return IterableExtensions.<StandardEquation>findFirst(this.getBody(context.state).getStandardEquations(), _function);
   }
 
+  private List<StandardEquation> getAll(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context) {
+    final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
+      boolean _contains = context.excludedEquations.contains(e.getVariable().getName());
+      return Boolean.valueOf((!_contains));
+    };
+    return IterableExtensions.<StandardEquation>toList(IterableExtensions.<StandardEquation>filter(this.getBody(context.state).getStandardEquations(), _function));
+  }
+
   private void excludeExploredEquationsInChildContext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context, final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext childContext) {
     final Function1<String, Boolean> _function = (String e) -> {
       StandardEquation _standardEquation = this.getBody(context.state).getStandardEquation(e);
@@ -655,6 +772,17 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
   private SystemBody getBody(final ProgramState state) {
     return this.getSystem(state).getSystemBodies().get(this.systemBodyID);
+  }
+
+  private Integer dimensionality(final StandardEquation eq, final Object re) {
+    if (re instanceof ReduceExpression) {
+      return _dimensionality(eq, (ReduceExpression)re);
+    } else if (re != null) {
+      return _dimensionality(eq, re);
+    } else {
+      throw new IllegalArgumentException("Unhandled parameter types: " +
+        Arrays.<Object>asList(eq, re).toString());
+    }
   }
 
   protected Object applyDPStep(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context, final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step) {

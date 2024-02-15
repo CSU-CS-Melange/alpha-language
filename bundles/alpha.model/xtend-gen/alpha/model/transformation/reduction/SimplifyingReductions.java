@@ -22,6 +22,7 @@ import alpha.model.transformation.Normalize;
 import alpha.model.transformation.PropagateSimpleEquations;
 import alpha.model.transformation.SimplifyExpressions;
 import alpha.model.transformation.SplitReduction;
+import alpha.model.transformation.automation.SimplifyingReductionOptimalSimplificationAlgorithm;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaOperatorUtil;
 import alpha.model.util.AlphaUtil;
@@ -29,6 +30,7 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
+import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -89,7 +91,7 @@ public class SimplifyingReductions {
     private BINARY_OP invOP;
   }
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG;
 
   /**
    * Setting this variable to true disables all the
@@ -166,8 +168,6 @@ public class SimplifyingReductions {
     };
     return ((long[])Conversions.unwrapArray(ListExtensions.<ISLAff, Long>map(reuseDep.getAffs(), _function), long.class));
   }
-
-  private static int __c = 0;
 
   protected void simplify() {
     try {
@@ -247,19 +247,25 @@ public class SimplifyingReductions {
       EcoreUtil.replace(this.targetReduce, mainCaseExpr);
       AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
       if ((!SimplifyingReductions.DISABLE_POST_PROCESSING)) {
-        SimplifyExpressions.apply(this.containerSystemBody);
-        Normalize.apply(this.containerSystemBody);
         PropagateSimpleEquations.apply(this.containerSystemBody);
         Normalize.apply(this.containerSystemBody);
         SplitReduction.counter = 0;
         while (SplitReduction.hasNonConvexReduceExpressions(this.containerSystemBody)) {
           {
+            if ((SplitReduction.counter >= 1)) {
+              String _print = Show.<AlphaSystem>print(this.containerSystem);
+              String _plus = ("start:" + _print);
+              InputOutput.<String>println(_plus);
+              InputOutput.println();
+            }
             SplitReduction.apply(this.containerSystemBody);
             if ((SplitReduction.counter > 1000)) {
               throw new Exception("You appear to be caught in an infinite loop");
             }
           }
         }
+        SimplifyExpressions.apply(this.containerSystemBody);
+        Normalize.apply(this.containerSystemBody);
       }
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
@@ -412,11 +418,7 @@ public class SimplifyingReductions {
       return vectors;
     }
     final ArrayList<FaceLattice.Label> validLabels = new ArrayList<FaceLattice.Label>();
-    validLabels.addAll(Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.ZERO)));
-    boolean _hasInverse = AlphaOperatorUtil.hasInverse(are.getOperator());
-    if (_hasInverse) {
-      validLabels.add(FaceLattice.Label.NEG);
-    }
+    validLabels.addAll(Collections.<FaceLattice.Label>unmodifiableList(CollectionLiterals.<FaceLattice.Label>newArrayList(FaceLattice.Label.POS, FaceLattice.Label.ZERO, FaceLattice.Label.NEG)));
     final List<List<FaceLattice.Label>> labelings = IterableExtensions.<List<FaceLattice.Label>>toList(face.enumerateAllPossibleLabelings(((FaceLattice.Label[])Conversions.unwrapArray(validLabels, FaceLattice.Label.class)), facets.size()));
     final Function1<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>> _function = (List<FaceLattice.Label> l) -> {
       return face.getLabelingDomain(((FaceLattice.Label[])Conversions.unwrapArray(l, FaceLattice.Label.class)));

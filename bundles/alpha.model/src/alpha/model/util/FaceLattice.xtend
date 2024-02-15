@@ -31,7 +31,7 @@ class FaceLattice {
 	
 	/** The information about the set which forms the root of the lattice. */
 	@Accessors(PUBLIC_GETTER)
-	var Facet rootInfo
+	public var Facet rootInfo
 	
 	/**
 	 * The storage of the lattice itself.
@@ -40,7 +40,7 @@ class FaceLattice {
 	 * Each layer is a list of all the sets which are in that layer.
 	 */
 	 @Accessors(PUBLIC_GETTER)
-	ArrayList<ArrayList<Facet>> lattice
+	public ArrayList<ArrayList<Facet>> lattice
 	
 	/** The way each facet can be labeled by one particular choice of reuse */
 	enum Label {

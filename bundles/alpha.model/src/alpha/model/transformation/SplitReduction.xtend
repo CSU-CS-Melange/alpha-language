@@ -46,12 +46,15 @@ class SplitReduction {
 		
 		// Identify all of the equations that need to substituted after SplitUnionIntoCase. These
 		// are guaranteed to be StandardEquations since NormalizeReduction was called previously.
-		val nonConvexEqus = new ArrayList<StandardEquation> 
-		nonConvexEqus.addAll(body
+		val nonConvexREs = new ArrayList<ReduceExpression>
+		nonConvexREs.addAll(body
 			.getAllContentsOfType(ReduceExpression)
 			.reject[hasConvexBody]
-			.map[e | e.getContainerEquation as StandardEquation]
-		)
+			.map[e | e as ReduceExpression]
+		) 
+		
+		val nonConvexEqus = new ArrayList<StandardEquation> 
+		nonConvexEqus.addAll(nonConvexREs.map[e | e.getContainerEquation as StandardEquation])
 		
 		// Create separate reduction equations for each convex piece
 		SplitUnionIntoCase.apply(body)

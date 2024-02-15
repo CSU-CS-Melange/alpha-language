@@ -41,7 +41,7 @@ public class FaceLatticeTest {
    * @param faceCounts The number of nodes to expect in each layer, sorted from 0-face to N-faces.
    */
   private static void assertFaceCounts(final FaceLattice lattice, final int... faceCounts) {
-    final ArrayList<ArrayList<Facet>> latticeStorage = lattice.getLattice();
+    final ArrayList<ArrayList<Facet>> latticeStorage = lattice.lattice;
     Assert.assertEquals(faceCounts.length, latticeStorage.size());
     int _length = faceCounts.length;
     final Consumer<Integer> _function = (Integer dim) -> {
@@ -130,12 +130,11 @@ public class FaceLatticeTest {
     if (_hasThickFaces) {
       return;
     }
-    boolean _isEmpty = lattice.getRootInfo().isEmpty();
+    boolean _isEmpty = lattice.rootInfo.isEmpty();
     if (_isEmpty) {
       ArrayList<ArrayList<Facet>> _elvis = null;
-      ArrayList<ArrayList<Facet>> _lattice = lattice.getLattice();
-      if (_lattice != null) {
-        _elvis = _lattice;
+      if (lattice.lattice != null) {
+        _elvis = lattice.lattice;
       } else {
         ArrayList<ArrayList<Facet>> _arrayList = new ArrayList<ArrayList<Facet>>();
         _elvis = _arrayList;
@@ -151,7 +150,7 @@ public class FaceLatticeTest {
     final Function1<Facet, ISLVertices> _function_1 = (Facet facet) -> {
       return facet.toBasicSet().computeVertices();
     };
-    final List<ISLVertices> latticeVertexSets = IterableExtensions.<ISLVertices>toList(ListExtensions.<Facet, ISLVertices>map(ListExtensions.<Facet>reverseView(lattice.getLattice().get(0)), _function_1));
+    final List<ISLVertices> latticeVertexSets = IterableExtensions.<ISLVertices>toList(ListExtensions.<Facet, ISLVertices>map(ListExtensions.<Facet>reverseView(lattice.lattice.get(0)), _function_1));
     final Consumer<ISLVertices> _function_2 = (ISLVertices vertexSet) -> {
       Assert.assertEquals(1, vertexSet.getNbVertices());
     };
@@ -161,7 +160,7 @@ public class FaceLatticeTest {
     };
     List<ISLVertex> _map = ListExtensions.<ISLVertices, ISLVertex>map(latticeVertexSets, _function_3);
     final ArrayList<ISLVertex> latticeVertices = new ArrayList<ISLVertex>(_map);
-    final ISLVertices islVerticesList = lattice.getRootInfo().toBasicSet().computeVertices();
+    final ISLVertices islVerticesList = lattice.rootInfo.toBasicSet().computeVertices();
     int _nbVertices = islVerticesList.getNbVertices();
     final Function1<Integer, ISLVertex> _function_4 = (Integer idx) -> {
       return islVerticesList.getVertexAt((idx).intValue());
@@ -490,8 +489,7 @@ public class FaceLatticeTest {
   public void squarePyramidTest() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i<=k and 0<=j<=k and 0<=k<=N}");
     Assert.assertFalse(lattice.isSimplicial());
-    ArrayList<ArrayList<Facet>> _lattice = lattice.getLattice();
-    for (final ArrayList<Facet> l : _lattice) {
+    for (final ArrayList<Facet> l : lattice.lattice) {
       InputOutput.<ArrayList<Facet>>println(l);
     }
   }
@@ -499,9 +497,9 @@ public class FaceLatticeTest {
   @Test
   public void testNormalVector_1() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}");
-    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Iterable<Facet> facets = lattice.getChildren(lattice.rootInfo);
     final Function1<Facet, ISLAff> _function = (Facet f) -> {
-      return f.getNormalVector(lattice.getRootInfo());
+      return f.getNormalVector(lattice.rootInfo);
     };
     final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
     final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
@@ -518,9 +516,9 @@ public class FaceLatticeTest {
   @Test
   public void testNormalVector_2() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N+17}");
-    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Iterable<Facet> facets = lattice.getChildren(lattice.rootInfo);
     final Function1<Facet, ISLAff> _function = (Facet f) -> {
-      return f.getNormalVector(lattice.getRootInfo());
+      return f.getNormalVector(lattice.rootInfo);
     };
     final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
     final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
@@ -537,9 +535,9 @@ public class FaceLatticeTest {
   @Test
   public void testNormalVector_3() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=i,j,k and N<2i+j+3k and i+j+k<2N+3}");
-    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Iterable<Facet> facets = lattice.getChildren(lattice.rootInfo);
     final Function1<Facet, ISLAff> _function = (Facet f) -> {
-      return f.getNormalVector(lattice.getRootInfo());
+      return f.getNormalVector(lattice.rootInfo);
     };
     final Iterable<ISLAff> norms = IterableExtensions.<Facet, ISLAff>map(facets, _function);
     final ISLAff v1 = ((ISLAff[])Conversions.unwrapArray(norms, ISLAff.class))[0];
@@ -560,7 +558,7 @@ public class FaceLatticeTest {
   @Test
   public void testLabelInducingConstraint_1() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j] : 0<=i,j and i+j<N }");
-    final ISLSpace space = lattice.getRootInfo().getSpace();
+    final ISLSpace space = lattice.rootInfo.getSpace();
     final ISLAff aff = ISLUtil.toISLAff("{[i,j]->[2i+7j]}");
     final ISLConstraint opConstraint = lattice.toLabelInducingConstraint(aff, space, FaceLattice.Label.POS);
     final ISLConstraint iopConstraint = lattice.toLabelInducingConstraint(aff, space, FaceLattice.Label.NEG);
@@ -579,7 +577,7 @@ public class FaceLatticeTest {
   @Test
   public void testLabelingDomain_1() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i,j and i+j<N}");
-    final Facet face = lattice.getRootInfo();
+    final Facet face = lattice.rootInfo;
     final int nbParams = face.getSpace().getNbParams();
     final Pair<FaceLattice.Label[], ISLBasicSet> ld1 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(1), Integer.valueOf(1))), int.class))));
     final Pair<FaceLattice.Label[], ISLBasicSet> ld2 = lattice.getLabelingDomain(face, FaceLatticeTest.toLabels(((int[])Conversions.unwrapArray(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf((-1)), Integer.valueOf((-1)))), int.class))));
@@ -680,7 +678,7 @@ public class FaceLatticeTest {
   @Test
   public void testFeasibleReuse_1() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i<=N and i<=j<2i}");
-    final Facet face = lattice.getRootInfo();
+    final Facet face = lattice.rootInfo;
     final Iterable<Facet> facets = lattice.getChildren(face);
     final int nbParams = face.getSpace().getNbParams();
     final ISLBasicSet reuseSpace = ISLUtil.toISLBasicSet("[N]->{[i,j]: j=0}");
@@ -714,9 +712,9 @@ public class FaceLatticeTest {
       return Pair.<String, Facet>of(_plus, f);
     };
     final Function1<Facet, Pair<String, Facet>> func = _function;
-    final List<Pair<String, Facet>> faces = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(2), func);
-    final List<Pair<String, Facet>> edges = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(1), func);
-    final List<Pair<String, Facet>> vertices = ListExtensions.<Facet, Pair<String, Facet>>map(l.getLattice().get(0), func);
+    final List<Pair<String, Facet>> faces = ListExtensions.<Facet, Pair<String, Facet>>map(l.lattice.get(2), func);
+    final List<Pair<String, Facet>> edges = ListExtensions.<Facet, Pair<String, Facet>>map(l.lattice.get(1), func);
+    final List<Pair<String, Facet>> vertices = ListExtensions.<Facet, Pair<String, Facet>>map(l.lattice.get(0), func);
     final Function1<Pair<String, Facet>, Boolean> _function_1 = (Pair<String, Facet> p) -> {
       String _key = p.getKey();
       return Boolean.valueOf(Objects.equal(_key, "f014"));
@@ -742,7 +740,7 @@ public class FaceLatticeTest {
       return Boolean.valueOf(Objects.equal(_key, "f23"));
     };
     final Facet backObliqueEdge = (((Pair<String, Facet>[])Conversions.unwrapArray(IterableExtensions.<Pair<String, Facet>>filter(edges, _function_5), Pair.class))[0]).getValue();
-    InputOutput.<ISLMatrix>println(l.getRootInfo().getIndexInequalities());
+    InputOutput.<ISLMatrix>println(l.rootInfo.getIndexInequalities());
     InputOutput.println();
     InputOutput.<ISLBasicSet>println(topVertex.toBasicSet());
     InputOutput.<ISLBasicSet>println(bottomVertex.toBasicSet());
@@ -756,8 +754,7 @@ public class FaceLatticeTest {
   @Test
   public void testThickFace() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j}");
-    ArrayList<ArrayList<Facet>> _lattice = lattice.getLattice();
-    for (final ArrayList<Facet> l : _lattice) {
+    for (final ArrayList<Facet> l : lattice.lattice) {
       InputOutput.<ArrayList<Facet>>println(l);
     }
     final ISLSet set = ISLUtil.toISLSet("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j; [0,j,k]; [i,j,k]: 0<=i,j,k<N; }");
@@ -768,17 +765,17 @@ public class FaceLatticeTest {
   @Test
   public void testThickEquality_1() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j]: 0<=i<2 and -N+10<j<N}");
-    final int dim = lattice.getRootInfo().getDimensionality();
+    final int dim = lattice.rootInfo.getDimensionality();
     Assert.assertEquals(dim, 1);
   }
 
   @Test
   public void testThickEquality_2() {
     final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: 0<=k<=-N+i+j and k<=2N-2i+j and -5+2N+i-2j<=k<=2N+i-2j}");
-    final int dim = lattice.getRootInfo().getDimensionality();
+    final int dim = lattice.rootInfo.getDimensionality();
     Assert.assertEquals(dim, 2);
     FaceLatticeTest.assertFaceCounts(lattice, 3, 3, 1);
-    final Iterable<Facet> facets = lattice.getChildren(lattice.getRootInfo());
+    final Iterable<Facet> facets = lattice.getChildren(lattice.rootInfo);
     final Consumer<Facet> _function = (Facet f) -> {
       Assert.assertTrue(f.hasThickFaces());
     };
@@ -790,7 +787,7 @@ public class FaceLatticeTest {
     final ISLSet set = ISLUtil.toISLSet("[N] -> { [i, j, k, l] : N >= 11 and j < N and k <= 2i and i + j <= l <= 2j and ((i >= 5 and j <= 1 + i and k >= -3 + 2i) or (i <= 4 and k > i and l >= -3 + 2j)) }");
     final Consumer<ISLBasicSet> _function = (ISLBasicSet s) -> {
       final FaceLattice l = FaceLatticeTest.makeLattice(s.toString());
-      final Facet root = l.getRootInfo();
+      final Facet root = l.rootInfo;
       InputOutput.<Integer>println(Integer.valueOf(root.getDimensionality()));
     };
     set.getBasicSets().forEach(_function);

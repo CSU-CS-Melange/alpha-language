@@ -15,6 +15,7 @@ import alpha.model.transformation.Normalize
 import alpha.model.transformation.PropagateSimpleEquations
 import alpha.model.transformation.SimplifyExpressions
 import alpha.model.transformation.SplitReduction
+import alpha.model.transformation.automation.SimplifyingReductionOptimalSimplificationAlgorithm
 import alpha.model.util.AffineFunctionOperations
 import alpha.model.util.AlphaOperatorUtil
 import alpha.model.util.AlphaUtil
@@ -35,10 +36,10 @@ import java.util.LinkedList
 import java.util.TreeSet
 import java.util.function.Function
 import org.eclipse.emf.ecore.util.EcoreUtil
-import org.eclipse.xtext.EcoreUtil2
+
+import static alpha.model.transformation.SplitReduction.*
 
 import static extension alpha.model.transformation.SplitReduction.hasNonConvexReduceExpressions
-import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
 import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
@@ -50,7 +51,7 @@ import static extension alpha.model.util.ISLUtil.isTrivial
  */
 class SimplifyingReductions {
 	
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG;
 
 	/**
 	 * Setting this variable to true disables all the
@@ -109,7 +110,7 @@ class SimplifyingReductions {
 		// reuseDep is a uniform function
 		reuseDep.getAffs.map[aff | aff.getConstant]
 	}
-	static int __c = 0
+	
 	protected def void simplify() {
 		val BE = computeBasicElements(targetReduce, reuseDep)
 		
@@ -224,19 +225,24 @@ class SimplifyingReductions {
 //		println('start:' + Show.print(containerSystem))
 //		println
 		if (!DISABLE_POST_PROCESSING) {
-			SimplifyExpressions.apply(containerSystemBody)
-			Normalize.apply(containerSystemBody)
 			PropagateSimpleEquations.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
-
+				
 			// The bodies of the residual reduction Xadd and Xsub are unions of subsets of the facets
 			SplitReduction.counter = 0
 			while (containerSystemBody.hasNonConvexReduceExpressions) {
+				if (SplitReduction.counter >= 1) {
+					println('start:' + Show.print(containerSystem))
+					println
+				}
 				SplitReduction.apply(containerSystemBody)
 				if (SplitReduction.counter > 1000) {
 					throw new Exception("You appear to be caught in an infinite loop")
 				}
 			}
+			
+			SimplifyExpressions.apply(containerSystemBody)
+			Normalize.apply(containerSystemBody)
 		}
 //		println('end:' + Show.print(containerSystem))
 //		println
@@ -399,16 +405,17 @@ class SimplifyingReductions {
 		val face = are.facet
 		val facets = face.getChildren.toList
 		
-		
 		if (facets.size == 0) 
 			return vectors
 		
 		// identify valid labels
+		// TODO -- this does not take into account that NEG boundary facets are allowed
+		//         when it should
 		val validLabels = new ArrayList<FaceLattice.Label>
-		validLabels.addAll(#[Label.POS, Label.ZERO])
-		if (AlphaOperatorUtil.hasInverse(are.operator)) {
-			validLabels.add(Label.NEG)
-		}
+		validLabels.addAll(#[Label.POS, Label.ZERO, Label.NEG])
+//		if (AlphaOperatorUtil.hasInverse(are.operator)) {
+//			validLabels.add(Label.NEG)
+//		}
 		// enumerate all valid labelings
 		val labelings = face.enumerateAllPossibleLabelings(validLabels, facets.size).toList
 		

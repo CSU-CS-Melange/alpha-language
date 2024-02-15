@@ -204,6 +204,10 @@ public class Facet {
     return this.lattice.getLabeling(this, vector);
   }
 
+  public ISLMatrix getInequalities() {
+    return this.indexInequalities;
+  }
+
   /**
    * Returns <code>true</code> if this set is a child face of the given set, and <code>false</code> otherwise.
    */
@@ -327,7 +331,7 @@ public class Facet {
 
   public ISLMatrix getCharacteristicInequality(final Facet parent) {
     final Integer idx = this.getCharacteristicInequalityIndex(parent);
-    final long[] row = this.lattice.getRootInfo().indexInequalities.toLongMatrix()[(idx).intValue()];
+    final long[] row = this.lattice.rootInfo.indexInequalities.toLongMatrix()[(idx).intValue()];
     final ISLMatrix matrix = ISLMatrix.buildFromLongMatrix(((long[][])Conversions.unwrapArray(Collections.<long[]>unmodifiableList(CollectionLiterals.<long[]>newArrayList(row)), long[].class)));
     return matrix;
   }

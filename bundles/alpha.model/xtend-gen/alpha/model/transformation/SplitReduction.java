@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
  * Splits any reductions whose bodies are not convex into cases of reductions
@@ -50,23 +51,28 @@ public class SplitReduction {
     SplitReduction.counter = (_counter + 1);
     final AlphaSystem system = AlphaUtil.getContainerSystem(body);
     NormalizeReduction.apply(body);
-    final ArrayList<StandardEquation> nonConvexEqus = new ArrayList<StandardEquation>();
+    final ArrayList<ReduceExpression> nonConvexREs = new ArrayList<ReduceExpression>();
     final Function1<ReduceExpression, Boolean> _function = (ReduceExpression it) -> {
       return Boolean.valueOf(SplitReduction.hasConvexBody(it));
     };
-    final Function1<ReduceExpression, StandardEquation> _function_1 = (ReduceExpression e) -> {
+    final Function1<ReduceExpression, ReduceExpression> _function_1 = (ReduceExpression e) -> {
+      return ((ReduceExpression) e);
+    };
+    Iterables.<ReduceExpression>addAll(nonConvexREs, 
+      IterableExtensions.<ReduceExpression, ReduceExpression>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(body, ReduceExpression.class), _function), _function_1));
+    final ArrayList<StandardEquation> nonConvexEqus = new ArrayList<StandardEquation>();
+    final Function1<ReduceExpression, StandardEquation> _function_2 = (ReduceExpression e) -> {
       Equation _containerEquation = AlphaUtil.getContainerEquation(e);
       return ((StandardEquation) _containerEquation);
     };
-    Iterables.<StandardEquation>addAll(nonConvexEqus, 
-      IterableExtensions.<ReduceExpression, StandardEquation>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(body, ReduceExpression.class), _function), _function_1));
+    nonConvexEqus.addAll(ListExtensions.<ReduceExpression, StandardEquation>map(nonConvexREs, _function_2));
     SplitUnionIntoCase.apply(body);
     PermutationCaseReduce.apply(body);
     NormalizeReduction.apply(body);
-    final Consumer<StandardEquation> _function_2 = (StandardEquation equ) -> {
+    final Consumer<StandardEquation> _function_3 = (StandardEquation equ) -> {
       SubstituteByDef.apply(body, equ.getVariable());
     };
-    nonConvexEqus.forEach(_function_2);
+    nonConvexEqus.forEach(_function_3);
     RemoveUnusedEquations.apply(system);
     Normalize.apply(body);
   }

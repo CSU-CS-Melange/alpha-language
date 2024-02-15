@@ -194,6 +194,10 @@ class Facet {
 		lattice.getLabeling(this, vector)
 	} 
 	
+	def getInequalities() {
+		indexInequalities
+	}
+	
 	/** Returns <code>true</code> if this set is a child face of the given set, and <code>false</code> otherwise. */
 	def isChildOf(Facet other) {
 		// This set must saturate more constraints than the other set.

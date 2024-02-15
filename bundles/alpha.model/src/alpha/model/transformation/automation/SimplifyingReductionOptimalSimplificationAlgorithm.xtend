@@ -52,9 +52,11 @@ import alpha.model.transformation.SplitReduction
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = false
+	public static boolean DEBUG = true
 	
 	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false
+	public static boolean THROTTLE = true
+	public static int THROTTLE_LIMIT = 1
 	
 	private def debug(String content) {
 		if (DEBUG)
@@ -145,24 +147,46 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	}
 	
 	
-	var INDENT = '+-'
+	var INDENT = ''
+	def pprintln(Object o) {
+		println(String.format("%s%s", INDENT, o.toString))
+	}
+	def min(int a, int b) {
+		a<b ? a : b
+	}
 	
 	/**
 	 * The algorithm optimizes each equation one by one. There are some 
 	 * cases where the order and choice of reuse vectors influences schedulability,
 	 * but this is not considered in the current implementation.
 	 */
-	private def void exploreDPcontext(DynamicProgrammingContext DPcontext) {
-		val OLD_INDENT = INDENT 
+	private def exploreDPcontext(DynamicProgrammingContext DPcontext) {
+		println(Show.print(DPcontext.state.body))
 		while (DPcontext.hasNext) {
-			INDENT += '+-'
+			val remainingEqs = DPcontext.getAll.map[eq | eq.variable.name]
 			val eq = DPcontext.getNext
-//			debug(String.format("Optimizing Equation: %s", eq.variable.name))
-			println(String.format("%s equation: %s", INDENT, eq.variable.name))
-			optimizeEquation(DPcontext, eq)
-			
+			println(Show.print(DPcontext.state.body))
+			println('%s%s'.format(eq.debugPrefix, eq.variable.name))
+			debug(String.format("Optimizing Equation: %s", eq.variable.name))
+			if (eq.variable.name == 'Y_add_NR_sub_NR2') 
+				println
+			val result = optimizeEquation(DPcontext, eq)
+			DPcontext.result = DPcontext.result && result
 		}
-		INDENT = OLD_INDENT
+		return DPcontext.result
+	}
+	
+	private def int dimensionality(StandardEquation eq) {
+		dimensionality(eq, eq.expr)
+	}
+	private def dispatch dimensionality(StandardEquation eq, ReduceExpression re) {
+		re.facet.dimensionality
+	}
+	private def dispatch dimensionality(StandardEquation eq, Object o) {
+		eq.variable.domain.dimensionality
+	}
+	private def debugPrefix(StandardEquation eq) {
+		(0..<eq.dimensionality).map['+--'].join
 	}
 	
 	/**
@@ -175,12 +199,14 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	 * that keeps track of the equations that should be explored. This is used to only optimize
 	 * an equation and new equations that are introduced during the process of optimizing this equation.
 	 * 
+	 * Returns true if equation was completely optimized (all dimensions are reuse have been
+	 * exploited), or false otherwise
 	 */
-	private def void optimizeEquation(DynamicProgrammingContext context, StandardEquation eq) {
+	private def boolean optimizeEquation(DynamicProgrammingContext context, StandardEquation eq) {
 		if (!(eq.expr instanceof ReduceExpression)) {
 			debug(String.format("Not an Equation with ReduceExpression: %s", eq.variable.name))
 			context.markFinishedEquation(eq)
-			return;
+			return true;
 		}
 		
 		//The child context has all but the target equation put in the excluded list
@@ -207,11 +233,20 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 				context.excludeExploredEquationsInChildContext(childContext)
 			}
 			context.markFinishedEquation(eq)
-			return
+			return true
 		}
-			
-		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
 		
+		val targetRE = targetEq.expr as ReduceExpression
+		
+		val allCandidates = enumerateCandidates(targetRE)
+		var candidates = null as List<DynamicProgrammingStep>
+		if (THROTTLE) {
+			val numCandidates = allCandidates.size()
+			candidates = (0..<numCandidates)
+				.filter[i | i < min(THROTTLE_LIMIT, numCandidates)]
+				.map[i | allCandidates.get(i)]
+				.toList
+		}
 		debug(String.format("Number of DP step candidates: %d", candidates.size))
 		
 		//If there are no candidates, base case of recursion. 
@@ -225,26 +260,43 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			}
 			
 			context.markFinishedEquation(eq)
-			return
+			if ((targetRE.getContainerEquation as StandardEquation).variable.name == 'Y_add_NR_sub_NR2')
+				println
+			val isGood = targetRE.isOptimallySimplified
+			return isGood && true
 		}
 		
 		//Otherwise apply the DP step and recurse
-		val limit = 1
-		val numCandidates = candidates.size()
-		val candidatesToExplore = (0..<numCandidates)
-			.filter[i | i < limit]
-			.map[i | candidates.get(i)]
-		
-		for (step : candidatesToExplore) {
+		for (step : candidates) {
 			debug(String.format("Applying Step: %s", step.description))
 			val child = childContext.copy
 			child.step = step
 			child.applyDPStep(step)
-			exploreDPcontext(child)
+			val result = exploreDPcontext(child)
 			context.children.add(child)
+			if (result) {
+				context.markFinishedEquation(eq)
+				return result
+			}
 		}
 		
 		context.markFinishedEquation(eq)
+	}
+	
+	/** 
+	 * Returns true if the dimensionality reduce expression's body's context domain is the same
+	 * as the dimensionality of the LHS of the container equation.
+	 * The parent of the expression is guaranteed to be a Standard Equation since NormalizeReduction
+	 * has been systematically called.
+	 */
+	protected def isOptimallySimplified(ReduceExpression re) {
+		if (!(re.eContainer instanceof StandardEquation)) {
+			throw new Exception('Reduction has not been normalized: ' + Show.print(re))
+		}
+		val eq = re.getContainerEquation as StandardEquation
+		val lhsDim = eq.variable.domain.nbIndices
+		val rhsDim = re.body.contextDomain.dimensionality
+		lhsDim >= rhsDim
 	}
 	
 	/**
@@ -319,6 +371,9 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	private def getNext(DynamicProgrammingContext context) {
 		context.state.body.standardEquations.findFirst[e|!context.excludedEquations.contains(e.variable.name)]
 	}	
+	private def getAll(DynamicProgrammingContext context) {
+		context.state.body.standardEquations.filter[e|!context.excludedEquations.contains(e.variable.name)].toList
+	}
 	private def excludeExploredEquationsInChildContext(DynamicProgrammingContext context, DynamicProgrammingContext childContext) {
 		childContext.exploredEquations.filter[e|context.state.body.getStandardEquation(e) !== null].forEach[e|context.markFinishedEquation(e)]
 	}
@@ -330,10 +385,12 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		protected DynamicProgrammingContext parent;
 		protected LinkedList<DynamicProgrammingContext> children;
 		protected DynamicProgrammingStep step;
+		protected boolean result
 		
 		new(ProgramState state) {
 			this.state = state;
 			this.children = new LinkedList<DynamicProgrammingContext>
+			this.result = true
 		}
 		
 		new(ProgramState state, DynamicProgrammingStep step) {
@@ -453,8 +510,12 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		override description() {
 			val eq = re.getContainerEquation
 			val eqVarName = (eq instanceof StandardEquation) ? (eq as StandardEquation).variable.name : null 
-			val toEqStr = (eqVarName !== null) ? 'to %s'.format(eqVarName) : ''
+			val toEqStr = (eqVarName !== null) ? ' to %s'.format(eqVarName) : ''
 			String.format("Apply SimplifyingReduction%s with: %s", toEqStr, MatrixOperations.toString(reuseDepNoParams));
+		}
+		
+		def getReuseDepNoParams() {
+			reuseDepNoParams
 		}
 	}
 		
