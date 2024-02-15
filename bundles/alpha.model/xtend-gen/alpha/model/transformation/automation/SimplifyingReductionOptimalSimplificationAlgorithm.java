@@ -1,9 +1,7 @@
 package alpha.model.transformation.automation;
 
 import alpha.model.AbstractReduceExpression;
-import alpha.model.AlphaCompleteVisitable;
 import alpha.model.AlphaExpression;
-import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaNode;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
@@ -33,21 +31,15 @@ import alpha.model.util.Show;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
-import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -74,18 +66,12 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
     protected Set<String> exploredEquations = new TreeSet<String>();
 
-    protected SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext parent;
-
-    protected LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> children;
-
     protected SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep step;
 
     protected boolean result;
 
     public DynamicProgrammingContext(final ProgramState state) {
       this.state = state;
-      LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> _linkedList = new LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext>();
-      this.children = _linkedList;
       this.result = true;
     }
 
@@ -119,61 +105,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         copy.excludedEquations.add(ee);
       }
       return copy;
-    }
-
-    public boolean isLeaf() {
-      return this.children.isEmpty();
-    }
-
-    public List<ProgramState> leafStates() {
-      boolean _isLeaf = this.isLeaf();
-      if (_isLeaf) {
-        return Collections.<ProgramState>unmodifiableList(CollectionLiterals.<ProgramState>newArrayList(this.state));
-      }
-      final ArrayList<ProgramState> states = new ArrayList<ProgramState>();
-      final Consumer<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext> _function = (SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext c) -> {
-        states.addAll(c.leafStates());
-      };
-      this.children.forEach(_function);
-      return states;
-    }
-
-    /**
-     * Gives the list of leafs and the steps it took to get to each leaf state
-     */
-    public List<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> stepsToLeafStates() {
-      ArrayList<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> _xblockexpression = null;
-      {
-        boolean _isLeaf = this.isLeaf();
-        if (_isLeaf) {
-          Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> _mappedTo = Pair.<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>of(this.state, Collections.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>unmodifiableList(CollectionLiterals.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>newArrayList(this.step)));
-          return Collections.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>>unmodifiableList(CollectionLiterals.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>>newArrayList(_mappedTo));
-        }
-        final ArrayList<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> ret = new ArrayList<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>>();
-        for (final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child : this.children) {
-          {
-            final Function1<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> _function = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> pair) -> {
-              ProgramState _key = pair.getKey();
-              List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> _value = pair.getValue();
-              List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> _list = IterableExtensions.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>toList(Iterables.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>concat(Collections.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>unmodifiableList(CollectionLiterals.<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>newArrayList(this.step)), _value));
-              return Pair.<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>of(_key, _list);
-            };
-            final List<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> steps = ListExtensions.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>>map(child.stepsToLeafStates(), _function);
-            ret.addAll(steps);
-          }
-        }
-        _xblockexpression = ret;
-      }
-      return _xblockexpression;
-    }
-
-    public boolean addChild(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext child) {
-      boolean _xblockexpression = false;
-      {
-        child.parent = this;
-        _xblockexpression = this.children.add(child);
-      }
-      return _xblockexpression;
     }
   }
 
@@ -302,7 +233,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
     }
   }
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false;
 
@@ -329,18 +260,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
   protected final int systemBodyID;
 
-  protected List<AlphaRoot> optimizedPrograms;
-
-  protected Map<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> pathsToOptimizedPrograms;
-
-  public List<AlphaRoot> getOptimizedPrograms() {
-    return this.optimizedPrograms;
-  }
-
-  public Map<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> getPathsToOptimizedPrograms() {
-    return this.pathsToOptimizedPrograms;
-  }
-
   protected SimplifyingReductionOptimalSimplificationAlgorithm(final SystemBody body) {
     this.originalProgram = AlphaUtil.getContainerRoot(body);
     this.systemName = body.getSystem().getFullyQualifiedName();
@@ -362,36 +281,18 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   public static SimplifyingReductionOptimalSimplificationAlgorithm apply(final SystemBody body) {
     final SimplifyingReductionOptimalSimplificationAlgorithm SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
     SROSA.run();
-    AlphaInternalStateConstructor.recomputeContextDomain(((AlphaCompleteVisitable[])Conversions.unwrapArray(SROSA.optimizedPrograms, AlphaCompleteVisitable.class)));
     return SROSA;
   }
 
   /**
    * Entry point to the algorithm
    */
-  private List<AlphaRoot> run() {
-    List<AlphaRoot> _xblockexpression = null;
-    {
-      final ProgramState state = this.preprocessing();
-      this.debug("After Preprocessing", state);
-      final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext = new SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext(state);
-      this.exploreDPcontext(DPcontext);
-      this.debug("After DP", DPcontext.state);
-      final List<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> statesSteps = DPcontext.stepsToLeafStates();
-      HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> _hashMap = new HashMap<AlphaRoot, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>();
-      this.pathsToOptimizedPrograms = _hashMap;
-      final Consumer<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>> _function = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
-        final AlphaRoot root = stateSteps.getKey().root;
-        final List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> steps = stateSteps.getValue();
-        this.pathsToOptimizedPrograms.put(root, steps);
-      };
-      statesSteps.forEach(_function);
-      final Function1<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot> _function_1 = (Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>> stateSteps) -> {
-        return stateSteps.getKey().root;
-      };
-      _xblockexpression = this.optimizedPrograms = ListExtensions.<Pair<ProgramState, List<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>>, AlphaRoot>map(statesSteps, _function_1);
-    }
-    return _xblockexpression;
+  private void run() {
+    final ProgramState state = this.preprocessing();
+    this.debug("After Preprocessing", state);
+    final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext = new SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext(state);
+    this.exploreDPcontext(DPcontext);
+    this.debug("After DP", DPcontext.state);
   }
 
   /**
@@ -439,7 +340,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
    * but this is not considered in the current implementation.
    */
   private boolean exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
-    InputOutput.<String>println(Show.<SystemBody>print(this.getBody(DPcontext.state)));
     while (this.hasNext(DPcontext)) {
       {
         final Function1<StandardEquation, String> _function = (StandardEquation eq) -> {
@@ -447,11 +347,8 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         };
         final List<String> remainingEqs = ListExtensions.<StandardEquation, String>map(this.getAll(DPcontext), _function);
         final StandardEquation eq = this.getNext(DPcontext);
-        InputOutput.<String>println(Show.<SystemBody>print(this.getBody(DPcontext.state)));
-        InputOutput.<String>println(String.format("%s%s", this.debugPrefix(eq), eq.getVariable().getName()));
-        this.debug(String.format("Optimizing Equation: %s", eq.getVariable().getName()));
-        String _name = eq.getVariable().getName();
-        boolean _equals = Objects.equal(_name, "Y_add_NR_sub_NR2");
+        String _string = remainingEqs.toString();
+        boolean _equals = Objects.equal(_string, "[Y_add_NR, Y_add_NR2, Y_add_NR3, Y_sub_NR, Y_sub_NR2]");
         if (_equals) {
           InputOutput.println();
         }
@@ -506,7 +403,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         return true;
       }
       final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext childContext = context.copy();
-      childContext.parent = context;
       final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
         return Boolean.valueOf((!Objects.equal(e, eq)));
       };
@@ -573,7 +469,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
           child.step = step;
           this.applyDPStep(child, step);
           final boolean result = this.exploreDPcontext(child);
-          context.children.add(child);
           if (result) {
             context.markFinishedEquation(eq);
             return result;

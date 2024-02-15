@@ -1,7 +1,6 @@
 package alpha.model.transformation.automation
 
 import alpha.model.AbstractReduceExpression
-import alpha.model.AlphaInternalStateConstructor
 import alpha.model.AlphaRoot
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
@@ -22,23 +21,18 @@ import alpha.model.transformation.reduction.SameOperatorSimplification
 import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.util.AShow
 import alpha.model.util.AlphaUtil
+import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import java.util.ArrayList
-import java.util.HashMap
 import java.util.LinkedList
 import java.util.List
-import java.util.Map
 import java.util.Set
 import java.util.TreeSet
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
-import static extension alpha.model.transformation.SplitReduction.hasConvexBody
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import alpha.model.util.Show
-import alpha.model.transformation.SplitReduction
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -52,7 +46,7 @@ import alpha.model.transformation.SplitReduction
  */
 class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
-	public static boolean DEBUG = true
+	public static boolean DEBUG = false
 	
 	public static boolean DO_DECOMPOSITION_WITH_SIDE_EFFECTS = false
 	public static boolean THROTTLE = true
@@ -71,17 +65,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	protected final  AlphaRoot originalProgram;
 	protected final String systemName;
 	protected final  int systemBodyID;
-	protected List<AlphaRoot> optimizedPrograms;
-	protected Map<AlphaRoot, List<DynamicProgrammingStep>> pathsToOptimizedPrograms;
-	
-	def getOptimizedPrograms() {
-		optimizedPrograms
-	}
-	
-	def getPathsToOptimizedPrograms() {
-		pathsToOptimizedPrograms
-	}
-	
+		
 	protected new (SystemBody body) {
 		originalProgram = AlphaUtil.getContainerRoot(body);
 		systemName = body.system.fullyQualifiedName
@@ -97,8 +81,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
 	static def apply(SystemBody body) {
 		val SROSA = new SimplifyingReductionOptimalSimplificationAlgorithm(body);
-		SROSA.run();
-		AlphaInternalStateConstructor.recomputeContextDomain(SROSA.optimizedPrograms)
+		SROSA.run()
 		return SROSA
 	}
 	
@@ -114,14 +97,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		exploreDPcontext(DPcontext)
 		
 		debug("After DP", DPcontext.state)
-		val statesSteps = DPcontext.stepsToLeafStates
-		pathsToOptimizedPrograms = new HashMap<AlphaRoot, List<DynamicProgrammingStep>>
-		statesSteps.forEach[stateSteps | 
-			val root = stateSteps.key.root
-			val steps = stateSteps.value
-			pathsToOptimizedPrograms.put(root, steps)
-		]
-		optimizedPrograms = statesSteps.map[stateSteps | stateSteps.key.root]
+		
 	}
 	
 	/**
@@ -161,14 +137,11 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	 * but this is not considered in the current implementation.
 	 */
 	private def exploreDPcontext(DynamicProgrammingContext DPcontext) {
-		println(Show.print(DPcontext.state.body))
 		while (DPcontext.hasNext) {
 			val remainingEqs = DPcontext.getAll.map[eq | eq.variable.name]
 			val eq = DPcontext.getNext
-			println(Show.print(DPcontext.state.body))
-			println('%s%s'.format(eq.debugPrefix, eq.variable.name))
-			debug(String.format("Optimizing Equation: %s", eq.variable.name))
-			if (eq.variable.name == 'Y_add_NR_sub_NR2') 
+			//println('%s%s'.format(eq.debugPrefix, eq.variable.name))
+			if (remainingEqs.toString == '[Y_add_NR, Y_add_NR2, Y_add_NR3, Y_sub_NR, Y_sub_NR2]') 
 				println
 			val result = optimizeEquation(DPcontext, eq)
 			DPcontext.result = DPcontext.result && result
@@ -212,8 +185,6 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		//The child context has all but the target equation put in the excluded list
 		//This is to explore only the equations added as a result of transforming the target equation
 		val childContext = context.copy
-		
-		childContext.parent = context
 		childContext.excludedEquations.addAll(context.state.body.standardEquations.filter[e|e != eq].map[e|e.variable.name])
 		
 		while(!sideEffectFreeTransformations(childContext.state.body, eq.variable.name)) {}
@@ -273,7 +244,6 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 			child.step = step
 			child.applyDPStep(step)
 			val result = exploreDPcontext(child)
-			context.children.add(child)
 			if (result) {
 				context.markFinishedEquation(eq)
 				return result
@@ -382,14 +352,11 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		protected ProgramState state;
 		protected Set<String> excludedEquations = new TreeSet<String>();
 		protected Set<String> exploredEquations = new TreeSet<String>();
-		protected DynamicProgrammingContext parent;
-		protected LinkedList<DynamicProgrammingContext> children;
 		protected DynamicProgrammingStep step;
 		protected boolean result
 		
 		new(ProgramState state) {
-			this.state = state;
-			this.children = new LinkedList<DynamicProgrammingContext>
+			this.state = state
 			this.result = true
 		}
 		
@@ -415,41 +382,6 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 				copy.excludedEquations.add(ee)
 			
 			return copy
-		}
-		
-		def isLeaf() {
-			children.empty
-		}
-	
-		def List<ProgramState> leafStates() {
-			if (isLeaf) {
-				return #[state]
-			}
-			val states = new ArrayList<ProgramState>
-			children.forEach[c|states.addAll(c.leafStates)]
-			return states
-		}
-		
-		/** Gives the list of leafs and the steps it took to get to each leaf state */
-		def List<Pair<ProgramState, List<DynamicProgrammingStep>>> stepsToLeafStates() {
-			if (isLeaf) {
-				return #[state -> #[step]]
-			}
-			
-			val ret = new ArrayList<Pair<ProgramState, List<DynamicProgrammingStep>>>
-			for (child : children) {
-				val steps = child.stepsToLeafStates.map[pair |
-					// add current step to the front
-					pair.key -> (#[step] + pair.value).toList  
-				]
-				ret.addAll(steps)
-			}
-			ret
-		}
-	
-		def addChild(DynamicProgrammingContext child) {
-			child.parent = this
-			children.add(child)
 		}
 	}
 	
