@@ -26,7 +26,6 @@ import alpha.model.transformation.reduction.SameOperatorSimplification;
 import alpha.model.transformation.reduction.SimplifyingReductions;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
-import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
 import com.google.common.base.Objects;
@@ -336,8 +335,8 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
       final Consumer<ReduceExpression> _function_3 = (ReduceExpression re) -> {
         Equation _containerEquation = AlphaUtil.getContainerEquation(re);
         final StandardEquation eq = ((StandardEquation) _containerEquation);
-        final int dim = re.getFacet().getDimensionality();
-        String _plus = (Integer.valueOf(dim) + "D -> equation ");
+        final Integer dim = ISLUtil.dimensionality(re.getBody().getContextDomain());
+        String _plus = (dim + "D -> equation ");
         String _name = eq.getVariable().getName();
         String _plus_1 = (_plus + _name);
         InputOutput.<String>println(_plus_1);
@@ -347,7 +346,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         return ((ReduceExpression) e);
       };
       final Function1<ReduceExpression, Integer> _function_5 = (ReduceExpression re) -> {
-        return Integer.valueOf(re.getFacet().getDimensionality());
+        return ISLUtil.dimensionality(re.getBody().getContextDomain());
       };
       final Function2<Integer, Integer, Integer> _function_6 = (Integer v1, Integer v2) -> {
         Integer _xifexpression = null;
@@ -425,7 +424,6 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         if (result) {
           DPcontext.state = optimizedState;
           final StandardEquation nequ = this.getEquation(DPcontext, eq.getName());
-          final int x = this.dimensionality(nequ);
           String _name_1 = eq.getVariable().getName();
           String _plus = ("equation " + _name_1);
           String _plus_1 = (_plus + " is now ");
@@ -445,12 +443,7 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
   }
 
   private Integer _dimensionality(final StandardEquation eq, final ReduceExpression re) {
-    int _xblockexpression = (int) 0;
-    {
-      final Facet facet = re.getFacet();
-      _xblockexpression = Facet.dimensionality(facet.getThickEqualities(), facet.getEqualities(), facet.getIndexCount());
-    }
-    return Integer.valueOf(_xblockexpression);
+    return ISLUtil.dimensionality(re.getBody().getContextDomain());
   }
 
   private Integer _dimensionality(final StandardEquation eq, final Object o) {

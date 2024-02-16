@@ -1,15 +1,19 @@
 package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
+import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLTerm;
 import java.util.List;
-import java.util.Set;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -101,74 +105,55 @@ public class ISLUtil {
   }
 
   public static Integer dimensionality(final ISLSet set) {
-    final Function1<ISLBasicSet, Integer> _function = (ISLBasicSet bset) -> {
-      return Integer.valueOf(ISLUtil.dimensionality(bset));
+    final ISLPWQPolynomial pwqp = ISLUtil.card(set);
+    final int nbParams = pwqp.getSpace().getNbParams();
+    final Function1<ISLQPolynomialPiece, ISLQPolynomial> _function = (ISLQPolynomialPiece it) -> {
+      return it.getQp();
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer d1, Integer d2) -> {
+    final Function1<ISLQPolynomial, Integer> _function_1 = (ISLQPolynomial o) -> {
+      Integer _xblockexpression = null;
+      {
+        final Function1<ISLTerm, Integer> _function_2 = (ISLTerm t) -> {
+          final Function1<Integer, Integer> _function_3 = (Integer i) -> {
+            return Integer.valueOf(t.getExponent(ISLDimType.isl_dim_param, (i).intValue()));
+          };
+          final Function2<Integer, Integer, Integer> _function_4 = (Integer v1, Integer v2) -> {
+            return Integer.valueOf(((v1).intValue() + (v2).intValue()));
+          };
+          return IterableExtensions.<Integer>reduce(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, nbParams, true), _function_3), _function_4);
+        };
+        final List<Integer> termDegrees = ListExtensions.<ISLTerm, Integer>map(o.getTerms(), _function_2);
+        final Function2<Integer, Integer, Integer> _function_3 = (Integer v1, Integer v2) -> {
+          Integer _xifexpression = null;
+          boolean _greaterThan = (v1.compareTo(v2) > 0);
+          if (_greaterThan) {
+            _xifexpression = v1;
+          } else {
+            _xifexpression = v2;
+          }
+          return _xifexpression;
+        };
+        final Integer maxDegree = IterableExtensions.<Integer>reduce(termDegrees, _function_3);
+        _xblockexpression = maxDegree;
+      }
+      return _xblockexpression;
+    };
+    final List<Integer> degrees = ListExtensions.<ISLQPolynomial, Integer>map(ListExtensions.<ISLQPolynomialPiece, ISLQPolynomial>map(pwqp.getPieces(), _function), _function_1);
+    final Function2<Integer, Integer, Integer> _function_2 = (Integer v1, Integer v2) -> {
       Integer _xifexpression = null;
-      boolean _greaterThan = (d1.compareTo(d2) > 0);
+      boolean _greaterThan = (v1.compareTo(v2) > 0);
       if (_greaterThan) {
-        _xifexpression = d1;
+        _xifexpression = v1;
       } else {
-        _xifexpression = d2;
+        _xifexpression = v2;
       }
       return _xifexpression;
     };
-    return IterableExtensions.<Integer>reduce(ListExtensions.<ISLBasicSet, Integer>map(set.getBasicSets(), _function), _function_1);
+    final Integer dim = IterableExtensions.<Integer>reduce(degrees, _function_2);
+    return dim;
   }
 
-  public static int dimensionality(final ISLBasicSet set) {
-    final ISLBasicSet setNoRedundancies = set.copy().removeRedundancies();
-    final ISLMatrix eqMatrix = DomainOperations.toISLEqualityMatrix(setNoRedundancies);
-    int _nbRows = eqMatrix.getNbRows();
-    final Function1<Integer, Boolean> _function = (Integer row) -> {
-      return Boolean.valueOf(ISLUtil.constraintInvolvesIndex(eqMatrix, (row).intValue(), set.getNbIndices()));
-    };
-    final Function2<ISLMatrix, Integer, ISLMatrix> _function_1 = (ISLMatrix mat, Integer row) -> {
-      return mat.dropRows((row).intValue(), 1);
-    };
-    final int linearlyIndependentIndexEqualities = IterableExtensions.<Integer, ISLMatrix>fold(IterableExtensions.<Integer>reject(new ExclusiveRange(_nbRows, 0, false), _function), eqMatrix.copy(), _function_1).rank();
-    ISLMatrix _iSLInequalityMatrix = DomainOperations.toISLInequalityMatrix(setNoRedundancies);
-    int _nbParams = set.getNbParams();
-    int _nbIndices = set.getNbIndices();
-    int _plus = (_nbParams + _nbIndices);
-    final ISLMatrix ineqMatrix = _iSLInequalityMatrix.dropCols(_plus, 1);
-    int _nbRows_1 = ineqMatrix.getNbRows();
-    final Function1<Integer, long[]> _function_2 = (Integer r) -> {
-      return ineqMatrix.toLongMatrix()[(r).intValue()];
-    };
-    final List<long[]> ineqRows = IterableExtensions.<long[]>toList(IterableExtensions.<Integer, long[]>map(new ExclusiveRange(0, _nbRows_1, true), _function_2));
-    int thickEqualities = 0;
-    int _nbRows_2 = ineqMatrix.getNbRows();
-    ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _nbRows_2, true);
-    for (final Integer r : _doubleDotLessThan) {
-      {
-        final String row = ((List<Long>)Conversions.doWrapArray(MatrixOperations.scalarMultiplication(ineqRows.get((r).intValue()), (-1)))).toString();
-        int _nbRows_3 = ineqMatrix.getNbRows();
-        final Function1<Integer, String> _function_3 = (Integer i) -> {
-          return ((List<Long>)Conversions.doWrapArray(ineqRows.get((i).intValue()))).toString();
-        };
-        final Set<String> ineqRowsSet = IterableExtensions.<String>toSet(IterableExtensions.<Integer, String>map(new ExclusiveRange(((r).intValue() + 1), _nbRows_3, true), _function_3));
-        boolean _contains = ineqRowsSet.contains(row);
-        if (_contains) {
-          int _thickEqualities = thickEqualities;
-          thickEqualities = (_thickEqualities + 1);
-        }
-      }
-    }
-    int _nbIndices_1 = set.getNbIndices();
-    int _minus = (_nbIndices_1 - linearlyIndependentIndexEqualities);
-    return (_minus - thickEqualities);
-  }
-
-  private static boolean constraintInvolvesIndex(final ISLMatrix matrix, final int row, final int indexCount) {
-    int _nbCols = matrix.getNbCols();
-    final int endExclusive = (_nbCols - 1);
-    final int start = (endExclusive - indexCount);
-    final Function1<Integer, Boolean> _function = (Integer col) -> {
-      long _element = matrix.getElement(row, (col).intValue());
-      return Boolean.valueOf((_element != 0));
-    };
-    return IterableExtensions.<Integer>exists(new ExclusiveRange(start, endExclusive, true), _function);
+  public static ISLPWQPolynomial card(final ISLSet set) {
+    return BarvinokBindings.card(set);
   }
 }

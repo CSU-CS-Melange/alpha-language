@@ -117,13 +117,13 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		
 		reduceExprs.map[e | e as ReduceExpression].forEach[re |
 			val eq = re.getContainerEquation as StandardEquation
-			val dim = re.facet.dimensionality
+			val dim = re.body.contextDomain.dimensionality
 			println(dim + 'D -> equation ' + eq.variable.name)
 		]
 		
 		reduceExprs
 			.map[e | e as ReduceExpression]
-			.map[re | re.facet.dimensionality]
+			.map[re | re.body.contextDomain.dimensionality]
 			.reduce[v1 ,v2 | v1>v2 ? v1 : v2]
 	}
 	
@@ -145,6 +145,8 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		PermutationCaseReduce.apply(copyBody)
 		NormalizeReduction.apply(copyBody)
 		Normalize.apply(copyBody)
+		
+		
 		
 		new ProgramState(copyProg);
 	}
@@ -183,7 +185,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 //					val reExprDom = (nequ.expr as ReduceExpression).expressionDomain.copy
 //					println
 //				} catch (Exception e) {}
-				val x = nequ.dimensionality
+//				val x = nequ.dimensionality
 				println('equation ' + eq.variable.name + ' is now ' + nequ.dimensionality + 'D:')
 				println(Show.print(optimizedState.getBody))
 			}
@@ -196,8 +198,7 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 		dimensionality(eq, eq.expr)
 	}
 	private def dispatch dimensionality(StandardEquation eq, ReduceExpression re) {
-		val facet = re.facet
-		Facet.dimensionality(facet.thickEqualities, facet.equalities, facet.indexCount)
+		re.body.contextDomain.dimensionality
 	}
 	private def dispatch dimensionality(StandardEquation eq, Object o) {
 		eq.variable.domain.dimensionality

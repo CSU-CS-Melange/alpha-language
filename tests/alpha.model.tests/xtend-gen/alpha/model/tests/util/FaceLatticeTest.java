@@ -9,6 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
@@ -785,12 +786,10 @@ public class FaceLatticeTest {
   @Test
   public void testAsdf() {
     final String s = "[N] -> { [i, j, k, l] : N >= 11 and i <= 1 and i <= k <= 2i and j <= N and l >= i + j and -1 + 2j <= l <= 2j }";
-    final FaceLattice lattice = FaceLatticeTest.makeLattice(s);
-    final Facet root = lattice.rootInfo;
-    InputOutput.<ISLMatrix>println(root.getIndexInequalities());
-    InputOutput.<ISLMatrix>println(root.getThickEqualities());
-    InputOutput.<ISLMatrix>println(root.getEqualities());
-    InputOutput.println();
-    InputOutput.println();
+    final ISLSet set = ISLUtil.toISLSet(s);
+    final ISLPWQPolynomial c = ISLUtil.card(set);
+    InputOutput.<ISLPWQPolynomial>println(c);
+    final int dim = 2;
+    Assert.assertEquals(dim, 2);
   }
 }
