@@ -1748,13 +1748,22 @@ public interface ModelPackage extends EPackage {
 	int ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET = ALPHA_EXPRESSION_FEATURE_COUNT + 3;
 
 	/**
+	 * The feature id for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ALPHA_EXPRESSION_FEATURE_COUNT + 4;
+
+	/**
 	 * The number of structural features of the '<em>Abstract Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 4;
+	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 5;
 
 	/**
 	 * The meta object id for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.
@@ -1837,6 +1846,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int REDUCE_EXPRESSION__ZINTERNAL_FACET = ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET;
+
+	/**
+	 * The feature id for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
 
 	/**
 	 * The number of structural features of the '<em>Reduce Expression</em>' class.
@@ -1928,6 +1946,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_REDUCE_EXPRESSION__ZINTERNAL_FACET = REDUCE_EXPRESSION__ZINTERNAL_FACET;
+
+	/**
+	 * The feature id for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -2030,6 +2057,15 @@ public interface ModelPackage extends EPackage {
 	int ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET = ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET;
 
 	/**
+	 * The feature id for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
+
+	/**
 	 * The number of structural features of the '<em>Arg Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -2119,6 +2155,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET = ARG_REDUCE_EXPRESSION__ZINTERNAL_FACET;
+
+	/**
+	 * The feature id for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -5720,6 +5765,17 @@ public interface ModelPackage extends EPackage {
 	EAttribute getAbstractReduceExpression_Z__internal_facet();
 
 	/**
+	 * Returns the meta object for the attribute '{@link alpha.model.AbstractReduceExpression#getNbFreeDimensionsInBody <em>Nb Free Dimensions In Body</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Nb Free Dimensions In Body</em>'.
+	 * @see alpha.model.AbstractReduceExpression#getNbFreeDimensionsInBody()
+	 * @see #getAbstractReduceExpression()
+	 * @generated
+	 */
+	EAttribute getAbstractReduceExpression_NbFreeDimensionsInBody();
+
+	/**
 	 * Returns the meta object for class '{@link alpha.model.ReduceExpression <em>Reduce Expression</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -7942,6 +7998,14 @@ public interface ModelPackage extends EPackage {
 		 * @generated
 		 */
 		EAttribute ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET = eINSTANCE.getAbstractReduceExpression_Z__internal_facet();
+
+		/**
+		 * The meta object literal for the '<em><b>Nb Free Dimensions In Body</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = eINSTANCE.getAbstractReduceExpression_NbFreeDimensionsInBody();
 
 		/**
 		 * The meta object literal for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.

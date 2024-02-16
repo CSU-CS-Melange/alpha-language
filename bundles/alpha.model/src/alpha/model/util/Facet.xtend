@@ -367,7 +367,7 @@ class Facet {
 	 * Returns the dimensionality of a set using the effectively saturated constraints, 
 	 * equality constraints and number of index variables.
 	 */
-	def private static dimensionality(ISLMatrix thickEqualities, ISLMatrix equalities, int indexCount) {
+	def public static dimensionality(ISLMatrix thickEqualities, ISLMatrix equalities, int indexCount) {
 		// The dimensionality of a set is defined as the number of index variables
 		// minus the number of linearly independent equality constraints which involve
 		// at least one index variable (the rank of said matrix).

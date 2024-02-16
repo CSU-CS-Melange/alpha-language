@@ -1,11 +1,13 @@
 package alpha.model.transformation;
 
 import alpha.model.AbstractReduceExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaSystem;
 import alpha.model.Equation;
 import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
+import alpha.model.issue.AlphaIssue;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.transformation.reduction.PermutationCaseReduce;
 import alpha.model.util.AlphaUtil;
@@ -38,43 +40,48 @@ public class SplitReduction {
     SplitReduction.applyAndReport(body);
   }
 
-  public static void applyAndReport(final SystemBody body) {
-    SplitReduction.transform(body);
+  public static List<AlphaIssue> applyAndReport(final SystemBody body) {
+    return SplitReduction.transform(body);
   }
 
   public static List<AbstractReduceExpression> applyAndReport(final ReduceExpression re) {
     return SplitReduction.transform(re);
   }
 
-  private static void transform(final SystemBody body) {
-    int _counter = SplitReduction.counter;
-    SplitReduction.counter = (_counter + 1);
-    final AlphaSystem system = AlphaUtil.getContainerSystem(body);
-    NormalizeReduction.apply(body);
-    final ArrayList<ReduceExpression> nonConvexREs = new ArrayList<ReduceExpression>();
-    final Function1<ReduceExpression, Boolean> _function = (ReduceExpression it) -> {
-      return Boolean.valueOf(SplitReduction.hasConvexBody(it));
-    };
-    final Function1<ReduceExpression, ReduceExpression> _function_1 = (ReduceExpression e) -> {
-      return ((ReduceExpression) e);
-    };
-    Iterables.<ReduceExpression>addAll(nonConvexREs, 
-      IterableExtensions.<ReduceExpression, ReduceExpression>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(body, ReduceExpression.class), _function), _function_1));
-    final ArrayList<StandardEquation> nonConvexEqus = new ArrayList<StandardEquation>();
-    final Function1<ReduceExpression, StandardEquation> _function_2 = (ReduceExpression e) -> {
-      Equation _containerEquation = AlphaUtil.getContainerEquation(e);
-      return ((StandardEquation) _containerEquation);
-    };
-    nonConvexEqus.addAll(ListExtensions.<ReduceExpression, StandardEquation>map(nonConvexREs, _function_2));
-    SplitUnionIntoCase.apply(body);
-    PermutationCaseReduce.apply(body);
-    NormalizeReduction.apply(body);
-    final Consumer<StandardEquation> _function_3 = (StandardEquation equ) -> {
-      SubstituteByDef.apply(body, equ.getVariable());
-    };
-    nonConvexEqus.forEach(_function_3);
-    RemoveUnusedEquations.apply(system);
-    Normalize.apply(body);
+  private static List<AlphaIssue> transform(final SystemBody body) {
+    List<AlphaIssue> _xblockexpression = null;
+    {
+      int _counter = SplitReduction.counter;
+      SplitReduction.counter = (_counter + 1);
+      final AlphaSystem system = AlphaUtil.getContainerSystem(body);
+      NormalizeReduction.apply(body);
+      final ArrayList<ReduceExpression> nonConvexREs = new ArrayList<ReduceExpression>();
+      final Function1<ReduceExpression, Boolean> _function = (ReduceExpression it) -> {
+        return Boolean.valueOf(SplitReduction.hasConvexBody(it));
+      };
+      final Function1<ReduceExpression, ReduceExpression> _function_1 = (ReduceExpression e) -> {
+        return ((ReduceExpression) e);
+      };
+      Iterables.<ReduceExpression>addAll(nonConvexREs, 
+        IterableExtensions.<ReduceExpression, ReduceExpression>map(IterableExtensions.<ReduceExpression>reject(EcoreUtil2.<ReduceExpression>getAllContentsOfType(body, ReduceExpression.class), _function), _function_1));
+      final ArrayList<StandardEquation> nonConvexEqus = new ArrayList<StandardEquation>();
+      final Function1<ReduceExpression, StandardEquation> _function_2 = (ReduceExpression e) -> {
+        Equation _containerEquation = AlphaUtil.getContainerEquation(e);
+        return ((StandardEquation) _containerEquation);
+      };
+      nonConvexEqus.addAll(ListExtensions.<ReduceExpression, StandardEquation>map(nonConvexREs, _function_2));
+      SplitUnionIntoCase.apply(body);
+      PermutationCaseReduce.apply(body);
+      NormalizeReduction.apply(body);
+      final Consumer<StandardEquation> _function_3 = (StandardEquation equ) -> {
+        SubstituteByDef.apply(body, equ.getVariable());
+      };
+      nonConvexEqus.forEach(_function_3);
+      RemoveUnusedEquations.apply(system);
+      Normalize.apply(body);
+      _xblockexpression = AlphaInternalStateConstructor.recomputeContextDomain(body);
+    }
+    return _xblockexpression;
   }
 
   private static List<AbstractReduceExpression> transform(final ReduceExpression re) {

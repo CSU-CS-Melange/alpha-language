@@ -63,14 +63,14 @@ class SimplifyingReductions {
 	
 	public static Function<SimplifyingReductions, String> defineXaddEquationName = [sr|
 		val origName = sr.reductionEquation.variable.name
-		var XaddName = origName + "_add"
+		var XaddName = origName + "_pos"
 
 		AlphaUtil.duplicateNameResolver.apply(sr.containerSystem, XaddName, "_")
 	]
 	
 	public static Function<SimplifyingReductions, String> defineXsubEquationName = [sr|
 		val origName = sr.reductionEquation.variable.name
-		var XaddName = origName + "_sub"
+		var XaddName = origName + "_neg"
 
 		AlphaUtil.duplicateNameResolver.apply(sr.containerSystem, XaddName, "_")
 	]
@@ -244,6 +244,7 @@ class SimplifyingReductions {
 			SimplifyExpressions.apply(containerSystemBody)
 			Normalize.apply(containerSystemBody)
 		}
+		AlphaInternalStateConstructor.recomputeContextDomain(containerSystemBody)
 //		println('end:' + Show.print(containerSystem))
 //		println
 		

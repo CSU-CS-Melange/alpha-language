@@ -780,6 +780,7 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	contains JNIFunction projectionExpr
 	contains AlphaExpression body
 	Facet z__internal_facet
+	int nbFreeDimensionsInBody
 	
 	op JNIISLMultiAff getProjection() {
 		if (projectionExpr.^type != POLY_OBJECT_TYPE.FUNCTION ) null

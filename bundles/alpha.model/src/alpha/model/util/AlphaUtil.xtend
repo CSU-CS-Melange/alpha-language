@@ -79,7 +79,7 @@ class AlphaUtil {
 		return [AlphaSystem s, String nameCandidate|
 			var currentName = nameCandidate;
 			
-			var count = 2;
+			var count = 1;
 			while (s.getVariable(currentName) !== null) {
 				currentName = nameCandidate + count
 				count++;

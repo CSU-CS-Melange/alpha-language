@@ -12,6 +12,7 @@ import java.util.ArrayList
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.AlphaUtil.getContainerSystem
 import static extension org.eclipse.xtext.EcoreUtil2.getAllContentsOfType
+import alpha.model.AlphaInternalStateConstructor
 
 /**
  * Splits any reductions whose bodies are not convex into cases of reductions 
@@ -65,6 +66,7 @@ class SplitReduction {
 		nonConvexEqus.forEach[equ | SubstituteByDef.apply(body, equ.variable)]
 		RemoveUnusedEquations.apply(system)
 		Normalize.apply(body)
+		AlphaInternalStateConstructor.recomputeContextDomain(body)
 	}
 	
 	static private def transform(ReduceExpression re) {

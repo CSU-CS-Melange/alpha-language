@@ -383,7 +383,7 @@ public class Facet {
    * Returns the dimensionality of a set using the effectively saturated constraints,
    * equality constraints and number of index variables.
    */
-  private static int dimensionality(final ISLMatrix thickEqualities, final ISLMatrix equalities, final int indexCount) {
+  public static int dimensionality(final ISLMatrix thickEqualities, final ISLMatrix equalities, final int indexCount) {
     int _nbRows = equalities.getNbRows();
     final Function1<Integer, Boolean> _function = (Integer row) -> {
       return Boolean.valueOf(Facet.constraintInvolvesIndex(equalities, (row).intValue(), indexCount));

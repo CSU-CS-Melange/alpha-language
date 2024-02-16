@@ -748,16 +748,70 @@ class FaceLatticeTest {
 	
 	@Test
 	def testAsdf() {
-		val set = '[N] -> { [i, j, k, l] : N >= 11 and j < N and k <= 2i and i + j <= l <= 2j and ((i >= 5 and j <= 1 + i and k >= -3 + 2i) or (i <= 4 and k > i and l >= -3 + 2j)) }'.toISLSet
-		set.getBasicSets.forEach[s |
-			val l = makeLattice(s.toString)
-			val root = l.rootInfo
-			println(root.dimensionality)
-		]
+		val s = '[N] -> { [i, j, k, l] : N >= 11 and i <= 1 and i <= k <= 2i and j <= N and l >= i + j and -1 + 2j <= l <= 2j }'
+	
+		val lattice = makeLattice(s)
+		val root = lattice.rootInfo
+		println(root.indexInequalities)
+		println(root.thickEqualities)
+		println(root.equalities)
+		println()
+		println()
+//		val dim = lattice.rootInfo.dimensionality
+//		println(dim)
+//		println(lattice.rootInfo.isBounded)
+//		
+//		val bset = root.toBasicSet
+//		bset.getConstraints.forEach[c | 
+//			println(c.toString)
+//		]
+//		
+//		println('---')
+//		val set = s.toISLBasicSet
+//		println(set.copy.apply('[N]->{[i,j,k,l]->[i]}'.toISLBasicMap))
+//		println(set.copy.apply('[N]->{[i,j,k,l]->[j]}'.toISLBasicMap))
+//		println(set.copy.apply('[N]->{[i,j,k,l]->[k]}'.toISLBasicMap))
+//		println(set.copy.apply('[N]->{[i,j,k,l]->[l]}'.toISLBasicMap))
+//		
 		
-		
-		
-		
+//		println('---')
+//		val s1 = '[N]->{[i,j,k] : 0<=i<j<N and 0<=i<=3}'.toISLBasicSet 
+//		println(s1.copy.apply('[N]->{[i,j,k]->[i]}'.toISLBasicMap))
+//		println(s1.copy.apply('[N]->{[i,j,k]->[j]}'.toISLBasicMap))
+//		println(s1.copy.apply('[N]->{[i,j,k]->[k]}'.toISLBasicMap))
+//		println
+//		println('---')
+//		var s2str = '[N]->{[i,j] : j<=i and j>=i-4 and 3j>=i and i<=N}'
+//		var s2 = s2str.toISLBasicSet
+//		println(s2)
+//		println(s2.copy.apply('[N]->{[i,j]->[i]}'.toISLBasicMap))
+//		println(s2.copy.apply('[N]->{[i,j]->[j]}'.toISLBasicMap))
+//		println(s2.dimensionality)
+//		var l2 = makeLattice(s2str)
+//		println(l2.rootInfo.indexInequalities)
+//		println(l2.rootInfo.thickEqualities)
+//		println(l2.rootInfo.equalities)
+//		println()
+//		
+//		
+//		println('======')
+//		s2str = '[N]->{[i,j,k] : j<=i and j>=i-4 and 3j>=i and i<=N and i<k<3i and i<5}'
+//		s2 = s2str.toISLBasicSet
+//		println(s2)
+//		println(s2.copy.apply('[N]->{[i,j,k]->[i]}'.toISLBasicMap))
+//		println(s2.copy.apply('[N]->{[i,j,k]->[j]}'.toISLBasicMap))
+//		println(s2.copy.apply('[N]->{[i,j,k]->[k]}'.toISLBasicMap))
+//		println(s2.dimensionality)
+//		println('---')
+//		l2 = makeLattice(s2str)
+//		println(l2.rootInfo.indexInequalities)
+//		println(l2.rootInfo.thickEqualities)
+//		println(l2.rootInfo.equalities)
+//		println()
+//		
+//		println()
+	
+//		assertEquals(dim, 2)
 	}
 	
 }

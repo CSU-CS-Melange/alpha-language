@@ -93,7 +93,7 @@ public class AlphaUtil {
   public static Function2<AlphaSystem, String, String> duplicateNameResolverWithCounter() {
     final Function2<AlphaSystem, String, String> _function = (AlphaSystem s, String nameCandidate) -> {
       String currentName = nameCandidate;
-      int count = 2;
+      int count = 1;
       while ((s.getVariable(currentName) != null)) {
         {
           currentName = (nameCandidate + Integer.valueOf(count));

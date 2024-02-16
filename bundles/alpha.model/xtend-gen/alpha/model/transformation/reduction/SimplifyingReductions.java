@@ -105,7 +105,7 @@ public class SimplifyingReductions {
     String _xblockexpression = null;
     {
       final String origName = sr.reductionEquation.getVariable().getName();
-      String XaddName = (origName + "_add");
+      String XaddName = (origName + "_pos");
       _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
     }
     return _xblockexpression;
@@ -115,7 +115,7 @@ public class SimplifyingReductions {
     String _xblockexpression = null;
     {
       final String origName = sr.reductionEquation.getVariable().getName();
-      String XaddName = (origName + "_sub");
+      String XaddName = (origName + "_neg");
       _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
     }
     return _xblockexpression;
@@ -267,6 +267,7 @@ public class SimplifyingReductions {
         SimplifyExpressions.apply(this.containerSystemBody);
         Normalize.apply(this.containerSystemBody);
       }
+      AlphaInternalStateConstructor.recomputeContextDomain(this.containerSystemBody);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
