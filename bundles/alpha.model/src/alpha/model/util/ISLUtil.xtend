@@ -72,7 +72,11 @@ class ISLUtil {
 		}
 		
 		// get the maximum constant term among all constraints in P
-		val tau = P.getConstraints.map[constant].max.intValue
+		val tau = P.getConstraints
+			.map[constant]
+			.map[v | v<0 ? -1*v : v]
+			.reduce[v1, v2 | v1 + v2]
+			.intValue
 		
 		// construct the effective inverse of c per bullet 1 of Theorem 1 in GR06
 		val cPrime = c.aff.negate
@@ -80,7 +84,7 @@ class ISLUtil {
 			.toInequalityConstraint
 			.toBasicSet
 		
-		return (cPrime.intersect(P.copy)).isEqual(P)
+		return (cPrime.intersect(P.copy)).isEqual(P.copy)
 	}
 	
 	
@@ -93,12 +97,16 @@ class ISLUtil {
 		val vec = aff.toEqualityConstraint.toBasicSet.toISLEqualityMatrix
 			.dropCols(constantCol, 1)
 			.toLongMatrix.get(0)
-		
-		if (vec.reject[v|v==0].toList.get(0) < 0) {
+		val nonZeros = vec.reject[v|v==0]
+		if (nonZeros.size >0 && nonZeros.toList.get(0) < 0) {
 			return vec.scalarMultiplication(-1)
 		}
 		
 		return vec
+	}
+	
+	def static int dimensionality(ISLSet set) {
+		set.basicSets.map[dimensionality].max
 	}
 	
 	def static int dimensionality(ISLBasicSet set) {

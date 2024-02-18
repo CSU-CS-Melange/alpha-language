@@ -1,5 +1,6 @@
 package alpha.model.util
 
+import alpha.model.util.FaceLattice.Label
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMatrix
@@ -7,26 +8,11 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.ArrayList
 import org.eclipse.xtend.lib.annotations.Data
 
-import static extension alpha.model.util.ISLUtil.transpose
-
-import static extension alpha.model.util.ISLUtil.transpose
-import static extension fr.irisa.cairn.jnimap.isl.ISLMatrix.buildFromLongMatrix
-import static extension alpha.model.util.AlphaUtil.renameSpaceInputs
-import static extension alpha.model.util.AlphaUtil.renameSpaceOutputs
-import static extension alpha.model.util.AlphaUtil.renameSpaceParams
-import static extension alpha.model.util.DomainOperations.toISLInequalityMatrix
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLConstraint
-import fr.irisa.cairn.jnimap.isl.ISLAff
-import alpha.model.util.FaceLattice.Label
-import java.util.HashMap
-import java.util.HashSet
-import org.eclipse.xtend.lib.annotations.Data
-
 import static extension alpha.model.matrix.MatrixOperations.*
+import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toHashMap
-import static extension alpha.model.util.DomainOperations.toISLEqualityMatrix
+import static extension alpha.model.util.DomainOperations.*
+import static extension alpha.model.util.ISLUtil.*
 import static extension fr.irisa.cairn.jnimap.isl.ISLMatrix.buildFromLongMatrix
 
 /**
@@ -94,6 +80,8 @@ class Facet {
 	
 	FaceLattice lattice
 	
+	ISLBasicSet Lp
+	
 	////////////////////////////////////////////////////////////
 	// Construction
 	////////////////////////////////////////////////////////////
@@ -110,14 +98,9 @@ class Facet {
 		equalities = DomainOperations.toISLEqualityMatrix(basicSetNoRedundancies)
 		indexCount = basicSetNoRedundancies.dim(ISLDimType.isl_dim_set)
 		
-		val allInequalities = getInequalities(basicSetNoRedundancies, indexCount, true)
-		val inequalities = separateEffectivelySaturatedInequalities(allInequalities, space)
+		val inequalities = separateEffectivelySaturatedInequalities(basicSetNoRedundancies)
 		indexInequalities = inequalities.key
 		thickEqualities = inequalities.value
-		
-		if (thickEqualities.nbRows % 2 != 0) {
-			throw new Exception('Failed to create lattice, there should be an even number of (or zero) effectively saturated constraints')
-		}
 		
 		indexInequalityCount = indexInequalities.nbRows
 		isBounded = basicSetNoRedundancies.bounded
@@ -127,7 +110,8 @@ class Facet {
 		this.saturatedInequalityIndices = saturatedInequalityIndices
 		this.lattice = lattice
 		
-		dimensionality = dimensionality(thickEqualities, equalities, indexCount)
+		dimensionality = basicSet.dimensionality
+		Lp = toLinearSpace
 	}
 	
 	/** 
@@ -196,6 +180,10 @@ class Facet {
 	
 	def getInequalities() {
 		indexInequalities
+	}
+	
+	def getLp() {
+		Lp
 	}
 	
 	/** Returns <code>true</code> if this set is a child face of the given set, and <code>false</code> otherwise. */
@@ -269,9 +257,22 @@ class Facet {
 	/** Creates the potentially unbounded linear space of this facet 
 	 *  from the union of saturated constraints */
 	def toLinearSpace() {
-		val ineqMatrix = ISLBasicSet.buildUniverse(space.copy).toISLInequalityMatrix
+		
+		var equalityMatrix = equalities.copy
+		
+		if (thickEqualities.nbRows > 0) {
+			equalityMatrix = equalityMatrix.concat(thickEqualities.copy
+				.dropCols(space.nbParams + space.nbIndices, 1)
+				.toLongMatrix
+				.columnBind(1)
+				.buildFromLongMatrix
+			)
+		}
+		
+		val inequalityMatrix = ISLBasicSet.buildUniverse(space.copy).toISLInequalityMatrix
+		
 		return ISLBasicSet.fromConstraintMatrices(
-				space.copy, equalities.copy, ineqMatrix,
+				space.copy, equalityMatrix, inequalityMatrix,
 				ISLDimType.isl_dim_param, ISLDimType.isl_dim_set,
 				ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst)
 			.removeRedundancies
@@ -363,31 +364,6 @@ class Facet {
 			.size
 	}
 	
-	/** 
-	 * Returns the dimensionality of a set using the effectively saturated constraints, 
-	 * equality constraints and number of index variables.
-	 */
-	def public static dimensionality(ISLMatrix thickEqualities, ISLMatrix equalities, int indexCount) {
-		// The dimensionality of a set is defined as the number of index variables
-		// minus the number of linearly independent equality constraints which involve
-		// at least one index variable (the rank of said matrix).
-		
-		// Take the set of equality constraints,
-		// drop any rows which do not involve at least one index,
-		// then compute the rank of the remaining matrix.
-		val linearlyIndependentIndexEqualities =
-			(equalities.nbRows >.. 0)
-			.reject[row | constraintInvolvesIndex(equalities, row, indexCount)]
-			.fold(equalities.copy(), [mat, row | mat.dropRows(row, 1)])
-			.rank
-
-		// There will always be an even number of (or zero) effectively saturated
-		// inequality constraints. Each pair represents one thick equality constraint.
-		val numThickEqualities = thickEqualities.getNbRows / 2
-
-		return indexCount - linearlyIndependentIndexEqualities - numThickEqualities
-	}
-	
 	/**
 	 * Gets a matrix of inequality constraints from a set.
 	 * Retrieves either only the constraints which involve at least one index variable,
@@ -407,41 +383,58 @@ class Facet {
 	}
 	
 	/** Separates the effectively saturated inequalities from true unsaturated inequalities */
-	def private static separateEffectivelySaturatedInequalities(ISLMatrix allInequalities, ISLSpace space) {
-		val matrix = allInequalities.copy.dropCols(space.nbParams + space.nbIndices, 1).toLongMatrix
-
-		// Use a hash map to get the index of a particular vector in matrix
-		val idxMap = (0 ..< matrix.length)
-			.toMap[rowIdx | matrix.get(rowIdx).toString]
-			.mapValues[rowIdx | Long.valueOf(rowIdx)]
-			.toHashMap
+	def private static separateEffectivelySaturatedInequalities(ISLBasicSet set) {
+		val indexConstraints = set.getConstraints
+			.filter[involvesDims(ISLDimType.isl_dim_out, 0, set.nbIndices)]
+			.toList
+	
+		val saturated = indexConstraints.filter[isEffectivelySaturated(set)].toList
+		val saturatedSet = if (saturated.isEmpty) {
+			ISLBasicSet.buildUniverse(set.space.copy)
+		} else {
+			saturated.map[copy.toBasicSet].reduce[s1, s2 | s1.copy.intersect(s2.copy)]
+		}
+			
+		val unsaturated = indexConstraints.reject[isEffectivelySaturated(set)].toList
+		val unsaturatedSet = if (unsaturated.isEmpty) {
+			ISLBasicSet.buildUniverse(set.space.copy)
+		} else {
+			unsaturated.map[copy.toBasicSet].reduce[s1, s2 | s1.copy.intersect(s2.copy)]
+		}
 		
-		// Identify the indices of any parallel constraints. For each vector in matrix, check
-		// to see if its negation exists (i.e., is a key in idxMap). Label such vectors as 
-		// having a colinear partner.
-		val negMatrix = matrix.scalarMultiplication(-1)
-		
-		val colinearConstraints = (0 ..< matrix.length)
-			.toInvertedMap[rowIdx | negMatrix.get(rowIdx).toString]
-			.filter[rowIdx, rowStr | idxMap.containsKey(rowStr)]
-			.toHashMap
-			.keySet
-		
-		// Construct the matrix of all colinear inequalities. The GR06 paper defines pairs of
-		// colinear inequalities as thick equalities (or thick faces).
-		val longMatrix = allInequalities.toLongMatrix
-		val thickEqualities = (0..<matrix.length)
-			.filter[i | colinearConstraints.contains(i)]
-			.map[i | longMatrix.get(i)]
-			.buildFromLongMatrixEvenIfEmpty(space)
-		
-		// Construct the matrix of remaining true unsaturated inequalities
-		val unsaturatedInequalities = (0..<matrix.length)
-			.reject[i | colinearConstraints.contains(i)]
-			.map[i | longMatrix.get(i)]
-			.buildFromLongMatrixEvenIfEmpty(space)
-		
-		return unsaturatedInequalities -> thickEqualities 
+		return unsaturatedSet.toISLInequalityMatrix -> saturatedSet.toISLInequalityMatrix
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 }

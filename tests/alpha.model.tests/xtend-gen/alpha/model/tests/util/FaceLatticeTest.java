@@ -9,6 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
+import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
 import fr.irisa.cairn.jnimap.isl.ISLVertices;
@@ -752,8 +753,13 @@ public class FaceLatticeTest {
 
   @Test
   public void testThickFace() {
-    throw new Error("Unresolved compilation problems:"
-      + "\nThe method or field dimensionality is undefined for the type ISLSet");
+    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j}");
+    for (final ArrayList<Facet> l : lattice.lattice) {
+      InputOutput.<ArrayList<Facet>>println(l);
+    }
+    final ISLSet set = ISLUtil.toISLSet("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j; [0,j,k]; [i,j,k]: 0<=i,j,k<N; }");
+    InputOutput.<Integer>println(Integer.valueOf(ISLUtil.dimensionality(set)));
+    Assert.assertTrue(true);
   }
 
   @Test
@@ -782,5 +788,30 @@ public class FaceLatticeTest {
     final ISLBasicSet set2 = ISLUtil.toISLBasicSet("[N]->{[i,j]: N>=11 and 0<=i<=N and i<j and j<i+5}");
     Assert.assertEquals(ISLUtil.dimensionality(set1), 1);
     Assert.assertEquals(ISLUtil.dimensionality(set2), 1);
+  }
+
+  @Test
+  public void testThickEquality_4() {
+    final String str = "[N] -> { [i, j, k, l] : N >= 11 and 2 + i <= j <= N and i <= k <= -2 + 2i and -2 + i + j <= l < i + j }";
+    final ISLBasicSet set = ISLUtil.toISLBasicSet(str);
+    final List<ISLConstraint> constraints = set.getConstraints();
+    final ISLConstraint c5 = constraints.get(5);
+    final ISLConstraint c6 = constraints.get(6);
+    InputOutput.println();
+    String _plus = (c5 + " --> ");
+    boolean _isEffectivelySaturated = ISLUtil.isEffectivelySaturated(c5, set);
+    String _plus_1 = (_plus + Boolean.valueOf(_isEffectivelySaturated));
+    InputOutput.<String>println(_plus_1);
+    String _plus_2 = (c6 + " --> ");
+    boolean _isEffectivelySaturated_1 = ISLUtil.isEffectivelySaturated(c6, set);
+    String _plus_3 = (_plus_2 + Boolean.valueOf(_isEffectivelySaturated_1));
+    InputOutput.<String>println(_plus_3);
+    InputOutput.println();
+    final FaceLattice lattice = FaceLatticeTest.makeLattice(str);
+    final Consumer<ArrayList<Facet>> _function = (ArrayList<Facet> l) -> {
+      InputOutput.<ArrayList<Facet>>println(l);
+    };
+    lattice.lattice.forEach(_function);
+    Assert.assertEquals(ISLUtil.dimensionality(set), 3);
   }
 }

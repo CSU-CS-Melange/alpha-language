@@ -3,23 +3,22 @@ package alpha.model.util;
 import alpha.model.matrix.MatrixOperations;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
+import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
-import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
-import org.eclipse.xtext.xbase.lib.MapExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Pure;
 
@@ -109,6 +108,8 @@ public class Facet {
 
   private final FaceLattice lattice;
 
+  private final ISLBasicSet Lp;
+
   /**
    * Extract the information from the given set, assuming that no constraints were saturated to form it.
    */
@@ -120,32 +121,22 @@ public class Facet {
    * Extract the information from the given set.
    */
   public Facet(final ISLBasicSet basicSet, final ArrayList<Integer> saturatedInequalityIndices, final FaceLattice lattice) {
-    try {
-      final ISLBasicSet basicSetNoRedundancies = basicSet.copy().removeRedundancies();
-      this.space = basicSetNoRedundancies.getSpace();
-      this.equalities = DomainOperations.toISLEqualityMatrix(basicSetNoRedundancies);
-      this.indexCount = basicSetNoRedundancies.dim(ISLDimType.isl_dim_set);
-      final ISLMatrix allInequalities = Facet.getInequalities(basicSetNoRedundancies, this.indexCount, true);
-      final Pair<ISLMatrix, ISLMatrix> inequalities = Facet.separateEffectivelySaturatedInequalities(allInequalities, this.space);
-      this.indexInequalities = inequalities.getKey();
-      this.thickEqualities = inequalities.getValue();
-      int _nbRows = this.thickEqualities.getNbRows();
-      int _modulo = (_nbRows % 2);
-      boolean _notEquals = (_modulo != 0);
-      if (_notEquals) {
-        throw new Exception("Failed to create lattice, there should be an even number of (or zero) effectively saturated constraints");
-      }
-      this.indexInequalityCount = this.indexInequalities.getNbRows();
-      this.isBounded = basicSetNoRedundancies.bounded();
-      this.isEmpty = basicSetNoRedundancies.isEmpty();
-      this.parameterEqualityCount = Facet.countParameterConstraints(this.equalities, this.indexCount);
-      this.parameterInequalities = Facet.getInequalities(basicSetNoRedundancies, this.indexCount, false);
-      this.saturatedInequalityIndices = saturatedInequalityIndices;
-      this.lattice = lattice;
-      this.dimensionality = Facet.dimensionality(this.thickEqualities, this.equalities, this.indexCount);
-    } catch (Throwable _e) {
-      throw Exceptions.sneakyThrow(_e);
-    }
+    final ISLBasicSet basicSetNoRedundancies = basicSet.copy().removeRedundancies();
+    this.space = basicSetNoRedundancies.getSpace();
+    this.equalities = DomainOperations.toISLEqualityMatrix(basicSetNoRedundancies);
+    this.indexCount = basicSetNoRedundancies.dim(ISLDimType.isl_dim_set);
+    final Pair<ISLMatrix, ISLMatrix> inequalities = Facet.separateEffectivelySaturatedInequalities(basicSetNoRedundancies);
+    this.indexInequalities = inequalities.getKey();
+    this.thickEqualities = inequalities.getValue();
+    this.indexInequalityCount = this.indexInequalities.getNbRows();
+    this.isBounded = basicSetNoRedundancies.bounded();
+    this.isEmpty = basicSetNoRedundancies.isEmpty();
+    this.parameterEqualityCount = Facet.countParameterConstraints(this.equalities, this.indexCount);
+    this.parameterInequalities = Facet.getInequalities(basicSetNoRedundancies, this.indexCount, false);
+    this.saturatedInequalityIndices = saturatedInequalityIndices;
+    this.lattice = lattice;
+    this.dimensionality = ISLUtil.dimensionality(basicSet);
+    this.Lp = this.toLinearSpace();
   }
 
   /**
@@ -206,6 +197,10 @@ public class Facet {
 
   public ISLMatrix getInequalities() {
     return this.indexInequalities;
+  }
+
+  public ISLBasicSet getLp() {
+    return this.Lp;
   }
 
   /**
@@ -282,9 +277,20 @@ public class Facet {
    *  from the union of saturated constraints
    */
   public ISLBasicSet toLinearSpace() {
-    final ISLMatrix ineqMatrix = DomainOperations.toISLInequalityMatrix(ISLBasicSet.buildUniverse(this.space.copy()));
+    ISLMatrix equalityMatrix = this.equalities.copy();
+    int _nbRows = this.thickEqualities.getNbRows();
+    boolean _greaterThan = (_nbRows > 0);
+    if (_greaterThan) {
+      ISLMatrix _copy = this.thickEqualities.copy();
+      int _nbParams = this.space.getNbParams();
+      int _nbIndices = this.space.getNbIndices();
+      int _plus = (_nbParams + _nbIndices);
+      equalityMatrix = equalityMatrix.concat(
+        ISLMatrix.buildFromLongMatrix(MatrixOperations.columnBind(_copy.dropCols(_plus, 1).toLongMatrix(), 1)));
+    }
+    final ISLMatrix inequalityMatrix = DomainOperations.toISLInequalityMatrix(ISLBasicSet.buildUniverse(this.space.copy()));
     return ISLBasicSet.fromConstraintMatrices(
-      this.space.copy(), this.equalities.copy(), ineqMatrix, 
+      this.space.copy(), equalityMatrix, inequalityMatrix, 
       ISLDimType.isl_dim_param, ISLDimType.isl_dim_set, 
       ISLDimType.isl_dim_div, ISLDimType.isl_dim_cst).removeRedundancies();
   }
@@ -380,24 +386,6 @@ public class Facet {
   }
 
   /**
-   * Returns the dimensionality of a set using the effectively saturated constraints,
-   * equality constraints and number of index variables.
-   */
-  public static int dimensionality(final ISLMatrix thickEqualities, final ISLMatrix equalities, final int indexCount) {
-    int _nbRows = equalities.getNbRows();
-    final Function1<Integer, Boolean> _function = (Integer row) -> {
-      return Boolean.valueOf(Facet.constraintInvolvesIndex(equalities, (row).intValue(), indexCount));
-    };
-    final Function2<ISLMatrix, Integer, ISLMatrix> _function_1 = (ISLMatrix mat, Integer row) -> {
-      return mat.dropRows((row).intValue(), 1);
-    };
-    final int linearlyIndependentIndexEqualities = IterableExtensions.<Integer, ISLMatrix>fold(IterableExtensions.<Integer>reject(new ExclusiveRange(_nbRows, 0, false), _function), equalities.copy(), _function_1).rank();
-    int _nbRows_1 = thickEqualities.getNbRows();
-    final int numThickEqualities = (_nbRows_1 / 2);
-    return ((indexCount - linearlyIndependentIndexEqualities) - numThickEqualities);
-  }
-
-  /**
    * Gets a matrix of inequality constraints from a set.
    * Retrieves either only the constraints which involve at least one index variable,
    * or only the constraints which only involve parameter variables.
@@ -418,47 +406,50 @@ public class Facet {
   /**
    * Separates the effectively saturated inequalities from true unsaturated inequalities
    */
-  private static Pair<ISLMatrix, ISLMatrix> separateEffectivelySaturatedInequalities(final ISLMatrix allInequalities, final ISLSpace space) {
-    ISLMatrix _copy = allInequalities.copy();
-    int _nbParams = space.getNbParams();
-    int _nbIndices = space.getNbIndices();
-    int _plus = (_nbParams + _nbIndices);
-    final long[][] matrix = _copy.dropCols(_plus, 1).toLongMatrix();
-    int _length = matrix.length;
-    final Function1<Integer, String> _function = (Integer rowIdx) -> {
-      return MatrixOperations.toString(matrix[(rowIdx).intValue()]);
+  private static Pair<ISLMatrix, ISLMatrix> separateEffectivelySaturatedInequalities(final ISLBasicSet set) {
+    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint it) -> {
+      return Boolean.valueOf(it.involvesDims(ISLDimType.isl_dim_out, 0, set.getNbIndices()));
     };
-    final Function1<Integer, Long> _function_1 = (Integer rowIdx) -> {
-      return Long.valueOf((rowIdx).intValue());
+    final List<ISLConstraint> indexConstraints = IterableExtensions.<ISLConstraint>toList(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function));
+    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint it) -> {
+      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(it, set));
     };
-    final HashMap<String, Long> idxMap = CommonExtensions.<String, Long>toHashMap(MapExtensions.<String, Integer, Long>mapValues(IterableExtensions.<String, Integer>toMap(new ExclusiveRange(0, _length, true), _function), _function_1));
-    final long[][] negMatrix = MatrixOperations.scalarMultiplication(matrix, (-1));
-    int _length_1 = matrix.length;
-    final Function1<Integer, String> _function_2 = (Integer rowIdx) -> {
-      return MatrixOperations.toString(negMatrix[(rowIdx).intValue()]);
+    final List<ISLConstraint> saturated = IterableExtensions.<ISLConstraint>toList(IterableExtensions.<ISLConstraint>filter(indexConstraints, _function_1));
+    ISLBasicSet _xifexpression = null;
+    boolean _isEmpty = saturated.isEmpty();
+    if (_isEmpty) {
+      _xifexpression = ISLBasicSet.buildUniverse(set.getSpace().copy());
+    } else {
+      final Function1<ISLConstraint, ISLBasicSet> _function_2 = (ISLConstraint it) -> {
+        return it.copy().toBasicSet();
+      };
+      final Function2<ISLBasicSet, ISLBasicSet, ISLBasicSet> _function_3 = (ISLBasicSet s1, ISLBasicSet s2) -> {
+        return s1.copy().intersect(s2.copy());
+      };
+      _xifexpression = IterableExtensions.<ISLBasicSet>reduce(ListExtensions.<ISLConstraint, ISLBasicSet>map(saturated, _function_2), _function_3);
+    }
+    final ISLBasicSet saturatedSet = _xifexpression;
+    final Function1<ISLConstraint, Boolean> _function_4 = (ISLConstraint it) -> {
+      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(it, set));
     };
-    final Function2<Integer, String, Boolean> _function_3 = (Integer rowIdx, String rowStr) -> {
-      return Boolean.valueOf(idxMap.containsKey(rowStr));
-    };
-    final Set<Integer> colinearConstraints = CommonExtensions.<Integer, String>toHashMap(MapExtensions.<Integer, String>filter(IterableExtensions.<Integer, String>toInvertedMap(new ExclusiveRange(0, _length_1, true), _function_2), _function_3)).keySet();
-    final long[][] longMatrix = allInequalities.toLongMatrix();
-    int _length_2 = matrix.length;
-    final Function1<Integer, Boolean> _function_4 = (Integer i) -> {
-      return Boolean.valueOf(colinearConstraints.contains(i));
-    };
-    final Function1<Integer, long[]> _function_5 = (Integer i) -> {
-      return longMatrix[(i).intValue()];
-    };
-    final ISLMatrix thickEqualities = Facet.buildFromLongMatrixEvenIfEmpty(((long[][])Conversions.unwrapArray(IterableExtensions.<Integer, long[]>map(IterableExtensions.<Integer>filter(new ExclusiveRange(0, _length_2, true), _function_4), _function_5), long[].class)), space);
-    int _length_3 = matrix.length;
-    final Function1<Integer, Boolean> _function_6 = (Integer i) -> {
-      return Boolean.valueOf(colinearConstraints.contains(i));
-    };
-    final Function1<Integer, long[]> _function_7 = (Integer i) -> {
-      return longMatrix[(i).intValue()];
-    };
-    final ISLMatrix unsaturatedInequalities = Facet.buildFromLongMatrixEvenIfEmpty(((long[][])Conversions.unwrapArray(IterableExtensions.<Integer, long[]>map(IterableExtensions.<Integer>reject(new ExclusiveRange(0, _length_3, true), _function_6), _function_7), long[].class)), space);
-    return Pair.<ISLMatrix, ISLMatrix>of(unsaturatedInequalities, thickEqualities);
+    final List<ISLConstraint> unsaturated = IterableExtensions.<ISLConstraint>toList(IterableExtensions.<ISLConstraint>reject(indexConstraints, _function_4));
+    ISLBasicSet _xifexpression_1 = null;
+    boolean _isEmpty_1 = unsaturated.isEmpty();
+    if (_isEmpty_1) {
+      _xifexpression_1 = ISLBasicSet.buildUniverse(set.getSpace().copy());
+    } else {
+      final Function1<ISLConstraint, ISLBasicSet> _function_5 = (ISLConstraint it) -> {
+        return it.copy().toBasicSet();
+      };
+      final Function2<ISLBasicSet, ISLBasicSet, ISLBasicSet> _function_6 = (ISLBasicSet s1, ISLBasicSet s2) -> {
+        return s1.copy().intersect(s2.copy());
+      };
+      _xifexpression_1 = IterableExtensions.<ISLBasicSet>reduce(ListExtensions.<ISLConstraint, ISLBasicSet>map(unsaturated, _function_5), _function_6);
+    }
+    final ISLBasicSet unsaturatedSet = _xifexpression_1;
+    ISLMatrix _iSLInequalityMatrix = DomainOperations.toISLInequalityMatrix(unsaturatedSet);
+    ISLMatrix _iSLInequalityMatrix_1 = DomainOperations.toISLInequalityMatrix(saturatedSet);
+    return Pair.<ISLMatrix, ISLMatrix>of(_iSLInequalityMatrix, _iSLInequalityMatrix_1);
   }
 
   @Override
@@ -478,7 +469,8 @@ public class Facet {
     result = prime * result + ((this.parameterInequalities== null) ? 0 : this.parameterInequalities.hashCode());
     result = prime * result + ((this.saturatedInequalityIndices== null) ? 0 : this.saturatedInequalityIndices.hashCode());
     result = prime * result + ((this.space== null) ? 0 : this.space.hashCode());
-    return prime * result + ((this.lattice== null) ? 0 : this.lattice.hashCode());
+    result = prime * result + ((this.lattice== null) ? 0 : this.lattice.hashCode());
+    return prime * result + ((this.Lp== null) ? 0 : this.Lp.hashCode());
   }
 
   @Override
@@ -537,6 +529,11 @@ public class Facet {
       if (other.lattice != null)
         return false;
     } else if (!this.lattice.equals(other.lattice))
+      return false;
+    if (this.Lp == null) {
+      if (other.Lp != null)
+        return false;
+    } else if (!this.Lp.equals(other.Lp))
       return false;
     return true;
   }

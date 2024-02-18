@@ -158,7 +158,8 @@ class FaceLattice {
 		}
 		
 		// All children of the given face must be on the layer below it.
-		return lattice.get(faceLayer - 1).filter[node | node.isChildOf(face)]
+		return lattice.get(faceLayer - 1)
+			.filter[node | node.isChildOf(face)]
 	}
 	
 	/** Returns the set of all faces, not organized by dimension. */
@@ -221,7 +222,8 @@ class FaceLattice {
 		val constraints = (0..<nbFacets).map[i | normalVectors.get(i).toLabelInducingConstraint(face.space, labeling.get(i))]
 		
 		// Add all label inducing constraints to the current face's domain
-		var domain = ISLBasicSet.buildUniverse(face.space.copy)
+//		var domain = ISLBasicSet.buildUniverse(face.space.copy)
+		var domain = face.getLp.copy
 		for (constraint : constraints) {
 			domain = domain.addConstraint(constraint)
 		}

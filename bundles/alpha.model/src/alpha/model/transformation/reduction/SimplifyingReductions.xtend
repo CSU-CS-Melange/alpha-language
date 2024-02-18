@@ -404,6 +404,7 @@ class SimplifyingReductions {
 		
 		// construct face lattice
 		val face = are.facet
+		debug('(candidateReuse) Lp = ' + face.getLp.toString)
 		val facets = face.getChildren.toList
 		
 		if (facets.size == 0) 
@@ -422,9 +423,9 @@ class SimplifyingReductions {
 		
 		// find the labelings that have none-empty domains 
 		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
-		                                       .filter[ld | ! ld.value.isTrivial]
+		                                       .reject[ld | ld.value.isTrivial]
 		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
-		                                       .filter[ld | ! ld.value.isTrivial]
+		                                       .reject[ld | ld.value.isTrivial]
 		                                       .toList
 		
 		// select the reuse vector for each labeling domain (closest to the origin)

@@ -412,6 +412,9 @@ public class SimplifyingReductions {
     }
     final ISLBasicSet reuseSpace = DomainOperations.toBasicSetFromKernel(areSS, are.getBody().getContextDomain().getSpace());
     final Facet face = are.getFacet();
+    String _string = face.getLp().toString();
+    String _plus = ("(candidateReuse) Lp = " + _string);
+    SimplifyingReductions.debug(_plus);
     final List<Facet> facets = IterableExtensions.<Facet>toList(face.getChildren());
     int _size = facets.size();
     boolean _equals = (_size == 0);
@@ -425,8 +428,7 @@ public class SimplifyingReductions {
       return face.getLabelingDomain(((FaceLattice.Label[])Conversions.unwrapArray(l, FaceLattice.Label.class)));
     };
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Boolean> _function_1 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
-      boolean _isTrivial = ISLUtil.isTrivial(ld.getValue());
-      return Boolean.valueOf((!_isTrivial));
+      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
     };
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>> _function_2 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
       FaceLattice.Label[] _key = ld.getKey();
@@ -434,10 +436,9 @@ public class SimplifyingReductions {
       return Pair.<FaceLattice.Label[], ISLBasicSet>of(_key, _intersect);
     };
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Boolean> _function_3 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
-      boolean _isTrivial = ISLUtil.isTrivial(ld.getValue());
-      return Boolean.valueOf((!_isTrivial));
+      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
     };
-    final List<Pair<FaceLattice.Label[], ISLBasicSet>> labelingInducingDomains = IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>toList(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>filter(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>>map(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>filter(ListExtensions.<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>>map(labelings, _function), _function_1), _function_2), _function_3));
+    final List<Pair<FaceLattice.Label[], ISLBasicSet>> labelingInducingDomains = IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>toList(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>reject(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], ISLBasicSet>>map(IterableExtensions.<Pair<FaceLattice.Label[], ISLBasicSet>>reject(ListExtensions.<List<FaceLattice.Label>, Pair<FaceLattice.Label[], ISLBasicSet>>map(labelings, _function), _function_1), _function_2), _function_3));
     final Function1<Pair<FaceLattice.Label[], ISLBasicSet>, Pair<FaceLattice.Label[], long[]>> _function_4 = (Pair<FaceLattice.Label[], ISLBasicSet> ld) -> {
       FaceLattice.Label[] _key = ld.getKey();
       long[] _integerPointClosestToOrigin = ISLUtil.integerPointClosestToOrigin(ld.getValue());
@@ -455,19 +456,19 @@ public class SimplifyingReductions {
     if (SimplifyingReductions.DEBUG) {
       for (final Facet f : facets) {
         int _indexOf = facets.indexOf(f);
-        String _plus = ("(candidateReuse) facet-" + Integer.valueOf(_indexOf));
-        String _plus_1 = (_plus + ": ");
+        String _plus_1 = ("(candidateReuse) facet-" + Integer.valueOf(_indexOf));
+        String _plus_2 = (_plus_1 + ": ");
         ISLBasicSet _basicSet = f.toBasicSet();
-        String _plus_2 = (_plus_1 + _basicSet);
-        SimplifyingReductions.debug(_plus_2);
+        String _plus_3 = (_plus_2 + _basicSet);
+        SimplifyingReductions.debug(_plus_3);
       }
       for (final Pair<FaceLattice.Label[], long[]> lv : validReuseVectors) {
-        String _string = ((List<FaceLattice.Label>)Conversions.doWrapArray(lv.getKey())).toString();
-        String _plus_3 = ("(candidateReuse) labeling " + _string);
-        String _plus_4 = (_plus_3 + " induced by ");
-        String _string_1 = ((List<Long>)Conversions.doWrapArray(lv.getValue())).toString();
-        String _plus_5 = (_plus_4 + _string_1);
-        SimplifyingReductions.debug(_plus_5);
+        String _string_1 = ((List<FaceLattice.Label>)Conversions.doWrapArray(lv.getKey())).toString();
+        String _plus_4 = ("(candidateReuse) labeling " + _string_1);
+        String _plus_5 = (_plus_4 + " induced by ");
+        String _string_2 = ((List<Long>)Conversions.doWrapArray(lv.getValue())).toString();
+        String _plus_6 = (_plus_5 + _string_2);
+        SimplifyingReductions.debug(_plus_6);
       }
     }
     return vectors;

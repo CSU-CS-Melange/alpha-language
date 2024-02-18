@@ -264,7 +264,7 @@ public class FaceLattice {
         return this.toLabelInducingConstraint(((ISLAff[])Conversions.unwrapArray(normalVectors, ISLAff.class))[(i).intValue()], face.getSpace(), labeling[(i).intValue()]);
       };
       final Iterable<ISLConstraint> constraints = IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, nbFacets, true), _function_1);
-      ISLBasicSet domain = ISLBasicSet.buildUniverse(face.getSpace().copy());
+      ISLBasicSet domain = face.getLp().copy();
       for (final ISLConstraint constraint : constraints) {
         domain = domain.addConstraint(constraint);
       }

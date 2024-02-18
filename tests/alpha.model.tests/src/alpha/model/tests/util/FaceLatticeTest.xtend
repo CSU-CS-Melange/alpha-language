@@ -754,4 +754,43 @@ class FaceLatticeTest {
 		assertEquals(set1.dimensionality, 1)
 		assertEquals(set2.dimensionality, 1)
 	}
+	
+	@Test
+	def testThickEquality_4() {
+		val str = '[N] -> { [i, j, k, l] : N >= 11 and 2 + i <= j <= N and i <= k <= -2 + 2i and -2 + i + j <= l < i + j }'
+		val set = str.toISLBasicSet
+		val constraints = set.getConstraints
+		
+		val c5 = constraints.get(5)
+		val c6 = constraints.get(6)
+		println
+		println(c5 + ' --> ' + c5.isEffectivelySaturated(set))
+		println(c6 + ' --> ' + c6.isEffectivelySaturated(set))
+		println
+		val lattice = makeLattice(str)
+		lattice.lattice.forEach[l | 
+			println(l)
+		]
+		
+		assertEquals(set.dimensionality, 3)
+	
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
