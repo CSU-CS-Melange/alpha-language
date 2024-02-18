@@ -747,14 +747,11 @@ class FaceLatticeTest {
 	}
 	
 	@Test
-	def testAsdf() {
-		val s = '[N] -> { [i, j, k, l] : N >= 11 and i <= 1 and i <= k <= 2i and j <= N and l >= i + j and -1 + 2j <= l <= 2j }'
-		val set = s.toISLSet
-		val c = set.card
-		println(c)
-		val dim = 2
-		assertEquals(dim, 2)
+	def testThickEquality_3() {
+		val set1 = "[N]->{[i,j,k,l]: N>=11 and i<=3 and 2+i<=j<=N and i<=k<=-2+2i and -2+i+j<=l<i+j}".toISLBasicSet
+		val set2 = "[N]->{[i,j]: N>=11 and 0<=i<=N and i<j and j<i+5}".toISLBasicSet
+		
+		assertEquals(set1.dimensionality, 1)
+		assertEquals(set2.dimensionality, 1)
 	}
-	
 }
-

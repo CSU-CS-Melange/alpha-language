@@ -9,8 +9,6 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
-import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
-import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVertex;
 import fr.irisa.cairn.jnimap.isl.ISLVertices;
@@ -754,13 +752,8 @@ public class FaceLatticeTest {
 
   @Test
   public void testThickFace() {
-    final FaceLattice lattice = FaceLatticeTest.makeLattice("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j}");
-    for (final ArrayList<Facet> l : lattice.lattice) {
-      InputOutput.<ArrayList<Facet>>println(l);
-    }
-    final ISLSet set = ISLUtil.toISLSet("[N]->{[i,j,k]: k >= -1 + 2N + i - 2j and 0 <= k <= -N + i + j and k <= 2N - 2i + j and k <= 2N + i - 2j; [0,j,k]; [i,j,k]: 0<=i,j,k<N; }");
-    InputOutput.<Integer>println(ISLUtil.dimensionality(set));
-    Assert.assertTrue(true);
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method or field dimensionality is undefined for the type ISLSet");
   }
 
   @Test
@@ -784,12 +777,10 @@ public class FaceLatticeTest {
   }
 
   @Test
-  public void testAsdf() {
-    final String s = "[N] -> { [i, j, k, l] : N >= 11 and i <= 1 and i <= k <= 2i and j <= N and l >= i + j and -1 + 2j <= l <= 2j }";
-    final ISLSet set = ISLUtil.toISLSet(s);
-    final ISLPWQPolynomial c = ISLUtil.card(set);
-    InputOutput.<ISLPWQPolynomial>println(c);
-    final int dim = 2;
-    Assert.assertEquals(dim, 2);
+  public void testThickEquality_3() {
+    final ISLBasicSet set1 = ISLUtil.toISLBasicSet("[N]->{[i,j,k,l]: N>=11 and i<=3 and 2+i<=j<=N and i<=k<=-2+2i and -2+i+j<=l<i+j}");
+    final ISLBasicSet set2 = ISLUtil.toISLBasicSet("[N]->{[i,j]: N>=11 and 0<=i<=N and i<j and j<i+5}");
+    Assert.assertEquals(ISLUtil.dimensionality(set1), 1);
+    Assert.assertEquals(ISLUtil.dimensionality(set2), 1);
   }
 }

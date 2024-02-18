@@ -40,6 +40,7 @@ jobs:
         org.junit.runner.JUnitCore alpha.model.tests.transformations.HigherOrderOperatorTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.HoistOutOfReductionTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.IdempotenceTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.NormalizeTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.PermutationCaseReduceTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.PropagateSimpleEquationsTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.SameOperatorSimplificationTest
