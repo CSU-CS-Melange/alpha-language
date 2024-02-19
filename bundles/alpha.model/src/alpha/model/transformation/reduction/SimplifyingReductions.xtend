@@ -231,12 +231,12 @@ class SimplifyingReductions {
 			// The bodies of the residual reduction Xadd and Xsub are unions of subsets of the facets
 			SplitReduction.counter = 0
 			while (containerSystemBody.hasNonConvexReduceExpressions) {
-				if (SplitReduction.counter >= 1) {
-					println('start:' + Show.print(containerSystem))
-					println
-				}
+//				if (SplitReduction.counter >= 1) {
+//					println('start:' + Show.print(containerSystem))
+//					println
+//				}
 				SplitReduction.apply(containerSystemBody)
-				if (SplitReduction.counter > 1000) {
+				if (SplitReduction.counter > 100) {
 					throw new Exception("You appear to be caught in an infinite loop")
 				}
 			}

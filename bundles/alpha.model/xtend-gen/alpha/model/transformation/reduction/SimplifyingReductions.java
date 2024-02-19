@@ -30,7 +30,6 @@ import alpha.model.util.DomainOperations;
 import alpha.model.util.FaceLattice;
 import alpha.model.util.Facet;
 import alpha.model.util.ISLUtil;
-import alpha.model.util.Show;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -252,14 +251,8 @@ public class SimplifyingReductions {
         SplitReduction.counter = 0;
         while (SplitReduction.hasNonConvexReduceExpressions(this.containerSystemBody)) {
           {
-            if ((SplitReduction.counter >= 1)) {
-              String _print = Show.<AlphaSystem>print(this.containerSystem);
-              String _plus = ("start:" + _print);
-              InputOutput.<String>println(_plus);
-              InputOutput.println();
-            }
             SplitReduction.apply(this.containerSystemBody);
-            if ((SplitReduction.counter > 1000)) {
+            if ((SplitReduction.counter > 100)) {
               throw new Exception("You appear to be caught in an infinite loop");
             }
           }

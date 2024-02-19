@@ -236,9 +236,9 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
 
   public static boolean DEBUG = false;
 
-  public static boolean THROTTLE = true;
+  public static boolean THROTTLE = false;
 
-  public static int THROTTLE_LIMIT = 1;
+  public static int THROTTLE_LIMIT = 4;
 
   private void debug(final String content) {
     if (SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG) {
@@ -378,32 +378,40 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
    * cases where the order and choice of reuse vectors influences schedulability,
    * but this is not considered in the current implementation.
    */
-  private List<ProgramState> exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext DPcontext) {
-    final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context = DPcontext.copy();
+  private List<ProgramState> exploreDPcontext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context) {
     while (this.hasNext(context)) {
       {
         final StandardEquation eq = this.getNext(context);
-        String _name = eq.getVariable().getName();
-        boolean _equals = Objects.equal(_name, "Y_neg_NR1");
-        if (_equals) {
-          InputOutput.println();
-        }
         final List<ProgramState> optimizations = this.optimizeEquation(context, eq);
-        final Function1<StandardEquation, String> _function = (StandardEquation it) -> {
-          return it.getVariable().getName();
-        };
-        final String remaining = ListExtensions.<StandardEquation, String>map(this.getAll(context), _function).toString();
-        final String explored = IterableExtensions.<String>toList(context.exploredEquations).toString();
-        String _name_1 = eq.getVariable().getName();
-        String _plus = ("optimized equation: " + _name_1);
-        InputOutput.<String>println(_plus);
-        InputOutput.<String>println(("          explored: " + explored));
-        InputOutput.<String>println(("         remaining: " + remaining));
+        this.printdbg(context, eq, optimizations);
         boolean _isEmpty = optimizations.isEmpty();
         if (_isEmpty) {
-          InputOutput.<String>println("--> no further optimizations");
           return optimizations;
         }
+        context.state = optimizations.get(0);
+      }
+    }
+    return Collections.<ProgramState>unmodifiableList(CollectionLiterals.<ProgramState>newArrayList(context.state));
+  }
+
+  private String printdbg(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context, final StandardEquation eq, final List<ProgramState> optimizations) {
+    String _xblockexpression = null;
+    {
+      final Function1<StandardEquation, String> _function = (StandardEquation it) -> {
+        return it.getVariable().getName();
+      };
+      final String remaining = ListExtensions.<StandardEquation, String>map(this.getAll(context), _function).toString();
+      final String explored = IterableExtensions.<String>toList(context.exploredEquations).toString();
+      String _name = eq.getVariable().getName();
+      String _plus = ("optimized equation: " + _name);
+      InputOutput.<String>println(_plus);
+      InputOutput.<String>println(("          explored: " + explored));
+      InputOutput.<String>println(("         remaining: " + remaining));
+      String _xifexpression = null;
+      boolean _isEmpty = optimizations.isEmpty();
+      if (_isEmpty) {
+        _xifexpression = InputOutput.<String>println("--> no further optimizations");
+      } else {
         int _size = optimizations.size();
         String _plus_1 = ("--> # of optimizations: " + Integer.valueOf(_size));
         InputOutput.<String>println(_plus_1);
@@ -416,21 +424,21 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
             return ((StandardEquation) e);
           };
           final Consumer<StandardEquation> _function_4 = (StandardEquation e) -> {
-            String _xifexpression = null;
-            String _name_2 = e.getVariable().getName();
-            String _name_3 = eq.getVariable().getName();
-            boolean _equals_1 = Objects.equal(_name_2, _name_3);
-            if (_equals_1) {
-              _xifexpression = "  <-- this step";
+            String _xifexpression_1 = null;
+            String _name_1 = e.getVariable().getName();
+            String _name_2 = eq.getVariable().getName();
+            boolean _equals = Objects.equal(_name_1, _name_2);
+            if (_equals) {
+              _xifexpression_1 = "  <-- this step";
             } else {
-              _xifexpression = "";
+              _xifexpression_1 = "";
             }
-            String flag = _xifexpression;
+            String flag = _xifexpression_1;
             int _dimensionality = this.dimensionality(e);
             String _plus_2 = ("    (" + Integer.valueOf(_dimensionality));
             String _plus_3 = (_plus_2 + "D) ");
-            String _name_4 = e.getVariable().getName();
-            String _plus_4 = (_plus_3 + _name_4);
+            String _name_3 = e.getVariable().getName();
+            String _plus_4 = (_plus_3 + _name_3);
             String _plus_5 = (_plus_4 + flag);
             InputOutput.<String>println(_plus_5);
           };
@@ -440,10 +448,10 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
         optimizations.forEach(_function_1);
         InputOutput.println();
         InputOutput.println();
-        context.state = optimizations.get(0);
       }
+      _xblockexpression = _xifexpression;
     }
-    return Collections.<ProgramState>unmodifiableList(CollectionLiterals.<ProgramState>newArrayList(context.state));
+    return _xblockexpression;
   }
 
   private int dimensionality(final StandardEquation equ) {

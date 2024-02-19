@@ -50,8 +50,8 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	
 	public static boolean DEBUG = false
 	
-	public static boolean THROTTLE = true
-	public static int THROTTLE_LIMIT = 1
+	public static boolean THROTTLE = false
+	public static int THROTTLE_LIMIT = 4
 	
 	private def debug(String content) {
 		if (DEBUG)
@@ -156,37 +156,42 @@ class SimplifyingReductionOptimalSimplificationAlgorithm {
 	 * cases where the order and choice of reuse vectors influences schedulability,
 	 * but this is not considered in the current implementation.
 	 */
-	private def exploreDPcontext(DynamicProgrammingContext DPcontext) {
-		val context = DPcontext.copy
+	private def exploreDPcontext(DynamicProgrammingContext context) {
 		while (context.hasNext) {
 			val eq = context.getNext
-			if (eq.variable.name == 'Y_neg_NR1')
-				println
 			val optimizations = optimizeEquation(context, eq)
-			val remaining = context.getAll.map[variable.name].toString
-			val explored = context.exploredEquations.toList.toString
-			println('optimized equation: ' + eq.variable.name)
+			printdbg(context, eq, optimizations)
+			if (optimizations.isEmpty) {
+				return optimizations
+			}
+			context.state = optimizations.get(0)
+		}
+		return #[context.state]
+	}
+	
+	private def printdbg(DynamicProgrammingContext context, StandardEquation eq, List<ProgramState> optimizations) {
+		val remaining = context.getAll.map[variable.name].toString
+		val explored = context.exploredEquations.toList.toString
+		println('optimized equation: ' + eq.variable.name)
 			println('          explored: ' + explored)
 			println('         remaining: ' + remaining)
 			if (optimizations.isEmpty) {
 				println('--> no further optimizations')
-				return optimizations
-			}
-			println('--> # of optimizations: ' + optimizations.size)
-			print('')
-			optimizations.forEach[os | 
-//				println(Show.print(os.getBody))
-				os.getBody.equations.filter[e | e instanceof StandardEquation].map[e | e as StandardEquation].forEach[e |
-					var flag = if (e.variable.name == eq.variable.name) '  <-- this step' else ''
-					println('    (' + e.dimensionality + 'D) ' + e.variable.name + flag)
+				
+			} else {
+				println('--> # of optimizations: ' + optimizations.size)
+				print('')
+				optimizations.forEach[os | 
+	//				println(Show.print(os.getBody))
+					os.getBody.equations.filter[e | e instanceof StandardEquation].map[e | e as StandardEquation].forEach[e |
+						var flag = if (e.variable.name == eq.variable.name) '  <-- this step' else ''
+						println('    (' + e.dimensionality + 'D) ' + e.variable.name + flag)
+					]
+					println
 				]
 				println
-			]
-			println
-			println
-			context.state = optimizations.get(0)
-		}
-		return #[context.state]
+				println
+			}
 	}
 	
 	private def dimensionality(StandardEquation equ) {
