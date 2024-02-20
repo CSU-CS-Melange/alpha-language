@@ -863,13 +863,22 @@ public interface ModelPackage extends EPackage {
 	int STANDARD_EQUATION__EXPR = EQUATION_FEATURE_COUNT + 2;
 
 	/**
+	 * The feature id for the '<em><b>Zexplored</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int STANDARD_EQUATION__ZEXPLORED = EQUATION_FEATURE_COUNT + 3;
+
+	/**
 	 * The number of structural features of the '<em>Standard Equation</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int STANDARD_EQUATION_FEATURE_COUNT = EQUATION_FEATURE_COUNT + 3;
+	int STANDARD_EQUATION_FEATURE_COUNT = EQUATION_FEATURE_COUNT + 4;
 
 	/**
 	 * The meta object id for the '{@link alpha.model.impl.UseEquationImpl <em>Use Equation</em>}' class.
@@ -5315,6 +5324,17 @@ public interface ModelPackage extends EPackage {
 	EReference getStandardEquation_Expr();
 
 	/**
+	 * Returns the meta object for the attribute '{@link alpha.model.StandardEquation#getZ__explored <em>Zexplored</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Zexplored</em>'.
+	 * @see alpha.model.StandardEquation#getZ__explored()
+	 * @see #getStandardEquation()
+	 * @generated
+	 */
+	EAttribute getStandardEquation_Z__explored();
+
+	/**
 	 * Returns the meta object for class '{@link alpha.model.UseEquation <em>Use Equation</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -7638,6 +7658,14 @@ public interface ModelPackage extends EPackage {
 		 * @generated
 		 */
 		EReference STANDARD_EQUATION__EXPR = eINSTANCE.getStandardEquation_Expr();
+
+		/**
+		 * The meta object literal for the '<em><b>Zexplored</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute STANDARD_EQUATION__ZEXPLORED = eINSTANCE.getStandardEquation_Z__explored();
 
 		/**
 		 * The meta object literal for the '{@link alpha.model.impl.UseEquationImpl <em>Use Equation</em>}' class.

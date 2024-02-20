@@ -552,6 +552,7 @@ class StandardEquation extends Equation {
 	refers Variable variable
 	String[] indexNames
 	contains AlphaExpression expr
+	boolean z__explored
 	
 	op String getName() {
 		if (variable !== null) variable.name else null
@@ -560,6 +561,21 @@ class StandardEquation extends Equation {
 	op void accept(AlphaVisitor visitor) {
 		visitor.visitStandardEquation(this)
 	}
+	
+	op boolean getExplored() {
+		if (z__explored === null)
+			return false
+		return z__explored
+	}
+	
+	op void setExplored() {
+		this.z__explored = true
+	}
+	
+	op void setExplored(boolean explored) {
+		this.z__explored = explored
+	}
+	
 }
 class UseEquation extends Equation {
 	String identifier

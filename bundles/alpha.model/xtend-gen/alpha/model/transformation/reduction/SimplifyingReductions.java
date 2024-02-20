@@ -22,7 +22,7 @@ import alpha.model.transformation.Normalize;
 import alpha.model.transformation.PropagateSimpleEquations;
 import alpha.model.transformation.SimplifyExpressions;
 import alpha.model.transformation.SplitReduction;
-import alpha.model.transformation.automation.SimplifyingReductionOptimalSimplificationAlgorithm;
+import alpha.model.transformation.automation.OptimalSimplifyingReductions;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaOperatorUtil;
 import alpha.model.util.AlphaUtil;
@@ -90,7 +90,7 @@ public class SimplifyingReductions {
     private BINARY_OP invOP;
   }
 
-  public static boolean DEBUG = SimplifyingReductionOptimalSimplificationAlgorithm.DEBUG;
+  public static boolean DEBUG = OptimalSimplifyingReductions.DEBUG;
 
   /**
    * Setting this variable to true disables all the

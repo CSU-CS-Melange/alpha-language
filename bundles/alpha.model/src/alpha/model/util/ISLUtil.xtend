@@ -87,7 +87,6 @@ class ISLUtil {
 		return (cPrime.intersect(P.copy)).isEqual(P.copy)
 	}
 	
-	
 	/** 
 	 * Given the ISLAff of an effectively saturated constraint return a long[] of the linear part
 	 * the first non-zero value is guaranteed to be positive
