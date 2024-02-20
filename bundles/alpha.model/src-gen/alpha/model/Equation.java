@@ -16,6 +16,7 @@ import org.eclipse.emf.common.util.EList;
  * </p>
  * <ul>
  *   <li>{@link alpha.model.Equation#getSystemBody <em>System Body</em>}</li>
+ *   <li>{@link alpha.model.Equation#getZ__explored <em>Zexplored</em>}</li>
  * </ul>
  *
  * @see alpha.model.ModelPackage#getEquation()
@@ -48,6 +49,28 @@ public interface Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement,
 	void setSystemBody(SystemBody value);
 
 	/**
+	 * Returns the value of the '<em><b>Zexplored</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Zexplored</em>' attribute.
+	 * @see #setZ__explored(Boolean)
+	 * @see alpha.model.ModelPackage#getEquation_Z__explored()
+	 * @model unique="false" dataType="alpha.model.boolean"
+	 * @generated
+	 */
+	Boolean getZ__explored();
+
+	/**
+	 * Sets the value of the '{@link alpha.model.Equation#getZ__explored <em>Zexplored</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Zexplored</em>' attribute.
+	 * @see #getZ__explored()
+	 * @generated
+	 */
+	void setZ__explored(Boolean value);
+
+	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model unique="false" exprIDDataType="alpha.model.IntegerQueue" exprIDUnique="false"
@@ -70,5 +93,29 @@ public interface Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement,
 	 * @generated
 	 */
 	AlphaExpression getExpression(String exprIDstr);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model kind="operation" dataType="alpha.model.boolean" unique="false"
+	 * @generated
+	 */
+	Boolean getExplored();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model
+	 * @generated
+	 */
+	void setExplored();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model exploredDataType="alpha.model.boolean" exploredUnique="false"
+	 * @generated
+	 */
+	void setExplored(Boolean explored);
 
 } // Equation

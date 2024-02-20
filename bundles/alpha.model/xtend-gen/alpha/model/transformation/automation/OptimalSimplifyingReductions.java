@@ -10,7 +10,6 @@ import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
-import alpha.model.issue.AlphaIssue;
 import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.SplitUnionIntoCase;
@@ -28,14 +27,17 @@ import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.xtext.EcoreUtil2;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -47,12 +49,6 @@ import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
- * 
- * This implementation is incomplete in the following way:
- *  - The input program is assumed to be bounded. There are
- * a number of places in the original paper that discuss
- * a linear space (named L_P) = rays in vertex representation.
- * Cases where this linear space is meaningful are not supported.
  */
 @SuppressWarnings("all")
 public class OptimalSimplifyingReductions {
@@ -66,28 +62,43 @@ public class OptimalSimplifyingReductions {
       this.steps = steps;
     }
 
-    public String show() {
-      String _xblockexpression = null;
-      {
-        int _complexity = OptimalSimplifyingReductions.complexity(this.body);
-        String _plus = ("Complexity: " + Integer.valueOf(_complexity));
-        String _plus_1 = (_plus + "D");
-        InputOutput.<String>println(_plus_1);
-        int _size = this.steps.size();
-        final Consumer<Integer> _function = (Integer i) -> {
+    public AlphaRoot root() {
+      return AlphaUtil.getContainerRoot(this.body);
+    }
+
+    public int complexity() {
+      return OptimalSimplifyingReductions.complexity(this.body);
+    }
+
+    public CharSequence show() {
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("// Complexity: ");
+      int _complexity = this.complexity();
+      _builder.append(_complexity);
+      _builder.append("D");
+      _builder.newLineIfNotEmpty();
+      int _size = this.steps.size();
+      final Function1<Integer, String> _function = (Integer i) -> {
+        String _xblockexpression = null;
+        {
           final Function1<Integer, String> _function_1 = (Integer it) -> {
             return "+--";
           };
           String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, (i).intValue(), true), _function_1));
-          final String indent = (_join + "+-- ");
+          String _plus = ("// " + _join);
+          final String indent = (_plus + "+-- ");
           String _description = this.steps.get((i).intValue()).description();
-          String _plus_2 = (indent + _description);
-          InputOutput.<String>println(_plus_2);
-        };
-        new ExclusiveRange(0, _size, true).forEach(_function);
-        _xblockexpression = InputOutput.<String>println(Show.<AlphaSystem>print(this.body.getSystem()));
-      }
-      return _xblockexpression;
+          _xblockexpression = (indent + _description);
+        }
+        return _xblockexpression;
+      };
+      String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function), "\n");
+      _builder.append(_join);
+      _builder.newLineIfNotEmpty();
+      String _print = Show.<AlphaSystem>print(this.body.getSystem());
+      _builder.append(_print);
+      _builder.newLineIfNotEmpty();
+      return _builder;
     }
   }
 
@@ -212,15 +223,41 @@ public class OptimalSimplifyingReductions {
 
     @Override
     public String description() {
-      return String.format("Apply ReductionDecomposition with %s o %s", this._outer, this._inner);
+      String _xblockexpression = null;
+      {
+        final Equation eq = AlphaUtil.getContainerEquation(this.re);
+        String _xifexpression = null;
+        if ((eq instanceof StandardEquation)) {
+          _xifexpression = ((StandardEquation) eq).getVariable().getName();
+        } else {
+          _xifexpression = null;
+        }
+        final String eqVarName = _xifexpression;
+        String _xifexpression_1 = null;
+        if ((eqVarName != null)) {
+          _xifexpression_1 = String.format(" to %s", eqVarName);
+        } else {
+          _xifexpression_1 = "";
+        }
+        final String toEqStr = _xifexpression_1;
+        _xblockexpression = String.format("Apply ReductionDecomposition%s with %s o %s", toEqStr, this._outer, this._inner);
+      }
+      return _xblockexpression;
     }
+  }
+
+  public static class ThrottleException extends Exception {
   }
 
   public static boolean DEBUG = false;
 
-  public static boolean THROTTLE = true;
+  private static boolean THROTTLE = false;
 
-  public static int THROTTLE_LIMIT = 2;
+  private static int THROTTLE_LIMIT = 1;
+
+  private static long optimizationNum;
+
+  private static String saveDirectory = "resources/opt";
 
   protected AlphaRoot root;
 
@@ -232,18 +269,16 @@ public class OptimalSimplifyingReductions {
 
   protected String originalSystemName;
 
-  protected long optimizationNum;
-
-  protected final List<OptimalSimplifyingReductions.State> optimizations;
+  protected final Map<Integer, List<OptimalSimplifyingReductions.State>> optimizations;
 
   protected OptimalSimplifyingReductions(final SystemBody originalSystemBody) {
     this.root = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(originalSystemBody));
     this.system = this.root.getSystem(originalSystemBody.getSystem().getFullyQualifiedName());
     this.systemBodyID = originalSystemBody.getSystem().getSystemBodies().indexOf(originalSystemBody);
     this.systemBody = this.system.getSystemBodies().get(this.systemBodyID);
-    this.optimizations = CollectionLiterals.<OptimalSimplifyingReductions.State>newLinkedList();
+    this.optimizations = CollectionLiterals.<Integer, List<OptimalSimplifyingReductions.State>>newHashMap();
     this.originalSystemName = this.system.getName();
-    this.optimizationNum = 0;
+    OptimalSimplifyingReductions.optimizationNum = 0;
   }
 
   public static OptimalSimplifyingReductions apply(final AlphaSystem system) {
@@ -264,62 +299,101 @@ public class OptimalSimplifyingReductions {
     return osr;
   }
 
+  protected OptimalSimplifyingReductions.State preprocessing() {
+    ReductionComposition.apply(this.systemBody);
+    SplitUnionIntoCase.apply(this.systemBody);
+    PermutationCaseReduce.apply(this.systemBody);
+    NormalizeReduction.apply(this.systemBody);
+    Normalize.apply(this.systemBody);
+    LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
+    final OptimalSimplifyingReductions.State state = new OptimalSimplifyingReductions.State(this.systemBody, _newLinkedList);
+    int _complexity = state.complexity();
+    final Consumer<Integer> _function = (Integer i) -> {
+      this.optimizations.put(i, CollectionLiterals.<OptimalSimplifyingReductions.State>newLinkedList());
+    };
+    new ExclusiveRange(0, _complexity, true).forEach(_function);
+    return state;
+  }
+
   /**
    * Entry point to the algorithm
    */
   private void run() {
-    this.preprocessing();
-    ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, 3, true);
-    for (final Integer i : _doubleDotLessThan) {
-      {
-        InputOutput.<String>println(("--> pass " + i));
-        int _size = this.optimizations.size();
-        String _plus = ("    opts " + Integer.valueOf(_size));
-        InputOutput.<String>println(_plus);
-        this.transform();
+    final OptimalSimplifyingReductions.State state = this.preprocessing();
+    try {
+      this.optimizeUnexploredEquations(state);
+    } catch (final Throwable _t) {
+      if (_t instanceof OptimalSimplifyingReductions.ThrottleException) {
+        InputOutput.<String>println((("Throttled search to stop after " + Integer.valueOf(OptimalSimplifyingReductions.THROTTLE_LIMIT)) + " results"));
+      } else {
+        throw Exceptions.sneakyThrow(_t);
       }
     }
-    int _size = this.optimizations.size();
-    String _plus = ("Number of optimizations: " + Integer.valueOf(_size));
-    InputOutput.<String>println(_plus);
-    final Consumer<OptimalSimplifyingReductions.State> _function = (OptimalSimplifyingReductions.State it) -> {
-      it.show();
-    };
-    this.optimizations.forEach(_function);
     InputOutput.println();
-  }
-
-  private void transform() {
-    final LinkedList<OptimalSimplifyingReductions.State> systemsToProcess = CollectionLiterals.<OptimalSimplifyingReductions.State>newLinkedList();
-    systemsToProcess.addAll(this.optimizations);
-    while ((this.optimizations.size() > 0)) {
-      this.optimizations.remove(0);
-    }
-    final Consumer<OptimalSimplifyingReductions.State> _function = (OptimalSimplifyingReductions.State state) -> {
-      final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation it) -> {
-        return it.getExplored();
-      };
-      final Consumer<StandardEquation> _function_2 = (StandardEquation eq) -> {
-        this.optimizeEquation(eq, state);
-      };
-      IterableExtensions.<StandardEquation>reject(EcoreUtil2.<StandardEquation>getAllContentsOfType(state.body, StandardEquation.class), _function_1).forEach(_function_2);
+    final Function1<Integer, Boolean> _function = (Integer k) -> {
+      int _size = this.optimizations.get(k).size();
+      return Boolean.valueOf((_size == 0));
     };
-    systemsToProcess.forEach(_function);
+    final Function1<Integer, Pair<Integer, List<OptimalSimplifyingReductions.State>>> _function_1 = (Integer k) -> {
+      List<OptimalSimplifyingReductions.State> _get = this.optimizations.get(k);
+      return Pair.<Integer, List<OptimalSimplifyingReductions.State>>of(k, _get);
+    };
+    final List<Pair<Integer, List<OptimalSimplifyingReductions.State>>> foundOptimizations = IterableExtensions.<Pair<Integer, List<OptimalSimplifyingReductions.State>>>toList(IterableExtensions.<Integer, Pair<Integer, List<OptimalSimplifyingReductions.State>>>map(IterableExtensions.<Integer>reject(this.optimizations.keySet(), _function), _function_1));
+    final Consumer<Pair<Integer, List<OptimalSimplifyingReductions.State>>> _function_2 = (Pair<Integer, List<OptimalSimplifyingReductions.State>> keyOpts) -> {
+      final List<OptimalSimplifyingReductions.State> opts = keyOpts.getValue();
+      final Consumer<OptimalSimplifyingReductions.State> _function_3 = (OptimalSimplifyingReductions.State it) -> {
+        InputOutput.<CharSequence>println(it.show());
+      };
+      opts.forEach(_function_3);
+    };
+    foundOptimizations.forEach(_function_2);
+    InputOutput.println();
+    final Consumer<Pair<Integer, List<OptimalSimplifyingReductions.State>>> _function_3 = (Pair<Integer, List<OptimalSimplifyingReductions.State>> keyOpts) -> {
+      final Integer key = keyOpts.getKey();
+      final List<OptimalSimplifyingReductions.State> opts = keyOpts.getValue();
+      int _size = opts.size();
+      String _plus = ((("Number of " + key) + "D optimizations: ") + Integer.valueOf(_size));
+      InputOutput.<String>println(_plus);
+    };
+    foundOptimizations.forEach(_function_3);
   }
 
-  protected boolean preprocessing() {
+  private boolean addToOptimzations(final OptimalSimplifyingReductions.State state) {
     boolean _xblockexpression = false;
     {
-      ReductionComposition.apply(this.systemBody);
-      SplitUnionIntoCase.apply(this.systemBody);
-      PermutationCaseReduce.apply(this.systemBody);
-      NormalizeReduction.apply(this.systemBody);
-      Normalize.apply(this.systemBody);
-      LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
-      final OptimalSimplifyingReductions.State state = new OptimalSimplifyingReductions.State(this.systemBody, _newLinkedList);
-      _xblockexpression = this.optimizations.add(state);
+      final List<OptimalSimplifyingReductions.State> opts = this.optimizations.get(Integer.valueOf(state.complexity()));
+      _xblockexpression = opts.add(state);
     }
     return _xblockexpression;
+  }
+
+  private void optimizeUnexploredEquations(final OptimalSimplifyingReductions.State state) {
+    try {
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+        return it.getExplored();
+      };
+      final Consumer<StandardEquation> _function_1 = (StandardEquation it) -> {
+        this.optimizeEquation(it, state);
+      };
+      IterableExtensions.<StandardEquation>reject(state.body.getStandardEquations(), _function).forEach(_function_1);
+      final int stateComplexity = state.complexity();
+      if ((stateComplexity <= 2)) {
+        OptimalSimplifyingReductions.optimizationNum++;
+        InputOutput.<String>print(("\rnumber of 2D optimizations found: " + Long.valueOf(OptimalSimplifyingReductions.optimizationNum)));
+        this.addToOptimzations(state);
+        if ((OptimalSimplifyingReductions.saveDirectory != null)) {
+          final String fileName = String.format("%s/%s.v%03d.alpha", OptimalSimplifyingReductions.saveDirectory, state.body.getSystem().getName(), Long.valueOf(OptimalSimplifyingReductions.optimizationNum));
+          InputOutput.<CharSequence>println(state.show());
+          final String stateStr = state.show().toString();
+          OptimalSimplifyingReductions.writeToFile(stateStr, fileName);
+        }
+        if ((OptimalSimplifyingReductions.THROTTLE && (OptimalSimplifyingReductions.optimizationNum >= OptimalSimplifyingReductions.THROTTLE_LIMIT))) {
+          throw new OptimalSimplifyingReductions.ThrottleException();
+        }
+      }
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   private void optimizeEquation(final StandardEquation eq, final OptimalSimplifyingReductions.State state) {
@@ -332,8 +406,6 @@ public class OptimalSimplifyingReductions {
     boolean _isOptimallySimplified = this.isOptimallySimplified(re);
     if (_isOptimallySimplified) {
       eq.setExplored();
-      OptimalSimplifyingReductions.State _state = new OptimalSimplifyingReductions.State(containerSystemBody, state.steps);
-      this.optimizations.add(_state);
       return;
     }
     final SystemBody body = AlphaUtil.getContainerSystemBody(eq);
@@ -343,31 +415,28 @@ public class OptimalSimplifyingReductions {
     boolean _isNotReduceExpr = OptimalSimplifyingReductions.isNotReduceExpr(targetEq.getExpr());
     if (_isNotReduceExpr) {
       eq.setExplored();
-      OptimalSimplifyingReductions.State _state_1 = new OptimalSimplifyingReductions.State(containerSystemBody, state.steps);
-      this.optimizations.add(_state_1);
       return;
     }
     AlphaExpression _expr = targetEq.getExpr();
-    final List<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
+    final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
     for (final OptimalSimplifyingReductions.DynamicProgrammingStep step : candidates) {
       {
-        String _description = step.description();
-        String _plus = ("    step: " + _description);
-        InputOutput.<String>println(_plus);
         final AlphaRoot optimizedRoot = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(containerSystemBody));
         final SystemBody optimizedBody = optimizedRoot.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID);
-        final StandardEquation optimzedEq = this.getEquation(optimizedRoot, targetEq.getName());
-        this.applyDPStep(optimzedEq.getExpr(), step);
+        final StandardEquation optimizedEq = this.getEquation(optimizedRoot, targetEq.getName());
+        this.applyDPStep(optimizedEq.getExpr(), step);
+        optimizedEq.setExplored(Boolean.valueOf(OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr())));
         final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> steps = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
         steps.addAll(state.steps);
         steps.add(step);
-        OptimalSimplifyingReductions.State _state_2 = new OptimalSimplifyingReductions.State(optimizedBody, steps);
-        this.optimizations.add(_state_2);
+        final OptimalSimplifyingReductions.State newState = new OptimalSimplifyingReductions.State(optimizedBody, steps);
+        this.optimizeUnexploredEquations(newState);
       }
     }
   }
 
   private void _optimizeEquation(final StandardEquation eq, final AlphaExpression ae, final OptimalSimplifyingReductions.State state) {
+    eq.setExplored(Boolean.valueOf(true));
   }
 
   private StandardEquation getEquation(final AlphaRoot root, final String name) {
@@ -421,18 +490,6 @@ public class OptimalSimplifyingReductions {
 
   private static boolean isNotReduceExpr(final AlphaExpression expr) {
     return (!(expr instanceof ReduceExpression));
-  }
-
-  private int dimensionality(final StandardEquation equ) {
-    return this.dimensionality(equ, equ.getExpr());
-  }
-
-  private int _dimensionality(final StandardEquation equ, final ReduceExpression re) {
-    return ISLUtil.dimensionality(re.getBody().getContextDomain());
-  }
-
-  private int _dimensionality(final StandardEquation equ, final AlphaExpression ae) {
-    return equ.getVariable().getDomain().getNbIndices();
   }
 
   /**
@@ -499,7 +556,7 @@ public class OptimalSimplifyingReductions {
   /**
    * Creates a list of possible transformations that are valid steps in the DP.
    */
-  protected List<OptimalSimplifyingReductions.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
+  protected LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
     final int nbParams = targetRE.getExpressionDomain().getNbParams();
     final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetRE);
     final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = new LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep>();
@@ -530,40 +587,44 @@ public class OptimalSimplifyingReductions {
       OptimalSimplifyingReductions.StepReductionDecomposition _stepReductionDecomposition = new OptimalSimplifyingReductions.StepReductionDecomposition(targetRE, _key, _value);
       candidates.add(_stepReductionDecomposition);
     }
-    if (OptimalSimplifyingReductions.THROTTLE) {
-      final int nbCandidates = candidates.size();
-      int _xifexpression = (int) 0;
-      if ((OptimalSimplifyingReductions.THROTTLE_LIMIT < nbCandidates)) {
-        _xifexpression = OptimalSimplifyingReductions.THROTTLE_LIMIT;
-      } else {
-        _xifexpression = nbCandidates;
-      }
-      return candidates.subList(0, _xifexpression);
-    }
     return candidates;
   }
 
-  protected List<AlphaIssue> _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepSimplifyingReduction step) {
+  protected Object _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepSimplifyingReduction step) {
     SimplifyingReductions.apply(re, step.reuseDepNoParams);
     return null;
   }
 
-  protected List<AlphaIssue> _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepIdempotence step) {
+  protected Object _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepIdempotence step) {
     Idempotence.apply(re);
     return null;
   }
 
-  protected List<AlphaIssue> _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepHigherOrderOperator step) {
+  protected Object _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepHigherOrderOperator step) {
     HigherOrderOperator.apply(re);
     return null;
   }
 
-  protected List<AlphaIssue> _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepReductionDecomposition step) {
-    return ReductionDecomposition.apply(re, step.innerProjection, step.outerProjection);
+  protected Object _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepReductionDecomposition step) {
+    ReductionDecomposition.apply(re, step.innerProjection, step.outerProjection);
+    NormalizeReduction.apply(re);
+    Normalize.apply(this.systemBody);
+    return null;
   }
 
-  protected List<AlphaIssue> _applyDPStep(final AlphaExpression ae, final OptimalSimplifyingReductions.DynamicProgrammingStep step) {
+  protected Object _applyDPStep(final AlphaExpression ae, final OptimalSimplifyingReductions.DynamicProgrammingStep step) {
     return null;
+  }
+
+  public static void writeToFile(final String blob, final String fileName) {
+    try {
+      FileWriter _fileWriter = new FileWriter(fileName);
+      final BufferedWriter writer = new BufferedWriter(_fileWriter);
+      writer.write(blob);
+      writer.close();
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   private void optimizeEquation(final StandardEquation eq, final AlphaExpression re, final OptimalSimplifyingReductions.State state) {
@@ -579,18 +640,7 @@ public class OptimalSimplifyingReductions {
     }
   }
 
-  private int dimensionality(final StandardEquation equ, final AlphaExpression re) {
-    if (re instanceof ReduceExpression) {
-      return _dimensionality(equ, (ReduceExpression)re);
-    } else if (re != null) {
-      return _dimensionality(equ, re);
-    } else {
-      throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(equ, re).toString());
-    }
-  }
-
-  protected List<AlphaIssue> applyDPStep(final AlphaExpression re, final OptimalSimplifyingReductions.DynamicProgrammingStep step) {
+  protected Object applyDPStep(final AlphaExpression re, final OptimalSimplifyingReductions.DynamicProgrammingStep step) {
     if (re instanceof ReduceExpression
          && step instanceof OptimalSimplifyingReductions.StepHigherOrderOperator) {
       return _applyDPStep((ReduceExpression)re, (OptimalSimplifyingReductions.StepHigherOrderOperator)step);

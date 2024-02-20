@@ -8,6 +8,8 @@ import alpha.model.ModelPackage;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
 
+import alpha.model.util.Show;
+
 import java.util.Collection;
 
 import org.eclipse.emf.common.notify.Notification;
@@ -33,7 +35,6 @@ import org.eclipse.emf.ecore.util.EDataTypeEList;
  *   <li>{@link alpha.model.impl.StandardEquationImpl#getVariable <em>Variable</em>}</li>
  *   <li>{@link alpha.model.impl.StandardEquationImpl#getIndexNames <em>Index Names</em>}</li>
  *   <li>{@link alpha.model.impl.StandardEquationImpl#getExpr <em>Expr</em>}</li>
- *   <li>{@link alpha.model.impl.StandardEquationImpl#getZ__explored <em>Zexplored</em>}</li>
  * </ul>
  *
  * @generated
@@ -68,26 +69,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 	 * @ordered
 	 */
 	protected AlphaExpression expr;
-
-	/**
-	 * The default value of the '{@link #getZ__explored() <em>Zexplored</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getZ__explored()
-	 * @generated
-	 * @ordered
-	 */
-	protected static final Boolean ZEXPLORED_EDEFAULT = null;
-
-	/**
-	 * The cached value of the '{@link #getZ__explored() <em>Zexplored</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getZ__explored()
-	 * @generated
-	 * @ordered
-	 */
-	protected Boolean z__explored = ZEXPLORED_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -206,27 +187,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public Boolean getZ__explored() {
-		return z__explored;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setZ__explored(Boolean newZ__explored) {
-		Boolean oldZ__explored = z__explored;
-		z__explored = newZ__explored;
-		if (eNotificationRequired())
-			eNotify(new ENotificationImpl(this, Notification.SET, ModelPackage.STANDARD_EQUATION__ZEXPLORED, oldZ__explored, z__explored));
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public String getName() {
 		String _xifexpression = null;
 		Variable _variable = this.getVariable();
@@ -254,31 +214,22 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public Boolean getExplored() {
-		Boolean _z__explored = this.getZ__explored();
-		boolean _tripleEquals = (_z__explored == null);
-		if (_tripleEquals) {
-			return Boolean.valueOf(false);
+	public String toString() {
+		String _xifexpression = null;
+		Boolean _explored = this.getExplored();
+		if ((_explored).booleanValue()) {
+			_xifexpression = "*";
 		}
-		return this.getZ__explored();
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setExplored() {
-		this.setZ__explored(Boolean.valueOf(true));
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setExplored(final Boolean explored) {
-		this.setZ__explored(explored);
+		else {
+			_xifexpression = " ";
+		}
+		final String hasBeenExplored = _xifexpression;
+		String _name = this.getVariable().getName();
+		String _plus = (_name + " (");
+		String _plus_1 = (_plus + hasBeenExplored);
+		String _plus_2 = (_plus_1 + "): ");
+		String _print = Show.<AlphaExpression>print(this.getExpr());
+		return (_plus_2 + _print);
 	}
 
 	/**
@@ -310,8 +261,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 				return getIndexNames();
 			case ModelPackage.STANDARD_EQUATION__EXPR:
 				return getExpr();
-			case ModelPackage.STANDARD_EQUATION__ZEXPLORED:
-				return getZ__explored();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -335,9 +284,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 			case ModelPackage.STANDARD_EQUATION__EXPR:
 				setExpr((AlphaExpression)newValue);
 				return;
-			case ModelPackage.STANDARD_EQUATION__ZEXPLORED:
-				setZ__explored((Boolean)newValue);
-				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -359,9 +305,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 			case ModelPackage.STANDARD_EQUATION__EXPR:
 				setExpr((AlphaExpression)null);
 				return;
-			case ModelPackage.STANDARD_EQUATION__ZEXPLORED:
-				setZ__explored(ZEXPLORED_EDEFAULT);
-				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -380,28 +323,8 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 				return indexNames != null && !indexNames.isEmpty();
 			case ModelPackage.STANDARD_EQUATION__EXPR:
 				return expr != null;
-			case ModelPackage.STANDARD_EQUATION__ZEXPLORED:
-				return ZEXPLORED_EDEFAULT == null ? z__explored != null : !ZEXPLORED_EDEFAULT.equals(z__explored);
 		}
 		return super.eIsSet(featureID);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	@Override
-	public String toString() {
-		if (eIsProxy()) return super.toString();
-
-		StringBuilder result = new StringBuilder(super.toString());
-		result.append(" (indexNames: ");
-		result.append(indexNames);
-		result.append(", z__explored: ");
-		result.append(z__explored);
-		result.append(')');
-		return result.toString();
 	}
 
 } //StandardEquationImpl

@@ -1303,6 +1303,15 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EAttribute getEquation_Z__explored() {
+		return (EAttribute)equationEClass.getEStructuralFeatures().get(1);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public EClass getStandardEquation() {
 		return standardEquationEClass;
 	}
@@ -1332,15 +1341,6 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 */
 	public EReference getStandardEquation_Expr() {
 		return (EReference)standardEquationEClass.getEStructuralFeatures().get(2);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EAttribute getStandardEquation_Z__explored() {
-		return (EAttribute)standardEquationEClass.getEStructuralFeatures().get(3);
 	}
 
 	/**
@@ -3004,12 +3004,12 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 
 		equationEClass = createEClass(EQUATION);
 		createEReference(equationEClass, EQUATION__SYSTEM_BODY);
+		createEAttribute(equationEClass, EQUATION__ZEXPLORED);
 
 		standardEquationEClass = createEClass(STANDARD_EQUATION);
 		createEReference(standardEquationEClass, STANDARD_EQUATION__VARIABLE);
 		createEAttribute(standardEquationEClass, STANDARD_EQUATION__INDEX_NAMES);
 		createEReference(standardEquationEClass, STANDARD_EQUATION__EXPR);
-		createEAttribute(standardEquationEClass, STANDARD_EQUATION__ZEXPLORED);
 
 		useEquationEClass = createEClass(USE_EQUATION);
 		createEAttribute(useEquationEClass, USE_EQUATION__IDENTIFIER);
@@ -3928,6 +3928,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 
 		initEClass(equationEClass, Equation.class, "Equation", IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getEquation_SystemBody(), this.getSystemBody(), this.getSystemBody_Equations(), "systemBody", null, 0, 1, Equation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getEquation_Z__explored(), this.getboolean(), "z__explored", null, 0, 1, Equation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		op = addEOperation(equationEClass, this.getAlphaExpression(), "getExpression", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getIntegerQueue(), "exprID", 0, 1, !IS_UNIQUE, IS_ORDERED);
@@ -3938,23 +3939,24 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		op = addEOperation(equationEClass, this.getAlphaExpression(), "getExpression", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getString(), "exprIDstr", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		addEOperation(equationEClass, this.getboolean(), "getExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		addEOperation(equationEClass, null, "setExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		op = addEOperation(equationEClass, null, "setExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getboolean(), "explored", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		initEClass(standardEquationEClass, StandardEquation.class, "StandardEquation", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getStandardEquation_Variable(), this.getVariable(), null, "variable", null, 0, 1, StandardEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getStandardEquation_IndexNames(), this.getString(), "indexNames", null, 0, -1, StandardEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getStandardEquation_Expr(), this.getAlphaExpression(), null, "expr", null, 0, 1, StandardEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getStandardEquation_Z__explored(), this.getboolean(), "z__explored", null, 0, 1, StandardEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		addEOperation(standardEquationEClass, this.getString(), "getName", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		op = addEOperation(standardEquationEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getAlphaVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
-		addEOperation(standardEquationEClass, this.getboolean(), "getExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(standardEquationEClass, null, "setExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(standardEquationEClass, null, "setExplored", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getboolean(), "explored", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEOperation(standardEquationEClass, this.getString(), "toString", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		initEClass(useEquationEClass, UseEquation.class, "UseEquation", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getUseEquation_Identifier(), this.getString(), "identifier", null, 0, 1, UseEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

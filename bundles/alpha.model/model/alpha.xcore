@@ -532,6 +532,8 @@ class SystemBody extends AlphaNode, AlphaVisitable, AlphaSystemElement {
 abstract class Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement, AlphaScheduleTarget {
 	container SystemBody systemBody opposite equations
 	
+	boolean z__explored
+	
 	op AlphaExpression getExpression(IntegerQueue exprID) {
 		val next = exprID.poll;
 		
@@ -545,21 +547,6 @@ abstract class Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement, A
 	
 	op AlphaExpression getExpression(String exprIDstr) {
 		getExpression(new LinkedList(AlphaUtil.parseIntArray(exprIDstr)))
-	}
-}
-
-class StandardEquation extends Equation {
-	refers Variable variable
-	String[] indexNames
-	contains AlphaExpression expr
-	boolean z__explored
-	
-	op String getName() {
-		if (variable !== null) variable.name else null
-	}
-	
-	op void accept(AlphaVisitor visitor) {
-		visitor.visitStandardEquation(this)
 	}
 	
 	op boolean getExplored() {
@@ -576,6 +563,25 @@ class StandardEquation extends Equation {
 		this.z__explored = explored
 	}
 	
+}
+
+class StandardEquation extends Equation {
+	refers Variable variable
+	String[] indexNames
+	contains AlphaExpression expr
+	
+	op String getName() {
+		if (variable !== null) variable.name else null
+	}
+	
+	op void accept(AlphaVisitor visitor) {
+		visitor.visitStandardEquation(this)
+	}
+	
+	op String toString() {
+		val hasBeenExplored = if (explored) '*' else ' '
+		return variable.name + ' ('+hasBeenExplored+'): ' + Show.print(expr)
+	}
 }
 class UseEquation extends Equation {
 	String identifier

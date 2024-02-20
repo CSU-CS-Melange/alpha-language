@@ -16,7 +16,6 @@ import org.eclipse.emf.common.util.EList;
  *   <li>{@link alpha.model.StandardEquation#getVariable <em>Variable</em>}</li>
  *   <li>{@link alpha.model.StandardEquation#getIndexNames <em>Index Names</em>}</li>
  *   <li>{@link alpha.model.StandardEquation#getExpr <em>Expr</em>}</li>
- *   <li>{@link alpha.model.StandardEquation#getZ__explored <em>Zexplored</em>}</li>
  * </ul>
  *
  * @see alpha.model.ModelPackage#getStandardEquation()
@@ -81,28 +80,6 @@ public interface StandardEquation extends Equation {
 	void setExpr(AlphaExpression value);
 
 	/**
-	 * Returns the value of the '<em><b>Zexplored</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the value of the '<em>Zexplored</em>' attribute.
-	 * @see #setZ__explored(Boolean)
-	 * @see alpha.model.ModelPackage#getStandardEquation_Z__explored()
-	 * @model unique="false" dataType="alpha.model.boolean"
-	 * @generated
-	 */
-	Boolean getZ__explored();
-
-	/**
-	 * Sets the value of the '{@link alpha.model.StandardEquation#getZ__explored <em>Zexplored</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @param value the new value of the '<em>Zexplored</em>' attribute.
-	 * @see #getZ__explored()
-	 * @generated
-	 */
-	void setZ__explored(Boolean value);
-
-	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model kind="operation" dataType="alpha.model.String" unique="false"
@@ -121,25 +98,9 @@ public interface StandardEquation extends Equation {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @model kind="operation" dataType="alpha.model.boolean" unique="false"
+	 * @model dataType="alpha.model.String" unique="false"
 	 * @generated
 	 */
-	Boolean getExplored();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model
-	 * @generated
-	 */
-	void setExplored();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model exploredDataType="alpha.model.boolean" exploredUnique="false"
-	 * @generated
-	 */
-	void setExplored(Boolean explored);
+	String toString();
 
 } // StandardEquation

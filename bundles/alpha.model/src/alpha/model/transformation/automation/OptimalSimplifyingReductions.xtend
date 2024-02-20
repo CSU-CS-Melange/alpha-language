@@ -23,48 +23,47 @@ import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import java.io.BufferedWriter
+import java.io.FileWriter
 import java.util.LinkedList
 import java.util.List
+import java.util.Map
 import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import static extension org.eclipse.xtext.EcoreUtil2.getAllContentsOfType
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
- * 
- * This implementation is incomplete in the following way:
- *  - The input program is assumed to be bounded. There are
- * a number of places in the original paper that discuss
- * a linear space (named L_P) = rays in vertex representation.
- * Cases where this linear space is meaningful are not supported.
  * 
  */
 class OptimalSimplifyingReductions {
 	
 	public static boolean DEBUG = false
 	
-	public static boolean THROTTLE = true
-	public static int THROTTLE_LIMIT = 2
+	static boolean THROTTLE = false
+	static int THROTTLE_LIMIT = 1
+	static long optimizationNum
+	
+	static String saveDirectory = 'resources/opt'
 	
 	protected AlphaRoot root
 	protected AlphaSystem system
 	protected SystemBody systemBody
 	protected int systemBodyID
 	protected String originalSystemName
-	protected long optimizationNum
 	
-	protected final List<State> optimizations
+	
+	protected final Map<Integer, List<State>> optimizations
 	
 	protected new (SystemBody originalSystemBody) {
 		root = EcoreUtil.copy(AlphaUtil.getContainerRoot(originalSystemBody))
 		system = root.getSystem(originalSystemBody.system.fullyQualifiedName)
 		systemBodyID = originalSystemBody.system.systemBodies.indexOf(originalSystemBody)
 		systemBody = system.systemBodies.get(systemBodyID)
-		optimizations = newLinkedList
+		optimizations = newHashMap
 		originalSystemName = system.name
 		optimizationNum = 0
 	}
@@ -82,40 +81,6 @@ class OptimalSimplifyingReductions {
 		return osr
 	}
 	
-	/**
-	 * Entry point to the algorithm
-	 * 
-	 */
-	private def run() {
-		preprocessing
-		
-		for (i : 0..<3) {
-			println('--> pass ' + i)
-			println('    opts ' + optimizations.size)
-			
-			transform
-			
-			
-		}
-		
-		println('Number of optimizations: ' + optimizations.size)
-		optimizations.forEach[show]
-		println
-	}
-	
-	private def transform() {
-		val systemsToProcess = newLinkedList
-		systemsToProcess.addAll(optimizations)
-		while (optimizations.size > 0)
-			optimizations.remove(0)
-		
-		systemsToProcess.forEach[state |
-			state.body.getAllContentsOfType(StandardEquation).reject[explored].forEach[eq |
-				optimizeEquation(eq, state)
-			]
-		]
-	}
-	
 	protected def preprocessing() {
 		ReductionComposition.apply(systemBody)
 		SplitUnionIntoCase.apply(systemBody)
@@ -125,7 +90,68 @@ class OptimalSimplifyingReductions {
 		
 		val state = new State(systemBody, newLinkedList)
 		
-		optimizations.add(state)
+		(0..<state.complexity).forEach[i | optimizations.put(i, newLinkedList)]
+		
+		return state
+	}
+	
+	/**
+	 * Entry point to the algorithm
+	 * 
+	 */
+	private def run() {
+		val state = preprocessing
+		
+		try {
+			state.optimizeUnexploredEquations
+		} catch (ThrottleException e) {
+			println('Throttled search to stop after ' + THROTTLE_LIMIT + ' results')
+		}
+		println
+		
+		val foundOptimizations = optimizations.keySet
+			.reject[k | optimizations.get(k).size == 0]
+			.map[k | k -> optimizations.get(k)]
+			.toList
+		foundOptimizations.forEach[keyOpts | 
+			val opts = keyOpts.value
+			opts.forEach[println(show)]
+		]
+		
+		println
+		foundOptimizations.forEach[keyOpts | 
+			val key = keyOpts.key
+			val opts = keyOpts.value
+			println('Number of ' + key + 'D optimizations: ' + opts.size)
+		]
+	}
+	
+	private def addToOptimzations(State state) {
+		val opts = optimizations.get(state.complexity)
+		opts += state
+	}
+	
+	private def void optimizeUnexploredEquations(State state) {
+		state.body.standardEquations.reject[explored].forEach[
+			optimizeEquation(state)
+		]
+		
+		val stateComplexity = state.complexity
+		if (stateComplexity <= 2) {
+			optimizationNum++
+			print('\rnumber of 2D optimizations found: ' + optimizationNum)
+			state.addToOptimzations
+			
+			if (saveDirectory !== null) {
+				val fileName = '%s/%s.v%03d.alpha'.format(saveDirectory, state.body.system.name, optimizationNum)
+				println(state.show)
+				val stateStr = state.show.toString
+				stateStr.writeToFile(fileName)
+			}
+			if (THROTTLE && optimizationNum >= THROTTLE_LIMIT)
+				throw new ThrottleException
+			
+		}
 	}
 	
 	private def void optimizeEquation(StandardEquation eq, State state) {
@@ -136,7 +162,6 @@ class OptimalSimplifyingReductions {
 		val containerSystemBody = eq.getContainerSystemBody
 		if (re.isOptimallySimplified) {
 			eq.setExplored
-			optimizations.add(new State(containerSystemBody, state.steps))
 			return
 		}
 		
@@ -148,26 +173,27 @@ class OptimalSimplifyingReductions {
 		
 		if (targetEq.expr.isNotReduceExpr) {
 			eq.setExplored
-			optimizations.add(new State(containerSystemBody, state.steps))
 			return
 		}
 		
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
 		
 		for (step : candidates) {
-			println('    step: ' + step.description)
 			val optimizedRoot = EcoreUtil.copy(containerSystemBody.getContainerRoot)
 			val optimizedBody = optimizedRoot.getSystem(originalSystemName).systemBodies.get(systemBodyID)
-			val optimzedEq = optimizedRoot.getEquation(targetEq.name)
-			optimzedEq.expr.applyDPStep(step)
+			val optimizedEq = optimizedRoot.getEquation(targetEq.name)
+			optimizedEq.expr.applyDPStep(step)
+			// mark equation as finished/explored if it is no longer contains a reduction expr 
+			optimizedEq.explored = optimizedEq.expr.isNotReduceExpr
 			val steps = newLinkedList
 			steps.addAll(state.steps)
 			steps += step
-			optimizations += new State(optimizedBody, steps)
+			val newState = new State(optimizedBody, steps)
+			optimizeUnexploredEquations(newState)
 		}
 	}
 	private def dispatch void optimizeEquation(StandardEquation eq, AlphaExpression ae, State state) {
-		// do nothing
+		eq.explored = true
 	}
 	
 	private def StandardEquation getEquation(AlphaRoot root, String name) {
@@ -198,16 +224,6 @@ class OptimalSimplifyingReductions {
 	
 	private def static isNotReduceExpr(AlphaExpression expr) {
 		!(expr instanceof ReduceExpression)
-	}
-	
-	private def dimensionality(StandardEquation equ) {
-		dimensionality(equ, equ.expr)
-	}
-	private def dispatch dimensionality(StandardEquation equ, ReduceExpression re) {
-		re.body.contextDomain.dimensionality
-	}
-	private def dispatch dimensionality(StandardEquation equ, AlphaExpression ae) {
-		equ.variable.domain.nbIndices
 	}
 	
 	/** 
@@ -285,10 +301,10 @@ class OptimalSimplifyingReductions {
 			candidates.add(new StepReductionDecomposition(targetRE, pair.key, pair.value))
 		}
 		
-		if (THROTTLE) {
-			val nbCandidates = candidates.size
-			return candidates.subList(0, THROTTLE_LIMIT < nbCandidates ? THROTTLE_LIMIT : nbCandidates)
-		}
+//		if (THROTTLE) {
+//			val nbCandidates = candidates.size
+//			return candidates.subList(0, THROTTLE_LIMIT < nbCandidates ? THROTTLE_LIMIT : nbCandidates)
+//		}
 		
 		return candidates;
 	}
@@ -305,6 +321,8 @@ class OptimalSimplifyingReductions {
 	}
 	protected dispatch def applyDPStep(ReduceExpression re, StepReductionDecomposition step) {
 		ReductionDecomposition.apply(re, step.innerProjection, step.outerProjection)
+		NormalizeReduction.apply(re)
+		Normalize.apply(systemBody)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing
@@ -319,14 +337,22 @@ class OptimalSimplifyingReductions {
 			this.steps = steps
 		}
 		
-		def show() {
-			println('Complexity: ' + body.complexity + 'D')
-			(0..<steps.size).forEach[i | 
-				val indent = (0..<i).map['+--'].join + '+-- '
-				println(indent + steps.get(i).description)
-			]
-			println(Show.print(body.system))
+		def root() {
+			body.getContainerRoot
 		}
+		
+		def complexity() {
+			body.complexity
+		}
+		
+		def show() '''
+			// Complexity: «complexity»D
+			«(0..<steps.size).map[i | 
+				val indent = '// ' + (0..<i).map['+--'].join + '+-- '
+				indent + steps.get(i).description
+			].join('\n')»
+			«Show.print(body.system)»
+		'''
 	}
 	
 	static abstract class DynamicProgrammingStep {
@@ -414,7 +440,22 @@ class OptimalSimplifyingReductions {
 		}
 		
 		override description() {
-			String.format("Apply ReductionDecomposition with %s o %s", _outer, _inner);
+			val eq = re.getContainerEquation
+			val eqVarName = (eq instanceof StandardEquation) ? (eq as StandardEquation).variable.name : null 
+			val toEqStr = (eqVarName !== null) ? ' to %s'.format(eqVarName) : ''
+			String.format("Apply ReductionDecomposition%s with %s o %s", toEqStr, _outer, _inner);
 		}
 	}
+	
+	static class ThrottleException extends Exception {
+		
+	}
+	
+	static def writeToFile(String blob, String fileName) {
+	    val writer = new BufferedWriter(new FileWriter(fileName));
+	    writer.write(blob);
+	    
+	    writer.close();
+	}
+	
 }

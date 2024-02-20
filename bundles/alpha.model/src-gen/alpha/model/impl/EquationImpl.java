@@ -36,11 +36,32 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
  * </p>
  * <ul>
  *   <li>{@link alpha.model.impl.EquationImpl#getSystemBody <em>System Body</em>}</li>
+ *   <li>{@link alpha.model.impl.EquationImpl#getZ__explored <em>Zexplored</em>}</li>
  * </ul>
  *
  * @generated
  */
 public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
+	/**
+	 * The default value of the '{@link #getZ__explored() <em>Zexplored</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getZ__explored()
+	 * @generated
+	 * @ordered
+	 */
+	protected static final Boolean ZEXPLORED_EDEFAULT = null;
+
+	/**
+	 * The cached value of the '{@link #getZ__explored() <em>Zexplored</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getZ__explored()
+	 * @generated
+	 * @ordered
+	 */
+	protected Boolean z__explored = ZEXPLORED_EDEFAULT;
+
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -116,6 +137,27 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public Boolean getZ__explored() {
+		return z__explored;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setZ__explored(Boolean newZ__explored) {
+		Boolean oldZ__explored = z__explored;
+		z__explored = newZ__explored;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, ModelPackage.EQUATION__ZEXPLORED, oldZ__explored, z__explored));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public AlphaExpression getExpression(final Queue<Integer> exprID) {
 		AlphaExpression _xblockexpression = null;
 		{
@@ -152,6 +194,38 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 		int[] _parseIntArray = AlphaUtil.parseIntArray(exprIDstr);
 		LinkedList<Integer> _linkedList = new LinkedList<Integer>((Collection<? extends Integer>)org.eclipse.xtext.xbase.lib.Conversions.doWrapArray(_parseIntArray));
 		return this.getExpression(_linkedList);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public Boolean getExplored() {
+		Boolean _z__explored = this.getZ__explored();
+		boolean _tripleEquals = (_z__explored == null);
+		if (_tripleEquals) {
+			return Boolean.valueOf(false);
+		}
+		return this.getZ__explored();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setExplored() {
+		this.setZ__explored(Boolean.valueOf(true));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setExplored(final Boolean explored) {
+		this.setZ__explored(explored);
 	}
 
 	/**
@@ -231,6 +305,8 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 			case ModelPackage.EQUATION__SYSTEM_BODY:
 				if (resolve) return getSystemBody();
 				return basicGetSystemBody();
+			case ModelPackage.EQUATION__ZEXPLORED:
+				return getZ__explored();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -245,6 +321,9 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 		switch (featureID) {
 			case ModelPackage.EQUATION__SYSTEM_BODY:
 				setSystemBody((SystemBody)newValue);
+				return;
+			case ModelPackage.EQUATION__ZEXPLORED:
+				setZ__explored((Boolean)newValue);
 				return;
 		}
 		super.eSet(featureID, newValue);
@@ -261,6 +340,9 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 			case ModelPackage.EQUATION__SYSTEM_BODY:
 				setSystemBody((SystemBody)null);
 				return;
+			case ModelPackage.EQUATION__ZEXPLORED:
+				setZ__explored(ZEXPLORED_EDEFAULT);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -275,8 +357,26 @@ public abstract class EquationImpl extends AlphaNodeImpl implements Equation {
 		switch (featureID) {
 			case ModelPackage.EQUATION__SYSTEM_BODY:
 				return basicGetSystemBody() != null;
+			case ModelPackage.EQUATION__ZEXPLORED:
+				return ZEXPLORED_EDEFAULT == null ? z__explored != null : !ZEXPLORED_EDEFAULT.equals(z__explored);
 		}
 		return super.eIsSet(featureID);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public String toString() {
+		if (eIsProxy()) return super.toString();
+
+		StringBuilder result = new StringBuilder(super.toString());
+		result.append(" (z__explored: ");
+		result.append(z__explored);
+		result.append(')');
+		return result.toString();
 	}
 
 } //EquationImpl
