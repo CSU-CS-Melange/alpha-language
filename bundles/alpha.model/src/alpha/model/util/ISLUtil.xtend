@@ -13,6 +13,8 @@ import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
 
+import static extension java.lang.Math.abs
+
 class ISLUtil {
 	
 	/** Creates an ISLBasicSet from a string */
@@ -46,23 +48,17 @@ class ISLUtil {
 	}
 	
 	def static isTrivial(ISLBasicSet set) {
-		var origin = ISLBasicSet.buildUniverse(set.space.copy)
-		for (i : 0..<set.space.nbIndices) {
-			val aff = ISLAff.buildZero(set.space.copy.toLocalSpace)
-			origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, i, 1).toEqualityConstraint)
-		}
-		
-		set.copy.toSet.subtract(origin.toSet).isEmpty
+		set.copy.toSet.isTrivial
 	}
 	
 	def static isTrivial(ISLSet set) {
-		var origin = ISLSet.buildUniverse(set.space.copy)
-		for (i : 0..<set.space.nbIndices) {
-			val aff = ISLAff.buildZero(set.space.copy.toLocalSpace)
-			origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, i, 1).toEqualityConstraint)
-		}
+		val zero = ISLAff.buildZero(set.space.copy.toLocalSpace)
+		val constraints =
+			(0 ..< set.space.nbIndices)
+			.map[i | zero.copy.setCoefficient(ISLDimType.isl_dim_in, i, 1).toEqualityConstraint]
+		val origin = constraints.fold(ISLSet.buildUniverse(set.space.copy), [s, c | s.addConstraint(c)])
 		
-		set.subtract(origin).isEmpty
+		set.copy.subtract(origin).isEmpty
 	}
 	
 	/** Returns true if c is effectively saturated per Theorem 1 in GR06, and false otherwise */
@@ -109,13 +105,14 @@ class ISLUtil {
 	}
 	
 	def static int dimensionality(ISLBasicSet set) {
-		val effectivelySaturatedConstraints = newHashSet
-
-		effectivelySaturatedConstraints.addAll(set.constraints
+		val effectivelySaturatedCount =
+			set.constraints
+			.filter[c | c.involvesDims(ISLDimType.isl_dim_out, 0, set.space.nbOutputs)]
 			.filter[c | c.isEffectivelySaturated(set)]
-			.map[aff.toLinearUnitVector.toString]	
-		)
+			.map[aff.toLinearUnitVector.toString]
+			.toSet
+			.size
 		
-		return set.nbIndices - effectivelySaturatedConstraints.size
+		return set.nbIndices - effectivelySaturatedCount
 	}
 }

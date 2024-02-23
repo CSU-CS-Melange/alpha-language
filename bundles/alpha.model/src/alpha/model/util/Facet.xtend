@@ -10,9 +10,10 @@ import org.eclipse.xtend.lib.annotations.Data
 
 import static extension alpha.model.matrix.MatrixOperations.*
 import static extension alpha.model.util.AlphaUtil.*
-import static extension alpha.model.util.CommonExtensions.toHashMap
 import static extension alpha.model.util.DomainOperations.*
+import static extension alpha.model.util.DomainOperations.toISLEqualityMatrix
 import static extension alpha.model.util.ISLUtil.*
+import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension fr.irisa.cairn.jnimap.isl.ISLMatrix.buildFromLongMatrix
 
 /**
@@ -111,6 +112,7 @@ class Facet {
 		this.lattice = lattice
 		
 		dimensionality = basicSet.dimensionality
+
 		Lp = toLinearSpace
 	}
 	

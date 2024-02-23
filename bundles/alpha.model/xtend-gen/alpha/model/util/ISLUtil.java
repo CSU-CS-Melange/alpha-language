@@ -1,7 +1,6 @@
 package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
-import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
@@ -10,9 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
-import java.util.HashSet;
 import java.util.List;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -70,35 +67,23 @@ public class ISLUtil {
   }
 
   public static boolean isTrivial(final ISLBasicSet set) {
-    boolean _xblockexpression = false;
-    {
-      ISLBasicSet origin = ISLBasicSet.buildUniverse(set.getSpace().copy());
-      int _nbIndices = set.getSpace().getNbIndices();
-      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _nbIndices, true);
-      for (final Integer i : _doubleDotLessThan) {
-        {
-          final ISLAff aff = ISLAff.buildZero(set.getSpace().copy().toLocalSpace());
-          origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint());
-        }
-      }
-      _xblockexpression = set.copy().toSet().subtract(origin.toSet()).isEmpty();
-    }
-    return _xblockexpression;
+    return ISLUtil.isTrivial(set.copy().toSet());
   }
 
   public static boolean isTrivial(final ISLSet set) {
     boolean _xblockexpression = false;
     {
-      ISLSet origin = ISLSet.buildUniverse(set.getSpace().copy());
+      final ISLAff zero = ISLAff.buildZero(set.getSpace().copy().toLocalSpace());
       int _nbIndices = set.getSpace().getNbIndices();
-      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _nbIndices, true);
-      for (final Integer i : _doubleDotLessThan) {
-        {
-          final ISLAff aff = ISLAff.buildZero(set.getSpace().copy().toLocalSpace());
-          origin = origin.addConstraint(aff.setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint());
-        }
-      }
-      _xblockexpression = set.subtract(origin).isEmpty();
+      final Function1<Integer, ISLConstraint> _function = (Integer i) -> {
+        return zero.copy().setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint();
+      };
+      final Iterable<ISLConstraint> constraints = IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, _nbIndices, true), _function);
+      final Function2<ISLSet, ISLConstraint, ISLSet> _function_1 = (ISLSet s, ISLConstraint c) -> {
+        return s.addConstraint(c);
+      };
+      final ISLSet origin = IterableExtensions.<ISLConstraint, ISLSet>fold(constraints, ISLSet.buildUniverse(set.getSpace().copy()), _function_1);
+      _xblockexpression = set.copy().subtract(origin).isEmpty();
     }
     return _xblockexpression;
   }
@@ -161,17 +146,17 @@ public class ISLUtil {
   }
 
   public static int dimensionality(final ISLBasicSet set) {
-    final HashSet<String> effectivelySaturatedConstraints = CollectionLiterals.<String>newHashSet();
     final Function1<ISLConstraint, Boolean> _function = (ISLConstraint c) -> {
+      return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, 0, set.getSpace().getNbOutputs()));
+    };
+    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint c) -> {
       return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, set));
     };
-    final Function1<ISLConstraint, String> _function_1 = (ISLConstraint it) -> {
+    final Function1<ISLConstraint, String> _function_2 = (ISLConstraint it) -> {
       return ((List<Long>)Conversions.doWrapArray(ISLUtil.toLinearUnitVector(it.getAff()))).toString();
     };
-    Iterables.<String>addAll(effectivelySaturatedConstraints, 
-      IterableExtensions.<ISLConstraint, String>map(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function), _function_1));
+    final int effectivelySaturatedCount = IterableExtensions.<String>toSet(IterableExtensions.<ISLConstraint, String>map(IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function), _function_1), _function_2)).size();
     int _nbIndices = set.getNbIndices();
-    int _size = effectivelySaturatedConstraints.size();
-    return (_nbIndices - _size);
+    return (_nbIndices - effectivelySaturatedCount);
   }
 }

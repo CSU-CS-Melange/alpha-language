@@ -1,24 +1,19 @@
 package alpha.model.util
 
+import alpha.model.matrix.MatrixOperations
+import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
+import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.ArrayList
+import java.util.Collection
 import java.util.LinkedList
+import java.util.List
 import org.eclipse.xtend.lib.annotations.Accessors
 
-import java.util.HashSet
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLAff
-import fr.irisa.cairn.jnimap.isl.ISLConstraint
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-
 import static extension alpha.model.util.AlphaUtil.renameDims
-import java.util.List
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import alpha.model.matrix.MatrixOperations
-
-import java.util.Collection
-
 
 /**
  * Constructs the face lattice of a given <code>ISLBasicSet</code>.
