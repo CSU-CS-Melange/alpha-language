@@ -72,6 +72,7 @@ class ISLUtil {
 			.map[constant]
 			.map[v | v<0 ? -1*v : v]
 			.reduce[v1, v2 | v1 + v2]
+//			.max
 			.intValue
 		
 		// construct the effective inverse of c per bullet 1 of Theorem 1 in GR06

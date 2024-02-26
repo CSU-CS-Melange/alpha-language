@@ -3,6 +3,7 @@ package alpha.model.transformation;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaExpressionVisitable;
 import alpha.model.AlphaInternalStateConstructor;
+import alpha.model.AlphaVisitable;
 import alpha.model.AutoRestrictExpression;
 import alpha.model.BinaryExpression;
 import alpha.model.CaseExpression;
@@ -17,7 +18,7 @@ import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.issue.AlphaIssue;
-import alpha.model.util.AbstractAlphaExpressionVisitor;
+import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.AffineFactorizer;
 import alpha.model.util.CommonExtensions;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -88,7 +89,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
  *     case {f1@E1, f2@E2, ...} goes to (f')@ case{f1'@E1, f2'@E2, ...} where fn = f' @ fn'
  */
 @SuppressWarnings("all")
-public class RaiseDependence extends AbstractAlphaExpressionVisitor {
+public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   /**
    * Protected constructor to restrict access to the instance methods.
    */
@@ -100,6 +101,10 @@ public class RaiseDependence extends AbstractAlphaExpressionVisitor {
    */
   public static void apply(final AlphaExpressionVisitable visitable) {
     new RaiseDependence().accept(visitable);
+  }
+
+  public static void apply(final AlphaVisitable av) {
+    new RaiseDependence().accept(av);
   }
 
   /**

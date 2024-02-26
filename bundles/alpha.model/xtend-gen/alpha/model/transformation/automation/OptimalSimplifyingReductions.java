@@ -2,6 +2,7 @@ package alpha.model.transformation.automation;
 
 import alpha.model.AbstractReduceExpression;
 import alpha.model.AlphaExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.Equation;
@@ -12,6 +13,7 @@ import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
+import alpha.model.transformation.RaiseDependenceAndIsolate;
 import alpha.model.transformation.SplitUnionIntoCase;
 import alpha.model.transformation.reduction.Distributivity;
 import alpha.model.transformation.reduction.HigherOrderOperator;
@@ -251,9 +253,9 @@ public class OptimalSimplifyingReductions {
 
   public static boolean DEBUG = false;
 
-  private static boolean THROTTLE = false;
+  private static boolean THROTTLE = true;
 
-  private static int THROTTLE_LIMIT = 1;
+  private static int THROTTLE_LIMIT = 10;
 
   private static long optimizationNum;
 
@@ -305,6 +307,10 @@ public class OptimalSimplifyingReductions {
     PermutationCaseReduce.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
     Normalize.apply(this.systemBody);
+    RaiseDependenceAndIsolate.apply(this.systemBody);
+    AlphaInternalStateConstructor.recomputeContextDomain(this.systemBody);
+    InputOutput.<String>println("After preprocessing:");
+    InputOutput.<String>println(Show.<SystemBody>print(this.systemBody));
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
     final OptimalSimplifyingReductions.State state = new OptimalSimplifyingReductions.State(this.systemBody, _newLinkedList);
     int _complexity = state.complexity();
@@ -383,7 +389,6 @@ public class OptimalSimplifyingReductions {
         this.addToOptimzations(state);
         if ((OptimalSimplifyingReductions.saveDirectory != null)) {
           final String fileName = String.format("%s/%s.v%03d.alpha", OptimalSimplifyingReductions.saveDirectory, state.body.getSystem().getName(), Long.valueOf(OptimalSimplifyingReductions.optimizationNum));
-          InputOutput.<CharSequence>println(state.show());
           final String stateStr = state.show().toString();
           OptimalSimplifyingReductions.writeToFile(stateStr, fileName);
         }
@@ -505,7 +510,7 @@ public class OptimalSimplifyingReductions {
         EObject _eContainer = re.eContainer();
         boolean _not = (!(_eContainer instanceof StandardEquation));
         if (_not) {
-          String _print = Show.<ReduceExpression>print(re);
+          String _print = Show.<Equation>print(AlphaUtil.getContainerEquation(re));
           String _plus = ("Reduction has not been normalized: " + _print);
           throw new Exception(_plus);
         }

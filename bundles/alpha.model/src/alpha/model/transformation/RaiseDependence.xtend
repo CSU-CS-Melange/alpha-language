@@ -25,6 +25,8 @@ import static extension alpha.model.util.CommonExtensions.toHashMap
 import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildIdentity
 import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildZero
 import static extension fr.irisa.cairn.jnimap.isl.ISLSpace.idMapDimFromSetDim
+import alpha.model.AlphaVisitable
+import alpha.model.util.AbstractAlphaCompleteVisitor
 
 /**
  * Raises up dependence functions through the AST of a given expression.
@@ -75,7 +77,7 @@ import static extension fr.irisa.cairn.jnimap.isl.ISLSpace.idMapDimFromSetDim
  *     op(f1@E1, f2@E2, ...) goes to (f')@ op(f1'@E1, f2'@E2, ...) where fn = f' @ fn'
  *     case {f1@E1, f2@E2, ...} goes to (f')@ case{f1'@E1, f2'@E2, ...} where fn = f' @ fn'
  */
-class RaiseDependence extends AbstractAlphaExpressionVisitor {
+class RaiseDependence extends AbstractAlphaCompleteVisitor {
 	/** Protected constructor to restrict access to the instance methods. */
 	protected new() {}
 	
@@ -84,6 +86,9 @@ class RaiseDependence extends AbstractAlphaExpressionVisitor {
 		new RaiseDependence().accept(visitable)
 	}
 	
+	static def void apply(AlphaVisitable av) {
+		new RaiseDependence().accept(av)
+	}
 	
 	////////////////////////////////////////////////////////////
 	// Constant, Variable, and Index Expression Rules

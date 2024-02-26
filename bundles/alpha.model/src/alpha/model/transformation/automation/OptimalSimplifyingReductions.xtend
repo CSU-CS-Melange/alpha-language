@@ -34,6 +34,9 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
+import alpha.model.transformation.RaiseDependence
+import alpha.model.AlphaInternalStateConstructor
+import alpha.model.transformation.RaiseDependenceAndIsolate
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -43,8 +46,8 @@ class OptimalSimplifyingReductions {
 	
 	public static boolean DEBUG = false
 	
-	static boolean THROTTLE = false
-	static int THROTTLE_LIMIT = 1
+	static boolean THROTTLE = true
+	static int THROTTLE_LIMIT = 10
 	static long optimizationNum
 	
 	static String saveDirectory = 'resources/opt'
@@ -87,6 +90,12 @@ class OptimalSimplifyingReductions {
 		PermutationCaseReduce.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
+		
+		RaiseDependenceAndIsolate.apply(systemBody)
+		AlphaInternalStateConstructor.recomputeContextDomain(systemBody)
+		
+		println('After preprocessing:')
+		println(Show.print(systemBody))
 		
 		val state = new State(systemBody, newLinkedList)
 		
@@ -144,7 +153,7 @@ class OptimalSimplifyingReductions {
 			
 			if (saveDirectory !== null) {
 				val fileName = '%s/%s.v%03d.alpha'.format(saveDirectory, state.body.system.name, optimizationNum)
-				println(state.show)
+				//println(state.show)
 				val stateStr = state.show.toString
 				stateStr.writeToFile(fileName)
 			}
@@ -234,7 +243,7 @@ class OptimalSimplifyingReductions {
 	 */
 	protected def isOptimallySimplified(ReduceExpression re) {
 		if (!(re.eContainer instanceof StandardEquation)) {
-			throw new Exception('Reduction has not been normalized: ' + Show.print(re))
+			throw new Exception('Reduction has not been normalized: ' + Show.print(re.getContainerEquation))
 		}
 		val eq = re.getContainerEquation as StandardEquation
 		val lhsDim = eq.variable.domain.nbIndices
@@ -300,11 +309,6 @@ class OptimalSimplifyingReductions {
 		for (pair : SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE)) {
 			candidates.add(new StepReductionDecomposition(targetRE, pair.key, pair.value))
 		}
-		
-//		if (THROTTLE) {
-//			val nbCandidates = candidates.size
-//			return candidates.subList(0, THROTTLE_LIMIT < nbCandidates ? THROTTLE_LIMIT : nbCandidates)
-//		}
 		
 		return candidates;
 	}

@@ -1,5 +1,8 @@
 package alpha.model.util;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import alpha.model.AlphaConstant;
 import alpha.model.AlphaElement;
 import alpha.model.AlphaPackage;
@@ -63,7 +66,8 @@ public interface DefaultAlphaVisitor extends AlphaVisitor {
 	@Override
 	default void visitSystemBody(SystemBody sysBody) {
 		inSystemBody(sysBody);
-		sysBody.getEquations().forEach(a->a.accept(this));
+		List<Equation> eqs = new LinkedList<Equation>(sysBody.getEquations());
+		eqs.forEach(a->a.accept(this));
 		outSystemBody(sysBody);
 	}
 
