@@ -9,7 +9,11 @@ import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLVal;
+import java.util.Collections;
 import java.util.List;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -105,6 +109,29 @@ public class ISLUtil {
     int _plus = (_intValue + tau);
     final ISLBasicSet cPrime = _negate.setConstant(_plus).toInequalityConstraint().toBasicSet();
     return cPrime.intersect(P.copy()).isEqual(P);
+  }
+
+  /**
+   * Converts a constraint into an equality constraint with the same coefficients and constant.
+   */
+  public static ISLConstraint toEqualityConstraint(final ISLConstraint constraint) {
+    final ISLSpace space = constraint.getSpace();
+    ISLConstraint equality = ISLConstraint.buildEquality(space.copy());
+    final List<ISLDimType> dimTypes = Collections.<ISLDimType>unmodifiableList(CollectionLiterals.<ISLDimType>newArrayList(ISLDimType.isl_dim_param, ISLDimType.isl_dim_in, ISLDimType.isl_dim_out, ISLDimType.isl_dim_div));
+    for (final ISLDimType dimType : dimTypes) {
+      {
+        final int count = space.dim(dimType);
+        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, count, true);
+        for (final Integer i : _doubleDotLessThan) {
+          {
+            final ISLVal coeff = constraint.getCoefficientVal(dimType, (i).intValue());
+            equality = equality.setCoefficient(dimType, (i).intValue(), coeff);
+          }
+        }
+      }
+    }
+    equality = equality.setConstant(constraint.getConstant());
+    return equality;
   }
 
   /**
