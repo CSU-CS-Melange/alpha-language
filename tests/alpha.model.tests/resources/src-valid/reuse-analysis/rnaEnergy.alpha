@@ -1,0 +1,17 @@
+affine energyEquations [N] -> {: N > 10}
+	// This equation (for VBI) is written as O(N^4), but can be computed in O(N^3) time.
+	// Here are the general steps for doing so:
+	// 1. Apply ReductionDecomposition so either "size" or "asym" is invariant for the inner reduction.
+	// 2. Use Distributivity to pull "extra1" outside both reductions and either "size" or "asym" out of the inner reduction.
+	// 3. Use SimplifiyingReductions on the inner reduction to replace the reduction with a constant number of additions.
+	// Note: the "constant number of additions" might still be written as a reduction (which is OK).
+	inputs
+		extra1: {[i,j]: 1<=i,j<=N}		// This term should be distributed out of both reductions.
+		extra2: {[i,j]: 1<=i,j<=N}		// This term will remain inside the innermost reduction.
+		size: {[i]: 0 <=i<=N}			// This term can be pulled out of the inner reduction depending on the decomposition.
+		asym: {[i]: -N <= i <= N}		// This term can be pulled out of the inner reduction depending on the decomposition.
+	outputs
+		VBI: {[i,j]: 1<=i<= N-3 and i+3<=j<= N}
+	let
+		VBI[i,j] = reduce(min, [i1, j1], {:i<i1<j1<j}: extra1[i,j] + extra2[i1,j1] + size[i1-i+j-j1-2] + asym[i1-i+j1-j]);
+.

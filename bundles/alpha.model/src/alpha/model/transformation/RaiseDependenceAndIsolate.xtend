@@ -27,7 +27,7 @@ class RaiseDependenceAndIsolate extends RaiseDependence {
 	}
 	
 	def dispatch reduceExpressionRules(ReduceExpression re, DependenceExpression de) {
-		val domain = de.expr.contextDomain
+		val domain = de.expr.contextDomain.computeDivs
 		val varName = (re.getContainerEquation as StandardEquation).variable.name
 		
 		// add new variable

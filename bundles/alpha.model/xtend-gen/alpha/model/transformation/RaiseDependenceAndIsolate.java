@@ -36,7 +36,7 @@ public class RaiseDependenceAndIsolate extends RaiseDependence {
   protected List<AlphaIssue> _reduceExpressionRules(final ReduceExpression re, final DependenceExpression de) {
     List<AlphaIssue> _xblockexpression = null;
     {
-      final ISLSet domain = de.getExpr().getContextDomain();
+      final ISLSet domain = de.getExpr().getContextDomain().computeDivs();
       Equation _containerEquation = AlphaUtil.getContainerEquation(re);
       final String varName = ((StandardEquation) _containerEquation).getVariable().getName();
       final Variable variable = AlphaUserFactory.createVariable((varName + "_body"), domain.copy());

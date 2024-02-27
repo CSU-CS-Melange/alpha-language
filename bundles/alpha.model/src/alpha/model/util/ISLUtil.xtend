@@ -102,7 +102,7 @@ class ISLUtil {
 	}
 	
 	def static int dimensionality(ISLSet set) {
-		set.basicSets.map[dimensionality].max
+		set.computeDivs.basicSets.map[dimensionality].max
 	}
 	
 	def static int dimensionality(ISLBasicSet set) {

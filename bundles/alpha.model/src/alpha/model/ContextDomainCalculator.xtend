@@ -94,7 +94,7 @@ class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
 		}
 		
 		are.inferredDomain =  inferredDomain;
-		are.contextDomain = inferredDomain.copy;
+		are.contextDomain = inferredDomain.copy.computeDivs;
 	}
 
 	override inAlphaExpression(AlphaExpression ae) {
@@ -119,7 +119,7 @@ class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
 		}
 		
 		val context = runISLoperations(ae, [processedContext.intersect(ae.expressionDomain)]);
-		ae.contextDomain = context
+		ae.contextDomain = context.computeDivs
 	}
 
 	

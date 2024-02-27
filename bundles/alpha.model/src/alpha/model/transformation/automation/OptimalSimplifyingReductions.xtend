@@ -2,14 +2,17 @@ package alpha.model.transformation.automation
 
 import alpha.model.AbstractReduceExpression
 import alpha.model.AlphaExpression
+import alpha.model.AlphaInternalStateConstructor
 import alpha.model.AlphaRoot
 import alpha.model.AlphaSystem
+import alpha.model.DependenceExpression
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
 import alpha.model.analysis.reduction.ShareSpaceAnalysis
 import alpha.model.matrix.MatrixOperations
 import alpha.model.transformation.Normalize
+import alpha.model.transformation.RaiseDependenceAndIsolate
 import alpha.model.transformation.SplitUnionIntoCase
 import alpha.model.transformation.reduction.Distributivity
 import alpha.model.transformation.reduction.HigherOrderOperator
@@ -32,11 +35,10 @@ import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.util.AlphaUtil.*
+import static extension alpha.model.util.CommonExtensions.*
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import alpha.model.transformation.RaiseDependence
-import alpha.model.AlphaInternalStateConstructor
-import alpha.model.transformation.RaiseDependenceAndIsolate
+import alpha.model.VariableExpression
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -44,7 +46,7 @@ import alpha.model.transformation.RaiseDependenceAndIsolate
  */
 class OptimalSimplifyingReductions {
 	
-	public static boolean DEBUG = false
+	public static boolean DEBUG = true
 	
 	static boolean THROTTLE = true
 	static int THROTTLE_LIMIT = 10
@@ -58,6 +60,10 @@ class OptimalSimplifyingReductions {
 	protected int systemBodyID
 	protected String originalSystemName
 	
+	private static def void debug(String msg) {
+		if (DEBUG)
+			println("[OSR] " + msg)
+	}
 	
 	protected final Map<Integer, List<State>> optimizations
 	
@@ -90,9 +96,6 @@ class OptimalSimplifyingReductions {
 		PermutationCaseReduce.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
-		
-		RaiseDependenceAndIsolate.apply(systemBody)
-		AlphaInternalStateConstructor.recomputeContextDomain(systemBody)
 		
 		println('After preprocessing:')
 		println(Show.print(systemBody))
@@ -140,15 +143,26 @@ class OptimalSimplifyingReductions {
 		opts += state
 	}
 	
+	private def hasUnexploredEquations(SystemBody body) {
+		body.standardEquations.reject[explored].size > 0
+	}
+	
+	private def nextUnexploredEquation(SystemBody body) {
+		body.standardEquations.findFirst[eq | !eq.explored]
+	}
+	
 	private def void optimizeUnexploredEquations(State state) {
-		state.body.standardEquations.reject[explored].forEach[
-			optimizeEquation(state)
-		]
+		while (state.body.hasUnexploredEquations) {
+			val eq = state.body.nextUnexploredEquation
+			debug('optimizing equation ' + eq.variable.name) 
+			debug(state.show.toString)
+			eq.optimizeEquation(state)
+		}
 		
 		val stateComplexity = state.complexity
-		if (stateComplexity <= 2) {
+		if (stateComplexity <= 3) {
 			optimizationNum++
-			print('\rnumber of 2D optimizations found: ' + optimizationNum)
+			print('\rnumber of 3D optimizations found: ' + optimizationNum)
 			state.addToOptimzations
 			
 			if (saveDirectory !== null) {
@@ -157,6 +171,8 @@ class OptimalSimplifyingReductions {
 				val stateStr = state.show.toString
 				stateStr.writeToFile(fileName)
 			}
+			
+			println(state.show)
 			if (THROTTLE && optimizationNum >= THROTTLE_LIMIT)
 				throw new ThrottleException
 			
@@ -186,7 +202,10 @@ class OptimalSimplifyingReductions {
 		}
 		
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
-		
+		candidates.forEach[c |
+			debug("candidate: " + c.description)
+		]
+		println
 		for (step : candidates) {
 			val optimizedRoot = EcoreUtil.copy(containerSystemBody.getContainerRoot)
 			val optimizedBody = optimizedRoot.getSystem(originalSystemName).systemBodies.get(systemBodyID)
@@ -200,6 +219,8 @@ class OptimalSimplifyingReductions {
 			val newState = new State(optimizedBody, steps)
 			optimizeUnexploredEquations(newState)
 		}
+		
+		eq.setExplored
 	}
 	private def dispatch void optimizeEquation(StandardEquation eq, AlphaExpression ae, State state) {
 		eq.explored = true
@@ -275,6 +296,11 @@ class OptimalSimplifyingReductions {
 		return true;
 	}
 	
+	private def shouldRaiseDependence(AbstractReduceExpression targetRE) {
+		!(targetRE.body instanceof DependenceExpression) && 
+		!(targetRE.body instanceof VariableExpression)
+	}
+	
 	/**
 	 * Creates a list of possible transformations that are valid steps in the DP.
 	 * 
@@ -306,8 +332,14 @@ class OptimalSimplifyingReductions {
 		}
 		
 		// Decomposition with side-effects
-		for (pair : SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE)) {
+		val x = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE).toArrayList
+		for (pair : x) {
 			candidates.add(new StepReductionDecomposition(targetRE, pair.key, pair.value))
+		}
+		
+		// RaiseDependence
+		if (targetRE.shouldRaiseDependence) {
+			candidates.add(new StepRaiseDependenceAndIsolate(targetRE))
 		}
 		
 		return candidates;
@@ -325,8 +357,12 @@ class OptimalSimplifyingReductions {
 	}
 	protected dispatch def applyDPStep(ReduceExpression re, StepReductionDecomposition step) {
 		ReductionDecomposition.apply(re, step.innerProjection, step.outerProjection)
-		NormalizeReduction.apply(re)
+		NormalizeReduction.apply(re.getContainerEquation)
 		Normalize.apply(systemBody)
+	}
+	protected dispatch def applyDPStep(ReduceExpression re, StepRaiseDependenceAndIsolate step) {
+		RaiseDependenceAndIsolate.apply(re)
+		AlphaInternalStateConstructor.recomputeContextDomain(systemBody)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing
@@ -448,6 +484,17 @@ class OptimalSimplifyingReductions {
 			val eqVarName = (eq instanceof StandardEquation) ? (eq as StandardEquation).variable.name : null 
 			val toEqStr = (eqVarName !== null) ? ' to %s'.format(eqVarName) : ''
 			String.format("Apply ReductionDecomposition%s with %s o %s", toEqStr, _outer, _inner);
+		}
+	}
+	
+	static class StepRaiseDependenceAndIsolate extends DynamicProgrammingStep {
+		
+		new(AbstractReduceExpression targetRE) {
+			super(targetRE)
+		}
+		
+		override description() {
+			'Apply RaiseDependenceAndIsolate'
 		}
 	}
 	

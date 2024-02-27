@@ -116,7 +116,7 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
       this.issues.add(AlphaIssueFactory.emptyAutoRestrict(are));
     }
     are.setInferredDomain(inferredDomain);
-    are.setContextDomain(inferredDomain.copy());
+    are.setContextDomain(inferredDomain.copy().computeDivs());
   }
 
   @Override
@@ -153,7 +153,7 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
       return processedContext.intersect(ae.getExpressionDomain());
     };
     final ISLSet context = this.<ISLSet>runISLoperations(ae, _function_1);
-    ae.setContextDomain(context);
+    ae.setContextDomain(context.computeDivs());
   }
 
   private ISLSet _processContext(final DependenceExpression expr, final ISLSet context) {
