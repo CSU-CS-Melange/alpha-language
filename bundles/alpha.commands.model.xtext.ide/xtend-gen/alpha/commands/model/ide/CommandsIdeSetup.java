@@ -14,6 +14,7 @@ import org.eclipse.xtext.util.Modules2;
  */
 @SuppressWarnings("all")
 public class CommandsIdeSetup extends CommandsStandaloneSetup {
+  @Override
   public Injector createInjector() {
     CommandsRuntimeModule _commandsRuntimeModule = new CommandsRuntimeModule();
     CommandsIdeModule _commandsIdeModule = new CommandsIdeModule();

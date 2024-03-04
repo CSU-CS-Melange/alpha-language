@@ -34,14 +34,12 @@ public class AlphaJavaCommandCategory {
     _builder.append("/*PROTECTED REGION END*/");
     _builder.newLine();
     _builder.newLine();
-    final Function1<CharSequence, CharSequence> _function = new Function1<CharSequence, CharSequence>() {
-      public CharSequence apply(final CharSequence o) {
-        StringConcatenation _builder = new StringConcatenation();
-        _builder.append("import ");
-        _builder.append(o);
-        _builder.append(";");
-        return _builder.toString();
-      }
+    final Function1<CharSequence, CharSequence> _function = (CharSequence o) -> {
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("import ");
+      _builder_1.append(o);
+      _builder_1.append(";");
+      return _builder_1.toString();
     };
     String _join = IterableExtensions.<CharSequence>join(this.commonEx.collectUsedClassesInBaseMethods(cat), "\n", _function);
     _builder.append(_join);
@@ -72,14 +70,12 @@ public class AlphaJavaCommandCategory {
     _builder.append("package alpha.commands;");
     _builder.newLine();
     _builder.newLine();
-    final Function1<CharSequence, CharSequence> _function = new Function1<CharSequence, CharSequence>() {
-      public CharSequence apply(final CharSequence o) {
-        StringConcatenation _builder = new StringConcatenation();
-        _builder.append("import ");
-        _builder.append(o);
-        _builder.append(";");
-        return _builder.toString();
-      }
+    final Function1<CharSequence, CharSequence> _function = (CharSequence o) -> {
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("import ");
+      _builder_1.append(o);
+      _builder_1.append(";");
+      return _builder_1.toString();
     };
     String _join = IterableExtensions.<CharSequence>join(this.commonEx.collectUsedClasses(cat), "\n", _function);
     _builder.append(_join);

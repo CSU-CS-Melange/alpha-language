@@ -26,6 +26,19 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import alpha.model.Variable
+import alpha.model.VariableExpression
+import fr.irisa.cairn.jnimap.isl.ISLContext
+import fr.irisa.cairn.jnimap.isl.ISLIdentifierList
+import fr.irisa.cairn.jnimap.isl.ISLIdentifier
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet
+import alpha.model.matrix.MatrixOperations
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLVal
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
+import fr.irisa.cairn.jnimap.isl.ISLAffList
+import alpha.model.StandardEquation
+import fr.irisa.cairn.jnimap.isl.ISLSpace
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -109,6 +122,16 @@ class AlphaUtil {
 			return null
 		
 		return AlphaUtil.getContainerEquation(node.eContainer())
+	}
+	
+	static def StandardEquation getStandardEquation(Variable variable) {
+		var ret = null as StandardEquation
+		val equs = variable.getContainerSystemBody.equations.filter[e | e instanceof StandardEquation]
+		                                                    .map[it as StandardEquation]
+		                                                    .filter[e | e.variable == variable]
+		if (equs.size == 1)
+			ret = equs.get(0)
+		ret
 	}
 	/**
 	 * Selects an AlphaRoot that contains a given system name. The given system name may be
@@ -327,4 +350,119 @@ class AlphaUtil {
 	static def parseIntVector(String intVecStr) {
 		return parseIntArray(intVecStr).toList
 	}
+	
+	static def numDims(Variable variable) {
+		variable.domain.dim(ISLDimType.isl_dim_out)
+	}
+	
+	static def List<String> indices(Variable variable) {
+		variable.domain.indexNames.toList
+	}
+	
+	static def List<String> indexNames(ISLMultiAff maff) {
+		maff.getDomainSpace.indexNames
+	}
+	
+	static def List<String> paramNames(ISLMultiAff maff) {
+		maff.getDomainSpace.paramNames
+	}
+	
+	static def List<String> indexNames(ISLSpace space) {
+		space.indexNames.toList
+	}
+
+	static def List<String> paramNames(ISLSpace space) {
+		space.paramNames.toList
+	}
+
+	
+	def static Iterable<Variable> listAllReferencedVariables(AlphaNode e) {
+		listAllVariableExpressions(e).map[it.variable]
+	}
+
+	def static Iterable<VariableExpression> listAllVariableExpressions(AlphaNode e) {
+		e.listAllChildrenExpressions.filter(VariableExpression)
+	}
+	
+	def static Iterable<AlphaExpression> listChildrenExpressions(AlphaNode e) {
+		e.eContents.filter(AlphaExpression)
+	}
+
+	def static Iterable<AlphaExpression> listAllChildrenExpressions(AlphaNode e) {
+		e.eAllContents.filter(AlphaExpression).toIterable
+	}
+
+	def static ISLIdentifierList toIdentifierList(List<String> iterators, ISLContext context) {
+		var ret = ISLIdentifierList.build(context, iterators.size)
+		for (i : 0..<iterators.size) {
+			ret = ret.insert(i, ISLIdentifier.alloc(context, iterators.get(i)))
+		}
+		ret
+	}
+	
+	def static ISLIdentifierList toIdentifierList(List<ISLIdentifier> iterators) {
+		if (iterators.size == 0) {
+			return null
+		}
+		val context = iterators.get(0).context
+		var ret = ISLIdentifierList.build(context, iterators.size)
+		for (i : 0..<iterators.size) {
+			ret = ret.insert(i, iterators.get(i))
+		}
+		ret
+	}
+	
+
+
+	
+	def static ISLAffList[] lexmins(ISLSet set) {
+		set.basicSets.map[lexSwitch(false)]
+	}
+	
+	def static ISLAffList[] lexmaxes(ISLSet set) {
+		set.basicSets.map[lexSwitch(true)]
+	}
+	
+	def static ISLAffList lexSwitch(ISLBasicSet set, boolean max) {
+		val dim = set.dim(ISLDimType.isl_dim_out)
+		var ret = ISLAffList.build(set.context, dim)
+		for (i : 0..<dim) {
+			ret = ret.add(set.lexSwitch(i, max))
+		}
+		ret
+	}
+
+	def static ISLAff lexSwitch(ISLBasicSet set, int dim, boolean max) {
+		val space = set.space.toLocalSpace
+		var mset = set.copy.moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, dim, 1)
+						   .moveDims(ISLDimType.isl_dim_out, 0, ISLDimType.isl_dim_param, 0, 1)
+		val m = if (max) mset.lexMax else mset.lexMin
+		if (m.getNbBasicSets != 1) {
+			throw new Exception("Unexpected number of basic sets")
+		}
+		mset = m.getBasicSetAt(0).dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, 1)
+		val mat = DomainOperations.toISLEqualityMatrix(mset).toLongMatrix
+		
+		val coeffs = mat.get(0).map[it.intValue]
+		
+		var aff = ISLAff.buildZero(space)
+		for (i : 0..<aff.dim(ISLDimType.isl_dim_param))
+			aff = aff.setCoefficient(ISLDimType.isl_dim_param, i, coeffs.get(i))
+		aff = aff.setConstant(coeffs.get(coeffs.size - 1))
+		aff = aff.negate
+		
+		aff 
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

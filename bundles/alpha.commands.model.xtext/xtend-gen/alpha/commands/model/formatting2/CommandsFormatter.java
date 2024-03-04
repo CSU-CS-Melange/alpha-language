@@ -3,13 +3,9 @@
  */
 package alpha.commands.model.formatting2;
 
-import alpha.commands.model.AlphaCommand;
-import alpha.commands.model.AlphaCommandCategory;
-import alpha.commands.model.AlphaCommandsRoot;
 import alpha.commands.model.services.CommandsGrammarAccess;
 import com.google.inject.Inject;
 import java.util.Arrays;
-import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.formatting2.AbstractFormatter2;
 import org.eclipse.xtext.formatting2.IFormattableDocument;
@@ -22,42 +18,37 @@ public class CommandsFormatter extends AbstractFormatter2 {
   @Extension
   private CommandsGrammarAccess _commandsGrammarAccess;
 
-  protected void _format(final AlphaCommandsRoot alphaCommandsRoot, @Extension final IFormattableDocument document) {
-    EList<AlphaCommandCategory> _categories = alphaCommandsRoot.getCategories();
-    for (final AlphaCommandCategory alphaCommandCategory : _categories) {
-      document.<AlphaCommandCategory>format(alphaCommandCategory);
-    }
+  protected void _format(final /* AlphaCommandsRoot */Object alphaCommandsRoot, @Extension final IFormattableDocument document) {
+    throw new Error("Unresolved compilation problems:"
+      + "\ncategories cannot be resolved"
+      + "\nformat cannot be resolved");
   }
 
-  protected void _format(final AlphaCommandCategory alphaCommandCategory, @Extension final IFormattableDocument document) {
-    EList<AlphaCommand> _commands = alphaCommandCategory.getCommands();
-    for (final AlphaCommand alphaCommand : _commands) {
-      document.<AlphaCommand>format(alphaCommand);
-    }
+  protected void _format(final /* AlphaCommandCategory */Object alphaCommandCategory, @Extension final IFormattableDocument document) {
+    throw new Error("Unresolved compilation problems:"
+      + "\ncommands cannot be resolved"
+      + "\nformat cannot be resolved");
   }
 
-  public void format(final Object alphaCommandCategory, final IFormattableDocument document) {
-    if (alphaCommandCategory instanceof XtextResource) {
-      _format((XtextResource)alphaCommandCategory, document);
+  public void format(final Object alphaCommandsRoot, final IFormattableDocument document) {
+    if (alphaCommandsRoot instanceof XtextResource) {
+      _format((XtextResource)alphaCommandsRoot, document);
       return;
-    } else if (alphaCommandCategory instanceof AlphaCommandCategory) {
-      _format((AlphaCommandCategory)alphaCommandCategory, document);
+    } else if (alphaCommandsRoot instanceof EObject) {
+      _format((EObject)alphaCommandsRoot, document);
       return;
-    } else if (alphaCommandCategory instanceof AlphaCommandsRoot) {
-      _format((AlphaCommandsRoot)alphaCommandCategory, document);
-      return;
-    } else if (alphaCommandCategory instanceof EObject) {
-      _format((EObject)alphaCommandCategory, document);
-      return;
-    } else if (alphaCommandCategory == null) {
+    } else if (alphaCommandsRoot == null) {
       _format((Void)null, document);
       return;
-    } else if (alphaCommandCategory != null) {
-      _format(alphaCommandCategory, document);
+    } else if (alphaCommandsRoot != null) {
+      _format(alphaCommandsRoot, document);
+      return;
+    } else if (alphaCommandsRoot != null) {
+      _format(alphaCommandsRoot, document);
       return;
     } else {
       throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(alphaCommandCategory, document).toString());
+        Arrays.<Object>asList(alphaCommandsRoot, document).toString());
     }
   }
 }

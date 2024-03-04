@@ -108,6 +108,8 @@ public class TargetmappingFactoryImpl extends EFactoryImpl implements Targetmapp
 				return createALPHA_LOOP_TYPEFromString(eDataType, initialValue);
 			case TargetmappingPackage.TILING_TYPE:
 				return createTILING_TYPEFromString(eDataType, initialValue);
+			case TargetmappingPackage.DATA_TYPE:
+				return createDataTypeFromString(eDataType, initialValue);
 			case TargetmappingPackage.JNI_OBJECT:
 				return createJNIObjectFromString(eDataType, initialValue);
 			case TargetmappingPackage.JNIISL_SET:
@@ -139,6 +141,8 @@ public class TargetmappingFactoryImpl extends EFactoryImpl implements Targetmapp
 				return convertALPHA_LOOP_TYPEToString(eDataType, instanceValue);
 			case TargetmappingPackage.TILING_TYPE:
 				return convertTILING_TYPEToString(eDataType, instanceValue);
+			case TargetmappingPackage.DATA_TYPE:
+				return convertDataTypeToString(eDataType, instanceValue);
 			case TargetmappingPackage.JNI_OBJECT:
 				return convertJNIObjectToString(eDataType, instanceValue);
 			case TargetmappingPackage.JNIISL_SET:
@@ -445,6 +449,26 @@ public class TargetmappingFactoryImpl extends EFactoryImpl implements Targetmapp
 	 * @generated
 	 */
 	public String convertTILING_TYPEToString(EDataType eDataType, Object instanceValue) {
+		return instanceValue == null ? null : instanceValue.toString();
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public DataType createDataTypeFromString(EDataType eDataType, String initialValue) {
+		DataType result = DataType.get(initialValue);
+		if (result == null) throw new IllegalArgumentException("The value '" + initialValue + "' is not a valid enumerator of '" + eDataType.getName() + "'");
+		return result;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public String convertDataTypeToString(EDataType eDataType, Object instanceValue) {
 		return instanceValue == null ? null : instanceValue.toString();
 	}
 

@@ -10,6 +10,7 @@ import alpha.targetmapping.BandExpression;
 import alpha.targetmapping.BandPiece;
 import alpha.targetmapping.CompileTimeConstantTileSize;
 import alpha.targetmapping.ContextExpression;
+import alpha.targetmapping.DataType;
 import alpha.targetmapping.ExtensionExpression;
 import alpha.targetmapping.ExtensionTarget;
 import alpha.targetmapping.FilterExpression;
@@ -316,6 +317,13 @@ public class TargetmappingPackageImpl extends EPackageImpl implements Targetmapp
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	private EEnum dataTypeEEnum = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	private EDataType jniObjectEDataType = null;
 
 	/**
@@ -378,6 +386,7 @@ public class TargetmappingPackageImpl extends EPackageImpl implements Targetmapp
 	private TargetmappingPackageImpl() {
 		super(eNS_URI, TargetmappingFactory.eINSTANCE);
 	}
+
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1176,6 +1185,15 @@ public class TargetmappingPackageImpl extends EPackageImpl implements Targetmapp
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EEnum getDataType() {
+		return dataTypeEEnum;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public EDataType getJNIObject() {
 		return jniObjectEDataType;
 	}
@@ -1379,6 +1397,7 @@ public class TargetmappingPackageImpl extends EPackageImpl implements Targetmapp
 		// Create enums
 		alphA_LOOP_TYPEEEnum = createEEnum(ALPHA_LOOP_TYPE);
 		tilinG_TYPEEEnum = createEEnum(TILING_TYPE);
+		dataTypeEEnum = createEEnum(DATA_TYPE);
 
 		// Create data types
 		jniObjectEDataType = createEDataType(JNI_OBJECT);
@@ -1773,6 +1792,14 @@ public class TargetmappingPackageImpl extends EPackageImpl implements Targetmapp
 		addEEnumLiteral(tilinG_TYPEEEnum, alpha.targetmapping.TILING_TYPE.FIXED_SIZE);
 		addEEnumLiteral(tilinG_TYPEEEnum, alpha.targetmapping.TILING_TYPE.PARAMETRIC);
 		addEEnumLiteral(tilinG_TYPEEEnum, alpha.targetmapping.TILING_TYPE.COMPILE_TIME_CONSTANT);
+
+		initEEnum(dataTypeEEnum, DataType.class, "DataType");
+		addEEnumLiteral(dataTypeEEnum, DataType.INT);
+		addEEnumLiteral(dataTypeEEnum, DataType.LONG);
+		addEEnumLiteral(dataTypeEEnum, DataType.FLOAT);
+		addEEnumLiteral(dataTypeEEnum, DataType.DOUBLE);
+		addEEnumLiteral(dataTypeEEnum, DataType.VOID);
+		addEEnumLiteral(dataTypeEEnum, DataType.CHAR);
 
 		// Initialize data types
 		initEDataType(jniObjectEDataType, JNIObject.class, "JNIObject", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);

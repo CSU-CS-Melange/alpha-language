@@ -17,6 +17,7 @@ public class CommandsRuntimeModule extends AbstractCommandsRuntimeModule {
     return ProtectedRegionResolverAsPostProcessor.class;
   }
 
+  @Override
   public Class<? extends IQualifiedNameProvider> bindIQualifiedNameProvider() {
     return CommandsQualifiedNameProvider.class;
   }

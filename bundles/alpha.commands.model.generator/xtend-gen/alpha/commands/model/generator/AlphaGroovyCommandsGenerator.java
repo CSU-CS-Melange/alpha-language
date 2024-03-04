@@ -31,6 +31,7 @@ public class AlphaGroovyCommandsGenerator implements IGenerator {
     return "alpha.commands.groovy";
   }
 
+  @Override
   public void doGenerate(final Resource input, final IFileSystemAccess fsa) {
     EObject _get = input.getContents().get(0);
     final AlphaCommandsRoot root = ((AlphaCommandsRoot) _get);
@@ -50,13 +51,11 @@ public class AlphaGroovyCommandsGenerator implements IGenerator {
     _builder.append("package alpha.commands.groovy");
     _builder.newLine();
     _builder.newLine();
-    final Function1<CharSequence, CharSequence> _function = new Function1<CharSequence, CharSequence>() {
-      public CharSequence apply(final CharSequence o) {
-        StringConcatenation _builder = new StringConcatenation();
-        _builder.append("import ");
-        _builder.append(o);
-        return _builder.toString();
-      }
+    final Function1<CharSequence, CharSequence> _function = (CharSequence o) -> {
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("import ");
+      _builder_1.append(o);
+      return _builder_1.toString();
     };
     String _join = IterableExtensions.<CharSequence>join(this.commonEx.collectUsedClasses(root), "\n", _function);
     _builder.append(_join);

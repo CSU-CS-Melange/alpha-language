@@ -3,10 +3,7 @@
  */
 package alpha.commands.model.validation;
 
-import alpha.commands.model.AlphaCommandSpecialization;
-import alpha.commands.model.ModelPackage;
 import org.eclipse.xtext.validation.Check;
-import org.eclipse.xtext.xbase.lib.Conversions;
 
 /**
  * This class contains custom validation rules.
@@ -16,12 +13,17 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 @SuppressWarnings("all")
 public class CommandsValidator extends AbstractCommandsValidator {
   @Check
-  public void specializationLengthMatchesParent(final AlphaCommandSpecialization specialization) {
-    int _length = ((Object[])Conversions.unwrapArray(specialization.getArguments(), Object.class)).length;
-    int _length_1 = ((Object[])Conversions.unwrapArray(specialization.getCommand().getSignature().getArguments(), Object.class)).length;
-    boolean _notEquals = (_length != _length_1);
-    if (_notEquals) {
-      this.error("Specialization must have the same number of inputs as its base command", ModelPackage.Literals.ALPHA_COMMAND_SPECIALIZATION__ARGUMENTS);
-    }
+  public void specializationLengthMatchesParent(final /* AlphaCommandSpecialization */Object specialization) {
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method or field ModelPackage is undefined"
+      + "\narguments cannot be resolved"
+      + "\nlength cannot be resolved"
+      + "\n!= cannot be resolved"
+      + "\ncommand cannot be resolved"
+      + "\nsignature cannot be resolved"
+      + "\narguments cannot be resolved"
+      + "\nlength cannot be resolved"
+      + "\nLiterals cannot be resolved"
+      + "\nALPHA_COMMAND_SPECIALIZATION__ARGUMENTS cannot be resolved");
   }
 }

@@ -1,0 +1,508 @@
+@GenModel(
+	operationReflection="false",
+	loadInitialization="false",
+	literalsInterface="true")
+package alpha.codegen
+
+import alpha.codegen.polynomial.PolynomialPrinter
+import alpha.codegen.show.WriteC
+import alpha.model.AlphaSystem
+import alpha.model.BINARY_OP
+import alpha.model.REDUCTION_OP
+import alpha.model.StandardEquation
+import alpha.model.UNARY_OP
+import alpha.model.Variable
+import alpha.model.util.AlphaUtil
+import fr.irisa.cairn.jnimap.isl.ISLASTNode
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLAffList
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLTerm
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
+
+type ISLSet wraps ISLSet
+type ISLMap wraps ISLMap
+type ISLASTNode wraps ISLASTNode
+type ISLAff wraps ISLAff
+type ISLAffList wraps ISLAffList
+type ISLDimType wraps ISLDimType
+type ISL_FORMAT wraps ISL_FORMAT
+type ISLPWQPolynomial wraps ISLPWQPolynomial
+type ISLQPolynomialPiece wraps ISLQPolynomialPiece
+type ISLQPolynomial wraps ISLQPolynomial
+type ISLTerm wraps ISLTerm
+
+
+enum VariableType {
+	input
+	output
+	^local
+}
+
+class Node {
+	
+}
+
+interface Visitable {
+	op void accept(Visitor visitor)
+	
+	op String toSString() {
+		WriteC.print(this)
+	}
+}
+
+interface Visitor {
+	op void visitProgram(Program cf)
+	op void visitInclude(Include i)
+	op void visitMacro(Macro m)
+	op void visitGlobalMacro(GlobalMacro m)
+	op void visitGlobalMemoryMacro(GlobalMemoryMacro m)
+	op void visitMemoryMacro(MemoryMacro m)
+	op void visitStatementMacro(StatementMacro m)
+	op void visitBaseVariable(BaseVariable v)
+	op void visitArrayVariable(ArrayVariable v)
+	op void visitFunction(Function f)
+	op void visitMemoryAllocation(MemoryAllocation ma)
+	op void visitFunctionBody(FunctionBody cs)
+	op void visitEvalFunction(EvalFunction ef)
+	op void visitGlobalVariable(GlobalVariable cgv)
+	
+	op void inProgram(Program cf)
+	op void inInclude(Include i)
+	op void inMacro(Macro m)
+	op void inGlobalMacro(GlobalMacro m)
+	op void inGlobalMemoryMacro(GlobalMemoryMacro m)
+	op void inMemoryMacro(MemoryMacro m)
+	op void inStatementMacro(StatementMacro m)
+	op void inBaseVariable(BaseVariable v)
+	op void inArrayVariable(ArrayVariable av)
+	op void inFunction(Function f)
+	op void inMemoryAllocation(MemoryAllocation ma)
+	op void inFunctionBody(FunctionBody cs)
+	op void inEvalFunction(EvalFunction ef)
+	op void inGlobalVariable(GlobalVariable cgv)
+	
+	op void outProgram(Program cf)
+	op void outInclude(Include i)
+	op void outMacro(Macro m)
+	op void outGlobalMacro(GlobalMacro m)
+	op void outGlobalMemoryMacro(GlobalMemoryMacro m)
+	op void outMemoryMacro(MemoryMacro m)
+	op void outStatementMacro(StatementMacro m)
+	op void outBaseVariable(BaseVariable v)
+	op void outArrayVariable(ArrayVariable av)
+	op void outFunction(Function f)
+	op void outMemoryAllocation(MemoryAllocation ma)
+	op void outFunctionBody(FunctionBody cs)
+	op void outEvalFunction(EvalFunction ef)
+	op void outGlobalVariable(GlobalVariable cgv)
+}
+
+class Include extends Node, Visitable {
+	container Program program opposite includes
+	String name
+	
+	op void accept(Visitor visitor) {
+		visitor.visitInclude(this)
+	}
+}
+
+class Macro extends Node, Visitable {
+	String left
+	String right
+
+	op String name() {
+		left.split('[(]').get(0)
+	}
+	
+	op String def() {
+		'#define ' + left + ' ' + right
+	}
+	
+	op String toCString() {
+		'#undef ' + name
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitMacro(this)
+	}
+}
+
+class GlobalMacro extends Macro {
+	container Program program opposite commonMacros
+	
+	op void accept(Visitor visitor) {
+		visitor.visitGlobalMacro(this)
+	}
+}
+
+abstract class AbstractMemoryMacro extends Macro {
+	
+	ISLMap map
+	
+	op void accept(Visitor visitor)
+}
+
+class MemoryMacro extends AbstractMemoryMacro {
+	container Function function opposite memoryMacros
+	refers MemoryAllocation allocation
+	refers ArrayVariable variable
+	
+	op void accept(Visitor visitor) {
+		visitor.visitMemoryMacro(this)
+	}
+}
+
+class MemoryAllocation extends Node, Visitable {
+	refers MemoryMacro macro
+	refers ArrayVariable variable
+	ISLMap map
+	ISLSet domain
+	ISLASTNode ISLASTNode
+	
+	
+	op void card() {
+		domain.copy.apply(map())
+	}
+	
+	op ISLMap map() {
+		macro.map
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitMemoryAllocation(this)
+	}
+}
+
+class GlobalMemoryMacro extends AbstractMemoryMacro {
+	container GlobalVariable variable opposite memoryMacro
+	
+	op void accept(Visitor visitor) {
+		visitor.visitGlobalMemoryMacro(this)
+	}
+}
+
+class StatementMacro extends Macro {
+	container FunctionBody functionBody opposite statementMacros
+	
+	op void accept(Visitor visitor) {
+		visitor.visitStatementMacro(this)
+	}
+}
+
+class BaseVariable extends Node, Visitable {
+	String name
+	DataType elemType
+	
+	op String dataType() {
+		elemType.toString
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitBaseVariable(this)
+	}
+}
+
+class GlobalVariable extends BaseVariable {
+	container Program program opposite globalVariables
+	contains GlobalMemoryMacro memoryMacro opposite variable
+	
+	refers alpha.model.Variable alphaVariable
+	VariableType ^type
+	int numDims
+	boolean flagVariable
+	
+	op boolean hasAlphaVariable() {
+		alphaVariable !== null
+	}
+	
+	op String pointers() {
+		(0..<numDims).map['*'].join('')
+	}
+	
+	op String dataType() {
+		super.dataType + pointers
+	}
+
+	op String readName() {
+		if (alphaVariable.isOutput)
+			'eval_' + name
+		else
+			name
+	}
+	
+	op String[] indices() {
+		AlphaUtil.indices(alphaVariable).toEList
+	}
+	
+	op String identityAccess() {
+		name + '(' + indices.join(',') + ')'
+ 	}
+ 		
+	op String writeName() {
+		name
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitGlobalVariable(this)
+	}
+}
+
+class ArrayVariable extends GlobalVariable {
+
+	op void accept(Visitor visitor) {
+		visitor.visitArrayVariable(this)
+	}
+}
+
+class FunctionBody extends Node, Visitable {
+	container Function function opposite body
+	contains StatementMacro[] statementMacros opposite functionBody
+	ISLASTNode ISLASTNode
+	
+	op void accept(Visitor visitor) {
+		visitor.visitFunctionBody(this)
+	}
+}
+
+class Function extends Node, Visitable {
+	container Program program opposite functions
+	DataType returnType
+	String name
+	refers BaseVariable[] scalarArgs
+	refers ArrayVariable[] arrayArgs
+	contains MemoryMacro[] memoryMacros opposite function
+	contains FunctionBody body opposite function
+	
+	op BaseVariable[] args() {
+		(scalarArgs + arrayArgs).toEList
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitFunction(this)
+	}
+	
+	op AlphaSystem system() {
+		program.system
+	}
+}
+
+class EvalFunction extends Function {
+	refers ArrayVariable variable
+	refers ArrayVariable flagVariable
+	refers StandardEquation equation
+	
+	op void accept(Visitor visitor) {
+		visitor.visitEvalFunction(this)
+	}
+}
+
+class Program extends Node, Visitable {
+	refers AlphaSystem system
+	contains Include[] includes opposite program
+	contains GlobalMacro[] commonMacros opposite program
+	contains GlobalVariable[] globalVariables opposite program
+	contains Function[] functions opposite program
+	
+	op GlobalVariable getGlobalVariable(Variable alphaVar) {
+		val vars = globalVariables.filter[v | v.alphaVariable == alphaVar]
+		vars.get(0)
+	}
+	
+	op void accept(Visitor visitor) {
+		visitor.visitProgram(this)
+	}
+}
+
+enum DataType {
+	^int
+	^long
+	^float
+	^double
+	^void
+	^char
+}
+
+enum C_UNARY_OP {
+	NOT as "!"
+	NEGATE as "-"
+}
+
+enum C_BINARY_OP {
+	MIN as "min"
+	MAX as "max"
+	
+	MUL as "*"
+	DIV as "/"
+	MOD as "%"
+	
+	ADD as "+"
+	SUB as "-"
+	
+	AND as "&&"
+	OR  as "||"
+	XOR as "^"
+	
+	EQ as "=="
+	NE as "!="
+	GE as ">="
+	GT as ">"
+	LE as "<="
+	LT as "<"
+}
+
+enum C_REDUCTION_OP {
+	MIN as "min"
+	MAX as "max"
+	PROD as "*"
+	SUM as "+"
+	AND as "&&"
+	OR as "||"
+	XOR as "^"
+	
+	EX as "external"
+}
+
+class AlphaOp {
+	
+	op C_UNARY_OP toCUnaryOp(UNARY_OP o) {
+		if (o == UNARY_OP.NOT) C_UNARY_OP.NOT
+		else if (o == UNARY_OP.NEGATE) C_UNARY_OP.NEGATE
+		else throw new Exception(o + ' operator does not have a C_UNARY_OP definition')
+	}
+	
+	op C_BINARY_OP toCBinaryOp(BINARY_OP o) {
+		if (o == BINARY_OP.MIN) C_BINARY_OP.MIN
+		else if (o == BINARY_OP.MAX) C_BINARY_OP.MAX
+		else if (o == BINARY_OP.MUL) C_BINARY_OP.MUL
+		else if (o == BINARY_OP.DIV) C_BINARY_OP.DIV
+		else if (o == BINARY_OP.MOD) C_BINARY_OP.MOD
+		else if (o == BINARY_OP.ADD) C_BINARY_OP.ADD
+		else if (o == BINARY_OP.SUB) C_BINARY_OP.SUB
+		else if (o == BINARY_OP.AND) C_BINARY_OP.AND
+		else if (o == BINARY_OP.OR) C_BINARY_OP.OR
+		else if (o == BINARY_OP.XOR) C_BINARY_OP.XOR
+		else if (o == BINARY_OP.EQ) C_BINARY_OP.EQ
+		else if (o == BINARY_OP.NE) C_BINARY_OP.NE
+		else if (o == BINARY_OP.GE) C_BINARY_OP.GE
+		else if (o == BINARY_OP.GT) C_BINARY_OP.GT
+		else if (o == BINARY_OP.LE) C_BINARY_OP.LE
+		else if (o == BINARY_OP.LT) C_BINARY_OP.LT
+		else throw new Exception(o + ' operator does not have a C_BINARY_OP definition')
+	}
+	
+	op C_REDUCTION_OP toCReductionOp(REDUCTION_OP o) {
+		if (o == REDUCTION_OP.MIN) C_REDUCTION_OP.MIN
+		else if (o == REDUCTION_OP.MAX) C_REDUCTION_OP.MAX
+		else if (o == REDUCTION_OP.PROD) C_REDUCTION_OP.PROD
+		else if (o == REDUCTION_OP.SUM) C_REDUCTION_OP.SUM
+		else if (o == REDUCTION_OP.AND) C_REDUCTION_OP.AND
+		else if (o == REDUCTION_OP.OR) C_REDUCTION_OP.OR
+		else if (o == REDUCTION_OP.XOR) C_REDUCTION_OP.XOR
+		else throw new Exception(o + ' operator does not have a C_REDUCTION_OP definition')
+	}
+	
+	
+	
+}
+
+// Data structure to enable clean printing of ISLPWQPolynomials
+// This is just a wrapper around ISLPWQPolynomial
+
+class PolynomialVisitor {
+	op void visitPolynomial(Polynomial p)
+	op void visitPolynomialPiece(PolynomialPiece pp)
+	op void visitPolynomialTerm(PolynomialTerm pt)
+	
+	op void inPolynomial(Polynomial p)
+	op void inPolynomialPiece(PolynomialPiece pp)
+	op void inPolynomialTerm(PolynomialTerm pt)
+
+	op void outPolynomial(Polynomial p)
+	op void outPolynomialPiece(PolynomialPiece pp)
+	op void outPolynomialTerm(PolynomialTerm pt)
+}
+
+class PolynomialNode {}
+
+interface PolynomialVisitable {
+	op void accept(PolynomialVisitor visitor)
+}
+
+class Polynomial extends PolynomialNode, PolynomialVisitable {
+	contains PolynomialPiece[] pieces opposite polynomial
+	ISLPWQPolynomial islPolynomial
+	
+	op String toCString(String variableName) {
+		PolynomialPrinter.print(this, variableName)
+	}
+	
+	op String[] params() {
+		val P = islPolynomial.space.dim(ISLDimType.isl_dim_param)
+		(0..<P).map[islPolynomial.space.getDimName(ISLDimType.isl_dim_param, it)].toEList
+	}
+	
+	op void accept(PolynomialVisitor visitor) {
+		visitor.visitPolynomial(this)
+	}
+}
+
+class PolynomialPiece extends PolynomialNode, PolynomialVisitable {
+	container Polynomial polynomial opposite pieces
+	contains PolynomialTerm[] terms opposite polynomialPiece
+	ISLQPolynomialPiece islPiece
+	
+	op ISLSet getSet() {
+		islPiece.getSet
+	}
+	
+	op void accept(PolynomialVisitor visitor) {
+		visitor.visitPolynomialPiece(this)
+	}
+}
+
+class PolynomialTerm extends PolynomialNode, PolynomialVisitable {
+	container PolynomialPiece polynomialPiece opposite terms
+	ISLTerm islTerm
+	
+	op String value() {
+		values.join('*')
+	}
+	
+	op String[] values() {
+		(#[coefficient] + (0..<dimParam).filter[exponents.get(it) != 0].map[exponent]).toEList
+	}
+	
+	op String coefficient() {
+		islTerm.coefficientVal.toString
+	}
+	
+	op String exponent(int i) {
+		(0..<exponents.get(i)).map[paramNames.get(i)].join('*')
+	}
+	
+	op int[] exponents() {
+		(0..<dimParam).map[islTerm.getExponent(ISLDimType.isl_dim_param, it)].toEList
+	}
+	
+	op int dimParam() {
+		dim(ISLDimType.isl_dim_param)
+	}
+	
+	op int dim(ISLDimType dim_type) {
+		polynomialPiece.polynomial.islPolynomial.dim(dim_type)
+	}
+	
+	op String[] paramNames() {
+		polynomialPiece.polynomial.params
+	}
+	
+	op void accept(PolynomialVisitor visitor) {
+		visitor.visitPolynomialTerm(this)
+	}
+}

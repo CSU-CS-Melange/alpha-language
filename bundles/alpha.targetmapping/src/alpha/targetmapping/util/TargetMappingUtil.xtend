@@ -16,6 +16,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.List
 import java.util.function.BiFunction
 import java.util.function.Function
+import alpha.model.Variable
+import alpha.targetmapping.DataType
 
 class TargetMappingUtil {
 	
@@ -132,5 +134,9 @@ class TargetMappingUtil {
 		
 		val affSpace = domainSpace.toMapSpaceFromSetSpace
 		return ISLMultiAff.buildFromAffList(affSpace, affList)
+	}
+	
+	static def DataType dataType(Variable variable) {
+		DataType.FLOAT
 	}
 }

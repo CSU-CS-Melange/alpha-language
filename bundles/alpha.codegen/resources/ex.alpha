@@ -1,0 +1,8 @@
+affine star1d1r [T,N]->{:N>24 and T>4}
+  inputs
+    X : {[i] : 0<=i<=N};
+  outputs
+    Y : {[i] : 0<=i<=N};
+   let
+   	Y[i] = +(X[i], 2[], X[i]);
+.

@@ -436,3 +436,12 @@ class JNIIdentityFunction extends JNIFunction {
 	}
 }
 
+enum DataType {
+	^int
+	^long
+	^float
+	^double
+	^void
+	^char
+}
+

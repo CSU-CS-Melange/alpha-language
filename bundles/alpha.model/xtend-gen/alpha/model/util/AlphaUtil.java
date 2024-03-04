@@ -8,17 +8,29 @@ import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.AlphaVisitable;
 import alpha.model.Equation;
+import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
+import alpha.model.Variable;
+import alpha.model.VariableExpression;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLAffList;
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
+import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLErrorException;
 import fr.irisa.cairn.jnimap.isl.ISLFactory;
+import fr.irisa.cairn.jnimap.isl.ISLIdentifier;
+import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.JNIISLTools;
 import fr.irisa.cairn.jnimap.runtime.JNIObject;
@@ -131,6 +143,31 @@ public class AlphaUtil {
       return null;
     }
     return AlphaUtil.getContainerEquation(node.eContainer());
+  }
+
+  public static StandardEquation getStandardEquation(final Variable variable) {
+    StandardEquation _xblockexpression = null;
+    {
+      StandardEquation ret = ((StandardEquation) null);
+      final Function1<Equation, Boolean> _function = (Equation e) -> {
+        return Boolean.valueOf((e instanceof StandardEquation));
+      };
+      final Function1<Equation, StandardEquation> _function_1 = (Equation it) -> {
+        return ((StandardEquation) it);
+      };
+      final Function1<StandardEquation, Boolean> _function_2 = (StandardEquation e) -> {
+        Variable _variable = e.getVariable();
+        return Boolean.valueOf(Objects.equal(_variable, variable));
+      };
+      final Iterable<StandardEquation> equs = IterableExtensions.<StandardEquation>filter(IterableExtensions.<Equation, StandardEquation>map(IterableExtensions.<Equation>filter(AlphaUtil.getContainerSystemBody(variable).getEquations(), _function), _function_1), _function_2);
+      int _size = IterableExtensions.size(equs);
+      boolean _equals = (_size == 1);
+      if (_equals) {
+        ret = ((StandardEquation[])Conversions.unwrapArray(equs, StandardEquation.class))[0];
+      }
+      _xblockexpression = ret;
+    }
+    return _xblockexpression;
   }
 
   /**
@@ -440,6 +477,153 @@ public class AlphaUtil {
 
   public static List<Integer> parseIntVector(final String intVecStr) {
     return IterableExtensions.<Integer>toList(((Iterable<Integer>)Conversions.doWrapArray(AlphaUtil.parseIntArray(intVecStr))));
+  }
+
+  public static int numDims(final Variable variable) {
+    return variable.getDomain().dim(ISLDimType.isl_dim_out);
+  }
+
+  public static List<String> indices(final Variable variable) {
+    return IterableExtensions.<String>toList(variable.getDomain().getIndexNames());
+  }
+
+  public static List<String> indexNames(final ISLMultiAff maff) {
+    return maff.getDomainSpace().getIndexNames();
+  }
+
+  public static List<String> paramNames(final ISLMultiAff maff) {
+    return maff.getDomainSpace().getParamNames();
+  }
+
+  public static List<String> indexNames(final ISLSpace space) {
+    return IterableExtensions.<String>toList(space.getIndexNames());
+  }
+
+  public static List<String> paramNames(final ISLSpace space) {
+    return IterableExtensions.<String>toList(space.getParamNames());
+  }
+
+  public static Iterable<Variable> listAllReferencedVariables(final AlphaNode e) {
+    final Function1<VariableExpression, Variable> _function = (VariableExpression it) -> {
+      return it.getVariable();
+    };
+    return IterableExtensions.<VariableExpression, Variable>map(AlphaUtil.listAllVariableExpressions(e), _function);
+  }
+
+  public static Iterable<VariableExpression> listAllVariableExpressions(final AlphaNode e) {
+    return Iterables.<VariableExpression>filter(AlphaUtil.listAllChildrenExpressions(e), VariableExpression.class);
+  }
+
+  public static Iterable<AlphaExpression> listChildrenExpressions(final AlphaNode e) {
+    return Iterables.<AlphaExpression>filter(e.eContents(), AlphaExpression.class);
+  }
+
+  public static Iterable<AlphaExpression> listAllChildrenExpressions(final AlphaNode e) {
+    return IteratorExtensions.<AlphaExpression>toIterable(Iterators.<AlphaExpression>filter(e.eAllContents(), AlphaExpression.class));
+  }
+
+  public static ISLIdentifierList toIdentifierList(final List<String> iterators, final ISLContext context) {
+    ISLIdentifierList _xblockexpression = null;
+    {
+      ISLIdentifierList ret = ISLIdentifierList.build(context, iterators.size());
+      int _size = iterators.size();
+      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _size, true);
+      for (final Integer i : _doubleDotLessThan) {
+        ret = ret.insert((i).intValue(), ISLIdentifier.alloc(context, iterators.get((i).intValue())));
+      }
+      _xblockexpression = ret;
+    }
+    return _xblockexpression;
+  }
+
+  public static ISLIdentifierList toIdentifierList(final List<ISLIdentifier> iterators) {
+    ISLIdentifierList _xblockexpression = null;
+    {
+      int _size = iterators.size();
+      boolean _equals = (_size == 0);
+      if (_equals) {
+        return null;
+      }
+      final ISLContext context = iterators.get(0).getContext();
+      ISLIdentifierList ret = ISLIdentifierList.build(context, iterators.size());
+      int _size_1 = iterators.size();
+      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _size_1, true);
+      for (final Integer i : _doubleDotLessThan) {
+        ret = ret.insert((i).intValue(), iterators.get((i).intValue()));
+      }
+      _xblockexpression = ret;
+    }
+    return _xblockexpression;
+  }
+
+  public static ISLAffList[] lexmins(final ISLSet set) {
+    final Function1<ISLBasicSet, ISLAffList> _function = (ISLBasicSet it) -> {
+      return AlphaUtil.lexSwitch(it, false);
+    };
+    return ((ISLAffList[])Conversions.unwrapArray(ListExtensions.<ISLBasicSet, ISLAffList>map(set.getBasicSets(), _function), ISLAffList.class));
+  }
+
+  public static ISLAffList[] lexmaxes(final ISLSet set) {
+    final Function1<ISLBasicSet, ISLAffList> _function = (ISLBasicSet it) -> {
+      return AlphaUtil.lexSwitch(it, true);
+    };
+    return ((ISLAffList[])Conversions.unwrapArray(ListExtensions.<ISLBasicSet, ISLAffList>map(set.getBasicSets(), _function), ISLAffList.class));
+  }
+
+  public static ISLAffList lexSwitch(final ISLBasicSet set, final boolean max) {
+    ISLAffList _xblockexpression = null;
+    {
+      final int dim = set.dim(ISLDimType.isl_dim_out);
+      ISLAffList ret = ISLAffList.build(set.getContext(), dim);
+      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, dim, true);
+      for (final Integer i : _doubleDotLessThan) {
+        ret = ret.add(AlphaUtil.lexSwitch(set, (i).intValue(), max));
+      }
+      _xblockexpression = ret;
+    }
+    return _xblockexpression;
+  }
+
+  public static ISLAff lexSwitch(final ISLBasicSet set, final int dim, final boolean max) {
+    try {
+      ISLAff _xblockexpression = null;
+      {
+        final ISLLocalSpace space = set.getSpace().toLocalSpace();
+        ISLBasicSet mset = set.copy().moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, dim, 1).moveDims(ISLDimType.isl_dim_out, 0, ISLDimType.isl_dim_param, 0, 1);
+        ISLSet _xifexpression = null;
+        if (max) {
+          _xifexpression = mset.lexMax();
+        } else {
+          _xifexpression = mset.lexMin();
+        }
+        final ISLSet m = _xifexpression;
+        int _nbBasicSets = m.getNbBasicSets();
+        boolean _notEquals = (_nbBasicSets != 1);
+        if (_notEquals) {
+          throw new Exception("Unexpected number of basic sets");
+        }
+        mset = m.getBasicSetAt(0).dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, 1);
+        final long[][] mat = DomainOperations.toISLEqualityMatrix(mset).toLongMatrix();
+        final Function1<Long, Integer> _function = (Long it) -> {
+          return Integer.valueOf(it.intValue());
+        };
+        final List<Integer> coeffs = ListExtensions.<Long, Integer>map(((List<Long>)Conversions.doWrapArray(mat[0])), _function);
+        ISLAff aff = ISLAff.buildZero(space);
+        int _dim = aff.dim(ISLDimType.isl_dim_param);
+        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _dim, true);
+        for (final Integer i : _doubleDotLessThan) {
+          aff = aff.setCoefficient(ISLDimType.isl_dim_param, (i).intValue(), (coeffs.get((i).intValue())).intValue());
+        }
+        int _size = coeffs.size();
+        int _minus = (_size - 1);
+        aff = aff.setConstant((coeffs.get(_minus)).intValue());
+        aff = aff.negate();
+        _xblockexpression = aff;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   private static Iterable<AlphaConstant> gatherAlphaConstants(final EObject ap) {
