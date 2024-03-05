@@ -1,6 +1,7 @@
 package alpha.model.util;
 
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
@@ -17,6 +18,7 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.MapExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Pure;
@@ -139,6 +141,19 @@ public class Face {
   }
 
   /**
+   * Returns the normal vector (as a single affine expression)
+   * of the inequality characterizing this face in the context of its parent.
+   */
+  public ISLAff getNormalVector(final Face parent) {
+    final Function1<Integer, Boolean> _function = (Integer idx) -> {
+      return Boolean.valueOf(this.unsaturatedConstraints.containsKey(idx));
+    };
+    final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
+    final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
+    return characteristicInequality.copy().getAff().dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
+  }
+
+  /**
    * Constructs a new face by saturating an additional constraint compared to this face.
    */
   public Face saturateConstraint(final int idx) {
@@ -174,6 +189,21 @@ public class Face {
       return s.addConstraint(c);
     };
     return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(IterableExtensions.<ISLConstraint, ISLConstraint>map(Iterables.<ISLConstraint>concat(Collections.<Collection<ISLConstraint>>unmodifiableList(CollectionLiterals.<Collection<ISLConstraint>>newArrayList(_values, this.saturatedConstraints))), _function), universe, _function_1).removeRedundancies();
+  }
+
+  /**
+   * Creates the (potentially unbounded) linear space of this facet
+   * from the union of saturated constraints.
+   */
+  public ISLBasicSet toLinearSpace() {
+    final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space);
+    final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint c) -> {
+      return c.copy().setConstant(0);
+    };
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = (ISLBasicSet s, ISLConstraint c) -> {
+      return s.addConstraint(c);
+    };
+    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<ISLConstraint, ISLConstraint>map(this.saturatedConstraints, _function), universe, _function_1);
   }
 
   /**

@@ -8,6 +8,9 @@ import java.util.ArrayList
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Data
 
+import static extension alpha.model.util.AlphaUtil.renameSpaceInputs
+import static extension alpha.model.util.AlphaUtil.renameSpaceOutputs
+import static extension alpha.model.util.AlphaUtil.renameSpaceParams
 import static extension alpha.model.util.CommonExtensions.splitBy
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.toIndexHashMap
@@ -130,6 +133,26 @@ class Face {
 		return toBasicSet.dimensionality
 	}
 	
+	/**
+	 * Returns the normal vector (as a single affine expression)
+	 * of the inequality characterizing this face in the context of its parent.
+	 */
+	def getNormalVector(Face parent) {
+		// Get any inequality which is unsaturated in the parent, but saturated here.
+		val characteristicInequalityIndex =
+			parent.unsaturatedConstraints.keySet
+			.reject[idx | this.unsaturatedConstraints.containsKey(idx)]
+			.head
+		val characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex)
+		
+		// Convert it to an affine expression, then drop any parameters and constants.
+		return characteristicInequality
+			.copy
+			.aff
+			.dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+			.setConstant(0)
+	}
+	
 	/** Constructs a new face by saturating an additional constraint compared to this face. */
 	def saturateConstraint(int idx) {
 		if (!unsaturatedConstraints.containsKey(idx)) {
@@ -160,6 +183,18 @@ class Face {
 			.map[c | c.copy]
 			.fold(universe, [s, c | s.addConstraint(c)])
 			.removeRedundancies
+	}
+	
+	/**
+	 * Creates the (potentially unbounded) linear space of this facet
+	 * from the union of saturated constraints.
+	 */
+	def toLinearSpace() {
+		// The constant terms of each constraint must be "removed" by setting them to 0.
+		val universe = ISLBasicSet.buildUniverse(space)
+		return saturatedConstraints
+			.map[c | c.copy.setConstant(0)]
+			.fold(universe, [s, c | s.addConstraint(c)])
 	}
 	
 	/** Returns a string indicating which constraints were saturated to form this face. */
