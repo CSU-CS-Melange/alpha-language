@@ -10,10 +10,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.xtend.lib.annotations.Data;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
@@ -39,6 +41,17 @@ import org.eclipse.xtext.xbase.lib.Pure;
 @Data
 @SuppressWarnings("all")
 public class Face {
+  /**
+   * The way each facet can be labeled by one particular choice of reuse.
+   */
+  public enum Label {
+    POS,
+
+    NEG,
+
+    ZERO;
+  }
+
   /**
    * A map from a standardized constraint index to each unsaturated constraint.
    */
@@ -110,11 +123,18 @@ public class Face {
     this.lattice = lattice;
   }
 
-  public static ArrayList<Face> removeDuplicates(final Face... faces) {
-    final Function1<Face, String> _function = (Face face) -> {
-      return face.toString();
-    };
-    return CommonExtensions.<Face>toArrayList(IterableExtensions.<String, Face>toMap(((Iterable<? extends Face>)Conversions.doWrapArray(faces)), _function).values());
+  /**
+   * Enumerates the set of all possible label combinations.
+   */
+  public static Iterable<ArrayList<Face.Label>> enumerateAllPossibleLabelings(final int nbFacets, final boolean includeNeg) {
+    List<Face.Label> _xifexpression = null;
+    if (includeNeg) {
+      _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.POS, Face.Label.ZERO, Face.Label.NEG));
+    } else {
+      _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.POS, Face.Label.ZERO));
+    }
+    final List<Face.Label> labels = _xifexpression;
+    return CommonExtensions.<Face.Label>permutations(labels, nbFacets);
   }
 
   /**
@@ -138,6 +158,78 @@ public class Face {
    */
   public int getDimensionality() {
     return ISLUtil.dimensionality(this.toBasicSet());
+  }
+
+  /**
+   * Returns the domain D such that any vector within induces a particular labeling among the facets.
+   * Here, the word "face" refers to a node in the lattice and "facets" (with a 't') as the direct
+   * children of that particular "face".
+   * face:
+   * - facet1
+   * - facet2
+   * - facet3
+   * ...
+   * There are 3 possible labels for a facet: POS,NEG,ZERO.
+   * Each facet is said to be either an POS-facet, an NEG-facet, or an ZERO-facet.
+   * 
+   * By definition, the linear space of each facet differs from its face by a single inequality constraint
+   * "c" (ISLConstraint). The index coefficients of "c" represent the normal vector "v" (ISLAff) to the facet.
+   * 
+   * A particular facet can be made an:
+   * - POS-facet:  new constraint with coefficients of "v" that >0
+   * - NEG-facet:  new constraint with coefficients of "v" that <0
+   * - ZERO-facet: new constraint with coefficients of "v" that =0
+   */
+  public Pair<Face.Label[], ISLBasicSet> getLabelingDomain(final Face.Label... labeling) {
+    final ArrayList<Face> facets = this.generateChildren();
+    int _size = facets.size();
+    int _size_1 = ((List<Face.Label>)Conversions.doWrapArray(labeling)).size();
+    boolean _notEquals = (_size != _size_1);
+    if (_notEquals) {
+      throw new IllegalArgumentException("Must specify a label for every facet to get a labeling domain.");
+    }
+    final Function1<Face, ISLAff> _function = (Face child) -> {
+      return child.getNormalVector(this);
+    };
+    final Function1<Pair<ISLAff, Face.Label>, ISLConstraint> _function_1 = (Pair<ISLAff, Face.Label> pair) -> {
+      return this.toLabelInducingConstraint(pair.getKey(), pair.getValue());
+    };
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
+      return s.addConstraint(c);
+    };
+    final ISLBasicSet domain = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<Pair<ISLAff, Face.Label>, ISLConstraint>map(CommonExtensions.<ISLAff, Face.Label>zipWith(ListExtensions.<Face, ISLAff>map(facets, _function), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function_1), this.toLinearSpace(), _function_2).dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).removeRedundancies();
+    return Pair.<Face.Label[], ISLBasicSet>of(labeling, domain);
+  }
+
+  public ISLConstraint toLabelInducingConstraint(final ISLAff vector, final Face.Label label) {
+    try {
+      ISLConstraint _xblockexpression = null;
+      {
+        final ISLAff vectorInAffineSpace = AlphaUtil.renameDims(vector.copy().addDims(ISLDimType.isl_dim_param, this.space.getNbParams()), ISLDimType.isl_dim_param, this.space.getParamNames());
+        ISLConstraint _switchResult = null;
+        if (label != null) {
+          switch (label) {
+            case POS:
+              _switchResult = vectorInAffineSpace.addConstant((-1)).toInequalityConstraint();
+              break;
+            case NEG:
+              _switchResult = vectorInAffineSpace.negate().addConstant((-1)).toInequalityConstraint();
+              break;
+            case ZERO:
+              _switchResult = vectorInAffineSpace.addConstant(0).toEqualityConstraint();
+              break;
+            default:
+              throw new Exception((("Label " + label) + " is not supported"));
+          }
+        } else {
+          throw new Exception((("Label " + label) + " is not supported"));
+        }
+        _xblockexpression = _switchResult;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   /**
@@ -235,6 +327,16 @@ public class Face {
       _xblockexpression = this.saturatedConstraints.add(equality);
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Removes duplicate faces from a list of faces.
+   */
+  protected static ArrayList<Face> removeDuplicates(final Face... faces) {
+    final Function1<Face, String> _function = (Face face) -> {
+      return face.toString();
+    };
+    return CommonExtensions.<Face>toArrayList(IterableExtensions.<String, Face>toMap(((Iterable<? extends Face>)Conversions.doWrapArray(faces)), _function).values());
   }
 
   @Override

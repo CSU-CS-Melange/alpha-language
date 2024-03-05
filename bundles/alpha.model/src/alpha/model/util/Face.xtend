@@ -1,5 +1,6 @@
 package alpha.model.util
 
+import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
@@ -8,12 +9,12 @@ import java.util.ArrayList
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Data
 
-import static extension alpha.model.util.AlphaUtil.renameSpaceInputs
-import static extension alpha.model.util.AlphaUtil.renameSpaceOutputs
-import static extension alpha.model.util.AlphaUtil.renameSpaceParams
+import static extension alpha.model.util.AlphaUtil.renameDims
+import static extension alpha.model.util.CommonExtensions.permutations
 import static extension alpha.model.util.CommonExtensions.splitBy
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.toIndexHashMap
+import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.isEffectivelySaturated
 import static extension alpha.model.util.ISLUtil.toEqualityConstraint
@@ -33,6 +34,13 @@ import static extension alpha.model.util.ISLUtil.toEqualityConstraint
  */
 @Data
 class Face {
+	/** The way each facet can be labeled by one particular choice of reuse. */
+	enum Label {
+		POS,
+		NEG,
+		ZERO
+	}
+	
 	////////////////////////////////////////////////////////////
 	// Fields and Properties
 	////////////////////////////////////////////////////////////
@@ -105,12 +113,10 @@ class Face {
 	// Public Methods
 	////////////////////////////////////////////////////////////
 	
-	static def removeDuplicates(Face... faces) {
-		// Duplicates are removed by mapping each child face by their string representation,
-		// which is a list of the constraints which were saturated to make that face.
-		// If there is a duplicate, they will have the same string representation,
-		// and the "toMap" function will only keep one of them (doesn't matter which).
-		return faces.toMap[face | face.toString].values.toArrayList
+	/** Enumerates the set of all possible label combinations. */
+	static def enumerateAllPossibleLabelings(int nbFacets, boolean includeNeg) {
+		val labels = includeNeg ? #[Label.POS, Label.ZERO, Label.NEG] : #[Label.POS, Label.ZERO] 
+		return labels.permutations(nbFacets)
 	}
 	
 	/**
@@ -131,6 +137,65 @@ class Face {
 	/** Gets the dimensionality of this face. */
 	def getDimensionality() {
 		return toBasicSet.dimensionality
+	}
+	
+	/** 
+	 * Returns the domain D such that any vector within induces a particular labeling among the facets.
+	 * Here, the word "face" refers to a node in the lattice and "facets" (with a 't') as the direct
+	 * children of that particular "face".
+	 * face:
+	 * - facet1
+	 * - facet2
+	 * - facet3
+	 * ...
+	 * There are 3 possible labels for a facet: POS,NEG,ZERO.
+	 * Each facet is said to be either an POS-facet, an NEG-facet, or an ZERO-facet.
+	 * 
+	 * By definition, the linear space of each facet differs from its face by a single inequality constraint
+	 * "c" (ISLConstraint). The index coefficients of "c" represent the normal vector "v" (ISLAff) to the facet.
+	 * 
+	 * A particular facet can be made an:
+	 * - POS-facet:  new constraint with coefficients of "v" that >0
+	 * - NEG-facet:  new constraint with coefficients of "v" that <0
+	 * - ZERO-facet: new constraint with coefficients of "v" that =0
+	 */
+	def getLabelingDomain(Label... labeling) {
+		val facets = generateChildren
+		if (facets.size != labeling.size) {
+			throw new IllegalArgumentException("Must specify a label for every facet to get a labeling domain.")
+		}
+		
+		// For each child facet, build the constraint that induces its desired labeling.
+		// Then, take the linear space of this face, add all those constraints,
+		// drop any constraints involving parameters, and remove redundancies.
+		val domain = facets
+			.map[child | child.getNormalVector(this)]
+			.zipWith(labeling)
+			.map[pair | pair.key.toLabelInducingConstraint(pair.value)]
+			.fold(toLinearSpace, [s, c | s.addConstraint(c)])
+			.dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+			.removeRedundancies
+			
+		return labeling -> domain
+	}
+	
+	def toLabelInducingConstraint(ISLAff vector, Label label) {
+		// The normal vectors are "just vectors", they have no parameter or constant information
+		// so that must be added back in here.
+		val vectorInAffineSpace = vector
+			.copy
+			.addDims(ISLDimType.isl_dim_param, space.nbParams)
+		    .renameDims(ISLDimType.isl_dim_param, space.paramNames)
+		
+		// POS- and NEG-constraints must be strictly greater than or less than zero so the constant
+		// value for these must be specified as -1, since ISLAff.toInequalityConstraint creates
+		// assumes a context of >=.
+		switch label {
+			case Label.POS  : vectorInAffineSpace.addConstant(-1).toInequalityConstraint
+			case Label.NEG : vectorInAffineSpace.negate.addConstant(-1).toInequalityConstraint
+			case Label.ZERO : vectorInAffineSpace.addConstant(0).toEqualityConstraint
+			default : throw new Exception("Label " + label + " is not supported")
+		}
 	}
 	
 	/**
@@ -221,5 +286,14 @@ class Face {
 	protected def moveConstraintToSaturated(int idx) {
 		val equality = unsaturatedConstraints.remove(idx).toEqualityConstraint
 		saturatedConstraints += equality
+	}
+	
+	/** Removes duplicate faces from a list of faces. */
+	protected static def removeDuplicates(Face... faces) {
+		// Duplicates are removed by mapping each child face by their string representation,
+		// which is a list of the constraints which were saturated to make that face.
+		// If there is a duplicate, they will have the same string representation,
+		// and the "toMap" function will only keep one of them (doesn't matter which).
+		return faces.toMap[face | face.toString].values.toArrayList
 	}
 }
