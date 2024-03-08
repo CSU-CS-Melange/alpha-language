@@ -103,6 +103,9 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
     new RaiseDependence().accept(visitable);
   }
 
+  /**
+   * Applies dependence raising to the AST of the given visitable object (system).
+   */
   public static void apply(final AlphaVisitable av) {
     new RaiseDependence().accept(av);
   }

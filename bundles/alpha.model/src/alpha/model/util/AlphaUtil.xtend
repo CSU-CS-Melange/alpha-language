@@ -26,10 +26,9 @@ import java.util.List
 import java.util.function.Consumer
 import java.util.function.Supplier
 import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.util.EcoreUtil.Copier
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import org.eclipse.emf.ecore.util.EcoreUtil.Copier
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -43,7 +42,7 @@ class AlphaUtil {
 	  * @return the copy.
 	  * @see Copier
 	  */
-	 def public static <T extends EObject> T copyAE(T eObject) {
+	 def static <T extends EObject> T copyAE(T eObject) {
 		val Copier copier = new Copier();
 		val EObject result = copier.copy(eObject);
 		copier.copyReferences();
@@ -389,7 +388,6 @@ class AlphaUtil {
 		return (0..<nbDims).fold(space, [_space, dim | _space.setDimName(ISLDimType.isl_dim_param,  dim, names.get(dim))])
 	}
 	
-	
 	static def renameDims(ISLAff aff, ISLDimType dimType, List<String> names) {
         val n = aff.dim(dimType)
         if (n > names.length) throw new RuntimeException("Need n or more names to rename n-d space.");
@@ -399,9 +397,8 @@ class AlphaUtil {
         }
         
         return res
-}
-	
-	
+	}
+
 	static def defaultDimNames(int n) {
 		defaultDimNames(0, n)
 	}

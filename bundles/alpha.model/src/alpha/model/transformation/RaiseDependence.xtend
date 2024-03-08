@@ -3,6 +3,7 @@ package alpha.model.transformation
 import alpha.model.AlphaExpression
 import alpha.model.AlphaExpressionVisitable
 import alpha.model.AlphaInternalStateConstructor
+import alpha.model.AlphaVisitable
 import alpha.model.AutoRestrictExpression
 import alpha.model.BinaryExpression
 import alpha.model.CaseExpression
@@ -13,7 +14,7 @@ import alpha.model.MultiArgExpression
 import alpha.model.RestrictExpression
 import alpha.model.UnaryExpression
 import alpha.model.VariableExpression
-import alpha.model.util.AbstractAlphaExpressionVisitor
+import alpha.model.util.AbstractAlphaCompleteVisitor
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.factory.AlphaUserFactory.createDependenceExpression
@@ -86,6 +87,7 @@ class RaiseDependence extends AbstractAlphaCompleteVisitor {
 		new RaiseDependence().accept(visitable)
 	}
 	
+	/** Applies dependence raising to the AST of the given visitable object (system). */
 	static def void apply(AlphaVisitable av) {
 		new RaiseDependence().accept(av)
 	}

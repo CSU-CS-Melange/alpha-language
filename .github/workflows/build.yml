@@ -43,6 +43,7 @@ jobs:
         org.junit.runner.JUnitCore alpha.model.tests.transformations.NormalizeTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.PermutationCaseReduceTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.PropagateSimpleEquationsTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.RaiseDependenceTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.SameOperatorSimplificationTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyExpressionsTest
         org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyingReductionsTest
