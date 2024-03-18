@@ -75,7 +75,7 @@ public class Face {
   /**
    * The lattice that this face is in, if one exists. May be null.
    */
-  private final FaceLattice2 lattice;
+  private final FaceLattice lattice;
 
   /**
    * Constructs a new face which has no parents.
@@ -87,7 +87,7 @@ public class Face {
   /**
    * Creates a face to use as the root of a face lattice.
    */
-  public Face(final ISLBasicSet basicSet, final FaceLattice2 lattice) {
+  public Face(final ISLBasicSet basicSet, final FaceLattice lattice) {
     final ISLBasicSet cleanBasicSet = basicSet.copy().removeRedundancies();
     final Function1<ISLConstraint, Boolean> _function = (ISLConstraint c) -> {
       return Boolean.valueOf(Face.isConsideredSaturated(c, cleanBasicSet));
@@ -115,7 +115,7 @@ public class Face {
   /**
    * Constructor for all fields.
    */
-  public Face(final HashMap<Integer, ISLConstraint> unsaturatedConstraints, final ArrayList<ISLConstraint> saturatedConstraints, final ISLSpace space, final int originalConstraintCount, final FaceLattice2 lattice) {
+  public Face(final HashMap<Integer, ISLConstraint> unsaturatedConstraints, final ArrayList<ISLConstraint> saturatedConstraints, final ISLSpace space, final int originalConstraintCount, final FaceLattice lattice) {
     this.unsaturatedConstraints = unsaturatedConstraints;
     this.saturatedConstraints = saturatedConstraints;
     this.space = space;
@@ -288,7 +288,7 @@ public class Face {
    * from the union of saturated constraints.
    */
   public ISLBasicSet toLinearSpace() {
-    final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space);
+    final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space.copy());
     final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint c) -> {
       return c.copy().setConstant(0);
     };
@@ -407,7 +407,7 @@ public class Face {
   }
 
   @Pure
-  public FaceLattice2 getLattice() {
+  public FaceLattice getLattice() {
     return this.lattice;
   }
 }

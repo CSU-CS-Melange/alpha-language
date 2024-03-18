@@ -8,8 +8,6 @@ import alpha.model.ModelPackage;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
 
-import alpha.model.util.Show;
-
 import java.util.Collection;
 
 import org.eclipse.emf.common.notify.Notification;
@@ -214,29 +212,6 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public String toString() {
-		String _xifexpression = null;
-		Boolean _explored = this.getExplored();
-		if ((_explored).booleanValue()) {
-			_xifexpression = "*";
-		}
-		else {
-			_xifexpression = " ";
-		}
-		final String hasBeenExplored = _xifexpression;
-		String _name = this.getVariable().getName();
-		String _plus = (_name + " (");
-		String _plus_1 = (_plus + hasBeenExplored);
-		String _plus_2 = (_plus_1 + "): ");
-		String _print = Show.<AlphaExpression>print(this.getExpr());
-		return (_plus_2 + _print);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	@Override
 	public NotificationChain eInverseRemove(InternalEObject otherEnd, int featureID, NotificationChain msgs) {
 		switch (featureID) {
@@ -325,6 +300,22 @@ public class StandardEquationImpl extends EquationImpl implements StandardEquati
 				return expr != null;
 		}
 		return super.eIsSet(featureID);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public String toString() {
+		if (eIsProxy()) return super.toString();
+
+		StringBuilder result = new StringBuilder(super.toString());
+		result.append(" (indexNames: ");
+		result.append(indexNames);
+		result.append(')');
+		return result.toString();
 	}
 
 } //StandardEquationImpl

@@ -20,9 +20,6 @@ import alpha.model.util.AffineFunctionOperations
 import alpha.model.util.AlphaOperatorUtil
 import alpha.model.util.AlphaUtil
 import alpha.model.util.DomainOperations
-import alpha.model.util.FaceLattice
-import alpha.model.util.FaceLattice.Label
-import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLContext
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
@@ -38,6 +35,7 @@ import java.util.function.Function
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static alpha.model.transformation.SplitReduction.*
+import static alpha.model.util.Face.*
 
 import static extension alpha.model.transformation.SplitReduction.hasNonConvexReduceExpressions
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
@@ -404,22 +402,15 @@ class SimplifyingReductions {
 		
 		// construct face lattice
 		val face = are.facet
-		debug('(candidateReuse) Lp = ' + face.getLp.toString)
-		val facets = face.getChildren.toList
+		debug('(candidateReuse) Lp = ' + face.toLinearSpace.toString)
+		val facets = face.generateChildren
 		
 		if (facets.size == 0) 
 			return vectors
 		
-		// identify valid labels
-		// TODO -- this does not take into account that NEG boundary facets are allowed
-		//         when it should
-		val validLabels = new ArrayList<FaceLattice.Label>
-		validLabels.addAll(#[Label.POS, Label.ZERO, Label.NEG])
-//		if (AlphaOperatorUtil.hasInverse(are.operator)) {
-//			validLabels.add(Label.NEG)
-//		}
 		// enumerate all valid labelings
-		val labelings = face.enumerateAllPossibleLabelings(validLabels, facets.size).toList
+		// TODO -- this does not take into account that NEG boundary facets are allowed when it should
+		val labelings = enumerateAllPossibleLabelings(facets.size, true).toList
 		
 		// find the labelings that have none-empty domains 
 		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]

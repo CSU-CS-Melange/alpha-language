@@ -4,8 +4,8 @@ package alpha.model.impl;
 
 import alpha.model.*;
 
+import alpha.model.util.Face;
 import alpha.model.util.FaceLattice;
-import alpha.model.util.Facet;
 
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -174,8 +174,8 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 				return createIntegerQueueFromString(eDataType, initialValue);
 			case ModelPackage.STRING:
 				return createStringFromString(eDataType, initialValue);
-			case ModelPackage.FACET:
-				return createFacetFromString(eDataType, initialValue);
+			case ModelPackage.FACE:
+				return createFaceFromString(eDataType, initialValue);
 			case ModelPackage.FACE_LATTICE:
 				return createFaceLatticeFromString(eDataType, initialValue);
 			case ModelPackage.INT:
@@ -229,8 +229,8 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 				return convertIntegerQueueToString(eDataType, instanceValue);
 			case ModelPackage.STRING:
 				return convertStringToString(eDataType, instanceValue);
-			case ModelPackage.FACET:
-				return convertFacetToString(eDataType, instanceValue);
+			case ModelPackage.FACE:
+				return convertFaceToString(eDataType, instanceValue);
 			case ModelPackage.FACE_LATTICE:
 				return convertFaceLatticeToString(eDataType, instanceValue);
 			case ModelPackage.INT:
@@ -1135,8 +1135,8 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public Facet createFacetFromString(EDataType eDataType, String initialValue) {
-		return (Facet)super.createFromString(eDataType, initialValue);
+	public Face createFaceFromString(EDataType eDataType, String initialValue) {
+		return (Face)super.createFromString(eDataType, initialValue);
 	}
 
 	/**
@@ -1144,7 +1144,7 @@ public class ModelFactoryImpl extends EFactoryImpl implements ModelFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public String convertFacetToString(EDataType eDataType, Object instanceValue) {
+	public String convertFaceToString(EDataType eDataType, Object instanceValue) {
 		return super.convertToString(eDataType, instanceValue);
 	}
 

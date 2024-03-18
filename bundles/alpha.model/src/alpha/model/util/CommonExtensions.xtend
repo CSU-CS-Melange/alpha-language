@@ -86,7 +86,8 @@ class CommonExtensions {
 		val nbElements = elements.size
 		return (0 ..< count)
 			.map[listIdx | Math.pow(nbElements, listIdx).intValue]
-			.map[divisor | Integer.remainderUnsigned(value, divisor)]
+			.map[divisor | Integer.divideUnsigned(value, divisor)]
+			.map[dividend | Integer.remainderUnsigned(dividend, nbElements)]
 			.map[remainder | elements.get(remainder.intValue)]
 			.toArrayList
 	}

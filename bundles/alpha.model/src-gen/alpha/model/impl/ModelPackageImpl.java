@@ -84,8 +84,8 @@ import alpha.model.Variable;
 import alpha.model.VariableDomain;
 import alpha.model.VariableExpression;
 
+import alpha.model.util.Face;
 import alpha.model.util.FaceLattice;
-import alpha.model.util.Facet;
 
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -777,7 +777,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	private EDataType facetEDataType = null;
+	private EDataType faceEDataType = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -1719,15 +1719,6 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 */
 	public EAttribute getAbstractReduceExpression_Z__internal_facet() {
 		return (EAttribute)abstractReduceExpressionEClass.getEStructuralFeatures().get(3);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EAttribute getAbstractReduceExpression_NbFreeDimensionsInBody() {
-		return (EAttribute)abstractReduceExpressionEClass.getEStructuralFeatures().get(4);
 	}
 
 	/**
@@ -2860,8 +2851,8 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EDataType getFacet() {
-		return facetEDataType;
+	public EDataType getFace() {
+		return faceEDataType;
 	}
 
 	/**
@@ -3064,7 +3055,6 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		createEReference(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__PROJECTION_EXPR);
 		createEReference(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__BODY);
 		createEAttribute(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET);
-		createEAttribute(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY);
 
 		reduceExpressionEClass = createEClass(REDUCE_EXPRESSION);
 
@@ -3239,7 +3229,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		listVariableExpressionEDataType = createEDataType(LIST_VARIABLE_EXPRESSION);
 		integerQueueEDataType = createEDataType(INTEGER_QUEUE);
 		stringEDataType = createEDataType(STRING);
-		facetEDataType = createEDataType(FACET);
+		faceEDataType = createEDataType(FACE);
 		faceLatticeEDataType = createEDataType(FACE_LATTICE);
 		intEDataType = createEDataType(INT);
 		floatEDataType = createEDataType(FLOAT);
@@ -3956,8 +3946,6 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		op = addEOperation(standardEquationEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getAlphaVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
-		addEOperation(standardEquationEClass, this.getString(), "toString", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
 		initEClass(useEquationEClass, UseEquation.class, "UseEquation", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getUseEquation_Identifier(), this.getString(), "identifier", null, 0, 1, UseEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getUseEquation_InstantiationDomainExpr(), this.getCalculatorExpression(), null, "instantiationDomainExpr", null, 0, 1, UseEquation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -4085,18 +4073,14 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		initEAttribute(getAbstractReduceExpression_Operator(), this.getREDUCTION_OP(), "operator", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getAbstractReduceExpression_ProjectionExpr(), this.getJNIFunction(), null, "projectionExpr", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getAbstractReduceExpression_Body(), this.getAlphaExpression(), null, "body", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getAbstractReduceExpression_Z__internal_facet(), this.getFacet(), "z__internal_facet", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getAbstractReduceExpression_NbFreeDimensionsInBody(), this.getint(), "nbFreeDimensionsInBody", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getAbstractReduceExpression_Z__internal_facet(), this.getFace(), "z__internal_facet", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		addEOperation(abstractReduceExpressionEClass, this.getJNIISLMultiAff(), "getProjection", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		op = addEOperation(abstractReduceExpressionEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getAlphaExpressionVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
-		addEOperation(abstractReduceExpressionEClass, this.getFacet(), "getFacet", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(abstractReduceExpressionEClass, null, "setFacet", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getFacet(), "facet", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEOperation(abstractReduceExpressionEClass, this.getFace(), "getFacet", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		initEClass(reduceExpressionEClass, ReduceExpression.class, "ReduceExpression", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 
@@ -4552,7 +4536,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		initEDataType(listVariableExpressionEDataType, List.class, "ListVariableExpression", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS, "java.util.List<alpha.model.VariableExpression>");
 		initEDataType(integerQueueEDataType, Queue.class, "IntegerQueue", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS, "java.util.Queue<java.lang.Integer>");
 		initEDataType(stringEDataType, String.class, "String", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
-		initEDataType(facetEDataType, Facet.class, "Facet", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
+		initEDataType(faceEDataType, Face.class, "Face", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 		initEDataType(faceLatticeEDataType, FaceLattice.class, "FaceLattice", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 		initEDataType(intEDataType, Integer.class, "int", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 		initEDataType(floatEDataType, Float.class, "float", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);

@@ -2,7 +2,7 @@
  */
 package alpha.model;
 
-import alpha.model.util.Facet;
+import alpha.model.util.Face;
 
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 
@@ -19,7 +19,6 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
  *   <li>{@link alpha.model.AbstractReduceExpression#getProjectionExpr <em>Projection Expr</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getBody <em>Body</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}</li>
- *   <li>{@link alpha.model.AbstractReduceExpression#getNbFreeDimensionsInBody <em>Nb Free Dimensions In Body</em>}</li>
  * </ul>
  *
  * @see alpha.model.ModelPackage#getAbstractReduceExpression()
@@ -101,12 +100,12 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @return the value of the '<em>Zinternal facet</em>' attribute.
-	 * @see #setZ__internal_facet(Facet)
+	 * @see #setZ__internal_facet(Face)
 	 * @see alpha.model.ModelPackage#getAbstractReduceExpression_Z__internal_facet()
-	 * @model unique="false" dataType="alpha.model.Facet"
+	 * @model unique="false" dataType="alpha.model.Face"
 	 * @generated
 	 */
-	Facet getZ__internal_facet();
+	Face getZ__internal_facet();
 
 	/**
 	 * Sets the value of the '{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}' attribute.
@@ -116,29 +115,7 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	 * @see #getZ__internal_facet()
 	 * @generated
 	 */
-	void setZ__internal_facet(Facet value);
-
-	/**
-	 * Returns the value of the '<em><b>Nb Free Dimensions In Body</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the value of the '<em>Nb Free Dimensions In Body</em>' attribute.
-	 * @see #setNbFreeDimensionsInBody(Integer)
-	 * @see alpha.model.ModelPackage#getAbstractReduceExpression_NbFreeDimensionsInBody()
-	 * @model unique="false" dataType="alpha.model.int"
-	 * @generated
-	 */
-	Integer getNbFreeDimensionsInBody();
-
-	/**
-	 * Sets the value of the '{@link alpha.model.AbstractReduceExpression#getNbFreeDimensionsInBody <em>Nb Free Dimensions In Body</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @param value the new value of the '<em>Nb Free Dimensions In Body</em>' attribute.
-	 * @see #getNbFreeDimensionsInBody()
-	 * @generated
-	 */
-	void setNbFreeDimensionsInBody(Integer value);
+	void setZ__internal_facet(Face value);
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -159,17 +136,9 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
-	 * @model kind="operation" dataType="alpha.model.Facet" unique="false"
+	 * @model kind="operation" dataType="alpha.model.Face" unique="false"
 	 * @generated
 	 */
-	Facet getFacet();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model facetDataType="alpha.model.Facet" facetUnique="false"
-	 * @generated
-	 */
-	void setFacet(Facet facet);
+	Face getFacet();
 
 } // AbstractReduceExpression

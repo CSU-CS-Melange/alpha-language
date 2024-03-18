@@ -58,7 +58,7 @@ class Face {
 	val int originalConstraintCount
 	
 	/** The lattice that this face is in, if one exists. May be null. */
-	val FaceLattice2 lattice
+	val FaceLattice lattice
 	
 	
 	////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ class Face {
 	}
 	
 	/** Creates a face to use as the root of a face lattice. */
-	new(ISLBasicSet basicSet, FaceLattice2 lattice) {
+	new(ISLBasicSet basicSet, FaceLattice lattice) {
 		val cleanBasicSet = basicSet.copy.removeRedundancies
 		val separatedConstraints = cleanBasicSet.constraints.splitBy[c | c.isConsideredSaturated(cleanBasicSet)]
 		
@@ -99,7 +99,7 @@ class Face {
 		ArrayList<ISLConstraint> saturatedConstraints,
 		ISLSpace space,
 		int originalConstraintCount,
-		FaceLattice2 lattice
+		FaceLattice lattice
 	) {
 		this.unsaturatedConstraints = unsaturatedConstraints
 		this.saturatedConstraints = saturatedConstraints
@@ -256,7 +256,7 @@ class Face {
 	 */
 	def toLinearSpace() {
 		// The constant terms of each constraint must be "removed" by setting them to 0.
-		val universe = ISLBasicSet.buildUniverse(space)
+		val universe = ISLBasicSet.buildUniverse(space.copy)
 		return saturatedConstraints
 			.map[c | c.copy.setConstant(0)]
 			.fold(universe, [s, c | s.addConstraint(c)])

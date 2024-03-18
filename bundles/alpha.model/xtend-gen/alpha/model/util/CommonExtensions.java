@@ -105,11 +105,14 @@ public class CommonExtensions {
       return Integer.valueOf(Double.valueOf(Math.pow(nbElements, (listIdx).intValue())).intValue());
     };
     final Function1<Integer, Integer> _function_1 = (Integer divisor) -> {
-      return Integer.valueOf(Integer.remainderUnsigned(value, (divisor).intValue()));
+      return Integer.valueOf(Integer.divideUnsigned(value, (divisor).intValue()));
     };
-    final Function1<Integer, T> _function_2 = (Integer remainder) -> {
+    final Function1<Integer, Integer> _function_2 = (Integer dividend) -> {
+      return Integer.valueOf(Integer.remainderUnsigned((dividend).intValue(), nbElements));
+    };
+    final Function1<Integer, T> _function_3 = (Integer remainder) -> {
       return ((T[])Conversions.unwrapArray(elements, Object.class))[remainder.intValue()];
     };
-    return CommonExtensions.<T>toArrayList(IterableExtensions.<Integer, T>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, count, true), _function), _function_1), _function_2));
+    return CommonExtensions.<T>toArrayList(IterableExtensions.<Integer, T>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, count, true), _function), _function_1), _function_2), _function_3));
   }
 }

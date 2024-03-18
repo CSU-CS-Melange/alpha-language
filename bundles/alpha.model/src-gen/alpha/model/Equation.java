@@ -52,6 +52,9 @@ public interface Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement,
 	 * Returns the value of the '<em><b>Zexplored</b></em>' attribute.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * <!-- begin-model-doc -->
+	 * * This flag is used by alpha.model.transformation.automation.OptimalSimplifyingReductions
+	 * <!-- end-model-doc -->
 	 * @return the value of the '<em>Zexplored</em>' attribute.
 	 * @see #setZ__explored(Boolean)
 	 * @see alpha.model.ModelPackage#getEquation_Z__explored()

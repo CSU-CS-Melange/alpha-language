@@ -6,7 +6,7 @@ package alpha.model
 
 import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
-import alpha.model.util.Facet
+import alpha.model.util.Face
 import alpha.model.util.FaceLattice
 import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
@@ -33,7 +33,7 @@ type ISL_FORMAT wraps ISL_FORMAT
 type ListVariableExpression wraps List<VariableExpression> 
 type IntegerQueue wraps Queue<Integer>
 type String wraps String
-type Facet wraps Facet
+type Face wraps Face
 type FaceLattice wraps FaceLattice
 type int wraps Integer
 type float wraps Float
@@ -532,6 +532,7 @@ class SystemBody extends AlphaNode, AlphaVisitable, AlphaSystemElement {
 abstract class Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement, AlphaScheduleTarget {
 	container SystemBody systemBody opposite equations
 	
+	/** This flag is used by alpha.model.transformation.automation.OptimalSimplifyingReductions */
 	boolean z__explored
 	
 	op AlphaExpression getExpression(IntegerQueue exprID) {
@@ -550,8 +551,7 @@ abstract class Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement, A
 	}
 	
 	op boolean getExplored() {
-		if (z__explored === null)
-			return false
+		if (z__explored === null) { return false }
 		return z__explored
 	}
 	
@@ -562,7 +562,6 @@ abstract class Equation extends AlphaNode, AlphaVisitable, AlphaSystemElement, A
 	op void setExplored(boolean explored) {
 		this.z__explored = explored
 	}
-	
 }
 
 class StandardEquation extends Equation {
@@ -576,11 +575,6 @@ class StandardEquation extends Equation {
 	
 	op void accept(AlphaVisitor visitor) {
 		visitor.visitStandardEquation(this)
-	}
-	
-	op String toString() {
-		val hasBeenExplored = if (explored) '*' else ' '
-		return variable.name + ' ('+hasBeenExplored+'): ' + Show.print(expr)
 	}
 }
 class UseEquation extends Equation {
@@ -801,8 +795,7 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	REDUCTION_OP operator
 	contains JNIFunction projectionExpr
 	contains AlphaExpression body
-	Facet z__internal_facet
-	int nbFreeDimensionsInBody
+	Face z__internal_facet
 	
 	op JNIISLMultiAff getProjection() {
 		if (projectionExpr.^type != POLY_OBJECT_TYPE.FUNCTION ) null
@@ -813,8 +806,16 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 		visitor.visitAbstractReduceExpression(this)
 	}
 	
-	op Facet getFacet() { if (z__internal_facet === null) FaceLattice.create(body.contextDomain, true).rootInfo else z__internal_facet }
-	op void setFacet(Facet facet) { z__internal_facet = facet }
+	op Face getFacet() { 
+		if (body.contextDomain.nbBasicSets > 1) {
+			throw new Exception('Face lattice construction can only be done for a single basic set')
+		}
+		val bset = body.contextDomain.getBasicSetAt(0)
+		if (z__internal_facet === null) 
+			new FaceLattice(bset).root 
+		else 
+			z__internal_facet
+	}
 }
 class ReduceExpression extends AbstractReduceExpression {
 	
