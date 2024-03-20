@@ -1,27 +1,26 @@
 package alpha.codegen.constructor
 
-import static extension alpha.model.util.AlphaUtil.*
-import static extension alpha.codegen.util.CodegenUtil.*
-import static extension alpha.codegen.factory.Factory.*
-import alpha.model.AlphaSystem
-import alpha.codegen.Program
-import alpha.targetmapping.TargetMapping
 import alpha.codegen.ArrayVariable
 import alpha.codegen.DataType
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
-import fr.irisa.cairn.jnimap.isl.ISLASTBuild
-import alpha.model.StandardEquation
-import java.util.Map
-import alpha.model.Variable
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import alpha.codegen.Program
+import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
+import alpha.model.StandardEquation
+import alpha.model.Variable
+import alpha.targetmapping.TargetMapping
+import fr.irisa.cairn.jnimap.isl.ISLASTBuild
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
-import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import java.util.ArrayList
+import java.util.Map
+
+import static extension alpha.codegen.factory.Factory.*
+import static extension alpha.codegen.util.CodegenUtil.*
+import static extension alpha.model.util.AlphaUtil.*
 import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildIdentity
-import alpha.codegen.BaseVariable
-import alpha.codegen.util.AlphaEquationPrinter
 
 class WriteCProgram extends BaseProgram {
 	
@@ -57,7 +56,7 @@ class WriteCProgram extends BaseProgram {
 		
 		// statement macros
 		val statementMacros = s.outputs.map[statementMacro(
-			'''S«s.outputs.indexOf(it)»(«indices.join(',')»)''',
+			'''S«s.outputs.indexOf(it)»(«it.indices.join(',')»)''',
 			'''eval_«name»(«(domain.paramNames + domain.indexNames).join(', ')»)'''
 		)]
 		
