@@ -1,5 +1,6 @@
 package alpha.commands.model.scoping;
 
+import alpha.commands.model.AlphaCommand;
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider;
 import org.eclipse.xtext.naming.QualifiedName;
 
@@ -7,9 +8,13 @@ import org.eclipse.xtext.naming.QualifiedName;
 public class CommandsQualifiedNameProvider extends DefaultDeclarativeQualifiedNameProvider {
   @Override
   protected QualifiedName qualifiedName(final Object ele) {
-    throw new Error("Unresolved compilation problems:"
-      + "\nAlphaCommand cannot be resolved to a type."
-      + "\nAlphaCommand cannot be resolved to a type."
-      + "\nlabel cannot be resolved");
+    QualifiedName _xblockexpression = null;
+    {
+      if ((ele instanceof AlphaCommand)) {
+        return QualifiedName.create(((AlphaCommand) ele).getLabel());
+      }
+      _xblockexpression = super.qualifiedName(ele);
+    }
+    return _xblockexpression;
   }
 }
