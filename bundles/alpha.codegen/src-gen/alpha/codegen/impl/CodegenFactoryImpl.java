@@ -16,6 +16,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLTerm;
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT;
 
+import java.util.HashMap;
+
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EObject;
@@ -83,6 +85,7 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 			case CodegenPackage.FUNCTION_BODY: return createFunctionBody();
 			case CodegenPackage.FUNCTION: return createFunction();
 			case CodegenPackage.EVAL_FUNCTION: return createEvalFunction();
+			case CodegenPackage.REDUCE_FUNCTION: return createReduceFunction();
 			case CodegenPackage.PROGRAM: return createProgram();
 			case CodegenPackage.ALPHA_OP: return createAlphaOp();
 			case CodegenPackage.POLYNOMIAL_VISITOR: return createPolynomialVisitor();
@@ -135,6 +138,8 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 				return createISLQPolynomialFromString(eDataType, initialValue);
 			case CodegenPackage.ISL_TERM:
 				return createISLTermFromString(eDataType, initialValue);
+			case CodegenPackage.HASH_MAP:
+				return createHashMapFromString(eDataType, initialValue);
 			default:
 				throw new IllegalArgumentException("The datatype '" + eDataType.getName() + "' is not a valid classifier");
 		}
@@ -180,6 +185,8 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 				return convertISLQPolynomialToString(eDataType, instanceValue);
 			case CodegenPackage.ISL_TERM:
 				return convertISLTermToString(eDataType, instanceValue);
+			case CodegenPackage.HASH_MAP:
+				return convertHashMapToString(eDataType, instanceValue);
 			default:
 				throw new IllegalArgumentException("The datatype '" + eDataType.getName() + "' is not a valid classifier");
 		}
@@ -323,6 +330,16 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 	public EvalFunction createEvalFunction() {
 		EvalFunctionImpl evalFunction = new EvalFunctionImpl();
 		return evalFunction;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public ReduceFunction createReduceFunction() {
+		ReduceFunctionImpl reduceFunction = new ReduceFunctionImpl();
+		return reduceFunction;
 	}
 
 	/**
@@ -691,6 +708,24 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 	 */
 	public String convertISLTermToString(EDataType eDataType, Object instanceValue) {
 		return super.convertToString(eDataType, instanceValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public HashMap<?, ?> createHashMapFromString(EDataType eDataType, String initialValue) {
+		return (HashMap<?, ?>)super.createFromString(initialValue);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public String convertHashMapToString(EDataType eDataType, Object instanceValue) {
+		return super.convertToString(instanceValue);
 	}
 
 	/**

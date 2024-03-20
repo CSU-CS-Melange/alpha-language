@@ -122,6 +122,14 @@ public interface Visitor extends EObject {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @model rfUnique="false"
+	 * @generated
+	 */
+	void visitReduceFunction(ReduceFunction rf);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
 	 * @model cgvUnique="false"
 	 * @generated
 	 */
@@ -234,6 +242,14 @@ public interface Visitor extends EObject {
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
+	 * @model rfUnique="false"
+	 * @generated
+	 */
+	void inReduceFunction(ReduceFunction rf);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
 	 * @model cgvUnique="false"
 	 * @generated
 	 */
@@ -342,6 +358,14 @@ public interface Visitor extends EObject {
 	 * @generated
 	 */
 	void outEvalFunction(EvalFunction ef);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model rfUnique="false"
+	 * @generated
+	 */
+	void outReduceFunction(ReduceFunction rf);
 
 	/**
 	 * <!-- begin-user-doc -->

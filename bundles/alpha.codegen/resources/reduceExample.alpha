@@ -1,0 +1,5 @@
+affine reduceExample [N] -> {: N > 5}
+	inputs X: [N]
+	outputs Y: [N]
+	let Y = reduce(+, (i,j->i), {:0<=j<=i<N}: (i,j->j)@X);
+.

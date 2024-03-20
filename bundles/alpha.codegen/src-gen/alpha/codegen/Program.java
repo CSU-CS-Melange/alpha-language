@@ -3,7 +3,10 @@
 package alpha.codegen;
 
 import alpha.model.AlphaSystem;
+import alpha.model.ReduceExpression;
 import alpha.model.Variable;
+
+import java.util.HashMap;
 
 import org.eclipse.emf.common.util.EList;
 
@@ -21,6 +24,7 @@ import org.eclipse.emf.common.util.EList;
  *   <li>{@link alpha.codegen.Program#getCommonMacros <em>Common Macros</em>}</li>
  *   <li>{@link alpha.codegen.Program#getGlobalVariables <em>Global Variables</em>}</li>
  *   <li>{@link alpha.codegen.Program#getFunctions <em>Functions</em>}</li>
+ *   <li>{@link alpha.codegen.Program#getReduceFunctions <em>Reduce Functions</em>}</li>
  * </ul>
  *
  * @see alpha.codegen.CodegenPackage#getProgram()
@@ -105,6 +109,28 @@ public interface Program extends Node, Visitable {
 	 * @generated
 	 */
 	EList<Function> getFunctions();
+
+	/**
+	 * Returns the value of the '<em><b>Reduce Functions</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Reduce Functions</em>' attribute.
+	 * @see #setReduceFunctions(HashMap)
+	 * @see alpha.codegen.CodegenPackage#getProgram_ReduceFunctions()
+	 * @model unique="false" dataType="alpha.codegen.HashMap&lt;alpha.model.ReduceExpression, alpha.codegen.ReduceFunction&gt;"
+	 * @generated
+	 */
+	HashMap<ReduceExpression, ReduceFunction> getReduceFunctions();
+
+	/**
+	 * Sets the value of the '{@link alpha.codegen.Program#getReduceFunctions <em>Reduce Functions</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Reduce Functions</em>' attribute.
+	 * @see #getReduceFunctions()
+	 * @generated
+	 */
+	void setReduceFunctions(HashMap<ReduceExpression, ReduceFunction> value);
 
 	/**
 	 * <!-- begin-user-doc -->

@@ -975,6 +975,115 @@ public interface CodegenPackage extends EPackage {
 	int EVAL_FUNCTION_FEATURE_COUNT = FUNCTION_FEATURE_COUNT + 3;
 
 	/**
+	 * The meta object id for the '{@link alpha.codegen.impl.ReduceFunctionImpl <em>Reduce Function</em>}' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see alpha.codegen.impl.ReduceFunctionImpl
+	 * @see alpha.codegen.impl.CodegenPackageImpl#getReduceFunction()
+	 * @generated
+	 */
+	int REDUCE_FUNCTION = 17;
+
+	/**
+	 * The feature id for the '<em><b>Program</b></em>' container reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__PROGRAM = FUNCTION__PROGRAM;
+
+	/**
+	 * The feature id for the '<em><b>Return Type</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__RETURN_TYPE = FUNCTION__RETURN_TYPE;
+
+	/**
+	 * The feature id for the '<em><b>Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__NAME = FUNCTION__NAME;
+
+	/**
+	 * The feature id for the '<em><b>Scalar Args</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__SCALAR_ARGS = FUNCTION__SCALAR_ARGS;
+
+	/**
+	 * The feature id for the '<em><b>Array Args</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__ARRAY_ARGS = FUNCTION__ARRAY_ARGS;
+
+	/**
+	 * The feature id for the '<em><b>Memory Macros</b></em>' containment reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__MEMORY_MACROS = FUNCTION__MEMORY_MACROS;
+
+	/**
+	 * The feature id for the '<em><b>Body</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__BODY = FUNCTION__BODY;
+
+	/**
+	 * The feature id for the '<em><b>Reduce Expr</b></em>' reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__REDUCE_EXPR = FUNCTION_FEATURE_COUNT + 0;
+
+	/**
+	 * The feature id for the '<em><b>Reduce Var</b></em>' reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__REDUCE_VAR = FUNCTION_FEATURE_COUNT + 1;
+
+	/**
+	 * The feature id for the '<em><b>Macro Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__MACRO_NAME = FUNCTION_FEATURE_COUNT + 2;
+
+	/**
+	 * The number of structural features of the '<em>Reduce Function</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION_FEATURE_COUNT = FUNCTION_FEATURE_COUNT + 3;
+
+	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.ProgramImpl <em>Program</em>}' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -982,7 +1091,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getProgram()
 	 * @generated
 	 */
-	int PROGRAM = 17;
+	int PROGRAM = 18;
 
 	/**
 	 * The feature id for the '<em><b>System</b></em>' reference.
@@ -1030,13 +1139,22 @@ public interface CodegenPackage extends EPackage {
 	int PROGRAM__FUNCTIONS = NODE_FEATURE_COUNT + 4;
 
 	/**
+	 * The feature id for the '<em><b>Reduce Functions</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int PROGRAM__REDUCE_FUNCTIONS = NODE_FEATURE_COUNT + 5;
+
+	/**
 	 * The number of structural features of the '<em>Program</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int PROGRAM_FEATURE_COUNT = NODE_FEATURE_COUNT + 5;
+	int PROGRAM_FEATURE_COUNT = NODE_FEATURE_COUNT + 6;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.AlphaOpImpl <em>Alpha Op</em>}' class.
@@ -1046,7 +1164,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getAlphaOp()
 	 * @generated
 	 */
-	int ALPHA_OP = 18;
+	int ALPHA_OP = 19;
 
 	/**
 	 * The number of structural features of the '<em>Alpha Op</em>' class.
@@ -1065,7 +1183,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitor()
 	 * @generated
 	 */
-	int POLYNOMIAL_VISITOR = 19;
+	int POLYNOMIAL_VISITOR = 20;
 
 	/**
 	 * The number of structural features of the '<em>Polynomial Visitor</em>' class.
@@ -1084,7 +1202,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialNode()
 	 * @generated
 	 */
-	int POLYNOMIAL_NODE = 20;
+	int POLYNOMIAL_NODE = 21;
 
 	/**
 	 * The number of structural features of the '<em>Polynomial Node</em>' class.
@@ -1103,7 +1221,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitable()
 	 * @generated
 	 */
-	int POLYNOMIAL_VISITABLE = 21;
+	int POLYNOMIAL_VISITABLE = 22;
 
 	/**
 	 * The number of structural features of the '<em>Polynomial Visitable</em>' class.
@@ -1122,7 +1240,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomial()
 	 * @generated
 	 */
-	int POLYNOMIAL = 22;
+	int POLYNOMIAL = 23;
 
 	/**
 	 * The feature id for the '<em><b>Pieces</b></em>' containment reference list.
@@ -1159,7 +1277,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialPiece()
 	 * @generated
 	 */
-	int POLYNOMIAL_PIECE = 23;
+	int POLYNOMIAL_PIECE = 24;
 
 	/**
 	 * The feature id for the '<em><b>Polynomial</b></em>' container reference.
@@ -1205,7 +1323,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialTerm()
 	 * @generated
 	 */
-	int POLYNOMIAL_TERM = 24;
+	int POLYNOMIAL_TERM = 25;
 
 	/**
 	 * The feature id for the '<em><b>Polynomial Piece</b></em>' container reference.
@@ -1242,7 +1360,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getVariableType()
 	 * @generated
 	 */
-	int VARIABLE_TYPE = 25;
+	int VARIABLE_TYPE = 26;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.DataType <em>Data Type</em>}' enum.
@@ -1252,7 +1370,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getDataType()
 	 * @generated
 	 */
-	int DATA_TYPE = 26;
+	int DATA_TYPE = 27;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_UNARY_OP <em>CUNARY OP</em>}' enum.
@@ -1262,7 +1380,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_UNARY_OP()
 	 * @generated
 	 */
-	int CUNARY_OP = 27;
+	int CUNARY_OP = 28;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_BINARY_OP <em>CBINARY OP</em>}' enum.
@@ -1272,7 +1390,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_BINARY_OP()
 	 * @generated
 	 */
-	int CBINARY_OP = 28;
+	int CBINARY_OP = 29;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_REDUCTION_OP <em>CREDUCTION OP</em>}' enum.
@@ -1282,7 +1400,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_REDUCTION_OP()
 	 * @generated
 	 */
-	int CREDUCTION_OP = 29;
+	int CREDUCTION_OP = 30;
 
 	/**
 	 * The meta object id for the '<em>ISL Set</em>' data type.
@@ -1292,7 +1410,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLSet()
 	 * @generated
 	 */
-	int ISL_SET = 30;
+	int ISL_SET = 31;
 
 	/**
 	 * The meta object id for the '<em>ISL Map</em>' data type.
@@ -1302,7 +1420,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLMap()
 	 * @generated
 	 */
-	int ISL_MAP = 31;
+	int ISL_MAP = 32;
 
 	/**
 	 * The meta object id for the '<em>ISLAST Node</em>' data type.
@@ -1312,7 +1430,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLASTNode()
 	 * @generated
 	 */
-	int ISLAST_NODE = 32;
+	int ISLAST_NODE = 33;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff</em>' data type.
@@ -1322,7 +1440,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAff()
 	 * @generated
 	 */
-	int ISL_AFF = 33;
+	int ISL_AFF = 34;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff List</em>' data type.
@@ -1332,7 +1450,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAffList()
 	 * @generated
 	 */
-	int ISL_AFF_LIST = 34;
+	int ISL_AFF_LIST = 35;
 
 	/**
 	 * The meta object id for the '<em>ISL Dim Type</em>' data type.
@@ -1342,7 +1460,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLDimType()
 	 * @generated
 	 */
-	int ISL_DIM_TYPE = 35;
+	int ISL_DIM_TYPE = 36;
 
 	/**
 	 * The meta object id for the '<em>ISL FORMAT</em>' data type.
@@ -1352,7 +1470,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISL_FORMAT()
 	 * @generated
 	 */
-	int ISL_FORMAT = 36;
+	int ISL_FORMAT = 37;
 
 	/**
 	 * The meta object id for the '<em>ISLPWQ Polynomial</em>' data type.
@@ -1362,7 +1480,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLPWQPolynomial()
 	 * @generated
 	 */
-	int ISLPWQ_POLYNOMIAL = 37;
+	int ISLPWQ_POLYNOMIAL = 38;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial Piece</em>' data type.
@@ -1372,7 +1490,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomialPiece()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL_PIECE = 38;
+	int ISLQ_POLYNOMIAL_PIECE = 39;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial</em>' data type.
@@ -1382,7 +1500,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomial()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL = 39;
+	int ISLQ_POLYNOMIAL = 40;
 
 	/**
 	 * The meta object id for the '<em>ISL Term</em>' data type.
@@ -1392,7 +1510,17 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLTerm()
 	 * @generated
 	 */
-	int ISL_TERM = 40;
+	int ISL_TERM = 41;
+
+	/**
+	 * The meta object id for the '<em>Hash Map</em>' data type.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see java.util.HashMap
+	 * @see alpha.codegen.impl.CodegenPackageImpl#getHashMap()
+	 * @generated
+	 */
+	int HASH_MAP = 42;
 
 
 	/**
@@ -1973,6 +2101,49 @@ public interface CodegenPackage extends EPackage {
 	EReference getEvalFunction_Equation();
 
 	/**
+	 * Returns the meta object for class '{@link alpha.codegen.ReduceFunction <em>Reduce Function</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for class '<em>Reduce Function</em>'.
+	 * @see alpha.codegen.ReduceFunction
+	 * @generated
+	 */
+	EClass getReduceFunction();
+
+	/**
+	 * Returns the meta object for the reference '{@link alpha.codegen.ReduceFunction#getReduceExpr <em>Reduce Expr</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the reference '<em>Reduce Expr</em>'.
+	 * @see alpha.codegen.ReduceFunction#getReduceExpr()
+	 * @see #getReduceFunction()
+	 * @generated
+	 */
+	EReference getReduceFunction_ReduceExpr();
+
+	/**
+	 * Returns the meta object for the reference '{@link alpha.codegen.ReduceFunction#getReduceVar <em>Reduce Var</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the reference '<em>Reduce Var</em>'.
+	 * @see alpha.codegen.ReduceFunction#getReduceVar()
+	 * @see #getReduceFunction()
+	 * @generated
+	 */
+	EReference getReduceFunction_ReduceVar();
+
+	/**
+	 * Returns the meta object for the attribute '{@link alpha.codegen.ReduceFunction#getMacroName <em>Macro Name</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Macro Name</em>'.
+	 * @see alpha.codegen.ReduceFunction#getMacroName()
+	 * @see #getReduceFunction()
+	 * @generated
+	 */
+	EAttribute getReduceFunction_MacroName();
+
+	/**
 	 * Returns the meta object for class '{@link alpha.codegen.Program <em>Program</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -2036,6 +2207,17 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getProgram_Functions();
+
+	/**
+	 * Returns the meta object for the attribute '{@link alpha.codegen.Program#getReduceFunctions <em>Reduce Functions</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Reduce Functions</em>'.
+	 * @see alpha.codegen.Program#getReduceFunctions()
+	 * @see #getProgram()
+	 * @generated
+	 */
+	EAttribute getProgram_ReduceFunctions();
 
 	/**
 	 * Returns the meta object for class '{@link alpha.codegen.AlphaOp <em>Alpha Op</em>}'.
@@ -2354,6 +2536,17 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EDataType getISLTerm();
+
+	/**
+	 * Returns the meta object for data type '{@link java.util.HashMap <em>Hash Map</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for data type '<em>Hash Map</em>'.
+	 * @see java.util.HashMap
+	 * @model instanceClass="java.util.HashMap" typeParameters="K V"
+	 * @generated
+	 */
+	EDataType getHashMap();
 
 	/**
 	 * Returns the factory that creates the instances of the model.
@@ -2844,6 +3037,40 @@ public interface CodegenPackage extends EPackage {
 		EReference EVAL_FUNCTION__EQUATION = eINSTANCE.getEvalFunction_Equation();
 
 		/**
+		 * The meta object literal for the '{@link alpha.codegen.impl.ReduceFunctionImpl <em>Reduce Function</em>}' class.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see alpha.codegen.impl.ReduceFunctionImpl
+		 * @see alpha.codegen.impl.CodegenPackageImpl#getReduceFunction()
+		 * @generated
+		 */
+		EClass REDUCE_FUNCTION = eINSTANCE.getReduceFunction();
+
+		/**
+		 * The meta object literal for the '<em><b>Reduce Expr</b></em>' reference feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference REDUCE_FUNCTION__REDUCE_EXPR = eINSTANCE.getReduceFunction_ReduceExpr();
+
+		/**
+		 * The meta object literal for the '<em><b>Reduce Var</b></em>' reference feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference REDUCE_FUNCTION__REDUCE_VAR = eINSTANCE.getReduceFunction_ReduceVar();
+
+		/**
+		 * The meta object literal for the '<em><b>Macro Name</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute REDUCE_FUNCTION__MACRO_NAME = eINSTANCE.getReduceFunction_MacroName();
+
+		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.ProgramImpl <em>Program</em>}' class.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -2892,6 +3119,14 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EReference PROGRAM__FUNCTIONS = eINSTANCE.getProgram_Functions();
+
+		/**
+		 * The meta object literal for the '<em><b>Reduce Functions</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute PROGRAM__REDUCE_FUNCTIONS = eINSTANCE.getProgram_ReduceFunctions();
 
 		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.AlphaOpImpl <em>Alpha Op</em>}' class.
@@ -3178,6 +3413,16 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EDataType ISL_TERM = eINSTANCE.getISLTerm();
+
+		/**
+		 * The meta object literal for the '<em>Hash Map</em>' data type.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see java.util.HashMap
+		 * @see alpha.codegen.impl.CodegenPackageImpl#getHashMap()
+		 * @generated
+		 */
+		EDataType HASH_MAP = eINSTANCE.getHashMap();
 
 	}
 

@@ -14,9 +14,11 @@ import alpha.codegen.Polynomial;
 import alpha.codegen.PolynomialPiece;
 import alpha.codegen.PolynomialTerm;
 import alpha.codegen.Program;
+import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.VariableType;
 import alpha.codegen.util.CodegenUtil;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
 import alpha.model.util.AlphaUtil;
@@ -158,6 +160,22 @@ public class Factory {
       function.setFlagVariable(flagVar);
       function.setEquation(equation);
       CollectionExtensions.<MemoryMacro>addAll(function.getMemoryMacros(), localMemoryMacros);
+      _xblockexpression = function;
+    }
+    return _xblockexpression;
+  }
+
+  public static ReduceFunction createReduceFunction(final String name, final ReduceExpression reduceExpr, final BaseVariable reduceVar, final String macroName, final FunctionBody body, final BaseVariable[] scalarArguments) {
+    ReduceFunction _xblockexpression = null;
+    {
+      final ReduceFunction function = Factory.factory.createReduceFunction();
+      function.setReturnType(reduceVar.getElemType());
+      function.setName(name);
+      CollectionExtensions.<BaseVariable>addAll(function.getScalarArgs(), scalarArguments);
+      function.setBody(body);
+      function.setReduceExpr(reduceExpr);
+      function.setReduceVar(reduceVar);
+      function.setMacroName(macroName);
       _xblockexpression = function;
     }
     return _xblockexpression;

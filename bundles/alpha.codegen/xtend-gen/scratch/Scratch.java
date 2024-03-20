@@ -29,6 +29,18 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 public class Scratch {
   public static void main(final String[] args) {
     try {
+      final AlphaRoot root = AlphaLoader.loadAlpha("resources/reduceExample.alpha");
+      final AlphaSystem system = root.getSystem("reduceExample");
+      final TargetMapping tm = AlphaLoader.loadTargetMapping("resources/reduceExample.tm");
+      final Program program = WriteCProgram.build(system, tm);
+      InputOutput.<String>println(WriteC.<Program>print(program));
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public static void old2(final String[] args) {
+    try {
       final AlphaRoot root = AlphaLoader.loadAlpha("resources/star1d1r.alpha");
       final TargetMapping tm = AlphaLoader.loadTargetMapping("resources/star1d1r.tm");
       EList<AlphaSystem> _systems = root.getSystems();

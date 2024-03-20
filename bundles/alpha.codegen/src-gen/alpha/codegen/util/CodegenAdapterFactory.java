@@ -136,6 +136,10 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 				return createEvalFunctionAdapter();
 			}
 			@Override
+			public Adapter caseReduceFunction(ReduceFunction object) {
+				return createReduceFunctionAdapter();
+			}
+			@Override
 			public Adapter caseProgram(Program object) {
 				return createProgramAdapter();
 			}
@@ -422,6 +426,20 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createEvalFunctionAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link alpha.codegen.ReduceFunction <em>Reduce Function</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see alpha.codegen.ReduceFunction
+	 * @generated
+	 */
+	public Adapter createReduceFunctionAdapter() {
 		return null;
 	}
 

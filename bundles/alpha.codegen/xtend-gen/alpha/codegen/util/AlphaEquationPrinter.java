@@ -27,8 +27,12 @@ import alpha.model.StandardEquation;
 import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.util.ModelSwitch;
+import com.google.common.collect.Iterables;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -56,6 +60,20 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
       _xblockexpression = show.doSwitch(equation).toString();
     }
     return _xblockexpression;
+  }
+
+  public static String printExpression(final AlphaExpression expression, final Program program) {
+    String _xblockexpression = null;
+    {
+      final AlphaEquationPrinter show = new AlphaEquationPrinter(program);
+      _xblockexpression = show.doSwitch(expression).toString();
+    }
+    return _xblockexpression;
+  }
+
+  protected AlphaEquationPrinter(final Program program) {
+    this.lhs = null;
+    this.program = program;
   }
 
   public AlphaEquationPrinter(final StandardEquation equ, final Program program) {
@@ -224,7 +242,23 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
   }
 
   public String caseReduceExpression(final ReduceExpression re) {
-    return AlphaEquationPrinter.fault(re);
+    final String reduceFunctionName = this.program.getReduceFunctions().get(re).getName();
+    List<String> _paramNames = re.getContextDomain().getParamNames();
+    List<String> _indexNames = re.getContextDomain().getIndexNames();
+    final String arguments = IterableExtensions.join(Iterables.<String>concat(Collections.<List<String>>unmodifiableList(CollectionLiterals.<List<String>>newArrayList(_paramNames, _indexNames))), ",");
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append(reduceFunctionName);
+    _builder.append("(");
+    _builder.append(arguments);
+    _builder.append(");");
+    return _builder.toString();
+  }
+
+  public CharSequence caseRestrictExpression(final RestrictExpression re) {
+    StringConcatenation _builder = new StringConcatenation();
+    CharSequence _doSwitch = this.doSwitch(re.getExpr());
+    _builder.append(_doSwitch);
+    return _builder;
   }
 
   public String caseFuzzyReduceExpression(final FuzzyReduceExpression fre) {

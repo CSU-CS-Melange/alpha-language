@@ -30,6 +30,7 @@ import alpha.codegen.PolynomialTerm;
 import alpha.codegen.PolynomialVisitable;
 import alpha.codegen.PolynomialVisitor;
 import alpha.codegen.Program;
+import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.VariableType;
 import alpha.codegen.Visitable;
@@ -48,10 +49,13 @@ import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLTerm;
 
+import java.util.HashMap;
+
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EDataType;
 import org.eclipse.emf.ecore.EEnum;
+import org.eclipse.emf.ecore.EGenericType;
 import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
@@ -184,6 +188,13 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * @generated
 	 */
 	private EClass evalFunctionEClass = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass reduceFunctionEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -352,6 +363,13 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * @generated
 	 */
 	private EDataType islTermEDataType = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EDataType hashMapEDataType = null;
 
 	/**
 	 * Creates an instance of the model <b>Package</b>, registered with
@@ -909,6 +927,42 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EClass getReduceFunction() {
+		return reduceFunctionEClass;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EReference getReduceFunction_ReduceExpr() {
+		return (EReference)reduceFunctionEClass.getEStructuralFeatures().get(0);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EReference getReduceFunction_ReduceVar() {
+		return (EReference)reduceFunctionEClass.getEStructuralFeatures().get(1);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getReduceFunction_MacroName() {
+		return (EAttribute)reduceFunctionEClass.getEStructuralFeatures().get(2);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public EClass getProgram() {
 		return programEClass;
 	}
@@ -956,6 +1010,15 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 */
 	public EReference getProgram_Functions() {
 		return (EReference)programEClass.getEStructuralFeatures().get(4);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getProgram_ReduceFunctions() {
+		return (EAttribute)programEClass.getEStructuralFeatures().get(5);
 	}
 
 	/**
@@ -1233,6 +1296,15 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EDataType getHashMap() {
+		return hashMapEDataType;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public CodegenFactory getCodegenFactory() {
 		return (CodegenFactory)getEFactoryInstance();
 	}
@@ -1327,12 +1399,18 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		createEReference(evalFunctionEClass, EVAL_FUNCTION__FLAG_VARIABLE);
 		createEReference(evalFunctionEClass, EVAL_FUNCTION__EQUATION);
 
+		reduceFunctionEClass = createEClass(REDUCE_FUNCTION);
+		createEReference(reduceFunctionEClass, REDUCE_FUNCTION__REDUCE_EXPR);
+		createEReference(reduceFunctionEClass, REDUCE_FUNCTION__REDUCE_VAR);
+		createEAttribute(reduceFunctionEClass, REDUCE_FUNCTION__MACRO_NAME);
+
 		programEClass = createEClass(PROGRAM);
 		createEReference(programEClass, PROGRAM__SYSTEM);
 		createEReference(programEClass, PROGRAM__INCLUDES);
 		createEReference(programEClass, PROGRAM__COMMON_MACROS);
 		createEReference(programEClass, PROGRAM__GLOBAL_VARIABLES);
 		createEReference(programEClass, PROGRAM__FUNCTIONS);
+		createEAttribute(programEClass, PROGRAM__REDUCE_FUNCTIONS);
 
 		alphaOpEClass = createEClass(ALPHA_OP);
 
@@ -1374,6 +1452,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		islqPolynomialPieceEDataType = createEDataType(ISLQ_POLYNOMIAL_PIECE);
 		islqPolynomialEDataType = createEDataType(ISLQ_POLYNOMIAL);
 		islTermEDataType = createEDataType(ISL_TERM);
+		hashMapEDataType = createEDataType(HASH_MAP);
 	}
 
 	/**
@@ -1404,6 +1483,8 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		ModelPackage theModelPackage = (ModelPackage)EPackage.Registry.INSTANCE.getEPackage(ModelPackage.eNS_URI);
 
 		// Create type parameters
+		addETypeParameter(hashMapEDataType, "K");
+		addETypeParameter(hashMapEDataType, "V");
 
 		// Set bounds for type parameters
 
@@ -1428,6 +1509,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		functionEClass.getESuperTypes().add(this.getNode());
 		functionEClass.getESuperTypes().add(this.getVisitable());
 		evalFunctionEClass.getESuperTypes().add(this.getFunction());
+		reduceFunctionEClass.getESuperTypes().add(this.getFunction());
 		programEClass.getESuperTypes().add(this.getNode());
 		programEClass.getESuperTypes().add(this.getVisitable());
 		polynomialEClass.getESuperTypes().add(this.getPolynomialNode());
@@ -1488,6 +1570,9 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		op = addEOperation(visitorEClass, null, "visitEvalFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getEvalFunction(), "ef", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		op = addEOperation(visitorEClass, null, "visitReduceFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getReduceFunction(), "rf", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		op = addEOperation(visitorEClass, null, "visitGlobalVariable", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getGlobalVariable(), "cgv", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
@@ -1530,6 +1615,9 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		op = addEOperation(visitorEClass, null, "inEvalFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getEvalFunction(), "ef", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		op = addEOperation(visitorEClass, null, "inReduceFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getReduceFunction(), "rf", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		op = addEOperation(visitorEClass, null, "inGlobalVariable", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getGlobalVariable(), "cgv", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
@@ -1571,6 +1659,9 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		op = addEOperation(visitorEClass, null, "outEvalFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getEvalFunction(), "ef", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		op = addEOperation(visitorEClass, null, "outReduceFunction", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getReduceFunction(), "rf", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		op = addEOperation(visitorEClass, null, "outGlobalVariable", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getGlobalVariable(), "cgv", 0, 1, !IS_UNIQUE, IS_ORDERED);
@@ -1712,12 +1803,26 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		op = addEOperation(evalFunctionEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		initEClass(reduceFunctionEClass, ReduceFunction.class, "ReduceFunction", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEReference(getReduceFunction_ReduceExpr(), theModelPackage.getReduceExpression(), null, "reduceExpr", null, 0, 1, ReduceFunction.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getReduceFunction_ReduceVar(), this.getBaseVariable(), null, "reduceVar", null, 0, 1, ReduceFunction.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getReduceFunction_MacroName(), theEcorePackage.getEString(), "macroName", null, 0, 1, ReduceFunction.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
+		op = addEOperation(reduceFunctionEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		initEClass(programEClass, Program.class, "Program", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getProgram_System(), theModelPackage.getAlphaSystem(), null, "system", null, 0, 1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getProgram_Includes(), this.getInclude(), this.getInclude_Program(), "includes", null, 0, -1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getProgram_CommonMacros(), this.getGlobalMacro(), this.getGlobalMacro_Program(), "commonMacros", null, 0, -1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getProgram_GlobalVariables(), this.getGlobalVariable(), this.getGlobalVariable_Program(), "globalVariables", null, 0, -1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getProgram_Functions(), this.getFunction(), this.getFunction_Program(), "functions", null, 0, -1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		EGenericType g1 = createEGenericType(this.getHashMap());
+		EGenericType g2 = createEGenericType(theModelPackage.getReduceExpression());
+		g1.getETypeArguments().add(g2);
+		g2 = createEGenericType(this.getReduceFunction());
+		g1.getETypeArguments().add(g2);
+		initEAttribute(getProgram_ReduceFunctions(), g1, "reduceFunctions", null, 0, 1, Program.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		op = addEOperation(programEClass, this.getGlobalVariable(), "getGlobalVariable", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, theModelPackage.getVariable(), "alphaVar", 0, 1, !IS_UNIQUE, IS_ORDERED);
@@ -1877,6 +1982,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		initEDataType(islqPolynomialPieceEDataType, ISLQPolynomialPiece.class, "ISLQPolynomialPiece", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 		initEDataType(islqPolynomialEDataType, ISLQPolynomial.class, "ISLQPolynomial", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 		initEDataType(islTermEDataType, ISLTerm.class, "ISLTerm", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
+		initEDataType(hashMapEDataType, HashMap.class, "HashMap", IS_SERIALIZABLE, !IS_GENERATED_INSTANCE_CLASS);
 
 		// Create resource
 		createResource(eNS_URI);

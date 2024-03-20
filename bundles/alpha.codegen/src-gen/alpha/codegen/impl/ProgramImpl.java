@@ -8,17 +8,20 @@ import alpha.codegen.GlobalMacro;
 import alpha.codegen.GlobalVariable;
 import alpha.codegen.Include;
 import alpha.codegen.Program;
+import alpha.codegen.ReduceFunction;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
 
 import alpha.codegen.show.WriteC;
 
 import alpha.model.AlphaSystem;
+import alpha.model.ReduceExpression;
 import alpha.model.Variable;
 
 import com.google.common.base.Objects;
 
 import java.util.Collection;
+import java.util.HashMap;
 
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.common.notify.NotificationChain;
@@ -50,6 +53,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  *   <li>{@link alpha.codegen.impl.ProgramImpl#getCommonMacros <em>Common Macros</em>}</li>
  *   <li>{@link alpha.codegen.impl.ProgramImpl#getGlobalVariables <em>Global Variables</em>}</li>
  *   <li>{@link alpha.codegen.impl.ProgramImpl#getFunctions <em>Functions</em>}</li>
+ *   <li>{@link alpha.codegen.impl.ProgramImpl#getReduceFunctions <em>Reduce Functions</em>}</li>
  * </ul>
  *
  * @generated
@@ -104,6 +108,16 @@ public class ProgramImpl extends NodeImpl implements Program {
 	 * @ordered
 	 */
 	protected EList<Function> functions;
+
+	/**
+	 * The cached value of the '{@link #getReduceFunctions() <em>Reduce Functions</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getReduceFunctions()
+	 * @generated
+	 * @ordered
+	 */
+	protected HashMap<ReduceExpression, ReduceFunction> reduceFunctions;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -215,6 +229,27 @@ public class ProgramImpl extends NodeImpl implements Program {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public HashMap<ReduceExpression, ReduceFunction> getReduceFunctions() {
+		return reduceFunctions;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setReduceFunctions(HashMap<ReduceExpression, ReduceFunction> newReduceFunctions) {
+		HashMap<ReduceExpression, ReduceFunction> oldReduceFunctions = reduceFunctions;
+		reduceFunctions = newReduceFunctions;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.PROGRAM__REDUCE_FUNCTIONS, oldReduceFunctions, reduceFunctions));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public GlobalVariable getGlobalVariable(final Variable alphaVar) {
 		GlobalVariable _xblockexpression = null;
 		{
@@ -308,6 +343,8 @@ public class ProgramImpl extends NodeImpl implements Program {
 				return getGlobalVariables();
 			case CodegenPackage.PROGRAM__FUNCTIONS:
 				return getFunctions();
+			case CodegenPackage.PROGRAM__REDUCE_FUNCTIONS:
+				return getReduceFunctions();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -340,6 +377,9 @@ public class ProgramImpl extends NodeImpl implements Program {
 				getFunctions().clear();
 				getFunctions().addAll((Collection<? extends Function>)newValue);
 				return;
+			case CodegenPackage.PROGRAM__REDUCE_FUNCTIONS:
+				setReduceFunctions((HashMap<ReduceExpression, ReduceFunction>)newValue);
+				return;
 		}
 		super.eSet(featureID, newValue);
 	}
@@ -367,6 +407,9 @@ public class ProgramImpl extends NodeImpl implements Program {
 			case CodegenPackage.PROGRAM__FUNCTIONS:
 				getFunctions().clear();
 				return;
+			case CodegenPackage.PROGRAM__REDUCE_FUNCTIONS:
+				setReduceFunctions((HashMap<ReduceExpression, ReduceFunction>)null);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -389,8 +432,26 @@ public class ProgramImpl extends NodeImpl implements Program {
 				return globalVariables != null && !globalVariables.isEmpty();
 			case CodegenPackage.PROGRAM__FUNCTIONS:
 				return functions != null && !functions.isEmpty();
+			case CodegenPackage.PROGRAM__REDUCE_FUNCTIONS:
+				return reduceFunctions != null;
 		}
 		return super.eIsSet(featureID);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public String toString() {
+		if (eIsProxy()) return super.toString();
+
+		StringBuilder result = new StringBuilder(super.toString());
+		result.append(" (reduceFunctions: ");
+		result.append(reduceFunctions);
+		result.append(')');
+		return result.toString();
 	}
 
 } //ProgramImpl

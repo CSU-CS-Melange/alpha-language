@@ -16,8 +16,16 @@ import alpha.model.transformation.Normalize
 
 class Scratch {
 	
-	
 	def static void main(String[] args) {
+		val root = AlphaLoader.loadAlpha('resources/reduceExample.alpha')
+		val system = root.getSystem('reduceExample')
+		val tm = AlphaLoader.loadTargetMapping('resources/reduceExample.tm')
+		val program = WriteCProgram.build(system, tm)
+		println(WriteC.print(program))
+	}
+	
+	
+	def static void old2(String[] args) {
 		
 		val root = AlphaLoader.loadAlpha('resources/star1d1r.alpha')
 		//val root = AlphaLoader.loadAlpha('resources/ex.alpha')

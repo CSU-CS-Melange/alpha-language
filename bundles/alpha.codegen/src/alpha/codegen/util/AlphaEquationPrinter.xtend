@@ -1,35 +1,45 @@
 package alpha.codegen.util
 
-import static extension alpha.codegen.util.ISLPrintingUtils.*
-import static extension alpha.codegen.util.AlphaOp.*
-import static extension alpha.model.util.AlphaUtil.*
-import alpha.model.util.ModelSwitch
 import alpha.codegen.Program
-import alpha.model.ConstantExpression
 import alpha.model.AlphaExpression
-import alpha.model.AlphaExpressionVisitable
-import alpha.model.RestrictExpression
 import alpha.model.AutoRestrictExpression
+import alpha.model.BinaryExpression
+import alpha.model.BooleanExpression
 import alpha.model.CaseExpression
-import alpha.model.IfExpression
+import alpha.model.ConstantExpression
+import alpha.model.ConvolutionExpression
 import alpha.model.DependenceExpression
 import alpha.model.FuzzyDependenceExpression
-import alpha.model.ReduceExpression
-import alpha.model.FuzzyReduceExpression
-import alpha.model.ConvolutionExpression
-import alpha.model.UnaryExpression
-import alpha.model.BinaryExpression
-import alpha.model.MultiArgExpression
-import alpha.model.SelectExpression
-import alpha.model.IndexExpression
-import alpha.model.PolynomialIndexExpression
 import alpha.model.FuzzyIndexExpression
-import alpha.model.VariableExpression
+import alpha.model.FuzzyReduceExpression
+import alpha.model.IfExpression
+import alpha.model.IndexExpression
 import alpha.model.IntegerExpression
+import alpha.model.MultiArgExpression
+import alpha.model.PolynomialIndexExpression
 import alpha.model.RealExpression
-import alpha.model.BooleanExpression
+import alpha.model.ReduceExpression
+import alpha.model.RestrictExpression
+import alpha.model.SelectExpression
 import alpha.model.StandardEquation
-import alpha.model.util.AShow
+import alpha.model.UnaryExpression
+import alpha.model.VariableExpression
+import alpha.model.util.ModelSwitch
+
+import static extension alpha.codegen.factory.Factory.*
+import static extension alpha.codegen.util.AlphaOp.*
+import static extension alpha.codegen.util.CodegenUtil.*
+import static extension alpha.codegen.util.ISLPrintingUtils.*
+import alpha.codegen.BaseVariable
+import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLASTBuild
+import fr.irisa.cairn.jnimap.isl.ISLASTNode
+import alpha.codegen.DataType
 
 /**
  * Prints an Alpha expression as C code, intended to be used by the
@@ -49,6 +59,16 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	static def printStandardEquation(StandardEquation equation, Program program) {
 		val show = new AlphaEquationPrinter(equation, program);
 		show.doSwitch(equation).toString()
+	}
+	
+	static def printExpression(AlphaExpression expression, Program program) {
+		val show = new AlphaEquationPrinter(program)
+		show.doSwitch(expression).toString()
+	}
+	
+	protected new(Program program) {
+		lhs = null
+		this.program = program
 	}
 	
 	new(StandardEquation equ, Program program) {
@@ -130,7 +150,16 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	}
 	
 	def caseReduceExpression(ReduceExpression re) {
-		fault(re)
+		// Emit a call to the function.
+		val reduceFunctionName = program.reduceFunctions.get(re).name
+		val arguments = #[re.contextDomain.paramNames, re.contextDomain.indexNames]
+			.flatten
+			.join(',')
+		return '''«reduceFunctionName»(«arguments»);'''
+	}
+	
+	def caseRestrictExpression(RestrictExpression re) {
+		'''«re.expr.doSwitch»'''
 	}
 	
 	def caseFuzzyReduceExpression(FuzzyReduceExpression fre) {

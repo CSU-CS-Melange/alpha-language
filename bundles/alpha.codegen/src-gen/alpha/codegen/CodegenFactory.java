@@ -148,6 +148,15 @@ public interface CodegenFactory extends EFactory {
 	EvalFunction createEvalFunction();
 
 	/**
+	 * Returns a new object of class '<em>Reduce Function</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Reduce Function</em>'.
+	 * @generated
+	 */
+	ReduceFunction createReduceFunction();
+
+	/**
 	 * Returns a new object of class '<em>Program</em>'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

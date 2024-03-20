@@ -207,6 +207,15 @@ public class CodegenSwitch<T> extends Switch<T> {
 				if (result == null) result = defaultCase(theEObject);
 				return result;
 			}
+			case CodegenPackage.REDUCE_FUNCTION: {
+				ReduceFunction reduceFunction = (ReduceFunction)theEObject;
+				T result = caseReduceFunction(reduceFunction);
+				if (result == null) result = caseFunction(reduceFunction);
+				if (result == null) result = caseNode(reduceFunction);
+				if (result == null) result = caseVisitable(reduceFunction);
+				if (result == null) result = defaultCase(theEObject);
+				return result;
+			}
 			case CodegenPackage.PROGRAM: {
 				Program program = (Program)theEObject;
 				T result = caseProgram(program);
@@ -519,6 +528,21 @@ public class CodegenSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T caseEvalFunction(EvalFunction object) {
+		return null;
+	}
+
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Reduce Function</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Reduce Function</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseReduceFunction(ReduceFunction object) {
 		return null;
 	}
 

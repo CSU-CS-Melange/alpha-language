@@ -6,10 +6,13 @@ import alpha.codegen.DataType;
 import alpha.codegen.EvalFunction;
 import alpha.codegen.Function;
 import alpha.codegen.MemoryMacro;
+import alpha.codegen.ReduceFunction;
 import alpha.codegen.Visitable;
 import alpha.codegen.util.AlphaEquationPrinter;
 import alpha.codegen.util.ISLPrintingUtils;
+import alpha.model.REDUCTION_OP;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -164,6 +167,49 @@ public class WriteC extends Base {
     return _builder;
   }
 
+  public CharSequence caseReduceFunction(final ReduceFunction rf) {
+    StringConcatenation _builder = new StringConcatenation();
+    CharSequence _signature = this.signature(rf);
+    _builder.append(_signature);
+    _builder.append(" {");
+    _builder.newLineIfNotEmpty();
+    _builder.append("\t");
+    CharSequence _localDefinition = this.localDefinition(rf.getReduceVar());
+    _builder.append(_localDefinition, "\t");
+    _builder.append(" = ");
+    String _reductionInitializer = this.getReductionInitializer(rf.getReduceExpr().getOperator(), rf.getReduceVar().getElemType());
+    _builder.append(_reductionInitializer, "\t");
+    _builder.append(";");
+    _builder.newLineIfNotEmpty();
+    _builder.append("\t");
+    _builder.append("{");
+    _builder.newLine();
+    _builder.append("\t\t");
+    _builder.append("#define ");
+    CharSequence _reduceMacroLeftSide = this.getReduceMacroLeftSide(rf);
+    _builder.append(_reduceMacroLeftSide, "\t\t");
+    _builder.append(" ");
+    CharSequence _reduceMacroRightSide = this.getReduceMacroRightSide(rf);
+    _builder.append(_reduceMacroRightSide, "\t\t");
+    _builder.newLineIfNotEmpty();
+    _builder.append("\t\t");
+    CharSequence _doSwitch = this.doSwitch(rf.getBody());
+    _builder.append(_doSwitch, "\t\t");
+    _builder.newLineIfNotEmpty();
+    _builder.append("\t");
+    _builder.append("}");
+    _builder.newLine();
+    _builder.append("\t");
+    _builder.append("return ");
+    String _name = rf.getReduceVar().getName();
+    _builder.append(_name, "\t");
+    _builder.append(";");
+    _builder.newLineIfNotEmpty();
+    _builder.append("}");
+    _builder.newLine();
+    return _builder;
+  }
+
   @Override
   public CharSequence signature(final Function f) {
     StringConcatenation _builder = new StringConcatenation();
@@ -180,5 +226,247 @@ public class WriteC extends Base {
     _builder.append(_join);
     _builder.append(")");
     return _builder;
+  }
+
+  public CharSequence getReduceMacroLeftSide(final ReduceFunction rf) {
+    StringConcatenation _builder = new StringConcatenation();
+    String _macroName = rf.getMacroName();
+    _builder.append(_macroName);
+    _builder.append("(");
+    String _join = IterableExtensions.join(rf.getReduceExpr().getBody().getContextDomain().getIndexNames(), ",");
+    _builder.append(_join);
+    _builder.append(")");
+    return _builder;
+  }
+
+  public CharSequence getReduceMacroRightSide(final ReduceFunction rf) {
+    try {
+      CharSequence _xblockexpression = null;
+      {
+        final REDUCTION_OP operator = rf.getReduceExpr().getOperator();
+        final String reduceVar = rf.getReduceVar().getName();
+        final String addedExpression = AlphaEquationPrinter.printExpression(rf.getReduceExpr().getBody(), rf.getProgram());
+        CharSequence _switchResult = null;
+        if (operator != null) {
+          switch (operator) {
+            case MIN:
+              StringConcatenation _builder = new StringConcatenation();
+              _builder.append(reduceVar);
+              _builder.append(" = min(");
+              _builder.append(reduceVar);
+              _builder.append(", (");
+              _builder.append(addedExpression);
+              _builder.append("))");
+              _switchResult = _builder;
+              break;
+            case MAX:
+              StringConcatenation _builder_1 = new StringConcatenation();
+              _builder_1.append(reduceVar);
+              _builder_1.append(" = max(");
+              _builder_1.append(reduceVar);
+              _builder_1.append(", (");
+              _builder_1.append(addedExpression);
+              _builder_1.append("))");
+              _switchResult = _builder_1;
+              break;
+            case SUM:
+              StringConcatenation _builder_2 = new StringConcatenation();
+              _builder_2.append(reduceVar);
+              _builder_2.append(" += (");
+              _builder_2.append(addedExpression);
+              _builder_2.append(")");
+              _switchResult = _builder_2;
+              break;
+            case PROD:
+              StringConcatenation _builder_3 = new StringConcatenation();
+              _builder_3.append(reduceVar);
+              _builder_3.append(" *= (");
+              _builder_3.append(addedExpression);
+              _builder_3.append(")");
+              _switchResult = _builder_3;
+              break;
+            case AND:
+              StringConcatenation _builder_4 = new StringConcatenation();
+              _builder_4.append(reduceVar);
+              _builder_4.append(" &= (");
+              _builder_4.append(addedExpression);
+              _builder_4.append(")");
+              _switchResult = _builder_4;
+              break;
+            case OR:
+              StringConcatenation _builder_5 = new StringConcatenation();
+              _builder_5.append(reduceVar);
+              _builder_5.append(" |= (");
+              _builder_5.append(addedExpression);
+              _builder_5.append(")");
+              _switchResult = _builder_5;
+              break;
+            default:
+              String _string = operator.toString();
+              String _plus = ("Cannot generate code for reduction operator: " + _string);
+              throw new Exception(_plus);
+          }
+        } else {
+          String _string = operator.toString();
+          String _plus = ("Cannot generate code for reduction operator: " + _string);
+          throw new Exception(_plus);
+        }
+        _xblockexpression = _switchResult;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public String getReductionInitializer(final REDUCTION_OP operator, final DataType type) {
+    try {
+      String _switchResult = null;
+      if (operator != null) {
+        switch (operator) {
+          case MIN:
+            _switchResult = this.getNegativeInfinityValue(type);
+            break;
+          case MAX:
+            _switchResult = this.getInfinityValue(type);
+            break;
+          case SUM:
+            _switchResult = this.getZeroValue(type);
+            break;
+          case PROD:
+            _switchResult = this.getOneValue(type);
+            break;
+          case AND:
+            _switchResult = "true";
+            break;
+          case OR:
+            _switchResult = "false";
+            break;
+          default:
+            throw new Exception(("There is no initializer for reduction operator: " + operator));
+        }
+      } else {
+        throw new Exception(("There is no initializer for reduction operator: " + operator));
+      }
+      return _switchResult;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public String getZeroValue(final DataType type) {
+    try {
+      String _switchResult = null;
+      if (type != null) {
+        switch (type) {
+          case INT:
+            _switchResult = "0";
+            break;
+          case LONG:
+            _switchResult = "0L";
+            break;
+          case FLOAT:
+            _switchResult = "0.0f";
+            break;
+          case DOUBLE:
+            _switchResult = "0.0";
+            break;
+          default:
+            throw new Exception(("There is no \'0\' value for type: " + type));
+        }
+      } else {
+        throw new Exception(("There is no \'0\' value for type: " + type));
+      }
+      return _switchResult;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public String getOneValue(final DataType type) {
+    try {
+      String _switchResult = null;
+      if (type != null) {
+        switch (type) {
+          case INT:
+            _switchResult = "1";
+            break;
+          case LONG:
+            _switchResult = "1L";
+            break;
+          case FLOAT:
+            _switchResult = "1.0f";
+            break;
+          case DOUBLE:
+            _switchResult = "1.0";
+            break;
+          default:
+            throw new Exception(("There is no \'1\' value for type: " + type));
+        }
+      } else {
+        throw new Exception(("There is no \'1\' value for type: " + type));
+      }
+      return _switchResult;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public String getInfinityValue(final DataType type) {
+    try {
+      String _switchResult = null;
+      if (type != null) {
+        switch (type) {
+          case INT:
+            _switchResult = "INT_MAX";
+            break;
+          case LONG:
+            _switchResult = "LONG_MAX";
+            break;
+          case FLOAT:
+            _switchResult = "FLT_MAX";
+            break;
+          case DOUBLE:
+            _switchResult = "DBL_MAX";
+            break;
+          default:
+            throw new Exception(("There is no infinity value for type: " + type));
+        }
+      } else {
+        throw new Exception(("There is no infinity value for type: " + type));
+      }
+      return _switchResult;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public String getNegativeInfinityValue(final DataType type) {
+    try {
+      String _switchResult = null;
+      if (type != null) {
+        switch (type) {
+          case INT:
+            _switchResult = "INT_MIN";
+            break;
+          case LONG:
+            _switchResult = "LONG_MIN";
+            break;
+          case FLOAT:
+            _switchResult = "FLT_MIN";
+            break;
+          case DOUBLE:
+            _switchResult = "DBL_MIN";
+            break;
+          default:
+            throw new Exception(("There is no negative infinity value for type: " + type));
+        }
+      } else {
+        throw new Exception(("There is no negative infinity value for type: " + type));
+      }
+      return _switchResult;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 }

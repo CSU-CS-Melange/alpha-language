@@ -28,6 +28,8 @@ import fr.irisa.cairn.jnimap.isl.ISLTerm
 
 import static extension alpha.codegen.util.CodegenUtil.*
 import static extension alpha.model.util.AlphaUtil.*
+import alpha.model.ReduceExpression
+import alpha.codegen.ReduceFunction
 
 class Factory {
 	
@@ -112,6 +114,19 @@ class Factory {
 		function.equation = equation
 		function.memoryMacros.addAll(localMemoryMacros)
 				
+		function
+	}
+	
+	def static ReduceFunction createReduceFunction(String name, ReduceExpression reduceExpr, BaseVariable reduceVar, String macroName, FunctionBody body, BaseVariable[] scalarArguments) {
+		val function = factory.createReduceFunction
+		function.returnType = reduceVar.elemType
+		function.name = name
+		function.scalarArgs.addAll(scalarArguments)
+		function.body = body
+		function.reduceExpr = reduceExpr
+		function.reduceVar = reduceVar
+		function.macroName = macroName
+		
 		function
 	}
 	
