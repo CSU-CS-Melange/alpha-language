@@ -1,0 +1,29 @@
+affine topLevelReduction [N] -> {:N>10}
+	inputs	A: [N,N]
+	outputs X: [N]
+	let		X = reduce(+, (i,j->i), A[i,j]);
+.
+
+affine reductionInsideDependence [N] -> {:N>10}
+	inputs	A: [N,N]
+	outputs X: [N]
+	let		X = (a->N-a-1)@reduce(+, (i,j->i), A[i,j]);
+.
+
+affine nestedReduction_01 [N] -> {:N>10}
+	inputs 	A,B: [N,N]
+	outputs X: [N]
+	let		X = reduce(max, (i,j->i), reduce(+, (i,j,k->i,j), A[i,k]*B[k,j]));
+.
+
+affine nestedReduction_02 [N] -> {:N>10}
+	inputs 	A,B: [N,N]
+	outputs X: [N]
+	let		X = reduce(max, (i,j->i), reduce(+, (i,j,k->i,j), reduce(*, (i,j,k,l->i,j,k), A[i,j]*B[k,l])));
+.
+
+affine nestedReduction_03 [N] -> {:N>10}
+	inputs 	A,B,C: [N,N]
+	outputs X: [N]
+	let		X = reduce(max, (i,j->i), C[i,j] * reduce(+, (i,j,k->i,j), C[j,k] * reduce(*, (i,j,k,l->i,j,k), A[i,j]*B[k,l])));
+.

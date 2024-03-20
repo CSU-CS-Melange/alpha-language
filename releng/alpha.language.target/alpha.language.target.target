@@ -4,18 +4,18 @@
 <!-- GeCoS -->
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="fr.irisa.cairn.gecos.tools.jnimapper.feature.feature.group" range="[1.2.0,2.0.0)"/>
-<repository location="https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-jnimapper/artifacts/"/>
+<repository location="https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-jnimapper/artifacts/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="fr.irisa.cairn.gecos.tools.emf.feature.feature.group" range="[1.0.1,2.0.0)"/>
-<repository location="https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-emf/artifacts/"/>
+<repository location="https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-emf/artifacts/"/>
 </location>
 
 <!-- ISL -->
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="fr.irisa.cairn.gecos.tools.isl.feature.feature.group" range="[1.8.1,2.0.0)"/>
 <unit id="fr.irisa.cairn.gecos.tools.barvinok.feature.feature.group" range="[1.8.1,2.0.0)"/>
-<repository location="https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-isl/artifacts/"/>
+<repository location="https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-isl/artifacts/"/>
 </location>
 
 <!-- Eclipse/Xtend/Xtext -->
@@ -33,13 +33,13 @@
 <!-- TomMapping -->
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="fr.irisa.cairn.gecos.tools.tommapping.feature.feature.group" />
-<repository location="https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tommapping/artifacts/"/>
+<repository location="https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tommapping/artifacts/"/>
 </location>
 
 <!-- Tom SDK -->
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="fr.irisa.cairn.gecos.tools.tomsdk.feature.feature.group"/>
-<repository location="https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tomsdk/artifacts/"/>
+<repository location="https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tomsdk/artifacts/"/>
 </location>
 
 <!-- Groovy -->

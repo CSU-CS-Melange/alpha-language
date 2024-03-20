@@ -1,0 +1,63 @@
+name: deploy
+
+on:
+  push:
+    branches:
+    - main
+  schedule:
+  - cron:  '0 8 * * *'  # 3am MT, 9am UTC
+
+jobs:
+
+  build:
+    uses: csu-cs-melange/alpha-language/.github/workflows/build.yml@main
+
+  deploy:
+    needs: 
+    - build
+
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    runs-on: self-hosted
+    container: ghcr.io/csu-cs-melange/alpha-language-image:latest
+
+    steps:
+    - name: Cache alpha language plugin
+      id: cache-plugin
+      uses: actions/cache@v3
+      with:
+        path: ./releng/alpha.language.update/target/repository
+        key: cache-plugin
+
+    - name: Set SHORT_SHA 
+      run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+    - name: Make downloads directory
+      run: mkdir -p ./releng/alpha.language.update/target/repository/downloads
+
+    - name: make update-site readme
+      run: ./scripts/make-update-site-readme.sh
+ 
+    - name: build update-site
+      uses: actions/jekyll-build-pages@v1
+      with:
+        source: "./releng/alpha.language.update/target/repository"
+        destination: "./update-site"
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: "./update-site"
+
+    - name: deploy update-site
+      id: deployment
+      uses: actions/deploy-pages@v2 # or the latest "vX.X.X" version tag for this action
+
+
+

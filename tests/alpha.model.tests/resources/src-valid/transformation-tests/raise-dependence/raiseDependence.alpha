@@ -1,0 +1,141 @@
+package alpha.model.tests.transformations.raiseDependence {
+	////////////////////////////////////////////////////////////
+	// Constant, Variable, and Index Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine wrapConstantExpression_01 [N] -> {: N > 0}
+		outputs X: {}
+		let     X = 7;
+	.
+	
+	affine wrapVariableExpression_01 [N] -> {: N > 0}
+		inputs  A: [N]
+		outputs X: [N]
+		let     X = A;
+	.
+	
+	affine wrapVariableExpression_02 [N] -> {: N > 0}
+		inputs  A: [N]
+		outputs X: [N]
+		let     X[i] = A[N-i-1];
+	.
+	
+	affine wrapIndexExpression_01 [N] -> {: N > 0}
+		outputs X: [N]
+		let     X[i] = val[2i+N];
+	.
+	
+	affine wrapIndexExpression_02 [N] -> {: N > 0}
+		outputs X: [N]
+		let     X[i] = (i -> N-i)@(val (j -> 2j));
+	.
+	
+	
+	////////////////////////////////////////////////////////////
+	// Dependence Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine nestedDependenceFunction_01 [N] -> {: N > 0}
+		inputs  A: [2N]
+		outputs X: [N]
+		let     X = (i->2i)@(j->2N-j-1)@A;
+	.
+	
+	
+	////////////////////////////////////////////////////////////
+	// Restrict and Auto-Restrict Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine restrictExpression_01 [N] -> {: N > 0}
+		inputs  A: {[i]: 0 <= i < 3N}
+		outputs X: {[i]: N <= i < 2N}
+		let     X[i] = case { {[i]: i>=N}: A[i-N]; };
+	.
+	
+	affine autoRestrictExpression_01 [N] -> {: N > 0}
+		inputs  A: {[i]: 0 <= i < 3N}
+		outputs X: {[i]: N <= i < 2N}
+		let		X[i] = case { auto: A[i-N]; };
+	.
+	
+	affine autoRestrictExpression_02 [N] -> {: N > 10}
+		inputs  A: [N]
+		outputs X: [N]
+		let
+		X[i] = case {
+			{[i]: i < 5}: A[N-i-1];
+			auto: A[N-i+2];
+		};
+	.
+	
+	
+	////////////////////////////////////////////////////////////
+	// Unary Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine unaryExpression_01 [N] -> {: N > 0}
+		inputs  A: [N]
+		outputs X: [N]
+		let     X[i] = - (A[N-i-1]);
+	.
+	
+	
+	////////////////////////////////////////////////////////////
+	// Binary Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine simpleBinaryExpression_01 [N] -> {: N > 0}
+		inputs  A: [N]
+				B: [2N]
+		outputs X: [N]
+		let     X[i] = A[N-i-1] + B[2i];
+	.
+	
+	affine binaryExpressionBecomesNested_01 [N] -> {: N > 0}
+		inputs  A: [2N]
+				B: [4N]
+		outputs X: [N]
+		let     X[i] = (i->2i)@((i0->2N-i0-1)@A + (i0->i0)@B);
+	.
+	
+	affine binaryExpressionBecomesNested_02 [N] -> {: N > 0}
+		inputs  A: [2N]
+				B: [4N]
+		outputs X: [N]
+		let     X[i] = (i->2i)@((i0->2N-i0-1)@A + B);
+	.
+	
+	affine binaryExpressionBecomesNested_03 [N] -> {: N > 0}
+		inputs  A: [2N]
+				B: [4N]
+		outputs X: [N]
+		let     X[i] = (z->2z)@(A + (i0->2N-i0)@B);
+	.
+	
+	affine binaryExpressionBecomesNested_04 [N] -> {: N > 0}
+		inputs  A: [2N]
+				B: [4N]
+		outputs X: [N]
+		let     X[i] = (z->2z)@(A + B);
+	.
+	
+	
+	////////////////////////////////////////////////////////////
+	// Multi-Arg and Case Expression Rules
+	////////////////////////////////////////////////////////////
+	
+	affine multiArgTest_01 [N] -> {: N > 0}
+		inputs  A: [2N]
+				B: [3N]
+				C: [4N]
+		outputs X: [N]
+		let     X[i] = max(A[2i], B[N-i], C[i+1]);
+	.
+	
+	affine caseTest_01 [N] -> {: N > 0}
+		inputs  A: {[i]: 0 <= i <  N}
+				B: {[i]: N <= i < 2N}
+		outputs X: {[i]: 0 <= i < 2N}
+		let     X[i] = case { A[i]; B[i]; };
+	.
+}

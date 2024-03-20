@@ -1,224 +1,72 @@
 name: build
 
 on:
-  push:
+  pull_request:
     branches:
-      - main
-  schedule:
-    - cron:  '0 8 * * *'  # 3am MT, 9am UTC
+    - main
+  workflow_call:
+
+env:
+  JACOCO_PREFIX: "/opt/jacoco/reports"
+  CC_TEST_REPORTER_ID: "03784faf7d0769cad010b278e10be0f353f8a40a902143e87cb3a44e37884c2e"
 
 jobs:
-  clear-cache:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clear cache
-        uses: actions/github-script@v6
-        with:
-          script: |
-            console.log("About to clear")
-            const caches = await github.rest.actions.getActionsCacheList({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            })
-            const keys_to_clear = [
-              'cache-plugin',
-              'cache-eclipse-linux-x86',
-              'cache-eclipse-mac-x86'
-            ]
-            for (const cache of caches.data.actions_caches) {
-              if (!keys_to_clear.includes(cache.key)) {
-                continue
-              }
-              console.log(cache)
-              github.rest.actions.deleteActionsCacheById({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                cache_id: cache.id,
-              })
-            }
-            console.log("Clear completed")
-
 
   build-plugin:
-    needs: clear-cache
-
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    container: ghcr.io/csu-cs-melange/alpha-language-image:latest
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up java 11
-      uses: actions/setup-java@v1
-      with:
-        java-version: 11
-
-    - name: Cache alpha plugin
-      id: cache-plugin
-      uses: actions/cache@v3
-      with:
-        path: ./releng/alpha.language.update/target/repository
-        key: cache-plugin
+    - name: prepare code coverage instrumentation
+      run: cc-test-reporter before-build
 
     - name: build alpha
       run: mvn clean package
 
-
-  build-bundle-linux-x86:
-    needs: build-plugin
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up java 11
-      uses: actions/setup-java@v1
-      with:
-        java-version: 11
-
-    - name: Cache alpha plugin
-      id: cache-plugin
-      uses: actions/cache@v3
-      with:
-        path: ./releng/alpha.language.update/target/repository
-        key: cache-plugin
-
-    - name: Cache eclipse bundle linux-x86
-      id: cache-eclipse-linux-x86
-      uses: actions/cache@v3
-      with:
-        path: eclipse-bundle-linux-x86
-        key: cache-eclipse-linux-x86
-
-    - name: Set SHORT_SHA 
-      run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
-
-    - name: Build linux x86 bundle
-      run: ./scripts/make-bundle.sh linux-x86
-
-
-  build-bundle-mac-x86:
-    needs: build-plugin
-
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up java 11
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '11'
-
-    - name: Cache eclipse download
-      id: cache-eclipse-download-mac-x86
-      uses: actions/cache@v3
-      with:
-        path: eclipse-download-mac-x86
-        key: eclipse-download-mac-x86
-
-    - name: Cache alpha language plugin
-      id: cache-plugin
-      uses: actions/cache@v3
-      with:
-        path: ./releng/alpha.language.update/target/repository
-        key: cache-plugin
-
-    - name: Cache eclipse bundle mac-x86
-      id: cache-eclipse-mac-x86
-      uses: actions/cache@v3
-      with:
-        path: eclipse-bundle-mac-x86
-        key: cache-eclipse-mac-x86
-
-    - name: Set SHORT_SHA 
-      run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
-
-    - name: Build mac x86 bundle
-      env: 
-        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+    # the ghcr.io/csu-cs-melange/alpha-language-image image exposes a junit CLI
+    - name: run junit tests and collect code coverage
       run: |
-        echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > certificate.p12
-        security create-keychain -p $KEYCHAIN_PASSWORD build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p $KEYCHAIN_PASSWORD build.keychain
-        security import certificate.p12 -k build.keychain -P $P12_PASSWORD -T /usr/bin/codesign
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD build.keychain > /dev/null
-        ./scripts/make-bundle.sh mac-x86
+        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}"
+        org.junit.runner.JUnitCore alpha.model.tests.AlphaAShowTest
+        org.junit.runner.JUnitCore alpha.model.tests.AlphaCheckProgramTest
+        org.junit.runner.JUnitCore alpha.model.tests.AlphaNormalizeTest
+        org.junit.runner.JUnitCore alpha.model.tests.AlphaShowTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformation.reduction.NormalizeReductionDeepTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.DistributivityTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.FactorOutFromReductionTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.HigherOrderOperatorTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.HoistOutOfReductionTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.IdempotenceTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.NormalizeTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.PermutationCaseReduceTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.PropagateSimpleEquationsTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.RaiseDependenceTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.SameOperatorSimplificationTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyExpressionsTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyingReductionsTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.SplitUnionIntoCaseTest
+        org.junit.runner.JUnitCore alpha.model.tests.transformations.SubstituteByDefTest
+        org.junit.runner.JUnitCore alpha.model.tests.util.AffineFactorizerTest
+        org.junit.runner.JUnitCore alpha.model.tests.util.FaceLatticeTest
 
+    - name: generate code coverage report
+      run: |
+        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}"
+        mkdir -p "${JACOCO_PREFIX}/coverage"
+        jacococli report "${JACOCO_PREFIX}/jacoco-${GITHUB_SHA}.exec" \
+          --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.model/bin" \
+          --xml "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" \
+          --html "${JACOCO_PREFIX}/coverage/html"
 
-  deploy:
-    needs: 
-    - build-plugin
-    - build-bundle-mac-x86
-    - build-bundle-linux-x86
-
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-      
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Cache alpha language plugin
-      id: cache-plugin
-      uses: actions/cache@v3
-      with:
-        path: ./releng/alpha.language.update/target/repository
-        key: cache-plugin
-
-    - name: Cache eclipse bundle linux-x86
-      id: cache-eclipse-linux-x86
-      uses: actions/cache@v3
-      with:
-        path: eclipse-bundle-linux-x86
-        key: cache-eclipse-linux-x86
-
-    - name: Cache eclipse bundle mac-x86
-      id: cache-eclipse-mac-x86
-      uses: actions/cache@v3
-      with:
-        path: eclipse-bundle-mac-x86
-        key: cache-eclipse-mac-x86
-
-    - name: Set SHORT_SHA 
-      run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
-
-    - name: Make downloads directory
-      run: mkdir -p ./releng/alpha.language.update/target/repository/downloads
-
-    - name: Move linux-x86 to staging
-      run: mv eclipse-bundle-linux-x86/eclipse-alpha-language-linux-x86.tar.gz ./releng/alpha.language.update/target/repository/downloads/
-
-    - name: Move mac-x86 to staging
-      run: mv eclipse-bundle-mac-x86/eclipse-alpha-language-mac-x86.dmg ./releng/alpha.language.update/target/repository/downloads/
-
-    - name: make update-site readme
-      run: ./scripts/make-update-site-readme.sh
- 
-    - name: build update-site
-      uses: actions/jekyll-build-pages@v1
-      with:
-        source: "./releng/alpha.language.update/target/repository"
-        destination: "./update-site"
-
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v1
-      with:
-        path: "./update-site"
-
-    - name: deploy update-site
-      id: deployment
-      uses: actions/deploy-pages@v2 # or the latest "vX.X.X" version tag for this action
-
-
+    - name: finish and report Codeclimate statistics
+      run: |
+        mkdir -p all-src
+        cp -R bundles/alpha.model/src/* all-src/
+        cp -R bundles/alpha.model/src-gen/* all-src/
+        cp -R bundles/alpha.model/xtend-gen/* all-src/
+        cd all-src
+        cc-test-reporter format-coverage -t jacoco "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" --output "codeclimate.json"
+        cc-test-reporter upload-coverage --input "codeclimate.json"
 

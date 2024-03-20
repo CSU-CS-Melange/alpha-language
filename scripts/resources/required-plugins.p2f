@@ -14,62 +14,62 @@
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.emf.feature.feature.group' name='GeCoS EMF Tools' version='1.0.1.202202021419'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-emf/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-emf/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.emf.feature.source.feature.group' name='GeCoS EMF Tools Developer Resources' version='1.0.1.202202021419'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-emf/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-emf/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.barvinok.feature.feature.group' name='GeCoS JNI Barvinok bindings' version='2.4.0.202202030940'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-isl/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-isl/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.barvinok.feature.source.feature.group' name='GeCoS JNI Barvinok bindings Developer Resources' version='2.4.0.202202030940'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-isl/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-isl/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.isl.feature.feature.group' name='GeCoS JNI ISL bindings' version='2.4.0.202202030940'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-isl/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-isl/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.isl.feature.source.feature.group' name='GeCoS JNI ISL bindings Developer Resources' version='2.4.0.202202030940'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-isl/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-isl/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.jnimapper.feature.feature.group' name='GeCoS JNI Mapper Tools' version='1.4.0.202202030956'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-jnimapper/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-jnimapper/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.jnimapper.feature.source.feature.group' name='GeCoS JNI Mapper Tools Developer Resources' version='1.4.0.202202030956'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-jnimapper/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-jnimapper/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.tommapping.feature.feature.group' name='GeCoS TOM Mapping Tools' version='1.0.1.202202021203'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tommapping/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tommapping/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.tommapping.feature.source.feature.group' name='GeCoS TOM Mapping Tools Developer Resources' version='1.0.1.202202021203'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tommapping/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tommapping/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.tomsdk.feature.feature.group' name='GeCoS TOM Tools' version='2.10.6.202202011652'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tomsdk/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tomsdk/artifacts/'/>
       </repositories>
     </iu>
     <iu id='fr.irisa.cairn.gecos.tools.tomsdk.feature.source.feature.group' name='GeCoS TOM Tools Developer Resources' version='2.10.6.202202011652'>
       <repositories size='1'>
-        <repository location='https://cs.colostate.edu/AlphaZ/gecos-mirror/gecos-tools-tomsdk/artifacts/'/>
+        <repository location='https://gecos.gitlabpages.inria.fr/gecos-tools/gecos-tools-tomsdk/artifacts/'/>
       </repositories>
     </iu>
     <iu id='org.eclipse.egit.feature.group' name='Git integration for Eclipse' version='6.2.0.202206071550-r'>

@@ -1,0 +1,13 @@
+affine testCase []->{: }
+	inputs
+		A: {[i]:  0 <= i <  5}
+		B: {[i]:  5 <= i < 10}
+		C: {[i]:  0 <= i < 15}
+	outputs
+		Y: {[i]: 0 <= i < 15}
+	let
+		Y = case {
+			(({[i]: 10 <= i < 15}: C) + C);
+			case { A; B; };
+		};
+.

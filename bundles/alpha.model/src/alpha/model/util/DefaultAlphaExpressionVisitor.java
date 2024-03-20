@@ -59,8 +59,11 @@ public interface DefaultAlphaExpressionVisitor extends AlphaExpressionVisitor {
 			
 			@Override
 			public void visitUseEquation(UseEquation ue) {
-				ue.getInputExprs().stream().forEach(a->a.accept(DefaultAlphaExpressionVisitor.this));
-				ue.getOutputExprs().stream().forEach(a->a.accept(DefaultAlphaExpressionVisitor.this));
+				//copy to avoid concurrent mods
+				List<AlphaExpression> copy = new LinkedList<>();
+				copy.addAll(ue.getInputExprs());
+				copy.addAll(ue.getOutputExprs());
+				copy.forEach(a->a.accept(DefaultAlphaExpressionVisitor.this));
 			}
 		});
 	}
@@ -95,7 +98,9 @@ public interface DefaultAlphaExpressionVisitor extends AlphaExpressionVisitor {
 	default void visitCaseExpression(CaseExpression ce) {
 		inCaseExpression(ce);
 		if (ce.getExprs() != null) {
-			ce.getExprs().forEach(a->accept(a));
+			//copy to avoid concurrent mods
+			List<AlphaExpression> copy = new LinkedList<>(ce.getExprs());
+			copy.forEach(a->accept(a));
 		}
 		outCaseExpression(ce);
 	}

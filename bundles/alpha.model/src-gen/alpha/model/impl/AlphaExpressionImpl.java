@@ -6,8 +6,11 @@ import alpha.model.AlphaExpression;
 import alpha.model.AlphaExpressionVisitor;
 import alpha.model.ModelPackage;
 
+import alpha.model.util.AlphaUtil;
+
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
+import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.emf.common.notify.Notification;
@@ -100,6 +103,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public ISLSet getZ__internal_cache_exprDom() {
 		return z__internal_cache_exprDom;
 	}
@@ -109,6 +113,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void setZ__internal_cache_exprDom(ISLSet newZ__internal_cache_exprDom) {
 		ISLSet oldZ__internal_cache_exprDom = z__internal_cache_exprDom;
 		z__internal_cache_exprDom = newZ__internal_cache_exprDom;
@@ -121,6 +126,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public ISLSet getZ__internal_cache_contextDom() {
 		return z__internal_cache_contextDom;
 	}
@@ -130,6 +136,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void setZ__internal_cache_contextDom(ISLSet newZ__internal_cache_contextDom) {
 		ISLSet oldZ__internal_cache_contextDom = z__internal_cache_contextDom;
 		z__internal_cache_contextDom = newZ__internal_cache_contextDom;
@@ -142,6 +149,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public EList<Integer> getExpressionID() {
 		BasicEList<Integer> _xifexpression = null;
 		EObject _eContainer = this.eContainer();
@@ -163,8 +171,9 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void setExpressionDomain(final ISLSet dom) {
-		this.setZ__internal_cache_exprDom(dom.coalesce());
+		this.setZ__internal_cache_exprDom(this.ensureDomainIsNamed(dom.coalesce()));
 	}
 
 	/**
@@ -172,6 +181,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public ISLSet getExpressionDomain() {
 		ISLSet _xifexpression = null;
 		ISLSet _z__internal_cache_exprDom = this.getZ__internal_cache_exprDom();
@@ -190,8 +200,9 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public void setContextDomain(final ISLSet dom) {
-		this.setZ__internal_cache_contextDom(dom.coalesce());
+		this.setZ__internal_cache_contextDom(this.ensureDomainIsNamed(dom.coalesce()));
 	}
 
 	/**
@@ -199,6 +210,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public ISLSet getContextDomain() {
 		ISLSet _xifexpression = null;
 		ISLSet _z__internal_cache_contextDom = this.getZ__internal_cache_contextDom();
@@ -217,6 +229,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
 	public AlphaExpression getExpression(final Queue<Integer> exprID) {
 		AlphaExpression _xblockexpression = null;
 		{
@@ -239,6 +252,22 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	@Override
+	public ISLSet ensureDomainIsNamed(final ISLSet dom) {
+		final List<String> indexNames = dom.getIndexNames();
+		final int indexCount = dom.getNbIndices();
+		if (((indexNames != null) && (indexNames.size() == indexCount))) {
+			return dom;
+		}
+		return AlphaUtil.renameIndices(dom);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public void accept(AlphaExpressionVisitor visitor) {
 		// TODO: implement this method
 		// Ensure that you remove @generated or mark it @generated NOT

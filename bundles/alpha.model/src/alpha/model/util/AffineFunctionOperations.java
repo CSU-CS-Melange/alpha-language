@@ -1,7 +1,6 @@
 package alpha.model.util;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import alpha.model.matrix.LinearAlgebraException;
@@ -434,5 +433,30 @@ public class AffineFunctionOperations {
 			throw new IllegalArgumentException("[AffineFunctionOperations] Expecting map with a single piece.");
 		
 		return pwmaff.getPiece(0).getMaff();
+	}
+	
+	/**
+	 * Sets the name of the indexed output of the given function.
+	 * 
+	 * @param f     The function to set the output's name.
+	 * @param index The index of the output to set the name of.
+	 * @param name  The new name of the output.
+	 * @return The function with the desired output's name set to the given name.
+	 */
+	public static ISLMultiAff nameOutput(ISLMultiAff f, int index, String name) {
+		return f.setDimName(ISLDimType.isl_dim_out, index, name);
+	}
+	
+	/**
+	 * Merges a set of affine expressions into one by performing the flat product of their ranges.
+	 * @param expressions The expressions to merge.
+	 * @return The merged expression.
+	 */
+	public static ISLMultiAff mergeExpressions(List<ISLMultiAff> expressions) {
+		ISLMultiAff merged = expressions.get(0);
+		for (int i = 1; i < expressions.size(); i++) {
+			merged = merged.flatRangeProduct(expressions.get(i));
+		}
+		return merged;
 	}
 }
