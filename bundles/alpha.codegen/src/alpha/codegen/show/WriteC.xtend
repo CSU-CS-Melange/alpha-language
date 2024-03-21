@@ -48,7 +48,7 @@ class WriteC extends Base {
 		    «AlphaEquationPrinter.printStandardEquation(ef.equation, ef.program)»
 		    «ef.flagVariable.identityAccess» = 'F';
 		  } else if («ef.flagVariable.identityAccess» == 'I') {
-		    printf("There is a self dependence on «ef.variable.name» at («ef.variable.indices.map['%d'].join(',')»)\n", «ef.variable.indices.join(',')»);
+		    printf("There is a self dependence on «ef.variable.name» at («ef.variable.indices.map['%ld'].join(',')»)\n", «ef.variable.indices.join(',')»);
 		  }
 		  
 		  return «ef.variable.identityAccess»;

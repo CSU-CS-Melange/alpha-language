@@ -166,6 +166,7 @@ class Factory {
 		cv.elemType = DataType.CHAR
 		cv.flagVariable = true
 		cv.alphaVariable = v
+		cv.memoryMacro = createGlobalMemoryMacro(cv)
 		cv
 	}
 	

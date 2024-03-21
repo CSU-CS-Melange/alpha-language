@@ -39,21 +39,18 @@ public class CheckNormalized extends ModelSwitch<Boolean> {
     return (sw.doSwitch(av)).booleanValue();
   }
 
+  @Override
   public Boolean defaultCase(final EObject eObject) {
     boolean _xblockexpression = false;
     {
       int _size = eObject.eContents().size();
       boolean _greaterThan = (_size > 0);
       if (_greaterThan) {
-        final Function1<EObject, Boolean> _function = new Function1<EObject, Boolean>() {
-          public Boolean apply(final EObject it) {
-            return CheckNormalized.this.doSwitch(it);
-          }
+        final Function1<EObject, Boolean> _function = (EObject it) -> {
+          return this.doSwitch(it);
         };
-        final Function2<Boolean, Boolean, Boolean> _function_1 = new Function2<Boolean, Boolean, Boolean>() {
-          public Boolean apply(final Boolean b1, final Boolean b2) {
-            return Boolean.valueOf(((b1).booleanValue() && (b2).booleanValue()));
-          }
+        final Function2<Boolean, Boolean, Boolean> _function_1 = (Boolean b1, Boolean b2) -> {
+          return Boolean.valueOf(((b1).booleanValue() && (b2).booleanValue()));
         };
         IterableExtensions.<Boolean>reduce(ListExtensions.<EObject, Boolean>map(eObject.eContents(), _function), _function_1);
       }

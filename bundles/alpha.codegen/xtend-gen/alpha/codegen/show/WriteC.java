@@ -142,7 +142,7 @@ public class WriteC extends Base {
     _builder.append(_name_1, "    ");
     _builder.append(" at (");
     final Function1<String, String> _function = (String it) -> {
-      return "%d";
+      return "%ld";
     };
     String _join = IterableExtensions.join(ListExtensions.<String, String>map(ef.getVariable().indices(), _function), ",");
     _builder.append(_join, "    ");

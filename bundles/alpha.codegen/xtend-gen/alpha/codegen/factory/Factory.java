@@ -251,6 +251,7 @@ public class Factory {
       cv.setElemType(DataType.CHAR);
       cv.setFlagVariable(true);
       cv.setAlphaVariable(v);
+      cv.setMemoryMacro(Factory.createGlobalMemoryMacro(cv));
       _xblockexpression = cv;
     }
     return _xblockexpression;

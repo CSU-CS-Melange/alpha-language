@@ -14,6 +14,7 @@ import alpha.codegen.EvalFunction
 import alpha.codegen.BaseVariable
 import alpha.codegen.ArrayVariable
 import alpha.codegen.util.CodegenSwitch
+import alpha.codegen.ReduceFunction
 
 class Base extends CodegenSwitch<CharSequence> {
 	
@@ -107,6 +108,7 @@ class Base extends CodegenSwitch<CharSequence> {
 		
 		// local function declarations
 		«p.functions.filter[f | f instanceof EvalFunction].map[it.signature + ';'].join('\n')»
+		«p.functions.filter[f | f instanceof ReduceFunction].map[it.signature + ';'].join('\n')»
 		
 		«p.functions.map[doSwitch].join('\n')»
 	'''

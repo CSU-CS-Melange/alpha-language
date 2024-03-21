@@ -72,7 +72,7 @@ class CodegenUtil {
 	}
 	
 	def static List<BaseVariable> indexScalarVariables(Variable v) {
-		v.domain.indexNames.map[baseVariable(it, DataType.INT)]
+		v.domain.indexNames.map[baseVariable(it, DataType.LONG)]
 	}
 	
 	def static parseSetSizes(String s) {

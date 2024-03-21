@@ -102,7 +102,7 @@ public class CodegenUtil {
 
   public static List<BaseVariable> indexScalarVariables(final Variable v) {
     final Function1<String, BaseVariable> _function = (String it) -> {
-      return CodegenUtil.baseVariable(it, DataType.INT);
+      return CodegenUtil.baseVariable(it, DataType.LONG);
     };
     return ListExtensions.<String, BaseVariable>map(v.getDomain().getIndexNames(), _function);
   }

@@ -63,7 +63,7 @@ public abstract class BaseProgram extends AbstractAlphaCompleteVisitor {
   public boolean defaultIncludes() {
     boolean _xblockexpression = false;
     {
-      final List<String> includes = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("stdio", "stdbool", "math", "string", "limits", "float"));
+      final List<String> includes = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("stdio", "stdlib", "stdbool", "math", "string", "limits", "float"));
       final Function1<String, Include> _function = (String it) -> {
         return CodegenUtil.toInclude(it);
       };

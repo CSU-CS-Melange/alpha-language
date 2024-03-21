@@ -37,6 +37,7 @@ abstract class BaseProgram extends AbstractAlphaCompleteVisitor {
 	def defaultIncludes() {
 		val includes = #[
 			'stdio',
+			'stdlib',
 			'stdbool',
 			'math',
 			'string',

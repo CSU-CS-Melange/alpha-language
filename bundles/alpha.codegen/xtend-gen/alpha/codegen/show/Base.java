@@ -13,6 +13,7 @@ import alpha.codegen.Macro;
 import alpha.codegen.MemoryAllocation;
 import alpha.codegen.Node;
 import alpha.codegen.Program;
+import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
@@ -239,12 +240,22 @@ public class Base extends CodegenSwitch<CharSequence> {
     String _join_4 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_4), _function_5), "\n");
     _builder.append(_join_4);
     _builder.newLineIfNotEmpty();
+    final Function1<Function, Boolean> _function_6 = (Function f) -> {
+      return Boolean.valueOf((f instanceof ReduceFunction));
+    };
+    final Function1<Function, String> _function_7 = (Function it) -> {
+      CharSequence _signature = this.signature(it);
+      return (_signature + ";");
+    };
+    String _join_5 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_6), _function_7), "\n");
+    _builder.append(_join_5);
+    _builder.newLineIfNotEmpty();
     _builder.newLine();
-    final Function1<Function, CharSequence> _function_6 = (Function it) -> {
+    final Function1<Function, CharSequence> _function_8 = (Function it) -> {
       return this.doSwitch(it);
     };
-    String _join_5 = IterableExtensions.join(ListExtensions.<Function, CharSequence>map(p.getFunctions(), _function_6), "\n");
-    _builder.append(_join_5);
+    String _join_6 = IterableExtensions.join(ListExtensions.<Function, CharSequence>map(p.getFunctions(), _function_8), "\n");
+    _builder.append(_join_6);
     _builder.newLineIfNotEmpty();
     return _builder;
   }
