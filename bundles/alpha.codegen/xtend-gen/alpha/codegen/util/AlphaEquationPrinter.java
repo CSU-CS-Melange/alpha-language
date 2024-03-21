@@ -316,8 +316,13 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
     return AlphaEquationPrinter.fault(se);
   }
 
-  public String caseIndexExpression(final IndexExpression ie) {
-    return AlphaEquationPrinter.fault(ie);
+  public CharSequence caseIndexExpression(final IndexExpression ie) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("(");
+    String _replaceAll = ie.getFunctionExpr().plainToString().replaceAll("[\\[\\]]", "");
+    _builder.append(_replaceAll);
+    _builder.append(")");
+    return _builder;
   }
 
   public String casePolynomialIndexExpression(final PolynomialIndexExpression pie) {

@@ -187,7 +187,7 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	}
 	
 	def caseIndexExpression(IndexExpression ie) {
-		fault(ie)
+		'''(«ie.functionExpr.plainToString.replaceAll("[\\[\\]]", "")»)'''
 	}
 	
 	def casePolynomialIndexExpression(PolynomialIndexExpression pie) {
