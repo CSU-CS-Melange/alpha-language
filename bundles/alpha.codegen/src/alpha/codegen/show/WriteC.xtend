@@ -23,7 +23,7 @@ class WriteC extends Base {
 	def caseFunction(Function f) '''
 		«f.signature» {
 		  // parameter checking
-		  if («f.system.parameterDomain.paramConstraintsToConditionals») {
+		  if (!(«f.system.parameterDomain.paramConstraintsToConditionals»)) {
 		    printf("The value of parameters are not valid.\n");
 		    exit(-1);
 		  }

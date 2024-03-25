@@ -40,10 +40,10 @@ public class WriteC extends Base {
     _builder.append("// parameter checking");
     _builder.newLine();
     _builder.append("  ");
-    _builder.append("if (");
+    _builder.append("if (!(");
     String _paramConstraintsToConditionals = ISLPrintingUtils.paramConstraintsToConditionals(f.system().getParameterDomain());
     _builder.append(_paramConstraintsToConditionals, "  ");
-    _builder.append(") {");
+    _builder.append(")) {");
     _builder.newLineIfNotEmpty();
     _builder.append("    ");
     _builder.append("printf(\"The value of parameters are not valid.\\n\");");
