@@ -29,6 +29,7 @@ public class CommandsScopeProvider extends AbstractCommandsScopeProvider {
   @Inject
   private IQualifiedNameProvider nameProvider;
 
+  @Override
   public IScope getScope(final EObject context, final EReference reference) {
     IScope _xblockexpression = null;
     {

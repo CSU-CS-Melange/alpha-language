@@ -6,6 +6,7 @@ import org.eclipse.xtext.naming.QualifiedName;
 
 @SuppressWarnings("all")
 public class CommandsQualifiedNameProvider extends DefaultDeclarativeQualifiedNameProvider {
+  @Override
   protected QualifiedName qualifiedName(final Object ele) {
     QualifiedName _xblockexpression = null;
     {

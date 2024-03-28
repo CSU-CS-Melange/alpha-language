@@ -2,6 +2,8 @@ package alpha.targetmapping.util;
 
 import alpha.model.AlphaSystem;
 import alpha.model.SystemBody;
+import alpha.model.Variable;
+import alpha.targetmapping.DataType;
 import alpha.targetmapping.TargetMapping;
 import alpha.targetmapping.TargetMappingForSystemBody;
 import alpha.targetmapping.TargetMappingNode;
@@ -22,14 +24,12 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 
 @SuppressWarnings("all")
 public class TargetMappingUtil {
-  public static Function<Integer, String> DEFAULT_SCHEDULE_DIMENSION_NAME_PROVIDER = new Function<Integer, String>() {
-    public String apply(final Integer x) {
-      StringConcatenation _builder = new StringConcatenation();
-      _builder.append("i");
-      _builder.append(x);
-      return _builder.toString();
-    }
-  };
+  public static Function<Integer, String> DEFAULT_SCHEDULE_DIMENSION_NAME_PROVIDER = ((Function<Integer, String>) (Integer x) -> {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("i");
+    _builder.append(x);
+    return _builder.toString();
+  });
 
   public static TargetMapping getContainerTM(final TargetMappingNode node) {
     if ((node instanceof TargetMapping)) {
@@ -96,16 +96,14 @@ public class TargetMappingUtil {
    * Input ISLSpace is not consumed.
    */
   public static ISLMultiAff tileLoopTransformation(final ISLSpace space, final List<Integer> tileSizes) {
-    final BiFunction<ISLLocalSpace, Integer, ISLAff> _function = new BiFunction<ISLLocalSpace, Integer, ISLAff>() {
-      public ISLAff apply(final ISLLocalSpace ls, final Integer dim) {
-        ISLAff _xblockexpression = null;
-        {
-          final ISLAff divisor = ISLAff.buildZero(ls.copy()).addConstant((tileSizes.get((dim).intValue())).intValue());
-          ISLAff aff = ISLAff.buildZero(ls);
-          _xblockexpression = aff.addCoefficient(ISLDimType.isl_dim_in, (dim).intValue(), 1).div(divisor);
-        }
-        return _xblockexpression;
+    final BiFunction<ISLLocalSpace, Integer, ISLAff> _function = (ISLLocalSpace ls, Integer dim) -> {
+      ISLAff _xblockexpression = null;
+      {
+        final ISLAff divisor = ISLAff.buildZero(ls.copy()).addConstant((tileSizes.get((dim).intValue())).intValue());
+        ISLAff aff = ISLAff.buildZero(ls);
+        _xblockexpression = aff.addCoefficient(ISLDimType.isl_dim_in, (dim).intValue(), 1).div(divisor);
       }
+      return _xblockexpression;
     };
     return TargetMappingUtil.tilingTransformationHelper(_function, space, tileSizes);
   }
@@ -117,15 +115,13 @@ public class TargetMappingUtil {
    * Input ISLSpace is not consumed.
    */
   public static ISLMultiAff pointLoopTransformation(final ISLSpace space, final List<Integer> tileSizes) {
-    final BiFunction<ISLLocalSpace, Integer, ISLAff> _function = new BiFunction<ISLLocalSpace, Integer, ISLAff>() {
-      public ISLAff apply(final ISLLocalSpace ls, final Integer dim) {
-        ISLAff _xblockexpression = null;
-        {
-          ISLAff aff = ISLAff.buildZero(ls);
-          _xblockexpression = aff.addCoefficient(ISLDimType.isl_dim_in, (dim).intValue(), 1).mod((tileSizes.get((dim).intValue())).intValue());
-        }
-        return _xblockexpression;
+    final BiFunction<ISLLocalSpace, Integer, ISLAff> _function = (ISLLocalSpace ls, Integer dim) -> {
+      ISLAff _xblockexpression = null;
+      {
+        ISLAff aff = ISLAff.buildZero(ls);
+        _xblockexpression = aff.addCoefficient(ISLDimType.isl_dim_in, (dim).intValue(), 1).mod((tileSizes.get((dim).intValue())).intValue());
       }
+      return _xblockexpression;
     };
     return TargetMappingUtil.tilingTransformationHelper(_function, space, tileSizes);
   }
@@ -161,5 +157,9 @@ public class TargetMappingUtil {
     }
     final ISLSpace affSpace = domainSpace.toMapSpaceFromSetSpace();
     return ISLMultiAff.buildFromAffList(affSpace, affList);
+  }
+
+  public static DataType dataType(final Variable variable) {
+    return DataType.FLOAT;
   }
 }

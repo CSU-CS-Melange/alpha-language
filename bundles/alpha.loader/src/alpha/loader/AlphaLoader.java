@@ -202,8 +202,6 @@ public class AlphaLoader {
 		resource.getContents().add(seq);
 		resource.save(null);
 	}
-	
-
 
 	/**
 	 * Load the specified file as an Alpha program.

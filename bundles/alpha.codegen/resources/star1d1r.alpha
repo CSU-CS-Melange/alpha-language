@@ -1,0 +1,26 @@
+affine star1d1r [T,N]->{:N>24 and T>4}
+  inputs
+    X : {[i] : -5<=i<=N};
+  outputs
+    Y : {[t,i] : 0<=t<=T and 0<=i<=15};
+    Z : {[t,i] : 0<=t<=T and 0<=i<=N};
+  locals
+  	ayo : {[i,j,k,l,m] : 10<=i<j<T and 0<=k<l<m<N }
+  let
+    Y = case {
+      {[t,i]: t=0 } : case {
+      	{[t,i] : i<10} : 0[];
+      	{[t,i] : 10<=i} : X[i];
+      };
+      {[t,i]: 0<t and (i=0 or i=15)} : Y[t-1,i];
+      {[t,i]: 0<t and 0<i<15} : 0.33333[] * Y[t-1,i-1] + 0.33333[] * Y[t-1,i] + 0.33333[] * Y[t-1,i+1];
+    };
+    
+    ayo[i,j,k,l,m] = X[k];
+    
+    Z[t,i] = case {
+      {[t,i]: t=0 } : X[i]; 
+      {[t,i]: 0<t and (i=0 or i=N)} : Z[t-1,i];
+      0.33333[] * Z[t-1,i-1] + 0.33333[] * Z[t-1,i] + 0.33333[] * Z[t-1,i+1];
+    };
+.

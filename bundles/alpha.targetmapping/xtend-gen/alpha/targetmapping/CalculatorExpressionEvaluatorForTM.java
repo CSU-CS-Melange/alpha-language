@@ -59,6 +59,7 @@ public class CalculatorExpressionEvaluatorForTM extends CalculatorExpressionEval
     this.bandIdOffset = bandIdOffset;
   }
 
+  @Override
   public AlphaSystem getReferredSystem(final CalculatorExpression expr) {
     EObject _eContainer = expr.eContainer();
     return TargetMappingUtil.getTargetSystem(((TargetMappingNode) _eContainer));
@@ -73,10 +74,8 @@ public class CalculatorExpressionEvaluatorForTM extends CalculatorExpressionEval
     if ((this.indexNameContext != null)) {
       _xifexpression = this.indexNameContext;
     } else {
-      final Function1<Integer, String> _function = new Function1<Integer, String>() {
-        public String apply(final Integer i) {
-          return TargetMappingUtil.DEFAULT_SCHEDULE_DIMENSION_NAME_PROVIDER.apply(i);
-        }
+      final Function1<Integer, String> _function = (Integer i) -> {
+        return TargetMappingUtil.DEFAULT_SCHEDULE_DIMENSION_NAME_PROVIDER.apply(i);
       };
       _xifexpression = IterableExtensions.<String>toList(IterableExtensions.<Integer, String>map(new ExclusiveRange(this.bandIdOffset, (this.bandIdOffset + this.currentBandSize), true), _function));
     }

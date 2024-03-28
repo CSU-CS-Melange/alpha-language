@@ -82,18 +82,15 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     return visitor.schedule;
   }
 
+  @Override
   public void inTargetMappingForSystemBody(final TargetMappingForSystemBody tm) {
     super.inTargetMappingForSystemBody(tm);
     final List<AlphaScheduleTarget> targets = EcoreUtil2.<AlphaScheduleTarget>getAllContentsOfType(tm.getTargetBody(), AlphaScheduleTarget.class);
-    final Function1<AlphaScheduleTarget, ISLUnionSet> _function = new Function1<AlphaScheduleTarget, ISLUnionSet>() {
-      public ISLUnionSet apply(final AlphaScheduleTarget t) {
-        return ConstructISLScheduleTree.this.constructNamedSet(t).toUnionSet();
-      }
+    final Function1<AlphaScheduleTarget, ISLUnionSet> _function = (AlphaScheduleTarget t) -> {
+      return this.constructNamedSet(t).toUnionSet();
     };
-    final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_1 = new Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet>() {
-      public ISLUnionSet apply(final ISLUnionSet s1, final ISLUnionSet s2) {
-        return s1.union(s2);
-      }
+    final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_1 = (ISLUnionSet s1, ISLUnionSet s2) -> {
+      return s1.union(s2);
     };
     ISLUnionSet domain = IterableExtensions.<ISLUnionSet>reduce(ListExtensions.<AlphaScheduleTarget, ISLUnionSet>map(targets, _function), _function_1);
     this.schedule = ISLSchedule.buildFromDomain(domain);
@@ -110,29 +107,28 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     }
   }
 
+  @Override
   public void inContextExpression(final ContextExpression ce) {
     final ISLSet pDom = TargetMappingUtil.getTargetSystem(ce).getParameterDomain();
     this.schedule = this.schedule.insertContext(ce.getContextDomain().intersectParams(pDom));
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outContextExpression(final ContextExpression ce) {
     int _size = this.path.size();
     int _minus = (_size - 1);
     this.path.remove(_minus);
   }
 
+  @Override
   public void visitSequenceExpression(final SequenceExpression se) {
-    final Function1<ScheduleTreeExpression, Boolean> _function = new Function1<ScheduleTreeExpression, Boolean>() {
-      public Boolean apply(final ScheduleTreeExpression c) {
-        return Boolean.valueOf((c instanceof FilterExpression));
-      }
+    final Function1<ScheduleTreeExpression, Boolean> _function = (ScheduleTreeExpression c) -> {
+      return Boolean.valueOf((c instanceof FilterExpression));
     };
     final Iterable<ScheduleTreeExpression> filters = IterableExtensions.<ScheduleTreeExpression>filter(se.getChildren(), _function);
-    final Function1<ScheduleTreeExpression, ISLUnionSet> _function_1 = new Function1<ScheduleTreeExpression, ISLUnionSet>() {
-      public ISLUnionSet apply(final ScheduleTreeExpression fe) {
-        return ConstructISLScheduleTree.this.constructDomain(((FilterExpression) fe));
-      }
+    final Function1<ScheduleTreeExpression, ISLUnionSet> _function_1 = (ScheduleTreeExpression fe) -> {
+      return this.constructDomain(((FilterExpression) fe));
     };
     final Iterable<ISLUnionSet> domains = IterableExtensions.<ScheduleTreeExpression, ISLUnionSet>map(filters, _function_1);
     ISLUnionSetList unionSetList = ISLUnionSetList.build(ISLContext.getInstance(), IterableExtensions.size(domains));
@@ -189,11 +185,10 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     }
   }
 
+  @Override
   public void visitSetExpression(final SetExpression se) {
-    final Function1<ScheduleTreeExpression, ISLUnionSet> _function = new Function1<ScheduleTreeExpression, ISLUnionSet>() {
-      public ISLUnionSet apply(final ScheduleTreeExpression c) {
-        return ConstructISLScheduleTree.this.constructDomain(((FilterExpression) c));
-      }
+    final Function1<ScheduleTreeExpression, ISLUnionSet> _function = (ScheduleTreeExpression c) -> {
+      return this.constructDomain(((FilterExpression) c));
     };
     final List<ISLUnionSet> domains = ListExtensions.<ScheduleTreeExpression, ISLUnionSet>map(se.getChildren(), _function);
     ISLUnionSetList unionSetList = ISLUnionSetList.build(ISLContext.getInstance(), domains.size());
@@ -214,6 +209,7 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     this.path.remove(depth);
   }
 
+  @Override
   public void inFilterExpression(final FilterExpression fe) {
     if (((fe.eContainer() instanceof SetExpression) || (fe.eContainer() instanceof SequenceExpression))) {
       this.path.add(Integer.valueOf(0));
@@ -225,46 +221,48 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outFilterExpression(final FilterExpression fe) {
     int _size = this.path.size();
     int _minus = (_size - 1);
     this.path.remove(_minus);
   }
 
+  @Override
   public void inGuardExpression(final GuardExpression ge) {
     final ISLScheduleGuardNode guardNode = this.getCurrentNode().insertGuard(ge.getGuardDomain());
     this.schedule = guardNode.getSchedule();
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outGuardExpression(final GuardExpression ge) {
     int _size = this.path.size();
     int _minus = (_size - 1);
     this.path.remove(_minus);
   }
 
+  @Override
   public void inMarkExpression(final MarkExpression me) {
     final ISLScheduleMarkNode markNode = this.getCurrentNode().insertMark(ISLIdentifier.alloc(ISLContext.getInstance(), me.getIdentifier()));
     this.schedule = markNode.getSchedule();
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outMarkExpression(final MarkExpression me) {
     int _size = this.path.size();
     int _minus = (_size - 1);
     this.path.remove(_minus);
   }
 
+  @Override
   public void inBandExpression(final BandExpression be) {
-    final Function1<BandPiece, ISLMultiUnionPWAff> _function = new Function1<BandPiece, ISLMultiUnionPWAff>() {
-      public ISLMultiUnionPWAff apply(final BandPiece it) {
-        return ConstructISLScheduleTree.this.constructPartialSchedule(it);
-      }
+    final Function1<BandPiece, ISLMultiUnionPWAff> _function = (BandPiece it) -> {
+      return this.constructPartialSchedule(it);
     };
-    final Function2<ISLMultiUnionPWAff, ISLMultiUnionPWAff, ISLMultiUnionPWAff> _function_1 = new Function2<ISLMultiUnionPWAff, ISLMultiUnionPWAff, ISLMultiUnionPWAff>() {
-      public ISLMultiUnionPWAff apply(final ISLMultiUnionPWAff p1, final ISLMultiUnionPWAff p2) {
-        return p1.unionAdd(p2);
-      }
+    final Function2<ISLMultiUnionPWAff, ISLMultiUnionPWAff, ISLMultiUnionPWAff> _function_1 = (ISLMultiUnionPWAff p1, ISLMultiUnionPWAff p2) -> {
+      return p1.unionAdd(p2);
     };
     final ISLMultiUnionPWAff partialSchedule = IterableExtensions.<ISLMultiUnionPWAff>reduce(ListExtensions.<BandPiece, ISLMultiUnionPWAff>map(be.getBandPieces(), _function), _function_1);
     ISLScheduleBandNode bandNode = this.getCurrentNode().insertPartialSchedule(partialSchedule);
@@ -288,16 +286,19 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outBandExpression(final BandExpression be) {
     int _size = this.path.size();
     int _minus = (_size - 1);
     this.path.remove(_minus);
   }
 
+  @Override
   public void inExtensionExpression(final ExtensionExpression ee) {
     this.path.add(Integer.valueOf(0));
   }
 
+  @Override
   public void outExtensionExpression(final ExtensionExpression ee) {
     int _size = this.path.size();
     int _minus = (_size - 1);
@@ -324,15 +325,11 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
   }
 
   private ISLUnionSet constructDomain(final FilterExpression fe) {
-    final Function1<ScheduleTargetRestrictDomain, ISLUnionSet> _function = new Function1<ScheduleTargetRestrictDomain, ISLUnionSet>() {
-      public ISLUnionSet apply(final ScheduleTargetRestrictDomain it) {
-        return ConstructISLScheduleTree.this.constructNamedSet(it).toUnionSet();
-      }
+    final Function1<ScheduleTargetRestrictDomain, ISLUnionSet> _function = (ScheduleTargetRestrictDomain it) -> {
+      return this.constructNamedSet(it).toUnionSet();
     };
-    final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_1 = new Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet>() {
-      public ISLUnionSet apply(final ISLUnionSet s1, final ISLUnionSet s2) {
-        return s1.union(s2);
-      }
+    final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_1 = (ISLUnionSet s1, ISLUnionSet s2) -> {
+      return s1.union(s2);
     };
     return IterableExtensions.<ISLUnionSet>reduce(ListExtensions.<ScheduleTargetRestrictDomain, ISLUnionSet>map(fe.getFilterDomains(), _function), _function_1);
   }
@@ -350,15 +347,11 @@ public class ConstructISLScheduleTree extends AbstractTargetMappingVisitor {
   }
 
   private ISLUnionMap constructNamedExtensionMap(final ExtensionExpression ee) {
-    final Function1<ExtensionTarget, ISLUnionMap> _function = new Function1<ExtensionTarget, ISLUnionMap>() {
-      public ISLUnionMap apply(final ExtensionTarget it) {
-        return ConstructISLScheduleTree.this.constructNamedExtensionMap(it);
-      }
+    final Function1<ExtensionTarget, ISLUnionMap> _function = (ExtensionTarget it) -> {
+      return this.constructNamedExtensionMap(it);
     };
-    final Function2<ISLUnionMap, ISLUnionMap, ISLUnionMap> _function_1 = new Function2<ISLUnionMap, ISLUnionMap, ISLUnionMap>() {
-      public ISLUnionMap apply(final ISLUnionMap p1, final ISLUnionMap p2) {
-        return p1.union(p2);
-      }
+    final Function2<ISLUnionMap, ISLUnionMap, ISLUnionMap> _function_1 = (ISLUnionMap p1, ISLUnionMap p2) -> {
+      return p1.union(p2);
     };
     return IterableExtensions.<ISLUnionMap>reduce(ListExtensions.<ExtensionTarget, ISLUnionMap>map(ee.getExtensionTargets(), _function), _function_1);
   }

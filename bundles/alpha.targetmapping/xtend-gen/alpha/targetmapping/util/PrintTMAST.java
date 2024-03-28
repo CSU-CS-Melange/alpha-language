@@ -65,10 +65,8 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     StringBuffer _xblockexpression = null;
     {
       this._output.append(this.indent);
-      final Consumer<Object> _function = new Consumer<Object>() {
-        public void accept(final Object o) {
-          PrintTMAST.this._output.append(o);
-        }
+      final Consumer<Object> _function = (Object o) -> {
+        this._output.append(o);
       };
       ((List<Object>)Conversions.doWrapArray(objs)).forEach(_function);
       _xblockexpression = this._output.append("\n");
@@ -76,10 +74,12 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     return _xblockexpression;
   }
 
+  @Override
   public void defaultIn(final TargetMappingVisitable tmv) {
     this.defaultIn(((EObject) tmv));
   }
 
+  @Override
   public void defaultOut(final TargetMappingVisitable tmv) {
     this.defaultOut(((EObject) tmv));
   }
@@ -101,21 +101,25 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     return this.indent = this.indent.substring(0, _minus);
   }
 
+  @Override
   public void inTargetMapping(final TargetMapping tm) {
     this.defaultIn(tm);
     this.printStr("+--", "targetSystem:", tm.getTargetSystem().getName());
   }
 
+  @Override
   public void inTargetMappingForSystemBody(final TargetMappingForSystemBody tm) {
     this.defaultIn(tm);
     this.printStr("+--", "targetBody:", Integer.valueOf(tm.getTargetBody().getSystem().getSystemBodies().indexOf(tm.getTargetBody())));
   }
 
+  @Override
   public void inContextExpression(final ContextExpression ce) {
     this.defaultIn(ce);
     this.printStr("+--", ce.getContextDomain());
   }
 
+  @Override
   public void inFilterExpression(final FilterExpression fe) {
     this.defaultIn(fe);
     EList<ScheduleTargetRestrictDomain> _filterDomains = fe.getFilterDomains();
@@ -129,16 +133,19 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     }
   }
 
+  @Override
   public void inGuardExpression(final GuardExpression ge) {
     this.defaultIn(ge);
     this.printStr("+--", ge.getGuardDomain());
   }
 
+  @Override
   public void inMarkExpression(final MarkExpression me) {
     this.defaultIn(me);
     this.printStr("+--", me.getIdentifier());
   }
 
+  @Override
   public void inBandExpression(final BandExpression be) {
     this.defaultIn(be);
     EList<BandPiece> _bandPieces = be.getBandPieces();
@@ -165,6 +172,7 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     }
   }
 
+  @Override
   public void inTileBandExpression(final TileBandExpression tbe) {
     this.defaultIn(tbe);
     this.printStr("+--", tbe.getTilingType());
@@ -211,16 +219,15 @@ public class PrintTMAST extends AbstractTargetMappingVisitor {
     if (_isParallel) {
       this.printStr("+--", "parallel");
     }
-    final Function1<TileSizeSpecification, CharSequence> _function = new Function1<TileSizeSpecification, CharSequence>() {
-      public CharSequence apply(final TileSizeSpecification tss) {
-        return tss.unparseString();
-      }
+    final Function1<TileSizeSpecification, CharSequence> _function = (TileSizeSpecification tss) -> {
+      return tss.unparseString();
     };
     this.printStr("+--", IterableExtensions.<TileSizeSpecification>join(tls.getTileSizeSpecifications(), ", ", _function));
     this.visitTilingSpecification(tls.getTilingSpecification());
     this.defaultOut(tls);
   }
 
+  @Override
   public void inExtensionExpression(final ExtensionExpression ee) {
     this.defaultIn(ee);
     EList<ExtensionTarget> _extensionTargets = ee.getExtensionTargets();

@@ -1238,6 +1238,16 @@ public interface TargetmappingPackage extends EPackage {
 	int TILING_TYPE = 34;
 
 	/**
+	 * The meta object id for the '{@link alpha.targetmapping.DataType <em>Data Type</em>}' enum.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see alpha.targetmapping.DataType
+	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getDataType()
+	 * @generated
+	 */
+	int DATA_TYPE = 35;
+
+	/**
 	 * The meta object id for the '<em>JNI Object</em>' data type.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1245,7 +1255,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getJNIObject()
 	 * @generated
 	 */
-	int JNI_OBJECT = 35;
+	int JNI_OBJECT = 36;
 
 	/**
 	 * The meta object id for the '<em>JNIISL Set</em>' data type.
@@ -1255,7 +1265,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getJNIISLSet()
 	 * @generated
 	 */
-	int JNIISL_SET = 36;
+	int JNIISL_SET = 37;
 
 	/**
 	 * The meta object id for the '<em>JNIISL Map</em>' data type.
@@ -1265,7 +1275,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getJNIISLMap()
 	 * @generated
 	 */
-	int JNIISL_MAP = 37;
+	int JNIISL_MAP = 38;
 
 	/**
 	 * The meta object id for the '<em>JNIISL Multi Aff</em>' data type.
@@ -1275,7 +1285,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getJNIISLMultiAff()
 	 * @generated
 	 */
-	int JNIISL_MULTI_AFF = 38;
+	int JNIISL_MULTI_AFF = 39;
 
 	/**
 	 * The meta object id for the '<em>JNIISLPWQ Polynomial</em>' data type.
@@ -1285,7 +1295,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getJNIISLPWQPolynomial()
 	 * @generated
 	 */
-	int JNIISLPWQ_POLYNOMIAL = 39;
+	int JNIISLPWQ_POLYNOMIAL = 40;
 
 	/**
 	 * The meta object id for the '<em>ISL FORMAT</em>' data type.
@@ -1295,7 +1305,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getISL_FORMAT()
 	 * @generated
 	 */
-	int ISL_FORMAT = 40;
+	int ISL_FORMAT = 41;
 
 	/**
 	 * The meta object id for the '<em>ISLAST Loop Type</em>' data type.
@@ -1305,7 +1315,7 @@ public interface TargetmappingPackage extends EPackage {
 	 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getISLASTLoopType()
 	 * @generated
 	 */
-	int ISLAST_LOOP_TYPE = 41;
+	int ISLAST_LOOP_TYPE = 42;
 
 
 	/**
@@ -2187,6 +2197,16 @@ public interface TargetmappingPackage extends EPackage {
 	EEnum getTILING_TYPE();
 
 	/**
+	 * Returns the meta object for enum '{@link alpha.targetmapping.DataType <em>Data Type</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for enum '<em>Data Type</em>'.
+	 * @see alpha.targetmapping.DataType
+	 * @generated
+	 */
+	EEnum getDataType();
+
+	/**
 	 * Returns the meta object for data type '{@link fr.irisa.cairn.jnimap.runtime.JNIObject <em>JNI Object</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -3018,6 +3038,16 @@ public interface TargetmappingPackage extends EPackage {
 		 * @generated
 		 */
 		EEnum TILING_TYPE = eINSTANCE.getTILING_TYPE();
+
+		/**
+		 * The meta object literal for the '{@link alpha.targetmapping.DataType <em>Data Type</em>}' enum.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see alpha.targetmapping.DataType
+		 * @see alpha.targetmapping.impl.TargetmappingPackageImpl#getDataType()
+		 * @generated
+		 */
+		EEnum DATA_TYPE = eINSTANCE.getDataType();
 
 		/**
 		 * The meta object literal for the '<em>JNI Object</em>' data type.

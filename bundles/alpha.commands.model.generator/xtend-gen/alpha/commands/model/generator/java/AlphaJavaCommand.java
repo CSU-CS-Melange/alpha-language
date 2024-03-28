@@ -218,10 +218,8 @@ public class AlphaJavaCommand {
     String _typeName = this.commonEx.typeName(binding.getBindTarget());
     _builder.append(_typeName);
     _builder.append("(");
-    final Function1<AlphaCommandArgument, CharSequence> _function = new Function1<AlphaCommandArgument, CharSequence>() {
-      public CharSequence apply(final AlphaCommandArgument b) {
-        return b.getName();
-      }
+    final Function1<AlphaCommandArgument, CharSequence> _function = (AlphaCommandArgument b) -> {
+      return b.getName();
     };
     String _join = IterableExtensions.<AlphaCommandArgument>join(binding.getBindSource(), ", ", _function);
     _builder.append(_join);
@@ -283,16 +281,12 @@ public class AlphaJavaCommand {
    * assumed to have the right type after this block of code.
    */
   public Object[] specializedCallPreparations(final AlphaCommandSpecialization specialization) {
-    final BiFunction<AlphaCommandArgument, CommandArgumentSpecialization, CharSequence> _function = new BiFunction<AlphaCommandArgument, CommandArgumentSpecialization, CharSequence>() {
-      public CharSequence apply(final AlphaCommandArgument orig, final CommandArgumentSpecialization spec) {
-        return AlphaJavaCommand.this.getCallPreparation(spec, orig);
-      }
+    final BiFunction<AlphaCommandArgument, CommandArgumentSpecialization, CharSequence> _function = (AlphaCommandArgument orig, CommandArgumentSpecialization spec) -> {
+      return this.getCallPreparation(spec, orig);
     };
     final Stream<CharSequence> list = this.commonEx.<CharSequence>zipArgumentPairs(specialization, _function);
-    final Predicate<CharSequence> _function_1 = new Predicate<CharSequence>() {
-      public boolean test(final CharSequence v) {
-        return (v != null);
-      }
+    final Predicate<CharSequence> _function_1 = (CharSequence v) -> {
+      return (v != null);
     };
     return list.filter(_function_1).toArray();
   }
@@ -361,44 +355,36 @@ public class AlphaJavaCommand {
       if (_argumentType_1 != null) {
         switch (_argumentType_1) {
           case ALPHA_SYSTEM:
-            final Function1<AlphaCommandArgument, Boolean> _function = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                ArgumentType _argumentType = a.getArgumentType();
-                return Boolean.valueOf(Objects.equal(_argumentType, ArgumentType.ALPHA_ROOT));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function = (AlphaCommandArgument a) -> {
+              ArgumentType _argumentType_2 = a.getArgumentType();
+              return Boolean.valueOf(Objects.equal(_argumentType_2, ArgumentType.ALPHA_ROOT));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function);
             break;
           case SYSTEM_BODY:
-            final Function1<AlphaCommandArgument, Boolean> _function_1 = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                ArgumentType _argumentType = a.getArgumentType();
-                return Boolean.valueOf(Objects.equal(_argumentType, ArgumentType.ALPHA_SYSTEM));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function_1 = (AlphaCommandArgument a) -> {
+              ArgumentType _argumentType_2 = a.getArgumentType();
+              return Boolean.valueOf(Objects.equal(_argumentType_2, ArgumentType.ALPHA_SYSTEM));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function_1);
             break;
           case VARIABLE:
-            final Function1<AlphaCommandArgument, Boolean> _function_2 = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                return Boolean.valueOf((((((Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_SYSTEM) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.SYSTEM_BODY)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_EXPRESSION)));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function_2 = (AlphaCommandArgument a) -> {
+              return Boolean.valueOf((((((Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_SYSTEM) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.SYSTEM_BODY)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_EXPRESSION)));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function_2);
             break;
           case EQUATION:
           case STANDARD_EQUATION:
           case USE_EQUATION:
-            final Function1<AlphaCommandArgument, Boolean> _function_3 = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                ArgumentType _argumentType = a.getArgumentType();
-                return Boolean.valueOf(Objects.equal(_argumentType, ArgumentType.SYSTEM_BODY));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function_3 = (AlphaCommandArgument a) -> {
+              ArgumentType _argumentType_2 = a.getArgumentType();
+              return Boolean.valueOf(Objects.equal(_argumentType_2, ArgumentType.SYSTEM_BODY));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function_3);
             break;
@@ -407,30 +393,26 @@ public class AlphaJavaCommand {
           case BINARY_EXPRESSION:
           case DEPENDENCE_EXPRESSION:
           case REDUCE_EXPRESSION:
-            final Function1<AlphaCommandArgument, Boolean> _function_4 = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                return Boolean.valueOf(((Objects.equal(a.getArgumentType(), ArgumentType.EQUATION) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function_4 = (AlphaCommandArgument a) -> {
+              return Boolean.valueOf(((Objects.equal(a.getArgumentType(), ArgumentType.EQUATION) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function_4);
             break;
           case AFFINE_FUNCTION:
           case DOMAIN:
-            final Function1<AlphaCommandArgument, Boolean> _function_5 = new Function1<AlphaCommandArgument, Boolean>() {
-              public Boolean apply(final AlphaCommandArgument a) {
-                return Boolean.valueOf((((((((((Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_SYSTEM) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.SYSTEM_BODY)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_EXPRESSION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.ABSTRACT_REDUCE_EXPRESSION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.BINARY_EXPRESSION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.DEPENDENCE_EXPRESSION)) || 
-                  Objects.equal(a.getArgumentType(), ArgumentType.REDUCE_EXPRESSION)));
-              }
+            final Function1<AlphaCommandArgument, Boolean> _function_5 = (AlphaCommandArgument a) -> {
+              return Boolean.valueOf((((((((((Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_SYSTEM) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.SYSTEM_BODY)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.STANDARD_EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.USE_EQUATION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.ALPHA_EXPRESSION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.ABSTRACT_REDUCE_EXPRESSION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.BINARY_EXPRESSION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.DEPENDENCE_EXPRESSION)) || 
+                Objects.equal(a.getArgumentType(), ArgumentType.REDUCE_EXPRESSION)));
             };
             _switchResult = IterableExtensions.<AlphaCommandArgument>filter(origArgs, _function_5);
             break;
