@@ -49,6 +49,7 @@ class WriteC extends Base {
 		    «ef.flagVariable.identityAccess» = 'F';
 		  } else if («ef.flagVariable.identityAccess» == 'I') {
 		    printf("There is a self dependence on «ef.variable.name» at («ef.variable.indices.map['%ld'].join(',')»)\n", «ef.variable.indices.join(',')»);
+		    exit(-1);
 		  }
 		  
 		  return «ef.variable.identityAccess»;

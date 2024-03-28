@@ -151,6 +151,9 @@ public class WriteC extends Base {
     _builder.append(_join_1, "    ");
     _builder.append(");");
     _builder.newLineIfNotEmpty();
+    _builder.append("    ");
+    _builder.append("exit(-1);");
+    _builder.newLine();
     _builder.append("  ");
     _builder.append("}");
     _builder.newLine();
