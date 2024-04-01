@@ -42,7 +42,6 @@ public class PolynomialPrinter extends CodegenSwitch<CharSequence> {
         _builder.newLineIfNotEmpty();
       }
     }
-    _builder.append("if ");
     final Function1<PolynomialPiece, CharSequence> _function = (PolynomialPiece it) -> {
       return this.doSwitch(it);
     };

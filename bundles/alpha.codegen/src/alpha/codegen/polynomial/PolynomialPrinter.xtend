@@ -25,7 +25,7 @@ class PolynomialPrinter extends CodegenSwitch<CharSequence> {
 			// «p.islPolynomial»
 			long «variableName»;
 			«ENDIF»
-			if «p.pieces.map[doSwitch].join(' else ')»
+			«p.pieces.map[doSwitch].join(' else ')»
 		'''
 	}
 	
