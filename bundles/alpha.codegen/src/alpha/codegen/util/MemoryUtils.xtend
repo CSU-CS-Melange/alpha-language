@@ -75,12 +75,10 @@ class MemoryUtils {
 		// Here, the points in Y are encoded in the newly moved parameters
 		// (the ones that used to be indices), and the points in X are the newly introduced indices.
 		// There may be some redundancies, but the Barvinok library will simplify them.
-		val lessThan = (0 ..< orderingBase.nbIndices)
-			.map[i | createOrderingForIndex(orderingBase, domain.nbParams, i)]
-			.reduce[d1, d2 | d1.union(d2)]
-		
 		val equalTo = (0 ..< orderingBase.nbIndices).fold(orderingBase.copy, [d, i | d.addTotalOrderEquality(domain.nbParams, i)])
-		val lessThanEqualTo = lessThan.union(equalTo)
+		val lessThanEqualTo = (0 ..< orderingBase.nbIndices)
+			.map[i | createOrderingForIndex(orderingBase, domain.nbParams, i)]
+			.fold(equalTo, [d1, d2 | d1.union(d2)])
 		
 		// By intersecting the lexicographic ordering with our original domain,
 		// we get the set of points in our domain that are lexicographically less than

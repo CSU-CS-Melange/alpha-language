@@ -62,19 +62,18 @@ public class MemoryUtils {
     final List<String> names = IterableExtensions.<String>toList(IterableExtensions.<String>take(IterableExtensions.<String>reject(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, Integer.MAX_VALUE, true), _function), _function_1), domain.getNbIndices()));
     final ISLSet orderingBase = domain.copy().<IISLSingleSpaceSetMethods>moveIndicesToParameters().<ISLSet>addIndices(names);
     int _nbIndices = orderingBase.getNbIndices();
-    final Function1<Integer, ISLSet> _function_2 = (Integer i) -> {
-      return MemoryUtils.createOrderingForIndex(orderingBase, domain.getNbParams(), (i).intValue());
-    };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_3 = (ISLSet d1, ISLSet d2) -> {
-      return d1.union(d2);
-    };
-    final ISLSet lessThan = IterableExtensions.<ISLSet>reduce(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices, true), _function_2), _function_3);
-    int _nbIndices_1 = orderingBase.getNbIndices();
-    final Function2<ISLSet, Integer, ISLSet> _function_4 = (ISLSet d, Integer i) -> {
+    final Function2<ISLSet, Integer, ISLSet> _function_2 = (ISLSet d, Integer i) -> {
       return MemoryUtils.addTotalOrderEquality(d, domain.getNbParams(), (i).intValue());
     };
-    final ISLSet equalTo = IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, _nbIndices_1, true), orderingBase.copy(), _function_4);
-    final ISLSet lessThanEqualTo = lessThan.union(equalTo);
+    final ISLSet equalTo = IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, _nbIndices, true), orderingBase.copy(), _function_2);
+    int _nbIndices_1 = orderingBase.getNbIndices();
+    final Function1<Integer, ISLSet> _function_3 = (Integer i) -> {
+      return MemoryUtils.createOrderingForIndex(orderingBase, domain.getNbParams(), (i).intValue());
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_4 = (ISLSet d1, ISLSet d2) -> {
+      return d1.union(d2);
+    };
+    final ISLSet lessThanEqualTo = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices_1, true), _function_3), equalTo, _function_4);
     return MemoryUtils.card(lessThanEqualTo.intersect(domain.copy()));
   }
 

@@ -137,7 +137,7 @@ public class PolynomialImpl extends PolynomialNodeImpl implements Polynomial {
 	 * @generated
 	 */
 	public String toCString(final String variableName) {
-		return PolynomialPrinter.print(this, variableName);
+		return PolynomialPrinter.print(this, variableName).toString();
 	}
 
 	/**

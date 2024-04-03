@@ -456,7 +456,7 @@ class Polynomial extends PolynomialNode, PolynomialVisitable {
 	ISLPWQPolynomial islPolynomial
 	
 	op String toCString(String variableName) {
-		PolynomialPrinter.print(this, variableName)
+		PolynomialPrinter.print(this, variableName).toString
 	}
 	
 	op String[] params() {

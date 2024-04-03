@@ -1986,29 +1986,6 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		// Create resource
 		createResource(eNS_URI);
-
-		// Create annotations
-		// null
-		createNullAnnotations();
-	}
-
-	/**
-	 * Initializes the annotations for <b>null</b>.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	protected void createNullAnnotations() {
-		String source = null;
-		addAnnotation
-		  (this,
-		   source,
-		   new String[] {
-			   "operationReflection", "false",
-			   "loadInitialization", "false",
-			   "literalsInterface", "true",
-			   "basePackage", "alpha"
-		   });
 	}
 
 } //CodegenPackageImpl

@@ -1,50 +1,19 @@
 package alpha.codegen.polynomial
 
-import static extension alpha.codegen.util.ISLPrintingUtils.*
-import alpha.codegen.util.CodegenSwitch
 import alpha.codegen.Polynomial
-import alpha.codegen.PolynomialPiece
-import alpha.codegen.PolynomialTerm
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
-class PolynomialPrinter extends CodegenSwitch<CharSequence> {
+import static extension fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial._toString
+
+class PolynomialPrinter {
+	protected static val format = ISL_FORMAT.C.ordinal
 	
-	String variableName
+	static def print(Polynomial polynomial, String variableName) '''
+		// «polynomial.islPolynomial»
+		long «variableName» = «polynomial.print»
+	'''
+
+	static def print(Polynomial polynomial) '''(«polynomial.islPolynomial._toString(format)»)'''
 	
-	def static print(Polynomial polynomial, String variableName) {
-		val printer = new PolynomialPrinter(variableName)
-		printer.doSwitch(polynomial).toString
-	}
-	
-	new(String variableName) {
-		this.variableName = '_card_' + variableName
-	}
-	
-	def casePolynomial(Polynomial p) {
-		'''
-			«IF variableName !== null»
-			// «p.islPolynomial»
-			long «variableName»;
-			«ENDIF»
-			«p.pieces.map[doSwitch].join(' else ')»
-		'''
-	}
-	
-	def isLast(PolynomialPiece piece) {
-		val numPieces = piece.polynomial.pieces.size
-		piece.polynomial.pieces.indexOf(piece) == numPieces - 1
-	}
-	
-	def casePolynomialPiece(PolynomialPiece piece) {
-		// don't display the 'if' for the last piece
-		'''
-		«if (!piece.isLast) 'if '»(«piece.getSet.paramConstraintsToConditionals») {
-		  «variableName» = «piece.terms.map['''(«doSwitch»)'''].join('+')»;
-		}'''
-	}
-	
-	def casePolynomialTerm(PolynomialTerm term) {
-		'''«term.value»'''
-	}
-	
-	
+	static def printMinusOne(Polynomial polynomial) '''(«polynomial.print» - 1)'''
 }
