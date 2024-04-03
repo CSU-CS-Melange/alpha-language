@@ -33,18 +33,28 @@ public class MemoryUtils {
   /**
    * Returns a piecewise quasi-affine polynomial which can compute the "rank" of a point.
    * The "rank" is defined as the number of points which are lexicographically
-   * less than or equal to that point.
+   * less than that point.
+   * We will compute this by building the set of such points, then using the Barvinok
+   * library to compute the cardinality of such a set.
+   * This will return a piecewise quasi-affine polynomial.
+   * 
+   * Note: the polynomial returned may look like it's undefined for the lex min of the given set.
+   * However, this is not actually the case.
+   * These polynomials are defined over the universe, and will evaluate to zero
+   * if the point you're asking for lies outside the domains of each piece.
+   * In other words: there is an implicit "default" case that always evaluates to zero
+   * if the point being evaluated lies outside all the domains of all the pieces of the polynomial.
    * 
    * For example, the set "[N] -> {[i]: 0 <= i <= N}" (which forms a line from 0 to N)
-   * would return the polynomial "[N,i] -> { (1 + 1) : 0 <= i <= N }".
+   * would return the polynomial "[N,i] -> { i : 0 < i <= N }".
+   * Per the previous paragraph, this is still valid for i=0,
+   * as it falls under the implicit extra case that always evaluates to zero.
    * 
    * The intended use case of this is for determining the index of a point
-   * within a linearized array of our set. This produces a 1-based indexing.
-   * Due to a limitation within ISL, the polynomial cannot be coerced into a 0-based indexing
-   * while guaranteeing correctness. If you need 1-based indexing (e.g., for printing C code),
-   * simply add a "-1" to the end of the polynomial *after* printing it out.
-   * Subtracting a polynomial that represents the constant 1 will cause the domain to be
-   * restricted such that the polynomial does not return 0.
+   * within a linearized array of our set. This produces a 0-based indexing.
+   * Per the second paragraph, it may look like this polynomial is not defined for index 0,
+   * but it actually is due to the implicit default case always evaluating to 0
+   * if the point you're evaluating at is not in any of the domains of the pieces.
    * 
    * @param domain The domain to get the ranking polynomial for. This set is not destroyed ("isl_keep").
    * @returns A piecewise quasi-affine polynomial that can be used to compute the rank of a point within the given domain.
@@ -60,21 +70,16 @@ public class MemoryUtils {
       return Boolean.valueOf(existingNames.contains(it));
     };
     final List<String> names = IterableExtensions.<String>toList(IterableExtensions.<String>take(IterableExtensions.<String>reject(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, Integer.MAX_VALUE, true), _function), _function_1), domain.getNbIndices()));
-    final ISLSet orderingBase = domain.copy().<IISLSingleSpaceSetMethods>moveIndicesToParameters().<ISLSet>addIndices(names);
-    int _nbIndices = orderingBase.getNbIndices();
-    final Function2<ISLSet, Integer, ISLSet> _function_2 = (ISLSet d, Integer i) -> {
-      return MemoryUtils.addTotalOrderEquality(d, domain.getNbParams(), (i).intValue());
+    final ISLSet extendedSet = domain.copy().<IISLSingleSpaceSetMethods>moveIndicesToParameters().<ISLSet>addIndices(names);
+    int _nbIndices = domain.getNbIndices();
+    final Function1<Integer, ISLSet> _function_2 = (Integer i) -> {
+      return MemoryUtils.createOrderingForIndex(extendedSet, domain.getNbParams(), (i).intValue());
     };
-    final ISLSet equalTo = IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, _nbIndices, true), orderingBase.copy(), _function_2);
-    int _nbIndices_1 = orderingBase.getNbIndices();
-    final Function1<Integer, ISLSet> _function_3 = (Integer i) -> {
-      return MemoryUtils.createOrderingForIndex(orderingBase, domain.getNbParams(), (i).intValue());
-    };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_4 = (ISLSet d1, ISLSet d2) -> {
+    final Function2<ISLSet, ISLSet, ISLSet> _function_3 = (ISLSet d1, ISLSet d2) -> {
       return d1.union(d2);
     };
-    final ISLSet lessThanEqualTo = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices_1, true), _function_3), equalTo, _function_4);
-    return MemoryUtils.card(lessThanEqualTo.intersect(domain.copy()));
+    final ISLSet lessThan = IterableExtensions.<ISLSet>reduce(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices, true), _function_2), _function_3);
+    return MemoryUtils.card(lessThan.intersect(domain.copy()));
   }
 
   /**
