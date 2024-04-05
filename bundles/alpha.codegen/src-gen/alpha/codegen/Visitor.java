@@ -61,14 +61,6 @@ public interface Visitor extends EObject {
 	 * @model mUnique="false"
 	 * @generated
 	 */
-	void visitMemoryMacro(MemoryMacro m);
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model mUnique="false"
-	 * @generated
-	 */
 	void visitStatementMacro(StatementMacro m);
 
 	/**
@@ -181,14 +173,6 @@ public interface Visitor extends EObject {
 	 * @model mUnique="false"
 	 * @generated
 	 */
-	void inMemoryMacro(MemoryMacro m);
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model mUnique="false"
-	 * @generated
-	 */
 	void inStatementMacro(StatementMacro m);
 
 	/**
@@ -294,14 +278,6 @@ public interface Visitor extends EObject {
 	 * @generated
 	 */
 	void outGlobalMemoryMacro(GlobalMemoryMacro m);
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model mUnique="false"
-	 * @generated
-	 */
-	void outMemoryMacro(MemoryMacro m);
 
 	/**
 	 * <!-- begin-user-doc -->

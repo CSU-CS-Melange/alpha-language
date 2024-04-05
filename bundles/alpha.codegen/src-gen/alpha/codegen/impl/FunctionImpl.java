@@ -8,7 +8,6 @@ import alpha.codegen.CodegenPackage;
 import alpha.codegen.DataType;
 import alpha.codegen.Function;
 import alpha.codegen.FunctionBody;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.Program;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
@@ -32,10 +31,8 @@ import org.eclipse.emf.ecore.InternalEObject;
 
 import org.eclipse.emf.ecore.impl.ENotificationImpl;
 
-import org.eclipse.emf.ecore.util.EObjectContainmentWithInverseEList;
 import org.eclipse.emf.ecore.util.EObjectResolvingEList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.emf.ecore.util.InternalEList;
 
 /**
  * <!-- begin-user-doc -->
@@ -50,7 +47,6 @@ import org.eclipse.emf.ecore.util.InternalEList;
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getName <em>Name</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getScalarArgs <em>Scalar Args</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getArrayArgs <em>Array Args</em>}</li>
- *   <li>{@link alpha.codegen.impl.FunctionImpl#getMemoryMacros <em>Memory Macros</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getBody <em>Body</em>}</li>
  * </ul>
  *
@@ -116,16 +112,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 	 * @ordered
 	 */
 	protected EList<ArrayVariable> arrayArgs;
-
-	/**
-	 * The cached value of the '{@link #getMemoryMacros() <em>Memory Macros</em>}' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getMemoryMacros()
-	 * @generated
-	 * @ordered
-	 */
-	protected EList<MemoryMacro> memoryMacros;
 
 	/**
 	 * The cached value of the '{@link #getBody() <em>Body</em>}' containment reference.
@@ -278,18 +264,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EList<MemoryMacro> getMemoryMacros() {
-		if (memoryMacros == null) {
-			memoryMacros = new EObjectContainmentWithInverseEList<MemoryMacro>(MemoryMacro.class, this, CodegenPackage.FUNCTION__MEMORY_MACROS, CodegenPackage.MEMORY_MACRO__FUNCTION);
-		}
-		return memoryMacros;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public FunctionBody getBody() {
 		return body;
 	}
@@ -371,7 +345,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public NotificationChain eInverseAdd(InternalEObject otherEnd, int featureID, NotificationChain msgs) {
 		switch (featureID) {
@@ -379,8 +352,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 				if (eInternalContainer() != null)
 					msgs = eBasicRemoveFromContainer(msgs);
 				return basicSetProgram((Program)otherEnd, msgs);
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				return ((InternalEList<InternalEObject>)(InternalEList<?>)getMemoryMacros()).basicAdd(otherEnd, msgs);
 			case CodegenPackage.FUNCTION__BODY:
 				if (body != null)
 					msgs = ((InternalEObject)body).eInverseRemove(this, EOPPOSITE_FEATURE_BASE - CodegenPackage.FUNCTION__BODY, null, msgs);
@@ -399,8 +370,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 		switch (featureID) {
 			case CodegenPackage.FUNCTION__PROGRAM:
 				return basicSetProgram(null, msgs);
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				return ((InternalEList<?>)getMemoryMacros()).basicRemove(otherEnd, msgs);
 			case CodegenPackage.FUNCTION__BODY:
 				return basicSetBody(null, msgs);
 		}
@@ -440,8 +409,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 				return getScalarArgs();
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				return getArrayArgs();
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				return getMemoryMacros();
 			case CodegenPackage.FUNCTION__BODY:
 				return getBody();
 		}
@@ -474,10 +441,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 				getArrayArgs().clear();
 				getArrayArgs().addAll((Collection<? extends ArrayVariable>)newValue);
 				return;
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				getMemoryMacros().clear();
-				getMemoryMacros().addAll((Collection<? extends MemoryMacro>)newValue);
-				return;
 			case CodegenPackage.FUNCTION__BODY:
 				setBody((FunctionBody)newValue);
 				return;
@@ -508,9 +471,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				getArrayArgs().clear();
 				return;
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				getMemoryMacros().clear();
-				return;
 			case CodegenPackage.FUNCTION__BODY:
 				setBody((FunctionBody)null);
 				return;
@@ -536,8 +496,6 @@ public class FunctionImpl extends NodeImpl implements Function {
 				return scalarArgs != null && !scalarArgs.isEmpty();
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				return arrayArgs != null && !arrayArgs.isEmpty();
-			case CodegenPackage.FUNCTION__MEMORY_MACROS:
-				return memoryMacros != null && !memoryMacros.isEmpty();
 			case CodegenPackage.FUNCTION__BODY:
 				return body != null;
 		}

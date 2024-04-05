@@ -4,12 +4,11 @@
 	literalsInterface="true")
 package alpha.codegen
 
-import alpha.codegen.polynomial.PolynomialPrinter
 import alpha.codegen.show.WriteC
 import alpha.model.AlphaSystem
 import alpha.model.BINARY_OP
-import alpha.model.ReduceExpression
 import alpha.model.REDUCTION_OP
+import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.UNARY_OP
 import alpha.model.Variable
@@ -26,7 +25,6 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLTerm
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import java.util.HashMap
-import alpha.codegen.util.MemoryUtils
 
 type ISLSet wraps ISLSet
 type ISLMap wraps ISLMap
@@ -66,7 +64,6 @@ interface Visitor {
 	op void visitMacro(Macro m)
 	op void visitGlobalMacro(GlobalMacro m)
 	op void visitGlobalMemoryMacro(GlobalMemoryMacro m)
-	op void visitMemoryMacro(MemoryMacro m)
 	op void visitStatementMacro(StatementMacro m)
 	op void visitBaseVariable(BaseVariable v)
 	op void visitArrayVariable(ArrayVariable v)
@@ -82,7 +79,6 @@ interface Visitor {
 	op void inMacro(Macro m)
 	op void inGlobalMacro(GlobalMacro m)
 	op void inGlobalMemoryMacro(GlobalMemoryMacro m)
-	op void inMemoryMacro(MemoryMacro m)
 	op void inStatementMacro(StatementMacro m)
 	op void inBaseVariable(BaseVariable v)
 	op void inArrayVariable(ArrayVariable av)
@@ -98,7 +94,6 @@ interface Visitor {
 	op void outMacro(Macro m)
 	op void outGlobalMacro(GlobalMacro m)
 	op void outGlobalMemoryMacro(GlobalMemoryMacro m)
-	op void outMemoryMacro(MemoryMacro m)
 	op void outStatementMacro(StatementMacro m)
 	op void outBaseVariable(BaseVariable v)
 	op void outArrayVariable(ArrayVariable av)
@@ -155,31 +150,11 @@ abstract class AbstractMemoryMacro extends Macro {
 	op void accept(Visitor visitor)
 }
 
-class MemoryMacro extends AbstractMemoryMacro {
-	container Function function opposite memoryMacros
-	refers MemoryAllocation allocation
-	refers ArrayVariable variable
-	
-	op void accept(Visitor visitor) {
-		visitor.visitMemoryMacro(this)
-	}
-}
-
 class MemoryAllocation extends Node, Visitable {
-	refers MemoryMacro macro
 	refers ArrayVariable variable
 	ISLMap map
 	ISLSet domain
 	ISLASTNode ISLASTNode
-	
-	
-	op void card() {
-		domain.copy.apply(map())
-	}
-	
-	op ISLMap map() {
-		macro.map
-	}
 	
 	op void accept(Visitor visitor) {
 		visitor.visitMemoryAllocation(this)
@@ -283,7 +258,6 @@ class Function extends Node, Visitable {
 	String name
 	refers BaseVariable[] scalarArgs
 	refers ArrayVariable[] arrayArgs
-	contains MemoryMacro[] memoryMacros opposite function
 	contains FunctionBody body opposite function
 	
 	op BaseVariable[] args() {

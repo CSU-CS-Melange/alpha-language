@@ -7,7 +7,6 @@ import alpha.codegen.EvalFunction;
 import alpha.codegen.Function;
 import alpha.codegen.FunctionBody;
 import alpha.codegen.GlobalVariable;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
@@ -157,11 +156,7 @@ public class WriteCProgram extends BaseProgram {
     List<BaseVariable> _paramScalarVariables = CodegenUtil.paramScalarVariables(AlphaUtil.getContainerSystem(se));
     List<BaseVariable> _indexScalarVariables = CodegenUtil.indexScalarVariables(se.getVariable());
     final Iterable<BaseVariable> scalarArgs = Iterables.<BaseVariable>concat(_paramScalarVariables, _indexScalarVariables);
-    final Function1<ArrayVariable, MemoryMacro> _function = (ArrayVariable it) -> {
-      return Factory.createMemoryMacro(it);
-    };
-    final Iterable<MemoryMacro> localMemoryMacros = IterableExtensions.<ArrayVariable, MemoryMacro>map(this.localCVs.values(), _function);
-    final EvalFunction function = Factory.createEvalFunction(evalVar, flagVar, ((BaseVariable[])Conversions.unwrapArray(scalarArgs, BaseVariable.class)), se, ((MemoryMacro[])Conversions.unwrapArray(localMemoryMacros, MemoryMacro.class)));
+    final EvalFunction function = Factory.createEvalFunction(evalVar, flagVar, ((BaseVariable[])Conversions.unwrapArray(scalarArgs, BaseVariable.class)), se);
     this.program.getFunctions().add(function);
   }
 

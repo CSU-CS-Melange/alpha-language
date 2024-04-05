@@ -9,7 +9,6 @@ import alpha.codegen.Function
 import alpha.codegen.FunctionBody
 import alpha.codegen.GlobalMemoryMacro
 import alpha.codegen.MemoryAllocation
-import alpha.codegen.MemoryMacro
 import alpha.codegen.Polynomial
 import alpha.codegen.Program
 import alpha.codegen.ReduceFunction
@@ -19,11 +18,8 @@ import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLASTNode
-import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLTerm
 
 import static extension alpha.codegen.util.CodegenUtil.*
 import static extension alpha.model.util.AlphaUtil.*
@@ -53,30 +49,8 @@ class Factory {
 		function
 	}
 	
-	def static Function createFunction(DataType returnType, String name, BaseVariable[] scalarArguments, ArrayVariable[] arrayArguments, ArrayVariable[] localVariables, MemoryMacro[] memoryMacros, FunctionBody body) {
-		val function = createFunction(returnType, name, scalarArguments, arrayArguments, localVariables, body)
-		function.memoryMacros.addAll(memoryMacros)
-		
-		function
-	}
-	
-	def static MemoryMacro createMemoryMacro(ArrayVariable variable, ISLMap map) {
-		val macro = factory.createMemoryMacro
-		macro.variable = variable
-		macro.map = if (map !== null) map else variable.alphaVariable.domain.identity
-		
-		macro.allocation = variable.createMemoryAllocation(macro)
-		
-		macro
-	}
-	
-	def static MemoryMacro createMemoryMacro(ArrayVariable variable) {
-		createMemoryMacro(variable, null)
-	}
-	
-	def static MemoryAllocation createMemoryAllocation(ArrayVariable variable, MemoryMacro macro) {
+	def static MemoryAllocation createMemoryAllocation(ArrayVariable variable) {
 		val allocation = factory.createMemoryAllocation
-		allocation.macro = macro
 		allocation.variable = variable
 		
 		allocation.domain = variable.alphaVariable.domain
@@ -92,7 +66,7 @@ class Factory {
 		body
 	}
 	
-	def static EvalFunction createEvalFunction(ArrayVariable evalVar, ArrayVariable flagVar, BaseVariable[] scalarArguments, StandardEquation equation, MemoryMacro[] localMemoryMacros) {
+	def static EvalFunction createEvalFunction(ArrayVariable evalVar, ArrayVariable flagVar, BaseVariable[] scalarArguments, StandardEquation equation) {
 		val function = factory.createEvalFunction		
 		function.returnType = evalVar.elemType
 		function.scalarArgs.addAll(scalarArguments)
@@ -100,7 +74,6 @@ class Factory {
 		function.variable = evalVar
 		function.flagVariable = flagVar
 		function.equation = equation
-		function.memoryMacros.addAll(localMemoryMacros)
 				
 		function
 	}

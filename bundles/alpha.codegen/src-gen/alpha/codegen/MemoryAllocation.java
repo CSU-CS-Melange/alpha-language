@@ -15,7 +15,6 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
  * The following features are supported:
  * </p>
  * <ul>
- *   <li>{@link alpha.codegen.MemoryAllocation#getMacro <em>Macro</em>}</li>
  *   <li>{@link alpha.codegen.MemoryAllocation#getVariable <em>Variable</em>}</li>
  *   <li>{@link alpha.codegen.MemoryAllocation#getMap <em>Map</em>}</li>
  *   <li>{@link alpha.codegen.MemoryAllocation#getDomain <em>Domain</em>}</li>
@@ -27,28 +26,6 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
  * @generated
  */
 public interface MemoryAllocation extends Node, Visitable {
-	/**
-	 * Returns the value of the '<em><b>Macro</b></em>' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the value of the '<em>Macro</em>' reference.
-	 * @see #setMacro(MemoryMacro)
-	 * @see alpha.codegen.CodegenPackage#getMemoryAllocation_Macro()
-	 * @model
-	 * @generated
-	 */
-	MemoryMacro getMacro();
-
-	/**
-	 * Sets the value of the '{@link alpha.codegen.MemoryAllocation#getMacro <em>Macro</em>}' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @param value the new value of the '<em>Macro</em>' reference.
-	 * @see #getMacro()
-	 * @generated
-	 */
-	void setMacro(MemoryMacro value);
-
 	/**
 	 * Returns the value of the '<em><b>Variable</b></em>' reference.
 	 * <!-- begin-user-doc -->
@@ -136,22 +113,6 @@ public interface MemoryAllocation extends Node, Visitable {
 	 * @generated
 	 */
 	void setISLASTNode(ISLASTNode value);
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model
-	 * @generated
-	 */
-	void card();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model dataType="alpha.codegen.ISLMap" unique="false"
-	 * @generated
-	 */
-	ISLMap map();
 
 	/**
 	 * <!-- begin-user-doc -->

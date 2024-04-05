@@ -96,10 +96,6 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 				return createAbstractMemoryMacroAdapter();
 			}
 			@Override
-			public Adapter caseMemoryMacro(MemoryMacro object) {
-				return createMemoryMacroAdapter();
-			}
-			@Override
 			public Adapter caseMemoryAllocation(MemoryAllocation object) {
 				return createMemoryAllocationAdapter();
 			}
@@ -266,20 +262,6 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createAbstractMemoryMacroAdapter() {
-		return null;
-	}
-
-	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.MemoryMacro <em>Memory Macro</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.MemoryMacro
-	 * @generated
-	 */
-	public Adapter createMemoryMacroAdapter() {
 		return null;
 	}
 

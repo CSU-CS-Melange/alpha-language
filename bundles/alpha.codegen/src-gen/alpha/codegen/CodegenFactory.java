@@ -58,15 +58,6 @@ public interface CodegenFactory extends EFactory {
 	GlobalMacro createGlobalMacro();
 
 	/**
-	 * Returns a new object of class '<em>Memory Macro</em>'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return a new object of class '<em>Memory Macro</em>'.
-	 * @generated
-	 */
-	MemoryMacro createMemoryMacro();
-
-	/**
 	 * Returns a new object of class '<em>Memory Allocation</em>'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

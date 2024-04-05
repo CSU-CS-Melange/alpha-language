@@ -5,7 +5,6 @@ import alpha.codegen.BaseVariable;
 import alpha.codegen.DataType;
 import alpha.codegen.EvalFunction;
 import alpha.codegen.Function;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.Visitable;
 import alpha.codegen.util.AlphaEquationPrinter;
@@ -71,17 +70,6 @@ public class WriteC extends Base {
     };
     String _join = IterableExtensions.join(ListExtensions.<ArrayVariable, String>map(f.getArrayArgs(), _function), "\n");
     _builder.append(_join, "  ");
-    _builder.newLineIfNotEmpty();
-    _builder.newLine();
-    _builder.append("  ");
-    _builder.append("// local memory allocation and macros");
-    _builder.newLine();
-    _builder.append("  ");
-    final Function1<MemoryMacro, CharSequence> _function_1 = (MemoryMacro it) -> {
-      return this.doSwitch(it);
-    };
-    String _join_1 = IterableExtensions.join(ListExtensions.<MemoryMacro, CharSequence>map(f.getMemoryMacros(), _function_1), "\n");
-    _builder.append(_join_1, "  ");
     _builder.newLineIfNotEmpty();
     _builder.newLine();
     _builder.append("  ");

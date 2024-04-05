@@ -6,7 +6,6 @@ import alpha.codegen.DataType
 import alpha.codegen.GlobalMacro
 import alpha.codegen.GlobalMemoryMacro
 import alpha.codegen.Include
-import alpha.codegen.MemoryMacro
 import alpha.codegen.StatementMacro
 import alpha.model.AlphaSystem
 import alpha.model.Variable
@@ -34,13 +33,6 @@ class CodegenUtil {
 		ret
 	}
 	
-	def static MemoryMacro memoryMacro(String left, String right) {
-		val ret = factory.createMemoryMacro
-		ret.left = left
-		ret.right = right
-		ret
-	}
-	
 	def static GlobalMemoryMacro globalMemoryMacro(String left, String right) {
 		val ret = factory.createGlobalMemoryMacro
 		ret.left = left
@@ -54,11 +46,6 @@ class CodegenUtil {
 		ret.right = right
 		ret
 	}
-	
-
-	
-
-	
 	
 	def static BaseVariable baseVariable(String name, DataType type) {
 		val cv = factory.createBaseVariable

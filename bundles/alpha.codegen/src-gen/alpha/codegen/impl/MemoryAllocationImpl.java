@@ -5,7 +5,6 @@ package alpha.codegen.impl;
 import alpha.codegen.ArrayVariable;
 import alpha.codegen.CodegenPackage;
 import alpha.codegen.MemoryAllocation;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
 
@@ -30,7 +29,6 @@ import org.eclipse.emf.ecore.impl.ENotificationImpl;
  * The following features are implemented:
  * </p>
  * <ul>
- *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getMacro <em>Macro</em>}</li>
  *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getVariable <em>Variable</em>}</li>
  *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getMap <em>Map</em>}</li>
  *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getDomain <em>Domain</em>}</li>
@@ -40,16 +38,6 @@ import org.eclipse.emf.ecore.impl.ENotificationImpl;
  * @generated
  */
 public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
-	/**
-	 * The cached value of the '{@link #getMacro() <em>Macro</em>}' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getMacro()
-	 * @generated
-	 * @ordered
-	 */
-	protected MemoryMacro macro;
-
 	/**
 	 * The cached value of the '{@link #getVariable() <em>Variable</em>}' reference.
 	 * <!-- begin-user-doc -->
@@ -137,44 +125,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	@Override
 	protected EClass eStaticClass() {
 		return CodegenPackage.Literals.MEMORY_ALLOCATION;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public MemoryMacro getMacro() {
-		if (macro != null && macro.eIsProxy()) {
-			InternalEObject oldMacro = (InternalEObject)macro;
-			macro = (MemoryMacro)eResolveProxy(oldMacro);
-			if (macro != oldMacro) {
-				if (eNotificationRequired())
-					eNotify(new ENotificationImpl(this, Notification.RESOLVE, CodegenPackage.MEMORY_ALLOCATION__MACRO, oldMacro, macro));
-			}
-		}
-		return macro;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public MemoryMacro basicGetMacro() {
-		return macro;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setMacro(MemoryMacro newMacro) {
-		MemoryMacro oldMacro = macro;
-		macro = newMacro;
-		if (eNotificationRequired())
-			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.MEMORY_ALLOCATION__MACRO, oldMacro, macro));
 	}
 
 	/**
@@ -283,24 +233,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public void card() {
-		this.getDomain().copy().apply(this.map());
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public ISLMap map() {
-		return this.getMacro().getMap();
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public void accept(final Visitor visitor) {
 		visitor.visitMemoryAllocation(this);
 	}
@@ -322,9 +254,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	@Override
 	public Object eGet(int featureID, boolean resolve, boolean coreType) {
 		switch (featureID) {
-			case CodegenPackage.MEMORY_ALLOCATION__MACRO:
-				if (resolve) return getMacro();
-				return basicGetMacro();
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				if (resolve) return getVariable();
 				return basicGetVariable();
@@ -346,9 +275,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	@Override
 	public void eSet(int featureID, Object newValue) {
 		switch (featureID) {
-			case CodegenPackage.MEMORY_ALLOCATION__MACRO:
-				setMacro((MemoryMacro)newValue);
-				return;
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				setVariable((ArrayVariable)newValue);
 				return;
@@ -373,9 +299,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	@Override
 	public void eUnset(int featureID) {
 		switch (featureID) {
-			case CodegenPackage.MEMORY_ALLOCATION__MACRO:
-				setMacro((MemoryMacro)null);
-				return;
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				setVariable((ArrayVariable)null);
 				return;
@@ -400,8 +323,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	@Override
 	public boolean eIsSet(int featureID) {
 		switch (featureID) {
-			case CodegenPackage.MEMORY_ALLOCATION__MACRO:
-				return macro != null;
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				return variable != null;
 			case CodegenPackage.MEMORY_ALLOCATION__MAP:

@@ -118,16 +118,6 @@ public class CodegenSwitch<T> extends Switch<T> {
 				if (result == null) result = defaultCase(theEObject);
 				return result;
 			}
-			case CodegenPackage.MEMORY_MACRO: {
-				MemoryMacro memoryMacro = (MemoryMacro)theEObject;
-				T result = caseMemoryMacro(memoryMacro);
-				if (result == null) result = caseAbstractMemoryMacro(memoryMacro);
-				if (result == null) result = caseMacro(memoryMacro);
-				if (result == null) result = caseNode(memoryMacro);
-				if (result == null) result = caseVisitable(memoryMacro);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
 			case CodegenPackage.MEMORY_ALLOCATION: {
 				MemoryAllocation memoryAllocation = (MemoryAllocation)theEObject;
 				T result = caseMemoryAllocation(memoryAllocation);
@@ -342,21 +332,6 @@ public class CodegenSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T caseAbstractMemoryMacro(AbstractMemoryMacro object) {
-		return null;
-	}
-
-	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Memory Macro</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Memory Macro</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T caseMemoryMacro(MemoryMacro object) {
 		return null;
 	}
 

@@ -75,7 +75,6 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 			case CodegenPackage.INCLUDE: return createInclude();
 			case CodegenPackage.MACRO: return createMacro();
 			case CodegenPackage.GLOBAL_MACRO: return createGlobalMacro();
-			case CodegenPackage.MEMORY_MACRO: return createMemoryMacro();
 			case CodegenPackage.MEMORY_ALLOCATION: return createMemoryAllocation();
 			case CodegenPackage.GLOBAL_MEMORY_MACRO: return createGlobalMemoryMacro();
 			case CodegenPackage.STATEMENT_MACRO: return createStatementMacro();
@@ -226,16 +225,6 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 	public GlobalMacro createGlobalMacro() {
 		GlobalMacroImpl globalMacro = new GlobalMacroImpl();
 		return globalMacro;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public MemoryMacro createMemoryMacro() {
-		MemoryMacroImpl memoryMacro = new MemoryMacroImpl();
-		return memoryMacro;
 	}
 
 	/**

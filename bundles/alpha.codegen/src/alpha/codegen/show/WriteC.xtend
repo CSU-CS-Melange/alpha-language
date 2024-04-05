@@ -31,9 +31,6 @@ class WriteC extends Base {
 		  // copy to global
 		  «f.arrayArgs.map['''«it.writeName» = «it.localName»;'''].join('\n')»
 		
-		  // local memory allocation and macros
-		  «f.memoryMacros.map[doSwitch].join('\n')»
-		
 		  // statements
 		  «f.body.doSwitch»
 		}

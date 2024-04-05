@@ -6,7 +6,6 @@ import alpha.codegen.DataType;
 import alpha.codegen.GlobalMacro;
 import alpha.codegen.GlobalMemoryMacro;
 import alpha.codegen.Include;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.StatementMacro;
 import alpha.model.AlphaSystem;
 import alpha.model.Variable;
@@ -42,17 +41,6 @@ public class CodegenUtil {
     GlobalMacro _xblockexpression = null;
     {
       final GlobalMacro ret = CodegenUtil.factory.createGlobalMacro();
-      ret.setLeft(left);
-      ret.setRight(right);
-      _xblockexpression = ret;
-    }
-    return _xblockexpression;
-  }
-
-  public static MemoryMacro memoryMacro(final String left, final String right) {
-    MemoryMacro _xblockexpression = null;
-    {
-      final MemoryMacro ret = CodegenUtil.factory.createMemoryMacro();
       ret.setLeft(left);
       ret.setRight(right);
       _xblockexpression = ret;

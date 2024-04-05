@@ -9,7 +9,6 @@ import alpha.codegen.Function;
 import alpha.codegen.FunctionBody;
 import alpha.codegen.GlobalMemoryMacro;
 import alpha.codegen.MemoryAllocation;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.Polynomial;
 import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
@@ -21,7 +20,6 @@ import alpha.model.StandardEquation;
 import alpha.model.Variable;
 import alpha.model.util.AlphaUtil;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
-import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.CollectionExtensions;
@@ -58,43 +56,10 @@ public class Factory {
     return _xblockexpression;
   }
 
-  public static Function createFunction(final DataType returnType, final String name, final BaseVariable[] scalarArguments, final ArrayVariable[] arrayArguments, final ArrayVariable[] localVariables, final MemoryMacro[] memoryMacros, final FunctionBody body) {
-    Function _xblockexpression = null;
-    {
-      final Function function = Factory.createFunction(returnType, name, scalarArguments, arrayArguments, localVariables, body);
-      CollectionExtensions.<MemoryMacro>addAll(function.getMemoryMacros(), memoryMacros);
-      _xblockexpression = function;
-    }
-    return _xblockexpression;
-  }
-
-  public static MemoryMacro createMemoryMacro(final ArrayVariable variable, final ISLMap map) {
-    MemoryMacro _xblockexpression = null;
-    {
-      final MemoryMacro macro = Factory.factory.createMemoryMacro();
-      macro.setVariable(variable);
-      ISLMap _xifexpression = null;
-      if ((map != null)) {
-        _xifexpression = map;
-      } else {
-        _xifexpression = variable.getAlphaVariable().getDomain().identity();
-      }
-      macro.setMap(_xifexpression);
-      macro.setAllocation(Factory.createMemoryAllocation(variable, macro));
-      _xblockexpression = macro;
-    }
-    return _xblockexpression;
-  }
-
-  public static MemoryMacro createMemoryMacro(final ArrayVariable variable) {
-    return Factory.createMemoryMacro(variable, null);
-  }
-
-  public static MemoryAllocation createMemoryAllocation(final ArrayVariable variable, final MemoryMacro macro) {
+  public static MemoryAllocation createMemoryAllocation(final ArrayVariable variable) {
     MemoryAllocation _xblockexpression = null;
     {
       final MemoryAllocation allocation = Factory.factory.createMemoryAllocation();
-      allocation.setMacro(macro);
       allocation.setVariable(variable);
       allocation.setDomain(variable.getAlphaVariable().getDomain());
       _xblockexpression = allocation;
@@ -113,7 +78,7 @@ public class Factory {
     return _xblockexpression;
   }
 
-  public static EvalFunction createEvalFunction(final ArrayVariable evalVar, final ArrayVariable flagVar, final BaseVariable[] scalarArguments, final StandardEquation equation, final MemoryMacro[] localMemoryMacros) {
+  public static EvalFunction createEvalFunction(final ArrayVariable evalVar, final ArrayVariable flagVar, final BaseVariable[] scalarArguments, final StandardEquation equation) {
     EvalFunction _xblockexpression = null;
     {
       final EvalFunction function = Factory.factory.createEvalFunction();
@@ -125,7 +90,6 @@ public class Factory {
       function.setVariable(evalVar);
       function.setFlagVariable(flagVar);
       function.setEquation(equation);
-      CollectionExtensions.<MemoryMacro>addAll(function.getMemoryMacros(), localMemoryMacros);
       _xblockexpression = function;
     }
     return _xblockexpression;

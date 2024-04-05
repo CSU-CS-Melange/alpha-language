@@ -1,21 +1,20 @@
 package alpha.codegen.util
 
-import alpha.codegen.Visitor
-import alpha.codegen.Visitable
-import alpha.codegen.Program
+import alpha.codegen.ArrayVariable
+import alpha.codegen.BaseVariable
+import alpha.codegen.EvalFunction
+import alpha.codegen.Function
+import alpha.codegen.FunctionBody
+import alpha.codegen.GlobalMacro
+import alpha.codegen.GlobalMemoryMacro
+import alpha.codegen.GlobalVariable
 import alpha.codegen.Include
 import alpha.codegen.Macro
-import alpha.codegen.GlobalMemoryMacro
-import alpha.codegen.MemoryMacro
-import alpha.codegen.GlobalMacro
-import alpha.codegen.StatementMacro
-import alpha.codegen.BaseVariable
-import alpha.codegen.Function
 import alpha.codegen.MemoryAllocation
-import alpha.codegen.FunctionBody
-import alpha.codegen.EvalFunction
-import alpha.codegen.GlobalVariable
-import alpha.codegen.ArrayVariable
+import alpha.codegen.Program
+import alpha.codegen.StatementMacro
+import alpha.codegen.Visitable
+import alpha.codegen.Visitor
 
 interface DefaultVisitor extends Visitor {
 	
@@ -51,11 +50,6 @@ interface DefaultVisitor extends Visitor {
 		outGlobalMemoryMacro(gmm)
 	}
 	
-	override visitMemoryMacro(MemoryMacro mm) {
-		inMemoryMacro(mm)
-		outMemoryMacro(mm)
-	}
-	
 	override visitStatementMacro(StatementMacro sm) {
 		inStatementMacro(sm)
 		outStatementMacro(sm)
@@ -74,7 +68,6 @@ interface DefaultVisitor extends Visitor {
 	override visitFunction(Function f) {
 		inFunction(f)
 		f.args.forEach[v | v.accept(this)]
-		f.memoryMacros.forEach[mm | mm.accept(this)]
 		f.body.accept(this)
 		outFunction(f)
 	}
@@ -82,7 +75,6 @@ interface DefaultVisitor extends Visitor {
 	override visitEvalFunction(EvalFunction ef) {
 		inEvalFunction(ef)
 		ef.args.forEach[v | v.accept(this)]
-		ef.memoryMacros.forEach[mm | mm.accept(this)]
 		ef.body.accept(this)
 		outEvalFunction(ef)
 	}
@@ -121,10 +113,6 @@ interface DefaultVisitor extends Visitor {
 	}
 	
 	override inGlobalMemoryMacro(GlobalMemoryMacro m) {
-		defaultIn(m)
-	}
-	
-	override inMemoryMacro(MemoryMacro m) {
 		defaultIn(m)
 	}
 	
@@ -178,10 +166,6 @@ interface DefaultVisitor extends Visitor {
 	}
 	
 	override outGlobalMemoryMacro(GlobalMemoryMacro m) {
-		defaultIn(m)
-	}
-	
-	override outMemoryMacro(MemoryMacro m) {
 		defaultIn(m)
 	}
 	

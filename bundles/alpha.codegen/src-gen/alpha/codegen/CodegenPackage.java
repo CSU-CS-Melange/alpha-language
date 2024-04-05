@@ -281,79 +281,6 @@ public interface CodegenPackage extends EPackage {
 	int ABSTRACT_MEMORY_MACRO_FEATURE_COUNT = MACRO_FEATURE_COUNT + 1;
 
 	/**
-	 * The meta object id for the '{@link alpha.codegen.impl.MemoryMacroImpl <em>Memory Macro</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.impl.MemoryMacroImpl
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getMemoryMacro()
-	 * @generated
-	 */
-	int MEMORY_MACRO = 7;
-
-	/**
-	 * The feature id for the '<em><b>Left</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__LEFT = ABSTRACT_MEMORY_MACRO__LEFT;
-
-	/**
-	 * The feature id for the '<em><b>Right</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__RIGHT = ABSTRACT_MEMORY_MACRO__RIGHT;
-
-	/**
-	 * The feature id for the '<em><b>Map</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__MAP = ABSTRACT_MEMORY_MACRO__MAP;
-
-	/**
-	 * The feature id for the '<em><b>Function</b></em>' container reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__FUNCTION = ABSTRACT_MEMORY_MACRO_FEATURE_COUNT + 0;
-
-	/**
-	 * The feature id for the '<em><b>Allocation</b></em>' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__ALLOCATION = ABSTRACT_MEMORY_MACRO_FEATURE_COUNT + 1;
-
-	/**
-	 * The feature id for the '<em><b>Variable</b></em>' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO__VARIABLE = ABSTRACT_MEMORY_MACRO_FEATURE_COUNT + 2;
-
-	/**
-	 * The number of structural features of the '<em>Memory Macro</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_MACRO_FEATURE_COUNT = ABSTRACT_MEMORY_MACRO_FEATURE_COUNT + 3;
-
-	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.MemoryAllocationImpl <em>Memory Allocation</em>}' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -361,16 +288,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getMemoryAllocation()
 	 * @generated
 	 */
-	int MEMORY_ALLOCATION = 8;
-
-	/**
-	 * The feature id for the '<em><b>Macro</b></em>' reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_ALLOCATION__MACRO = NODE_FEATURE_COUNT + 0;
+	int MEMORY_ALLOCATION = 7;
 
 	/**
 	 * The feature id for the '<em><b>Variable</b></em>' reference.
@@ -379,7 +297,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION__VARIABLE = NODE_FEATURE_COUNT + 1;
+	int MEMORY_ALLOCATION__VARIABLE = NODE_FEATURE_COUNT + 0;
 
 	/**
 	 * The feature id for the '<em><b>Map</b></em>' attribute.
@@ -388,7 +306,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION__MAP = NODE_FEATURE_COUNT + 2;
+	int MEMORY_ALLOCATION__MAP = NODE_FEATURE_COUNT + 1;
 
 	/**
 	 * The feature id for the '<em><b>Domain</b></em>' attribute.
@@ -397,7 +315,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION__DOMAIN = NODE_FEATURE_COUNT + 3;
+	int MEMORY_ALLOCATION__DOMAIN = NODE_FEATURE_COUNT + 2;
 
 	/**
 	 * The feature id for the '<em><b>ISLAST Node</b></em>' attribute.
@@ -406,7 +324,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION__ISLAST_NODE = NODE_FEATURE_COUNT + 4;
+	int MEMORY_ALLOCATION__ISLAST_NODE = NODE_FEATURE_COUNT + 3;
 
 	/**
 	 * The number of structural features of the '<em>Memory Allocation</em>' class.
@@ -415,7 +333,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION_FEATURE_COUNT = NODE_FEATURE_COUNT + 5;
+	int MEMORY_ALLOCATION_FEATURE_COUNT = NODE_FEATURE_COUNT + 4;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.GlobalMemoryMacroImpl <em>Global Memory Macro</em>}' class.
@@ -425,7 +343,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getGlobalMemoryMacro()
 	 * @generated
 	 */
-	int GLOBAL_MEMORY_MACRO = 9;
+	int GLOBAL_MEMORY_MACRO = 8;
 
 	/**
 	 * The feature id for the '<em><b>Left</b></em>' attribute.
@@ -480,7 +398,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getStatementMacro()
 	 * @generated
 	 */
-	int STATEMENT_MACRO = 10;
+	int STATEMENT_MACRO = 9;
 
 	/**
 	 * The feature id for the '<em><b>Left</b></em>' attribute.
@@ -526,7 +444,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getBaseVariable()
 	 * @generated
 	 */
-	int BASE_VARIABLE = 11;
+	int BASE_VARIABLE = 10;
 
 	/**
 	 * The feature id for the '<em><b>Name</b></em>' attribute.
@@ -563,7 +481,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getGlobalVariable()
 	 * @generated
 	 */
-	int GLOBAL_VARIABLE = 12;
+	int GLOBAL_VARIABLE = 11;
 
 	/**
 	 * The feature id for the '<em><b>Name</b></em>' attribute.
@@ -654,7 +572,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getArrayVariable()
 	 * @generated
 	 */
-	int ARRAY_VARIABLE = 13;
+	int ARRAY_VARIABLE = 12;
 
 	/**
 	 * The feature id for the '<em><b>Name</b></em>' attribute.
@@ -745,7 +663,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getFunctionBody()
 	 * @generated
 	 */
-	int FUNCTION_BODY = 14;
+	int FUNCTION_BODY = 13;
 
 	/**
 	 * The feature id for the '<em><b>Function</b></em>' container reference.
@@ -791,7 +709,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getFunction()
 	 * @generated
 	 */
-	int FUNCTION = 15;
+	int FUNCTION = 14;
 
 	/**
 	 * The feature id for the '<em><b>Program</b></em>' container reference.
@@ -839,22 +757,13 @@ public interface CodegenPackage extends EPackage {
 	int FUNCTION__ARRAY_ARGS = NODE_FEATURE_COUNT + 4;
 
 	/**
-	 * The feature id for the '<em><b>Memory Macros</b></em>' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int FUNCTION__MEMORY_MACROS = NODE_FEATURE_COUNT + 5;
-
-	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int FUNCTION__BODY = NODE_FEATURE_COUNT + 6;
+	int FUNCTION__BODY = NODE_FEATURE_COUNT + 5;
 
 	/**
 	 * The number of structural features of the '<em>Function</em>' class.
@@ -863,7 +772,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int FUNCTION_FEATURE_COUNT = NODE_FEATURE_COUNT + 7;
+	int FUNCTION_FEATURE_COUNT = NODE_FEATURE_COUNT + 6;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.EvalFunctionImpl <em>Eval Function</em>}' class.
@@ -873,7 +782,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getEvalFunction()
 	 * @generated
 	 */
-	int EVAL_FUNCTION = 16;
+	int EVAL_FUNCTION = 15;
 
 	/**
 	 * The feature id for the '<em><b>Program</b></em>' container reference.
@@ -919,15 +828,6 @@ public interface CodegenPackage extends EPackage {
 	 * @ordered
 	 */
 	int EVAL_FUNCTION__ARRAY_ARGS = FUNCTION__ARRAY_ARGS;
-
-	/**
-	 * The feature id for the '<em><b>Memory Macros</b></em>' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int EVAL_FUNCTION__MEMORY_MACROS = FUNCTION__MEMORY_MACROS;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
@@ -982,7 +882,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getReduceFunction()
 	 * @generated
 	 */
-	int REDUCE_FUNCTION = 17;
+	int REDUCE_FUNCTION = 16;
 
 	/**
 	 * The feature id for the '<em><b>Program</b></em>' container reference.
@@ -1028,15 +928,6 @@ public interface CodegenPackage extends EPackage {
 	 * @ordered
 	 */
 	int REDUCE_FUNCTION__ARRAY_ARGS = FUNCTION__ARRAY_ARGS;
-
-	/**
-	 * The feature id for the '<em><b>Memory Macros</b></em>' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int REDUCE_FUNCTION__MEMORY_MACROS = FUNCTION__MEMORY_MACROS;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
@@ -1091,7 +982,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getProgram()
 	 * @generated
 	 */
-	int PROGRAM = 18;
+	int PROGRAM = 17;
 
 	/**
 	 * The feature id for the '<em><b>System</b></em>' reference.
@@ -1164,7 +1055,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getAlphaOp()
 	 * @generated
 	 */
-	int ALPHA_OP = 19;
+	int ALPHA_OP = 18;
 
 	/**
 	 * The number of structural features of the '<em>Alpha Op</em>' class.
@@ -1183,7 +1074,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomial()
 	 * @generated
 	 */
-	int POLYNOMIAL = 20;
+	int POLYNOMIAL = 19;
 
 	/**
 	 * The feature id for the '<em><b>Isl Polynomial</b></em>' attribute.
@@ -1211,7 +1102,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getVariableType()
 	 * @generated
 	 */
-	int VARIABLE_TYPE = 21;
+	int VARIABLE_TYPE = 20;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.DataType <em>Data Type</em>}' enum.
@@ -1221,7 +1112,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getDataType()
 	 * @generated
 	 */
-	int DATA_TYPE = 22;
+	int DATA_TYPE = 21;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_UNARY_OP <em>CUNARY OP</em>}' enum.
@@ -1231,7 +1122,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_UNARY_OP()
 	 * @generated
 	 */
-	int CUNARY_OP = 23;
+	int CUNARY_OP = 22;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_BINARY_OP <em>CBINARY OP</em>}' enum.
@@ -1241,7 +1132,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_BINARY_OP()
 	 * @generated
 	 */
-	int CBINARY_OP = 24;
+	int CBINARY_OP = 23;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_REDUCTION_OP <em>CREDUCTION OP</em>}' enum.
@@ -1251,7 +1142,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_REDUCTION_OP()
 	 * @generated
 	 */
-	int CREDUCTION_OP = 25;
+	int CREDUCTION_OP = 24;
 
 	/**
 	 * The meta object id for the '<em>ISL Set</em>' data type.
@@ -1261,7 +1152,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLSet()
 	 * @generated
 	 */
-	int ISL_SET = 26;
+	int ISL_SET = 25;
 
 	/**
 	 * The meta object id for the '<em>ISL Map</em>' data type.
@@ -1271,7 +1162,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLMap()
 	 * @generated
 	 */
-	int ISL_MAP = 27;
+	int ISL_MAP = 26;
 
 	/**
 	 * The meta object id for the '<em>ISLAST Node</em>' data type.
@@ -1281,7 +1172,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLASTNode()
 	 * @generated
 	 */
-	int ISLAST_NODE = 28;
+	int ISLAST_NODE = 27;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff</em>' data type.
@@ -1291,7 +1182,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAff()
 	 * @generated
 	 */
-	int ISL_AFF = 29;
+	int ISL_AFF = 28;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff List</em>' data type.
@@ -1301,7 +1192,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAffList()
 	 * @generated
 	 */
-	int ISL_AFF_LIST = 30;
+	int ISL_AFF_LIST = 29;
 
 	/**
 	 * The meta object id for the '<em>ISL Dim Type</em>' data type.
@@ -1311,7 +1202,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLDimType()
 	 * @generated
 	 */
-	int ISL_DIM_TYPE = 31;
+	int ISL_DIM_TYPE = 30;
 
 	/**
 	 * The meta object id for the '<em>ISL FORMAT</em>' data type.
@@ -1321,7 +1212,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISL_FORMAT()
 	 * @generated
 	 */
-	int ISL_FORMAT = 32;
+	int ISL_FORMAT = 31;
 
 	/**
 	 * The meta object id for the '<em>ISLPWQ Polynomial</em>' data type.
@@ -1331,7 +1222,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLPWQPolynomial()
 	 * @generated
 	 */
-	int ISLPWQ_POLYNOMIAL = 33;
+	int ISLPWQ_POLYNOMIAL = 32;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial Piece</em>' data type.
@@ -1341,7 +1232,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomialPiece()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL_PIECE = 34;
+	int ISLQ_POLYNOMIAL_PIECE = 33;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial</em>' data type.
@@ -1351,7 +1242,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomial()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL = 35;
+	int ISLQ_POLYNOMIAL = 34;
 
 	/**
 	 * The meta object id for the '<em>ISL Term</em>' data type.
@@ -1361,7 +1252,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLTerm()
 	 * @generated
 	 */
-	int ISL_TERM = 36;
+	int ISL_TERM = 35;
 
 	/**
 	 * The meta object id for the '<em>Hash Map</em>' data type.
@@ -1371,7 +1262,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getHashMap()
 	 * @generated
 	 */
-	int HASH_MAP = 37;
+	int HASH_MAP = 36;
 
 
 	/**
@@ -1511,49 +1402,6 @@ public interface CodegenPackage extends EPackage {
 	EAttribute getAbstractMemoryMacro_Map();
 
 	/**
-	 * Returns the meta object for class '{@link alpha.codegen.MemoryMacro <em>Memory Macro</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Memory Macro</em>'.
-	 * @see alpha.codegen.MemoryMacro
-	 * @generated
-	 */
-	EClass getMemoryMacro();
-
-	/**
-	 * Returns the meta object for the container reference '{@link alpha.codegen.MemoryMacro#getFunction <em>Function</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the container reference '<em>Function</em>'.
-	 * @see alpha.codegen.MemoryMacro#getFunction()
-	 * @see #getMemoryMacro()
-	 * @generated
-	 */
-	EReference getMemoryMacro_Function();
-
-	/**
-	 * Returns the meta object for the reference '{@link alpha.codegen.MemoryMacro#getAllocation <em>Allocation</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the reference '<em>Allocation</em>'.
-	 * @see alpha.codegen.MemoryMacro#getAllocation()
-	 * @see #getMemoryMacro()
-	 * @generated
-	 */
-	EReference getMemoryMacro_Allocation();
-
-	/**
-	 * Returns the meta object for the reference '{@link alpha.codegen.MemoryMacro#getVariable <em>Variable</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the reference '<em>Variable</em>'.
-	 * @see alpha.codegen.MemoryMacro#getVariable()
-	 * @see #getMemoryMacro()
-	 * @generated
-	 */
-	EReference getMemoryMacro_Variable();
-
-	/**
 	 * Returns the meta object for class '{@link alpha.codegen.MemoryAllocation <em>Memory Allocation</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1562,17 +1410,6 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EClass getMemoryAllocation();
-
-	/**
-	 * Returns the meta object for the reference '{@link alpha.codegen.MemoryAllocation#getMacro <em>Macro</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the reference '<em>Macro</em>'.
-	 * @see alpha.codegen.MemoryAllocation#getMacro()
-	 * @see #getMemoryAllocation()
-	 * @generated
-	 */
-	EReference getMemoryAllocation_Macro();
 
 	/**
 	 * Returns the meta object for the reference '{@link alpha.codegen.MemoryAllocation#getVariable <em>Variable</em>}'.
@@ -1885,17 +1722,6 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getFunction_ArrayArgs();
-
-	/**
-	 * Returns the meta object for the containment reference list '{@link alpha.codegen.Function#getMemoryMacros <em>Memory Macros</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the containment reference list '<em>Memory Macros</em>'.
-	 * @see alpha.codegen.Function#getMemoryMacros()
-	 * @see #getFunction()
-	 * @generated
-	 */
-	EReference getFunction_MemoryMacros();
 
 	/**
 	 * Returns the meta object for the containment reference '{@link alpha.codegen.Function#getBody <em>Body</em>}'.
@@ -2424,40 +2250,6 @@ public interface CodegenPackage extends EPackage {
 		EAttribute ABSTRACT_MEMORY_MACRO__MAP = eINSTANCE.getAbstractMemoryMacro_Map();
 
 		/**
-		 * The meta object literal for the '{@link alpha.codegen.impl.MemoryMacroImpl <em>Memory Macro</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.impl.MemoryMacroImpl
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getMemoryMacro()
-		 * @generated
-		 */
-		EClass MEMORY_MACRO = eINSTANCE.getMemoryMacro();
-
-		/**
-		 * The meta object literal for the '<em><b>Function</b></em>' container reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference MEMORY_MACRO__FUNCTION = eINSTANCE.getMemoryMacro_Function();
-
-		/**
-		 * The meta object literal for the '<em><b>Allocation</b></em>' reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference MEMORY_MACRO__ALLOCATION = eINSTANCE.getMemoryMacro_Allocation();
-
-		/**
-		 * The meta object literal for the '<em><b>Variable</b></em>' reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference MEMORY_MACRO__VARIABLE = eINSTANCE.getMemoryMacro_Variable();
-
-		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.MemoryAllocationImpl <em>Memory Allocation</em>}' class.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -2466,14 +2258,6 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EClass MEMORY_ALLOCATION = eINSTANCE.getMemoryAllocation();
-
-		/**
-		 * The meta object literal for the '<em><b>Macro</b></em>' reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference MEMORY_ALLOCATION__MACRO = eINSTANCE.getMemoryAllocation_Macro();
 
 		/**
 		 * The meta object literal for the '<em><b>Variable</b></em>' reference feature.
@@ -2720,14 +2504,6 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EReference FUNCTION__ARRAY_ARGS = eINSTANCE.getFunction_ArrayArgs();
-
-		/**
-		 * The meta object literal for the '<em><b>Memory Macros</b></em>' containment reference list feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference FUNCTION__MEMORY_MACROS = eINSTANCE.getFunction_MemoryMacros();
 
 		/**
 		 * The meta object literal for the '<em><b>Body</b></em>' containment reference feature.

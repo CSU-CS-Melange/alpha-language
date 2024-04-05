@@ -11,7 +11,6 @@ import alpha.codegen.GlobalVariable;
 import alpha.codegen.Include;
 import alpha.codegen.Macro;
 import alpha.codegen.MemoryAllocation;
-import alpha.codegen.MemoryMacro;
 import alpha.codegen.Program;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.Visitable;
@@ -75,12 +74,6 @@ public interface DefaultVisitor extends Visitor {
   }
 
   @Override
-  default void visitMemoryMacro(final MemoryMacro mm) {
-    this.inMemoryMacro(mm);
-    this.outMemoryMacro(mm);
-  }
-
-  @Override
   default void visitStatementMacro(final StatementMacro sm) {
     this.inStatementMacro(sm);
     this.outStatementMacro(sm);
@@ -105,10 +98,6 @@ public interface DefaultVisitor extends Visitor {
       v.accept(this);
     };
     f.args().forEach(_function);
-    final Consumer<MemoryMacro> _function_1 = (MemoryMacro mm) -> {
-      mm.accept(this);
-    };
-    f.getMemoryMacros().forEach(_function_1);
     f.getBody().accept(this);
     this.outFunction(f);
   }
@@ -120,10 +109,6 @@ public interface DefaultVisitor extends Visitor {
       v.accept(this);
     };
     ef.args().forEach(_function);
-    final Consumer<MemoryMacro> _function_1 = (MemoryMacro mm) -> {
-      mm.accept(this);
-    };
-    ef.getMemoryMacros().forEach(_function_1);
     ef.getBody().accept(this);
     this.outEvalFunction(ef);
   }
@@ -169,11 +154,6 @@ public interface DefaultVisitor extends Visitor {
 
   @Override
   default void inGlobalMemoryMacro(final GlobalMemoryMacro m) {
-    this.defaultIn(m);
-  }
-
-  @Override
-  default void inMemoryMacro(final MemoryMacro m) {
     this.defaultIn(m);
   }
 
@@ -239,11 +219,6 @@ public interface DefaultVisitor extends Visitor {
 
   @Override
   default void outGlobalMemoryMacro(final GlobalMemoryMacro m) {
-    this.defaultIn(m);
-  }
-
-  @Override
-  default void outMemoryMacro(final MemoryMacro m) {
     this.defaultIn(m);
   }
 

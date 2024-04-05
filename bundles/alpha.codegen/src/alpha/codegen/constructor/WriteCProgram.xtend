@@ -84,10 +84,7 @@ class WriteCProgram extends BaseProgram {
 		val evalVar = outputCVs.get(se.variable)
 		val flagVar = flagCVs.get(se.variable)
 		val scalarArgs = se.getContainerSystem.paramScalarVariables + se.variable.indexScalarVariables
-		val localMemoryMacros = localCVs.values.map[createMemoryMacro]
-		
-		
-		val function = createEvalFunction(evalVar, flagVar, scalarArgs, se, localMemoryMacros)
+		val function = createEvalFunction(evalVar, flagVar, scalarArgs, se)
 		
 		program.functions.add(function)
 	}
