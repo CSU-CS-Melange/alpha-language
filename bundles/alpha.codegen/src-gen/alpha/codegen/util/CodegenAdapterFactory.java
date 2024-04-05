@@ -148,28 +148,8 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 				return createAlphaOpAdapter();
 			}
 			@Override
-			public Adapter casePolynomialVisitor(PolynomialVisitor object) {
-				return createPolynomialVisitorAdapter();
-			}
-			@Override
-			public Adapter casePolynomialNode(PolynomialNode object) {
-				return createPolynomialNodeAdapter();
-			}
-			@Override
-			public Adapter casePolynomialVisitable(PolynomialVisitable object) {
-				return createPolynomialVisitableAdapter();
-			}
-			@Override
 			public Adapter casePolynomial(Polynomial object) {
 				return createPolynomialAdapter();
-			}
-			@Override
-			public Adapter casePolynomialPiece(PolynomialPiece object) {
-				return createPolynomialPieceAdapter();
-			}
-			@Override
-			public Adapter casePolynomialTerm(PolynomialTerm object) {
-				return createPolynomialTermAdapter();
 			}
 			@Override
 			public Adapter defaultCase(EObject object) {
@@ -472,48 +452,6 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 	}
 
 	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.PolynomialVisitor <em>Polynomial Visitor</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.PolynomialVisitor
-	 * @generated
-	 */
-	public Adapter createPolynomialVisitorAdapter() {
-		return null;
-	}
-
-	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.PolynomialNode <em>Polynomial Node</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.PolynomialNode
-	 * @generated
-	 */
-	public Adapter createPolynomialNodeAdapter() {
-		return null;
-	}
-
-	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.PolynomialVisitable <em>Polynomial Visitable</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.PolynomialVisitable
-	 * @generated
-	 */
-	public Adapter createPolynomialVisitableAdapter() {
-		return null;
-	}
-
-	/**
 	 * Creates a new adapter for an object of class '{@link alpha.codegen.Polynomial <em>Polynomial</em>}'.
 	 * <!-- begin-user-doc -->
 	 * This default implementation returns null so that we can easily ignore cases;
@@ -524,34 +462,6 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createPolynomialAdapter() {
-		return null;
-	}
-
-	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.PolynomialPiece <em>Polynomial Piece</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.PolynomialPiece
-	 * @generated
-	 */
-	public Adapter createPolynomialPieceAdapter() {
-		return null;
-	}
-
-	/**
-	 * Creates a new adapter for an object of class '{@link alpha.codegen.PolynomialTerm <em>Polynomial Term</em>}'.
-	 * <!-- begin-user-doc -->
-	 * This default implementation returns null so that we can easily ignore cases;
-	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
-	 * <!-- end-user-doc -->
-	 * @return the new adapter.
-	 * @see alpha.codegen.PolynomialTerm
-	 * @generated
-	 */
-	public Adapter createPolynomialTermAdapter() {
 		return null;
 	}
 

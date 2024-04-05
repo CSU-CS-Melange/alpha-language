@@ -11,25 +11,22 @@ import alpha.codegen.GlobalMemoryMacro
 import alpha.codegen.MemoryAllocation
 import alpha.codegen.MemoryMacro
 import alpha.codegen.Polynomial
-import alpha.codegen.PolynomialPiece
-import alpha.codegen.PolynomialTerm
 import alpha.codegen.Program
+import alpha.codegen.ReduceFunction
 import alpha.codegen.StatementMacro
 import alpha.codegen.VariableType
+import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLASTNode
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLTerm
 
 import static extension alpha.codegen.util.CodegenUtil.*
 import static extension alpha.model.util.AlphaUtil.*
-import alpha.model.ReduceExpression
-import alpha.codegen.ReduceFunction
 
 class Factory {
 	
@@ -75,15 +72,6 @@ class Factory {
 	
 	def static MemoryMacro createMemoryMacro(ArrayVariable variable) {
 		createMemoryMacro(variable, null)
-	}
-	
-	
-	def static String toßtring(ISLTerm t, ISLSpace s) {
-		val P = t.dim(ISLDimType.isl_dim_param)
-		val params = (0..<P).map[s.getDimName(ISLDimType.isl_dim_param, it)]
-		
-		
-		'''(«t.numerator»/«t.denominator») «(0..<P).map[t.getExponent(ISLDimType.isl_dim_param, it)]»'''
 	}
 	
 	def static MemoryAllocation createMemoryAllocation(ArrayVariable variable, MemoryMacro macro) {
@@ -170,50 +158,9 @@ class Factory {
 		cv
 	}
 	
-	
-	
-	
-	
-	
-	
-	// polynomial factory methods
-	
 	def static Polynomial createPolynomial(ISLPWQPolynomial pwqp) {
 		val ret = factory.createPolynomial
 		ret.islPolynomial = pwqp
 		ret
 	}
-	
-	def static PolynomialPiece createPolynomialPiece(ISLQPolynomialPiece piece) {
-		val ret = factory.createPolynomialPiece
-		ret.islPiece = piece
-		ret
-	}
-	
-	def static PolynomialTerm createPolynomialTerm(ISLTerm term) {
-		val ret = factory.createPolynomialTerm
-		ret.islTerm = term
-		ret
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 }

@@ -175,24 +175,6 @@ public interface CodegenFactory extends EFactory {
 	AlphaOp createAlphaOp();
 
 	/**
-	 * Returns a new object of class '<em>Polynomial Visitor</em>'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return a new object of class '<em>Polynomial Visitor</em>'.
-	 * @generated
-	 */
-	PolynomialVisitor createPolynomialVisitor();
-
-	/**
-	 * Returns a new object of class '<em>Polynomial Node</em>'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return a new object of class '<em>Polynomial Node</em>'.
-	 * @generated
-	 */
-	PolynomialNode createPolynomialNode();
-
-	/**
 	 * Returns a new object of class '<em>Polynomial</em>'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -200,24 +182,6 @@ public interface CodegenFactory extends EFactory {
 	 * @generated
 	 */
 	Polynomial createPolynomial();
-
-	/**
-	 * Returns a new object of class '<em>Polynomial Piece</em>'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return a new object of class '<em>Polynomial Piece</em>'.
-	 * @generated
-	 */
-	PolynomialPiece createPolynomialPiece();
-
-	/**
-	 * Returns a new object of class '<em>Polynomial Term</em>'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return a new object of class '<em>Polynomial Term</em>'.
-	 * @generated
-	 */
-	PolynomialTerm createPolynomialTerm();
 
 	/**
 	 * Returns the package supported by this factory.

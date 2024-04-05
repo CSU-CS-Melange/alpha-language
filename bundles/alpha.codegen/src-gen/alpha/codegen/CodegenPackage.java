@@ -1176,63 +1176,6 @@ public interface CodegenPackage extends EPackage {
 	int ALPHA_OP_FEATURE_COUNT = 0;
 
 	/**
-	 * The meta object id for the '{@link alpha.codegen.impl.PolynomialVisitorImpl <em>Polynomial Visitor</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.impl.PolynomialVisitorImpl
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitor()
-	 * @generated
-	 */
-	int POLYNOMIAL_VISITOR = 20;
-
-	/**
-	 * The number of structural features of the '<em>Polynomial Visitor</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_VISITOR_FEATURE_COUNT = 0;
-
-	/**
-	 * The meta object id for the '{@link alpha.codegen.impl.PolynomialNodeImpl <em>Polynomial Node</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.impl.PolynomialNodeImpl
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialNode()
-	 * @generated
-	 */
-	int POLYNOMIAL_NODE = 21;
-
-	/**
-	 * The number of structural features of the '<em>Polynomial Node</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_NODE_FEATURE_COUNT = 0;
-
-	/**
-	 * The meta object id for the '{@link alpha.codegen.PolynomialVisitable <em>Polynomial Visitable</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.PolynomialVisitable
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitable()
-	 * @generated
-	 */
-	int POLYNOMIAL_VISITABLE = 22;
-
-	/**
-	 * The number of structural features of the '<em>Polynomial Visitable</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_VISITABLE_FEATURE_COUNT = 0;
-
-	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.PolynomialImpl <em>Polynomial</em>}' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1240,16 +1183,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomial()
 	 * @generated
 	 */
-	int POLYNOMIAL = 23;
-
-	/**
-	 * The feature id for the '<em><b>Pieces</b></em>' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL__PIECES = POLYNOMIAL_NODE_FEATURE_COUNT + 0;
+	int POLYNOMIAL = 20;
 
 	/**
 	 * The feature id for the '<em><b>Isl Polynomial</b></em>' attribute.
@@ -1258,7 +1192,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int POLYNOMIAL__ISL_POLYNOMIAL = POLYNOMIAL_NODE_FEATURE_COUNT + 1;
+	int POLYNOMIAL__ISL_POLYNOMIAL = 0;
 
 	/**
 	 * The number of structural features of the '<em>Polynomial</em>' class.
@@ -1267,90 +1201,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int POLYNOMIAL_FEATURE_COUNT = POLYNOMIAL_NODE_FEATURE_COUNT + 2;
-
-	/**
-	 * The meta object id for the '{@link alpha.codegen.impl.PolynomialPieceImpl <em>Polynomial Piece</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.impl.PolynomialPieceImpl
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialPiece()
-	 * @generated
-	 */
-	int POLYNOMIAL_PIECE = 24;
-
-	/**
-	 * The feature id for the '<em><b>Polynomial</b></em>' container reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_PIECE__POLYNOMIAL = POLYNOMIAL_NODE_FEATURE_COUNT + 0;
-
-	/**
-	 * The feature id for the '<em><b>Terms</b></em>' containment reference list.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_PIECE__TERMS = POLYNOMIAL_NODE_FEATURE_COUNT + 1;
-
-	/**
-	 * The feature id for the '<em><b>Isl Piece</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_PIECE__ISL_PIECE = POLYNOMIAL_NODE_FEATURE_COUNT + 2;
-
-	/**
-	 * The number of structural features of the '<em>Polynomial Piece</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_PIECE_FEATURE_COUNT = POLYNOMIAL_NODE_FEATURE_COUNT + 3;
-
-	/**
-	 * The meta object id for the '{@link alpha.codegen.impl.PolynomialTermImpl <em>Polynomial Term</em>}' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see alpha.codegen.impl.PolynomialTermImpl
-	 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialTerm()
-	 * @generated
-	 */
-	int POLYNOMIAL_TERM = 25;
-
-	/**
-	 * The feature id for the '<em><b>Polynomial Piece</b></em>' container reference.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_TERM__POLYNOMIAL_PIECE = POLYNOMIAL_NODE_FEATURE_COUNT + 0;
-
-	/**
-	 * The feature id for the '<em><b>Isl Term</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_TERM__ISL_TERM = POLYNOMIAL_NODE_FEATURE_COUNT + 1;
-
-	/**
-	 * The number of structural features of the '<em>Polynomial Term</em>' class.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int POLYNOMIAL_TERM_FEATURE_COUNT = POLYNOMIAL_NODE_FEATURE_COUNT + 2;
+	int POLYNOMIAL_FEATURE_COUNT = 1;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.VariableType <em>Variable Type</em>}' enum.
@@ -1360,7 +1211,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getVariableType()
 	 * @generated
 	 */
-	int VARIABLE_TYPE = 26;
+	int VARIABLE_TYPE = 21;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.DataType <em>Data Type</em>}' enum.
@@ -1370,7 +1221,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getDataType()
 	 * @generated
 	 */
-	int DATA_TYPE = 27;
+	int DATA_TYPE = 22;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_UNARY_OP <em>CUNARY OP</em>}' enum.
@@ -1380,7 +1231,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_UNARY_OP()
 	 * @generated
 	 */
-	int CUNARY_OP = 28;
+	int CUNARY_OP = 23;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_BINARY_OP <em>CBINARY OP</em>}' enum.
@@ -1390,7 +1241,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_BINARY_OP()
 	 * @generated
 	 */
-	int CBINARY_OP = 29;
+	int CBINARY_OP = 24;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.C_REDUCTION_OP <em>CREDUCTION OP</em>}' enum.
@@ -1400,7 +1251,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getC_REDUCTION_OP()
 	 * @generated
 	 */
-	int CREDUCTION_OP = 30;
+	int CREDUCTION_OP = 25;
 
 	/**
 	 * The meta object id for the '<em>ISL Set</em>' data type.
@@ -1410,7 +1261,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLSet()
 	 * @generated
 	 */
-	int ISL_SET = 31;
+	int ISL_SET = 26;
 
 	/**
 	 * The meta object id for the '<em>ISL Map</em>' data type.
@@ -1420,7 +1271,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLMap()
 	 * @generated
 	 */
-	int ISL_MAP = 32;
+	int ISL_MAP = 27;
 
 	/**
 	 * The meta object id for the '<em>ISLAST Node</em>' data type.
@@ -1430,7 +1281,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLASTNode()
 	 * @generated
 	 */
-	int ISLAST_NODE = 33;
+	int ISLAST_NODE = 28;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff</em>' data type.
@@ -1440,7 +1291,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAff()
 	 * @generated
 	 */
-	int ISL_AFF = 34;
+	int ISL_AFF = 29;
 
 	/**
 	 * The meta object id for the '<em>ISL Aff List</em>' data type.
@@ -1450,7 +1301,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLAffList()
 	 * @generated
 	 */
-	int ISL_AFF_LIST = 35;
+	int ISL_AFF_LIST = 30;
 
 	/**
 	 * The meta object id for the '<em>ISL Dim Type</em>' data type.
@@ -1460,7 +1311,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLDimType()
 	 * @generated
 	 */
-	int ISL_DIM_TYPE = 36;
+	int ISL_DIM_TYPE = 31;
 
 	/**
 	 * The meta object id for the '<em>ISL FORMAT</em>' data type.
@@ -1470,7 +1321,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISL_FORMAT()
 	 * @generated
 	 */
-	int ISL_FORMAT = 37;
+	int ISL_FORMAT = 32;
 
 	/**
 	 * The meta object id for the '<em>ISLPWQ Polynomial</em>' data type.
@@ -1480,7 +1331,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLPWQPolynomial()
 	 * @generated
 	 */
-	int ISLPWQ_POLYNOMIAL = 38;
+	int ISLPWQ_POLYNOMIAL = 33;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial Piece</em>' data type.
@@ -1490,7 +1341,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomialPiece()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL_PIECE = 39;
+	int ISLQ_POLYNOMIAL_PIECE = 34;
 
 	/**
 	 * The meta object id for the '<em>ISLQ Polynomial</em>' data type.
@@ -1500,7 +1351,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLQPolynomial()
 	 * @generated
 	 */
-	int ISLQ_POLYNOMIAL = 40;
+	int ISLQ_POLYNOMIAL = 35;
 
 	/**
 	 * The meta object id for the '<em>ISL Term</em>' data type.
@@ -1510,7 +1361,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getISLTerm()
 	 * @generated
 	 */
-	int ISL_TERM = 41;
+	int ISL_TERM = 36;
 
 	/**
 	 * The meta object id for the '<em>Hash Map</em>' data type.
@@ -1520,7 +1371,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getHashMap()
 	 * @generated
 	 */
-	int HASH_MAP = 42;
+	int HASH_MAP = 37;
 
 
 	/**
@@ -2230,36 +2081,6 @@ public interface CodegenPackage extends EPackage {
 	EClass getAlphaOp();
 
 	/**
-	 * Returns the meta object for class '{@link alpha.codegen.PolynomialVisitor <em>Polynomial Visitor</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Polynomial Visitor</em>'.
-	 * @see alpha.codegen.PolynomialVisitor
-	 * @generated
-	 */
-	EClass getPolynomialVisitor();
-
-	/**
-	 * Returns the meta object for class '{@link alpha.codegen.PolynomialNode <em>Polynomial Node</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Polynomial Node</em>'.
-	 * @see alpha.codegen.PolynomialNode
-	 * @generated
-	 */
-	EClass getPolynomialNode();
-
-	/**
-	 * Returns the meta object for class '{@link alpha.codegen.PolynomialVisitable <em>Polynomial Visitable</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Polynomial Visitable</em>'.
-	 * @see alpha.codegen.PolynomialVisitable
-	 * @generated
-	 */
-	EClass getPolynomialVisitable();
-
-	/**
 	 * Returns the meta object for class '{@link alpha.codegen.Polynomial <em>Polynomial</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -2268,17 +2089,6 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EClass getPolynomial();
-
-	/**
-	 * Returns the meta object for the containment reference list '{@link alpha.codegen.Polynomial#getPieces <em>Pieces</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the containment reference list '<em>Pieces</em>'.
-	 * @see alpha.codegen.Polynomial#getPieces()
-	 * @see #getPolynomial()
-	 * @generated
-	 */
-	EReference getPolynomial_Pieces();
 
 	/**
 	 * Returns the meta object for the attribute '{@link alpha.codegen.Polynomial#getIslPolynomial <em>Isl Polynomial</em>}'.
@@ -2290,81 +2100,6 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EAttribute getPolynomial_IslPolynomial();
-
-	/**
-	 * Returns the meta object for class '{@link alpha.codegen.PolynomialPiece <em>Polynomial Piece</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Polynomial Piece</em>'.
-	 * @see alpha.codegen.PolynomialPiece
-	 * @generated
-	 */
-	EClass getPolynomialPiece();
-
-	/**
-	 * Returns the meta object for the container reference '{@link alpha.codegen.PolynomialPiece#getPolynomial <em>Polynomial</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the container reference '<em>Polynomial</em>'.
-	 * @see alpha.codegen.PolynomialPiece#getPolynomial()
-	 * @see #getPolynomialPiece()
-	 * @generated
-	 */
-	EReference getPolynomialPiece_Polynomial();
-
-	/**
-	 * Returns the meta object for the containment reference list '{@link alpha.codegen.PolynomialPiece#getTerms <em>Terms</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the containment reference list '<em>Terms</em>'.
-	 * @see alpha.codegen.PolynomialPiece#getTerms()
-	 * @see #getPolynomialPiece()
-	 * @generated
-	 */
-	EReference getPolynomialPiece_Terms();
-
-	/**
-	 * Returns the meta object for the attribute '{@link alpha.codegen.PolynomialPiece#getIslPiece <em>Isl Piece</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the attribute '<em>Isl Piece</em>'.
-	 * @see alpha.codegen.PolynomialPiece#getIslPiece()
-	 * @see #getPolynomialPiece()
-	 * @generated
-	 */
-	EAttribute getPolynomialPiece_IslPiece();
-
-	/**
-	 * Returns the meta object for class '{@link alpha.codegen.PolynomialTerm <em>Polynomial Term</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for class '<em>Polynomial Term</em>'.
-	 * @see alpha.codegen.PolynomialTerm
-	 * @generated
-	 */
-	EClass getPolynomialTerm();
-
-	/**
-	 * Returns the meta object for the container reference '{@link alpha.codegen.PolynomialTerm#getPolynomialPiece <em>Polynomial Piece</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the container reference '<em>Polynomial Piece</em>'.
-	 * @see alpha.codegen.PolynomialTerm#getPolynomialPiece()
-	 * @see #getPolynomialTerm()
-	 * @generated
-	 */
-	EReference getPolynomialTerm_PolynomialPiece();
-
-	/**
-	 * Returns the meta object for the attribute '{@link alpha.codegen.PolynomialTerm#getIslTerm <em>Isl Term</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the attribute '<em>Isl Term</em>'.
-	 * @see alpha.codegen.PolynomialTerm#getIslTerm()
-	 * @see #getPolynomialTerm()
-	 * @generated
-	 */
-	EAttribute getPolynomialTerm_IslTerm();
 
 	/**
 	 * Returns the meta object for enum '{@link alpha.codegen.VariableType <em>Variable Type</em>}'.
@@ -3139,36 +2874,6 @@ public interface CodegenPackage extends EPackage {
 		EClass ALPHA_OP = eINSTANCE.getAlphaOp();
 
 		/**
-		 * The meta object literal for the '{@link alpha.codegen.impl.PolynomialVisitorImpl <em>Polynomial Visitor</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.impl.PolynomialVisitorImpl
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitor()
-		 * @generated
-		 */
-		EClass POLYNOMIAL_VISITOR = eINSTANCE.getPolynomialVisitor();
-
-		/**
-		 * The meta object literal for the '{@link alpha.codegen.impl.PolynomialNodeImpl <em>Polynomial Node</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.impl.PolynomialNodeImpl
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialNode()
-		 * @generated
-		 */
-		EClass POLYNOMIAL_NODE = eINSTANCE.getPolynomialNode();
-
-		/**
-		 * The meta object literal for the '{@link alpha.codegen.PolynomialVisitable <em>Polynomial Visitable</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.PolynomialVisitable
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialVisitable()
-		 * @generated
-		 */
-		EClass POLYNOMIAL_VISITABLE = eINSTANCE.getPolynomialVisitable();
-
-		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.PolynomialImpl <em>Polynomial</em>}' class.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
@@ -3179,80 +2884,12 @@ public interface CodegenPackage extends EPackage {
 		EClass POLYNOMIAL = eINSTANCE.getPolynomial();
 
 		/**
-		 * The meta object literal for the '<em><b>Pieces</b></em>' containment reference list feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference POLYNOMIAL__PIECES = eINSTANCE.getPolynomial_Pieces();
-
-		/**
 		 * The meta object literal for the '<em><b>Isl Polynomial</b></em>' attribute feature.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
 		EAttribute POLYNOMIAL__ISL_POLYNOMIAL = eINSTANCE.getPolynomial_IslPolynomial();
-
-		/**
-		 * The meta object literal for the '{@link alpha.codegen.impl.PolynomialPieceImpl <em>Polynomial Piece</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.impl.PolynomialPieceImpl
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialPiece()
-		 * @generated
-		 */
-		EClass POLYNOMIAL_PIECE = eINSTANCE.getPolynomialPiece();
-
-		/**
-		 * The meta object literal for the '<em><b>Polynomial</b></em>' container reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference POLYNOMIAL_PIECE__POLYNOMIAL = eINSTANCE.getPolynomialPiece_Polynomial();
-
-		/**
-		 * The meta object literal for the '<em><b>Terms</b></em>' containment reference list feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference POLYNOMIAL_PIECE__TERMS = eINSTANCE.getPolynomialPiece_Terms();
-
-		/**
-		 * The meta object literal for the '<em><b>Isl Piece</b></em>' attribute feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EAttribute POLYNOMIAL_PIECE__ISL_PIECE = eINSTANCE.getPolynomialPiece_IslPiece();
-
-		/**
-		 * The meta object literal for the '{@link alpha.codegen.impl.PolynomialTermImpl <em>Polynomial Term</em>}' class.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @see alpha.codegen.impl.PolynomialTermImpl
-		 * @see alpha.codegen.impl.CodegenPackageImpl#getPolynomialTerm()
-		 * @generated
-		 */
-		EClass POLYNOMIAL_TERM = eINSTANCE.getPolynomialTerm();
-
-		/**
-		 * The meta object literal for the '<em><b>Polynomial Piece</b></em>' container reference feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EReference POLYNOMIAL_TERM__POLYNOMIAL_PIECE = eINSTANCE.getPolynomialTerm_PolynomialPiece();
-
-		/**
-		 * The meta object literal for the '<em><b>Isl Term</b></em>' attribute feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EAttribute POLYNOMIAL_TERM__ISL_TERM = eINSTANCE.getPolynomialTerm_IslTerm();
 
 		/**
 		 * The meta object literal for the '{@link alpha.codegen.VariableType <em>Variable Type</em>}' enum.

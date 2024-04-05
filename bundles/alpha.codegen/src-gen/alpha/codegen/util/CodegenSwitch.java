@@ -230,45 +230,9 @@ public class CodegenSwitch<T> extends Switch<T> {
 				if (result == null) result = defaultCase(theEObject);
 				return result;
 			}
-			case CodegenPackage.POLYNOMIAL_VISITOR: {
-				PolynomialVisitor polynomialVisitor = (PolynomialVisitor)theEObject;
-				T result = casePolynomialVisitor(polynomialVisitor);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
-			case CodegenPackage.POLYNOMIAL_NODE: {
-				PolynomialNode polynomialNode = (PolynomialNode)theEObject;
-				T result = casePolynomialNode(polynomialNode);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
-			case CodegenPackage.POLYNOMIAL_VISITABLE: {
-				PolynomialVisitable polynomialVisitable = (PolynomialVisitable)theEObject;
-				T result = casePolynomialVisitable(polynomialVisitable);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
 			case CodegenPackage.POLYNOMIAL: {
 				Polynomial polynomial = (Polynomial)theEObject;
 				T result = casePolynomial(polynomial);
-				if (result == null) result = casePolynomialNode(polynomial);
-				if (result == null) result = casePolynomialVisitable(polynomial);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
-			case CodegenPackage.POLYNOMIAL_PIECE: {
-				PolynomialPiece polynomialPiece = (PolynomialPiece)theEObject;
-				T result = casePolynomialPiece(polynomialPiece);
-				if (result == null) result = casePolynomialNode(polynomialPiece);
-				if (result == null) result = casePolynomialVisitable(polynomialPiece);
-				if (result == null) result = defaultCase(theEObject);
-				return result;
-			}
-			case CodegenPackage.POLYNOMIAL_TERM: {
-				PolynomialTerm polynomialTerm = (PolynomialTerm)theEObject;
-				T result = casePolynomialTerm(polynomialTerm);
-				if (result == null) result = casePolynomialNode(polynomialTerm);
-				if (result == null) result = casePolynomialVisitable(polynomialTerm);
 				if (result == null) result = defaultCase(theEObject);
 				return result;
 			}
@@ -577,51 +541,6 @@ public class CodegenSwitch<T> extends Switch<T> {
 	}
 
 	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Polynomial Visitor</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Polynomial Visitor</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T casePolynomialVisitor(PolynomialVisitor object) {
-		return null;
-	}
-
-	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Polynomial Node</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Polynomial Node</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T casePolynomialNode(PolynomialNode object) {
-		return null;
-	}
-
-	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Polynomial Visitable</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Polynomial Visitable</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T casePolynomialVisitable(PolynomialVisitable object) {
-		return null;
-	}
-
-	/**
 	 * Returns the result of interpreting the object as an instance of '<em>Polynomial</em>'.
 	 * <!-- begin-user-doc -->
 	 * This implementation returns null;
@@ -633,36 +552,6 @@ public class CodegenSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T casePolynomial(Polynomial object) {
-		return null;
-	}
-
-	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Polynomial Piece</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Polynomial Piece</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T casePolynomialPiece(PolynomialPiece object) {
-		return null;
-	}
-
-	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Polynomial Term</em>'.
-	 * <!-- begin-user-doc -->
-	 * This implementation returns null;
-	 * returning a non-null result will terminate the switch.
-	 * <!-- end-user-doc -->
-	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Polynomial Term</em>'.
-	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
-	 * @generated
-	 */
-	public T casePolynomialTerm(PolynomialTerm object) {
 		return null;
 	}
 

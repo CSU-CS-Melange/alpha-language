@@ -24,11 +24,6 @@ import alpha.codegen.MemoryAllocation;
 import alpha.codegen.MemoryMacro;
 import alpha.codegen.Node;
 import alpha.codegen.Polynomial;
-import alpha.codegen.PolynomialNode;
-import alpha.codegen.PolynomialPiece;
-import alpha.codegen.PolynomialTerm;
-import alpha.codegen.PolynomialVisitable;
-import alpha.codegen.PolynomialVisitor;
 import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
@@ -215,42 +210,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	private EClass polynomialVisitorEClass = null;
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	private EClass polynomialNodeEClass = null;
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	private EClass polynomialVisitableEClass = null;
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	private EClass polynomialEClass = null;
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	private EClass polynomialPieceEClass = null;
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	private EClass polynomialTermEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -1035,33 +995,6 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EClass getPolynomialVisitor() {
-		return polynomialVisitorEClass;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EClass getPolynomialNode() {
-		return polynomialNodeEClass;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EClass getPolynomialVisitable() {
-		return polynomialVisitableEClass;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public EClass getPolynomial() {
 		return polynomialEClass;
 	}
@@ -1071,80 +1004,8 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EReference getPolynomial_Pieces() {
-		return (EReference)polynomialEClass.getEStructuralFeatures().get(0);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public EAttribute getPolynomial_IslPolynomial() {
-		return (EAttribute)polynomialEClass.getEStructuralFeatures().get(1);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EClass getPolynomialPiece() {
-		return polynomialPieceEClass;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EReference getPolynomialPiece_Polynomial() {
-		return (EReference)polynomialPieceEClass.getEStructuralFeatures().get(0);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EReference getPolynomialPiece_Terms() {
-		return (EReference)polynomialPieceEClass.getEStructuralFeatures().get(1);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EAttribute getPolynomialPiece_IslPiece() {
-		return (EAttribute)polynomialPieceEClass.getEStructuralFeatures().get(2);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EClass getPolynomialTerm() {
-		return polynomialTermEClass;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EReference getPolynomialTerm_PolynomialPiece() {
-		return (EReference)polynomialTermEClass.getEStructuralFeatures().get(0);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EAttribute getPolynomialTerm_IslTerm() {
-		return (EAttribute)polynomialTermEClass.getEStructuralFeatures().get(1);
+		return (EAttribute)polynomialEClass.getEStructuralFeatures().get(0);
 	}
 
 	/**
@@ -1414,24 +1275,8 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		alphaOpEClass = createEClass(ALPHA_OP);
 
-		polynomialVisitorEClass = createEClass(POLYNOMIAL_VISITOR);
-
-		polynomialNodeEClass = createEClass(POLYNOMIAL_NODE);
-
-		polynomialVisitableEClass = createEClass(POLYNOMIAL_VISITABLE);
-
 		polynomialEClass = createEClass(POLYNOMIAL);
-		createEReference(polynomialEClass, POLYNOMIAL__PIECES);
 		createEAttribute(polynomialEClass, POLYNOMIAL__ISL_POLYNOMIAL);
-
-		polynomialPieceEClass = createEClass(POLYNOMIAL_PIECE);
-		createEReference(polynomialPieceEClass, POLYNOMIAL_PIECE__POLYNOMIAL);
-		createEReference(polynomialPieceEClass, POLYNOMIAL_PIECE__TERMS);
-		createEAttribute(polynomialPieceEClass, POLYNOMIAL_PIECE__ISL_PIECE);
-
-		polynomialTermEClass = createEClass(POLYNOMIAL_TERM);
-		createEReference(polynomialTermEClass, POLYNOMIAL_TERM__POLYNOMIAL_PIECE);
-		createEAttribute(polynomialTermEClass, POLYNOMIAL_TERM__ISL_TERM);
 
 		// Create enums
 		variableTypeEEnum = createEEnum(VARIABLE_TYPE);
@@ -1512,12 +1357,6 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		reduceFunctionEClass.getESuperTypes().add(this.getFunction());
 		programEClass.getESuperTypes().add(this.getNode());
 		programEClass.getESuperTypes().add(this.getVisitable());
-		polynomialEClass.getESuperTypes().add(this.getPolynomialNode());
-		polynomialEClass.getESuperTypes().add(this.getPolynomialVisitable());
-		polynomialPieceEClass.getESuperTypes().add(this.getPolynomialNode());
-		polynomialPieceEClass.getESuperTypes().add(this.getPolynomialVisitable());
-		polynomialTermEClass.getESuperTypes().add(this.getPolynomialNode());
-		polynomialTermEClass.getESuperTypes().add(this.getPolynomialVisitable());
 
 		// Initialize classes and features; add operations and parameters
 		initEClass(nodeEClass, Node.class, "Node", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
@@ -1841,88 +1680,15 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		op = addEOperation(alphaOpEClass, this.getC_REDUCTION_OP(), "toCReductionOp", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, theModelPackage.getREDUCTION_OP(), "o", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
-		initEClass(polynomialVisitorEClass, PolynomialVisitor.class, "PolynomialVisitor", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-
-		op = addEOperation(polynomialVisitorEClass, null, "visitPolynomial", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomial(), "p", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "visitPolynomialPiece", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialPiece(), "pp", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "visitPolynomialTerm", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialTerm(), "pt", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "inPolynomial", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomial(), "p", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "inPolynomialPiece", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialPiece(), "pp", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "inPolynomialTerm", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialTerm(), "pt", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "outPolynomial", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomial(), "p", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "outPolynomialPiece", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialPiece(), "pp", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialVisitorEClass, null, "outPolynomialTerm", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialTerm(), "pt", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		initEClass(polynomialNodeEClass, PolynomialNode.class, "PolynomialNode", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-
-		initEClass(polynomialVisitableEClass, PolynomialVisitable.class, "PolynomialVisitable", IS_ABSTRACT, IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-
-		op = addEOperation(polynomialVisitableEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
 		initEClass(polynomialEClass, Polynomial.class, "Polynomial", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-		initEReference(getPolynomial_Pieces(), this.getPolynomialPiece(), this.getPolynomialPiece_Polynomial(), "pieces", null, 0, -1, Polynomial.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getPolynomial_IslPolynomial(), this.getISLPWQPolynomial(), "islPolynomial", null, 0, 1, Polynomial.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
+		addEOperation(polynomialEClass, theEcorePackage.getEString(), "toCString", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		op = addEOperation(polynomialEClass, theEcorePackage.getEString(), "toCString", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, theEcorePackage.getEString(), "variableName", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(polynomialEClass, theEcorePackage.getEString(), "params", 0, -1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		initEClass(polynomialPieceEClass, PolynomialPiece.class, "PolynomialPiece", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-		initEReference(getPolynomialPiece_Polynomial(), this.getPolynomial(), this.getPolynomial_Pieces(), "polynomial", null, 0, 1, PolynomialPiece.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEReference(getPolynomialPiece_Terms(), this.getPolynomialTerm(), this.getPolynomialTerm_PolynomialPiece(), "terms", null, 0, -1, PolynomialPiece.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getPolynomialPiece_IslPiece(), this.getISLQPolynomialPiece(), "islPiece", null, 0, 1, PolynomialPiece.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-
-		addEOperation(polynomialPieceEClass, this.getISLSet(), "getSet", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialPieceEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		initEClass(polynomialTermEClass, PolynomialTerm.class, "PolynomialTerm", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
-		initEReference(getPolynomialTerm_PolynomialPiece(), this.getPolynomialPiece(), this.getPolynomialPiece_Terms(), "polynomialPiece", null, 0, 1, PolynomialTerm.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getPolynomialTerm_IslTerm(), this.getISLTerm(), "islTerm", null, 0, 1, PolynomialTerm.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEString(), "value", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEString(), "values", 0, -1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEString(), "coefficient", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialTermEClass, theEcorePackage.getEString(), "exponent", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, theEcorePackage.getEInt(), "i", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEInt(), "exponents", 0, -1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEInt(), "dimParam", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialTermEClass, theEcorePackage.getEInt(), "dim", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getISLDimType(), "dim_type", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		addEOperation(polynomialTermEClass, theEcorePackage.getEString(), "paramNames", 0, -1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialTermEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, this.getPolynomialVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		// Initialize enums and add enum literals
 		initEEnum(variableTypeEEnum, VariableType.class, "VariableType");

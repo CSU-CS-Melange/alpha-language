@@ -26,6 +26,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLTerm
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import java.util.HashMap
+import alpha.codegen.util.MemoryUtils
 
 type ISLSet wraps ISLSet
 type ISLMap wraps ISLMap
@@ -430,30 +431,12 @@ class AlphaOp {
 
 // Data structure to enable clean printing of ISLPWQPolynomials
 // This is just a wrapper around ISLPWQPolynomial
-
-class PolynomialVisitor {
-	op void visitPolynomial(Polynomial p)
-	op void visitPolynomialPiece(PolynomialPiece pp)
-	op void visitPolynomialTerm(PolynomialTerm pt)
-	
-	op void inPolynomial(Polynomial p)
-	op void inPolynomialPiece(PolynomialPiece pp)
-	op void inPolynomialTerm(PolynomialTerm pt)
-
-	op void outPolynomial(Polynomial p)
-	op void outPolynomialPiece(PolynomialPiece pp)
-	op void outPolynomialTerm(PolynomialTerm pt)
-}
-
-class PolynomialNode {}
-
-interface PolynomialVisitable {
-	op void accept(PolynomialVisitor visitor)
-}
-
-class Polynomial extends PolynomialNode, PolynomialVisitable {
-	contains PolynomialPiece[] pieces opposite polynomial
+class Polynomial {
 	ISLPWQPolynomial islPolynomial
+	
+	op String toCString() {
+		PolynomialPrinter.print(this).toString
+	}
 	
 	op String toCString(String variableName) {
 		PolynomialPrinter.print(this, variableName).toString
@@ -462,64 +445,5 @@ class Polynomial extends PolynomialNode, PolynomialVisitable {
 	op String[] params() {
 		val P = islPolynomial.space.dim(ISLDimType.isl_dim_param)
 		(0..<P).map[islPolynomial.space.getDimName(ISLDimType.isl_dim_param, it)].toEList
-	}
-	
-	op void accept(PolynomialVisitor visitor) {
-		visitor.visitPolynomial(this)
-	}
-}
-
-class PolynomialPiece extends PolynomialNode, PolynomialVisitable {
-	container Polynomial polynomial opposite pieces
-	contains PolynomialTerm[] terms opposite polynomialPiece
-	ISLQPolynomialPiece islPiece
-	
-	op ISLSet getSet() {
-		islPiece.getSet
-	}
-	
-	op void accept(PolynomialVisitor visitor) {
-		visitor.visitPolynomialPiece(this)
-	}
-}
-
-class PolynomialTerm extends PolynomialNode, PolynomialVisitable {
-	container PolynomialPiece polynomialPiece opposite terms
-	ISLTerm islTerm
-	
-	op String value() {
-		values.join('*')
-	}
-	
-	op String[] values() {
-		(#[coefficient] + (0..<dimParam).filter[exponents.get(it) != 0].map[exponent]).toEList
-	}
-	
-	op String coefficient() {
-		islTerm.coefficientVal.toString
-	}
-	
-	op String exponent(int i) {
-		(0..<exponents.get(i)).map[paramNames.get(i)].join('*')
-	}
-	
-	op int[] exponents() {
-		(0..<dimParam).map[islTerm.getExponent(ISLDimType.isl_dim_param, it)].toEList
-	}
-	
-	op int dimParam() {
-		dim(ISLDimType.isl_dim_param)
-	}
-	
-	op int dim(ISLDimType dim_type) {
-		polynomialPiece.polynomial.islPolynomial.dim(dim_type)
-	}
-	
-	op String[] paramNames() {
-		polynomialPiece.polynomial.params
-	}
-	
-	op void accept(PolynomialVisitor visitor) {
-		visitor.visitPolynomialTerm(this)
 	}
 }

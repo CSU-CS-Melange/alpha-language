@@ -11,8 +11,6 @@ import alpha.codegen.GlobalMemoryMacro;
 import alpha.codegen.MemoryAllocation;
 import alpha.codegen.MemoryMacro;
 import alpha.codegen.Polynomial;
-import alpha.codegen.PolynomialPiece;
-import alpha.codegen.PolynomialTerm;
 import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
@@ -23,16 +21,10 @@ import alpha.model.StandardEquation;
 import alpha.model.Variable;
 import alpha.model.util.AlphaUtil;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
-import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
-import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece;
-import fr.irisa.cairn.jnimap.isl.ISLSpace;
-import fr.irisa.cairn.jnimap.isl.ISLTerm;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.CollectionExtensions;
-import org.eclipse.xtext.xbase.lib.ExclusiveRange;
-import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
@@ -96,32 +88,6 @@ public class Factory {
 
   public static MemoryMacro createMemoryMacro(final ArrayVariable variable) {
     return Factory.createMemoryMacro(variable, null);
-  }
-
-  public static String toßtring(final ISLTerm t, final ISLSpace s) {
-    String _xblockexpression = null;
-    {
-      final int P = t.dim(ISLDimType.isl_dim_param);
-      final Function1<Integer, String> _function = (Integer it) -> {
-        return s.getDimName(ISLDimType.isl_dim_param, (it).intValue());
-      };
-      final Iterable<String> params = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, P, true), _function);
-      StringConcatenation _builder = new StringConcatenation();
-      _builder.append("(");
-      long _numerator = t.getNumerator();
-      _builder.append(_numerator);
-      _builder.append("/");
-      long _denominator = t.getDenominator();
-      _builder.append(_denominator);
-      _builder.append(") ");
-      final Function1<Integer, Integer> _function_1 = (Integer it) -> {
-        return Integer.valueOf(t.getExponent(ISLDimType.isl_dim_param, (it).intValue()));
-      };
-      Iterable<Integer> _map = IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, P, true), _function_1);
-      _builder.append(_map);
-      _xblockexpression = _builder.toString();
-    }
-    return _xblockexpression;
   }
 
   public static MemoryAllocation createMemoryAllocation(final ArrayVariable variable, final MemoryMacro macro) {
@@ -262,26 +228,6 @@ public class Factory {
     {
       final Polynomial ret = Factory.factory.createPolynomial();
       ret.setIslPolynomial(pwqp);
-      _xblockexpression = ret;
-    }
-    return _xblockexpression;
-  }
-
-  public static PolynomialPiece createPolynomialPiece(final ISLQPolynomialPiece piece) {
-    PolynomialPiece _xblockexpression = null;
-    {
-      final PolynomialPiece ret = Factory.factory.createPolynomialPiece();
-      ret.setIslPiece(piece);
-      _xblockexpression = ret;
-    }
-    return _xblockexpression;
-  }
-
-  public static PolynomialTerm createPolynomialTerm(final ISLTerm term) {
-    PolynomialTerm _xblockexpression = null;
-    {
-      final PolynomialTerm ret = Factory.factory.createPolynomialTerm();
-      ret.setIslTerm(term);
       _xblockexpression = ret;
     }
     return _xblockexpression;

@@ -88,11 +88,7 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 			case CodegenPackage.REDUCE_FUNCTION: return createReduceFunction();
 			case CodegenPackage.PROGRAM: return createProgram();
 			case CodegenPackage.ALPHA_OP: return createAlphaOp();
-			case CodegenPackage.POLYNOMIAL_VISITOR: return createPolynomialVisitor();
-			case CodegenPackage.POLYNOMIAL_NODE: return createPolynomialNode();
 			case CodegenPackage.POLYNOMIAL: return createPolynomial();
-			case CodegenPackage.POLYNOMIAL_PIECE: return createPolynomialPiece();
-			case CodegenPackage.POLYNOMIAL_TERM: return createPolynomialTerm();
 			default:
 				throw new IllegalArgumentException("The class '" + eClass.getName() + "' is not a valid classifier");
 		}
@@ -367,49 +363,9 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public PolynomialVisitor createPolynomialVisitor() {
-		PolynomialVisitorImpl polynomialVisitor = new PolynomialVisitorImpl();
-		return polynomialVisitor;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public PolynomialNode createPolynomialNode() {
-		PolynomialNodeImpl polynomialNode = new PolynomialNodeImpl();
-		return polynomialNode;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public Polynomial createPolynomial() {
 		PolynomialImpl polynomial = new PolynomialImpl();
 		return polynomial;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public PolynomialPiece createPolynomialPiece() {
-		PolynomialPieceImpl polynomialPiece = new PolynomialPieceImpl();
-		return polynomialPiece;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public PolynomialTerm createPolynomialTerm() {
-		PolynomialTermImpl polynomialTerm = new PolynomialTermImpl();
-		return polynomialTerm;
 	}
 
 	/**
