@@ -1683,11 +1683,6 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		initEClass(polynomialEClass, Polynomial.class, "Polynomial", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getPolynomial_IslPolynomial(), this.getISLPWQPolynomial(), "islPolynomial", null, 0, 1, Polynomial.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
-		addEOperation(polynomialEClass, theEcorePackage.getEString(), "toCString", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
-		op = addEOperation(polynomialEClass, theEcorePackage.getEString(), "toCString", 0, 1, !IS_UNIQUE, IS_ORDERED);
-		addEParameter(op, theEcorePackage.getEString(), "variableName", 0, 1, !IS_UNIQUE, IS_ORDERED);
-
 		addEOperation(polynomialEClass, theEcorePackage.getEString(), "params", 0, -1, !IS_UNIQUE, IS_ORDERED);
 
 		// Initialize enums and add enum literals

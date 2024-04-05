@@ -53,22 +53,6 @@ public interface Polynomial extends EObject {
 	 * @model unique="false"
 	 * @generated
 	 */
-	String toCString();
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model unique="false" variableNameUnique="false"
-	 * @generated
-	 */
-	String toCString(String variableName);
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @model unique="false"
-	 * @generated
-	 */
 	EList<String> params();
 
 } // Polynomial

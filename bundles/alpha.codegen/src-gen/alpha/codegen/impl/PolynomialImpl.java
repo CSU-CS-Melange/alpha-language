@@ -5,8 +5,6 @@ package alpha.codegen.impl;
 import alpha.codegen.CodegenPackage;
 import alpha.codegen.Polynomial;
 
-import alpha.codegen.polynomial.PolynomialPrinter;
-
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 
@@ -98,24 +96,6 @@ public class PolynomialImpl extends MinimalEObjectImpl.Container implements Poly
 		islPolynomial = newIslPolynomial;
 		if (eNotificationRequired())
 			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.POLYNOMIAL__ISL_POLYNOMIAL, oldIslPolynomial, islPolynomial));
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public String toCString() {
-		return PolynomialPrinter.print(this).toString();
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public String toCString(final String variableName) {
-		return PolynomialPrinter.print(this, variableName).toString();
 	}
 
 	/**

@@ -434,14 +434,6 @@ class AlphaOp {
 class Polynomial {
 	ISLPWQPolynomial islPolynomial
 	
-	op String toCString() {
-		PolynomialPrinter.print(this).toString
-	}
-	
-	op String toCString(String variableName) {
-		PolynomialPrinter.print(this, variableName).toString
-	}
-	
 	op String[] params() {
 		val P = islPolynomial.space.dim(ISLDimType.isl_dim_param)
 		(0..<P).map[islPolynomial.space.getDimName(ISLDimType.isl_dim_param, it)].toEList
