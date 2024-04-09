@@ -46,7 +46,17 @@ public enum VariableType implements Enumerator {
 	 * @generated
 	 * @ordered
 	 */
-	LOCAL(0, "local", "local");
+	LOCAL(0, "local", "local"),
+
+	/**
+	 * The '<em><b>Param</b></em>' literal object.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #PARAM_VALUE
+	 * @generated
+	 * @ordered
+	 */
+	PARAM(0, "param", "param");
 
 	/**
 	 * The '<em><b>Input</b></em>' literal value.
@@ -82,6 +92,17 @@ public enum VariableType implements Enumerator {
 	public static final int LOCAL_VALUE = 0;
 
 	/**
+	 * The '<em><b>Param</b></em>' literal value.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #PARAM
+	 * @model name="param"
+	 * @generated
+	 * @ordered
+	 */
+	public static final int PARAM_VALUE = 0;
+
+	/**
 	 * An array of all the '<em><b>Variable Type</b></em>' enumerators.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -92,6 +113,7 @@ public enum VariableType implements Enumerator {
 			INPUT,
 			OUTPUT,
 			LOCAL,
+			PARAM,
 		};
 
 	/**

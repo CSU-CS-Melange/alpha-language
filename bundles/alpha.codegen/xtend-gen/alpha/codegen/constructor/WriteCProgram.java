@@ -120,9 +120,7 @@ public class WriteCProgram extends BaseProgram {
       String _name = it.getName();
       _builder_1.append(_name);
       _builder_1.append("(");
-      List<String> _paramNames = it.getDomain().getParamNames();
-      List<String> _indexNames = it.getDomain().getIndexNames();
-      String _join_1 = IterableExtensions.join(Iterables.<String>concat(_paramNames, _indexNames), ", ");
+      String _join_1 = IterableExtensions.join(it.getDomain().getIndexNames(), ", ");
       _builder_1.append(_join_1);
       _builder_1.append(")");
       return CodegenUtil.statementMacro(_builder.toString(), _builder_1.toString());
@@ -132,15 +130,16 @@ public class WriteCProgram extends BaseProgram {
     final ISLASTBuild build = ISLASTBuild.buildFromContext(schedule.getDomain().copy().params());
     final ISLASTNode node = build.generate(schedule.copy());
     final FunctionBody body = Factory.createFunctionBody(((StatementMacro[])Conversions.unwrapArray(statementMacros, StatementMacro.class)), node);
-    final List<BaseVariable> paramArgs = CodegenUtil.paramScalarVariables(s);
+    final List<GlobalVariable> paramArgs = CodegenUtil.paramScalarVariables(s);
     final Collection<ArrayVariable> arrayArgs = MapExtensions.union(this.inputCVs, this.outputCVs).values();
     final Function function = Factory.createFunction(DataType.VOID, s.getName(), ((BaseVariable[])Conversions.unwrapArray(paramArgs, BaseVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(arrayArgs, ArrayVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(this.localCVs.values(), ArrayVariable.class)), body);
     EList<GlobalVariable> _globalVariables = this.program.getGlobalVariables();
+    Iterable<GlobalVariable> _plus = Iterables.<GlobalVariable>concat(paramArgs, arrayArgs);
     Collection<ArrayVariable> _values = this.localCVs.values();
-    Iterable<ArrayVariable> _plus = Iterables.<ArrayVariable>concat(arrayArgs, _values);
+    Iterable<GlobalVariable> _plus_1 = Iterables.<GlobalVariable>concat(_plus, _values);
     Collection<ArrayVariable> _values_1 = this.flagCVs.values();
-    Iterable<GlobalVariable> _plus_1 = Iterables.<GlobalVariable>concat(_plus, _values_1);
-    Iterables.<GlobalVariable>addAll(_globalVariables, _plus_1);
+    Iterable<GlobalVariable> _plus_2 = Iterables.<GlobalVariable>concat(_plus_1, _values_1);
+    Iterables.<GlobalVariable>addAll(_globalVariables, _plus_2);
     this.program.getFunctions().add(function);
   }
 
@@ -153,9 +152,7 @@ public class WriteCProgram extends BaseProgram {
     }
     final ArrayVariable evalVar = this.outputCVs.get(se.getVariable());
     final ArrayVariable flagVar = this.flagCVs.get(se.getVariable());
-    List<BaseVariable> _paramScalarVariables = CodegenUtil.paramScalarVariables(AlphaUtil.getContainerSystem(se));
-    List<BaseVariable> _indexScalarVariables = CodegenUtil.indexScalarVariables(se.getVariable());
-    final Iterable<BaseVariable> scalarArgs = Iterables.<BaseVariable>concat(_paramScalarVariables, _indexScalarVariables);
+    final List<BaseVariable> scalarArgs = CodegenUtil.indexScalarVariables(se.getVariable());
     final EvalFunction function = Factory.createEvalFunction(evalVar, flagVar, ((BaseVariable[])Conversions.unwrapArray(scalarArgs, BaseVariable.class)), se);
     this.program.getFunctions().add(function);
   }
@@ -174,10 +171,11 @@ public class WriteCProgram extends BaseProgram {
     final ISLSet loopDomain = this.createReduceLoopDomain(re);
     final ISLASTNode astNode = this.createReduceLoopASTNode(loopDomain, macroName);
     final FunctionBody functionBody = Factory.createFunctionBody(new StatementMacro[] {}, astNode);
+    final int contextParamCount = re.getContextDomain().getNbParams();
     final Function1<String, BaseVariable> _function = (String param) -> {
       return CodegenUtil.baseVariable(param, DataType.LONG);
     };
-    final List<BaseVariable> params = ListExtensions.<String, BaseVariable>map(loopDomain.getParamNames(), _function);
+    final Iterable<BaseVariable> params = IterableExtensions.<String, BaseVariable>map(IterableExtensions.<String>drop(loopDomain.getParamNames(), contextParamCount), _function);
     final ReduceFunction function = Factory.createReduceFunction(reduceFunctionName, re, reduceVar, macroName, functionBody, ((BaseVariable[])Conversions.unwrapArray(params, BaseVariable.class)));
     this.program.getFunctions().add(function);
     HashMap<ReduceExpression, ReduceFunction> _reduceFunctions = this.program.getReduceFunctions();

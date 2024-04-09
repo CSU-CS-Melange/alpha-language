@@ -57,7 +57,7 @@ class WriteCProgram extends BaseProgram {
 		// statement macros
 		val statementMacros = s.outputs.map[statementMacro(
 			'''S«s.outputs.indexOf(it)»(«it.indices.join(',')»)''',
-			'''eval_«name»(«(domain.paramNames + domain.indexNames).join(', ')»)'''
+			'''eval_«name»(«(domain.indexNames).join(', ')»)'''
 		)]
 		
 		// schedule tree node
@@ -72,7 +72,7 @@ class WriteCProgram extends BaseProgram {
 				
 		val function = createFunction(DataType.VOID, s.name, paramArgs, arrayArgs, localCVs.values, body)
 
-		program.globalVariables.addAll(arrayArgs + localCVs.values + flagCVs.values)
+		program.globalVariables.addAll(paramArgs + arrayArgs + localCVs.values + flagCVs.values)
 		program.functions.add(function)
 	}
 	
@@ -83,7 +83,7 @@ class WriteCProgram extends BaseProgram {
 		
 		val evalVar = outputCVs.get(se.variable)
 		val flagVar = flagCVs.get(se.variable)
-		val scalarArgs = se.getContainerSystem.paramScalarVariables + se.variable.indexScalarVariables
+		val scalarArgs = se.variable.indexScalarVariables
 		val function = createEvalFunction(evalVar, flagVar, scalarArgs, se)
 		
 		program.functions.add(function)
@@ -106,7 +106,11 @@ class WriteCProgram extends BaseProgram {
 		val functionBody = createFunctionBody(#[], astNode)
 		
 		// Create the reduce function and add it to the program.
-		val params = loopDomain.paramNames.map[param | baseVariable(param, DataType.LONG)]
+		// We don't want to add function parameters for the ISL set parameters
+		// that are present in the reduce expression's context domain,
+		// as those ISL set parameters are already global variables.
+		val contextParamCount = re.contextDomain.nbParams
+		val params = loopDomain.paramNames.drop(contextParamCount).map[param | baseVariable(param, DataType.LONG)]
 		val function =  createReduceFunction(reduceFunctionName, re, reduceVar, macroName, functionBody, params)
 		program.functions.add(function)
 		
@@ -215,15 +219,4 @@ class WriteCProgram extends BaseProgram {
 	static def <T> toArrayList(T... src) {
 		return new ArrayList<T>(src);
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 }

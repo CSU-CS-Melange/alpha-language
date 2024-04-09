@@ -360,6 +360,16 @@ public class GlobalVariableImpl extends BaseVariableImpl implements GlobalVariab
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public boolean hasMemoryMacro() {
+		GlobalMemoryMacro _memoryMacro = this.getMemoryMacro();
+		return (_memoryMacro != null);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public String pointers() {
 		int _numDims = this.getNumDims();
 		final Function1<Integer, String> _function = new Function1<Integer, String>() {
@@ -397,6 +407,15 @@ public class GlobalVariableImpl extends BaseVariableImpl implements GlobalVariab
 			_xifexpression = this.getName();
 		}
 		return _xifexpression;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EList<String> params() {
+		return ECollections.<String>toEList(AlphaUtil.params(this.getAlphaVariable()));
 	}
 
 	/**

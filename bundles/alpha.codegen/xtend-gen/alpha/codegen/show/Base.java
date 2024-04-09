@@ -101,6 +101,14 @@ public class Base extends CodegenSwitch<CharSequence> {
     return _builder;
   }
 
+  protected CharSequence _localName(final GlobalVariable v) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("_local_");
+    String _name = v.getName();
+    _builder.append(_name);
+    return _builder;
+  }
+
   protected CharSequence _localName(final ArrayVariable v) {
     StringConcatenation _builder = new StringConcatenation();
     _builder.append("_local_");
@@ -221,40 +229,43 @@ public class Base extends CodegenSwitch<CharSequence> {
     _builder.newLine();
     _builder.append("// memory macros");
     _builder.newLine();
-    final Function1<GlobalVariable, CharSequence> _function_3 = (GlobalVariable it) -> {
+    final Function1<GlobalVariable, Boolean> _function_3 = (GlobalVariable it) -> {
+      return Boolean.valueOf(it.hasMemoryMacro());
+    };
+    final Function1<GlobalVariable, CharSequence> _function_4 = (GlobalVariable it) -> {
       return this.doSwitch(it.getMemoryMacro());
     };
-    String _join_3 = IterableExtensions.join(ListExtensions.<GlobalVariable, CharSequence>map(p.getGlobalVariables(), _function_3), "\n");
+    String _join_3 = IterableExtensions.join(IterableExtensions.<GlobalVariable, CharSequence>map(IterableExtensions.<GlobalVariable>filter(p.getGlobalVariables(), _function_3), _function_4), "\n");
     _builder.append(_join_3);
     _builder.newLineIfNotEmpty();
     _builder.newLine();
     _builder.append("// local function declarations");
     _builder.newLine();
-    final Function1<Function, Boolean> _function_4 = (Function f) -> {
+    final Function1<Function, Boolean> _function_5 = (Function f) -> {
       return Boolean.valueOf((f instanceof EvalFunction));
     };
-    final Function1<Function, String> _function_5 = (Function it) -> {
+    final Function1<Function, String> _function_6 = (Function it) -> {
       CharSequence _signature = this.signature(it);
       return (_signature + ";");
     };
-    String _join_4 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_4), _function_5), "\n");
+    String _join_4 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_5), _function_6), "\n");
     _builder.append(_join_4);
     _builder.newLineIfNotEmpty();
-    final Function1<Function, Boolean> _function_6 = (Function f) -> {
+    final Function1<Function, Boolean> _function_7 = (Function f) -> {
       return Boolean.valueOf((f instanceof ReduceFunction));
     };
-    final Function1<Function, String> _function_7 = (Function it) -> {
+    final Function1<Function, String> _function_8 = (Function it) -> {
       CharSequence _signature = this.signature(it);
       return (_signature + ";");
     };
-    String _join_5 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_6), _function_7), "\n");
+    String _join_5 = IterableExtensions.join(IterableExtensions.<Function, String>map(IterableExtensions.<Function>filter(p.getFunctions(), _function_7), _function_8), "\n");
     _builder.append(_join_5);
     _builder.newLineIfNotEmpty();
     _builder.newLine();
-    final Function1<Function, CharSequence> _function_8 = (Function it) -> {
+    final Function1<Function, CharSequence> _function_9 = (Function it) -> {
       return this.doSwitch(it);
     };
-    String _join_6 = IterableExtensions.join(ListExtensions.<Function, CharSequence>map(p.getFunctions(), _function_8), "\n");
+    String _join_6 = IterableExtensions.join(ListExtensions.<Function, CharSequence>map(p.getFunctions(), _function_9), "\n");
     _builder.append(_join_6);
     _builder.newLineIfNotEmpty();
     return _builder;
@@ -280,6 +291,8 @@ public class Base extends CodegenSwitch<CharSequence> {
   public CharSequence localName(final BaseVariable v) {
     if (v instanceof ArrayVariable) {
       return _localName((ArrayVariable)v);
+    } else if (v instanceof GlobalVariable) {
+      return _localName((GlobalVariable)v);
     } else if (v != null) {
       return _localName(v);
     } else {

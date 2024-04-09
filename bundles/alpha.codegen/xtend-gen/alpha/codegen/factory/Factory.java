@@ -14,7 +14,9 @@ import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.VariableType;
+import alpha.codegen.polynomial.PolynomialPrinter;
 import alpha.codegen.util.CodegenUtil;
+import alpha.codegen.util.MemoryUtils;
 import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
@@ -117,7 +119,7 @@ public class Factory {
       final ArrayVariable cv = Factory.factory.createArrayVariable();
       cv.setName(v.getName());
       cv.setElemType(CodegenUtil.dataType(v));
-      cv.setNumDims(AlphaUtil.numDims(v));
+      cv.setNumDims(1);
       cv.setAlphaVariable(v);
       Boolean _isInput = v.isInput();
       if ((_isInput).booleanValue()) {
@@ -158,12 +160,13 @@ public class Factory {
       _builder.append(_join);
       _builder.append(")");
       final String left = _builder.toString();
+      final ISLPWQPolynomial rankFormula = MemoryUtils.rank(cv.getAlphaVariable().getDomain());
       StringConcatenation _builder_1 = new StringConcatenation();
       String _name_1 = cv.getName();
       _builder_1.append(_name_1);
       _builder_1.append("[");
-      String _join_1 = IterableExtensions.join(AlphaUtil.indices(cv.getAlphaVariable()), "][");
-      _builder_1.append(_join_1);
+      String _string = PolynomialPrinter.print(rankFormula).toString();
+      _builder_1.append(_string);
       _builder_1.append("]");
       final String right = _builder_1.toString();
       _xblockexpression = Factory.createGlobalMemoryMacro(left, right);

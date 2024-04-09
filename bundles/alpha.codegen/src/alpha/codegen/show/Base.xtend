@@ -1,20 +1,21 @@
 package alpha.codegen.show
 
-import alpha.codegen.Node
-import alpha.codegen.Visitable
-import alpha.codegen.Visitor
+import alpha.codegen.ArrayVariable
+import alpha.codegen.BaseVariable
+import alpha.codegen.EvalFunction
+import alpha.codegen.Function
+import alpha.codegen.FunctionBody
+import alpha.codegen.GlobalVariable
 import alpha.codegen.Include
 import alpha.codegen.Macro
 import alpha.codegen.MemoryAllocation
-import alpha.codegen.FunctionBody
-import alpha.codegen.Function
+import alpha.codegen.Node
 import alpha.codegen.Program
-import org.eclipse.emf.ecore.EObject
-import alpha.codegen.EvalFunction
-import alpha.codegen.BaseVariable
-import alpha.codegen.ArrayVariable
-import alpha.codegen.util.CodegenSwitch
 import alpha.codegen.ReduceFunction
+import alpha.codegen.Visitable
+import alpha.codegen.Visitor
+import alpha.codegen.util.CodegenSwitch
+import org.eclipse.emf.ecore.EObject
 
 class Base extends CodegenSwitch<CharSequence> {
 	
@@ -55,6 +56,10 @@ class Base extends CodegenSwitch<CharSequence> {
 	
 	def dispatch localName(BaseVariable v) {
 		'''«v.name»'''
+	}
+	
+	def dispatch localName(GlobalVariable v) {
+		'''_local_«v.name»'''
 	}
 	
 	def dispatch localName(ArrayVariable v) {
@@ -104,7 +109,7 @@ class Base extends CodegenSwitch<CharSequence> {
 		«p.globalVariables.map['''static «it.declaration»;'''].join('\n')»
 		
 		// memory macros
-		«p.globalVariables.map[memoryMacro.doSwitch].join('\n')»
+		«p.globalVariables.filter[it.hasMemoryMacro].map[memoryMacro.doSwitch].join('\n')»
 		
 		// local function declarations
 		«p.functions.filter[f | f instanceof EvalFunction].map[it.signature + ';'].join('\n')»

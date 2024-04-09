@@ -1498,11 +1498,15 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEBoolean(), "hasAlphaVariable", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		addEOperation(globalVariableEClass, theEcorePackage.getEBoolean(), "hasMemoryMacro", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "pointers", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "dataType", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "readName", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "params", 0, -1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "indices", 0, -1, !IS_UNIQUE, IS_ORDERED);
 
@@ -1597,6 +1601,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		addEEnumLiteral(variableTypeEEnum, VariableType.INPUT);
 		addEEnumLiteral(variableTypeEEnum, VariableType.OUTPUT);
 		addEEnumLiteral(variableTypeEEnum, VariableType.LOCAL);
+		addEEnumLiteral(variableTypeEEnum, VariableType.PARAM);
 
 		initEEnum(dataTypeEEnum, DataType.class, "DataType");
 		addEEnumLiteral(dataTypeEEnum, DataType.INT);

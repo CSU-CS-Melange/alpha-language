@@ -152,9 +152,7 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	def caseReduceExpression(ReduceExpression re) {
 		// Emit a call to the function.
 		val reduceFunctionName = program.reduceFunctions.get(re).name
-		val arguments = #[re.contextDomain.paramNames, re.contextDomain.indexNames]
-			.flatten
-			.join(',')
+		val arguments = re.contextDomain.indexNames.join(',')
 		return '''«reduceFunctionName»(«arguments»);'''
 	}
 	
@@ -199,7 +197,11 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	}
 	
 	def caseVariableExpression(VariableExpression ve) {
-		'''«program.getGlobalVariable(ve.variable).readName»'''
+		if (ve.eContainer instanceof DependenceExpression) {
+			return '''«program.getGlobalVariable(ve.variable).readName»'''
+		} else {
+			return '''«program.getGlobalVariable(ve.variable).readName»(«ve.variable.domain.indexNames.join(",")»)'''
+		}
 	}
 	
 	def caseIntegerExpression(IntegerExpression ie) {

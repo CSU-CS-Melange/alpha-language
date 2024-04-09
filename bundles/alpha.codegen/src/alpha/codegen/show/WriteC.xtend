@@ -22,14 +22,15 @@ class WriteC extends Base {
 	
 	def caseFunction(Function f) '''
 		«f.signature» {
+		  // copy to global
+		  «f.scalarArgs.map['''«it.name» = «it.localName»;'''].join('\n')»
+		  «f.arrayArgs.map['''«it.writeName» = «it.localName»;'''].join('\n')»
+		
 		  // parameter checking
 		  if (!(«f.system.parameterDomain.paramConstraintsToConditionals»)) {
 		    printf("The value of parameters are not valid.\n");
 		    exit(-1);
 		  }
-		
-		  // copy to global
-		  «f.arrayArgs.map['''«it.writeName» = «it.localName»;'''].join('\n')»
 		
 		  // statements
 		  «f.body.doSwitch»

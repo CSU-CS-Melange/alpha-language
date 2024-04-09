@@ -5,8 +5,10 @@ import alpha.codegen.CodegenFactory;
 import alpha.codegen.DataType;
 import alpha.codegen.GlobalMacro;
 import alpha.codegen.GlobalMemoryMacro;
+import alpha.codegen.GlobalVariable;
 import alpha.codegen.Include;
 import alpha.codegen.StatementMacro;
+import alpha.codegen.VariableType;
 import alpha.model.AlphaSystem;
 import alpha.model.Variable;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
@@ -81,11 +83,24 @@ public class CodegenUtil {
     return _xblockexpression;
   }
 
-  public static List<BaseVariable> paramScalarVariables(final AlphaSystem s) {
-    final Function1<String, BaseVariable> _function = (String it) -> {
-      return CodegenUtil.baseVariable(it, DataType.LONG);
+  public static GlobalVariable globalVariable(final String name, final DataType dataType) {
+    GlobalVariable _xblockexpression = null;
+    {
+      final GlobalVariable cv = CodegenUtil.factory.createGlobalVariable();
+      cv.setName(name);
+      cv.setElemType(dataType);
+      cv.setNumDims(0);
+      cv.setType(VariableType.PARAM);
+      _xblockexpression = cv;
+    }
+    return _xblockexpression;
+  }
+
+  public static List<GlobalVariable> paramScalarVariables(final AlphaSystem s) {
+    final Function1<String, GlobalVariable> _function = (String it) -> {
+      return CodegenUtil.globalVariable(it, DataType.LONG);
     };
-    return ListExtensions.<String, BaseVariable>map(s.getParameterDomain().getParamNames(), _function);
+    return ListExtensions.<String, GlobalVariable>map(s.getParameterDomain().getParamNames(), _function);
   }
 
   public static List<BaseVariable> indexScalarVariables(final Variable v) {

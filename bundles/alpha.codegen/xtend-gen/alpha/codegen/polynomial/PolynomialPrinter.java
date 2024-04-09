@@ -24,13 +24,17 @@ public class PolynomialPrinter {
     return _builder;
   }
 
-  public static CharSequence print(final Polynomial polynomial) {
+  public static CharSequence print(final ISLPWQPolynomial polynomial) {
     StringConcatenation _builder = new StringConcatenation();
     _builder.append("(");
-    String __toString = ISLPWQPolynomial._toString(polynomial.getIslPolynomial(), PolynomialPrinter.format);
+    String __toString = ISLPWQPolynomial._toString(polynomial, PolynomialPrinter.format);
     _builder.append(__toString);
     _builder.append(")");
     return _builder;
+  }
+
+  public static CharSequence print(final Polynomial polynomial) {
+    return PolynomialPrinter.print(polynomial.getIslPolynomial());
   }
 
   public static CharSequence printMinusOne(final Polynomial polynomial) {

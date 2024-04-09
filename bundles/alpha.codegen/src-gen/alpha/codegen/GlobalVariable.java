@@ -181,6 +181,14 @@ public interface GlobalVariable extends BaseVariable {
 	 * @model unique="false"
 	 * @generated
 	 */
+	boolean hasMemoryMacro();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model unique="false"
+	 * @generated
+	 */
 	String pointers();
 
 	/**
@@ -198,6 +206,14 @@ public interface GlobalVariable extends BaseVariable {
 	 * @generated
 	 */
 	String readName();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model unique="false"
+	 * @generated
+	 */
+	EList<String> params();
 
 	/**
 	 * <!-- begin-user-doc -->

@@ -27,12 +27,9 @@ import alpha.model.StandardEquation;
 import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.util.ModelSwitch;
-import com.google.common.collect.Iterables;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend2.lib.StringConcatenation;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -243,9 +240,7 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 
   public String caseReduceExpression(final ReduceExpression re) {
     final String reduceFunctionName = this.program.getReduceFunctions().get(re).getName();
-    List<String> _paramNames = re.getContextDomain().getParamNames();
-    List<String> _indexNames = re.getContextDomain().getIndexNames();
-    final String arguments = IterableExtensions.join(Iterables.<String>concat(Collections.<List<String>>unmodifiableList(CollectionLiterals.<List<String>>newArrayList(_paramNames, _indexNames))), ",");
+    final String arguments = IterableExtensions.join(re.getContextDomain().getIndexNames(), ",");
     StringConcatenation _builder = new StringConcatenation();
     _builder.append(reduceFunctionName);
     _builder.append("(");
@@ -333,11 +328,23 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
     return AlphaEquationPrinter.fault(fie);
   }
 
-  public CharSequence caseVariableExpression(final VariableExpression ve) {
-    StringConcatenation _builder = new StringConcatenation();
-    String _readName = this.program.getGlobalVariable(ve.getVariable()).readName();
-    _builder.append(_readName);
-    return _builder;
+  public String caseVariableExpression(final VariableExpression ve) {
+    EObject _eContainer = ve.eContainer();
+    if ((_eContainer instanceof DependenceExpression)) {
+      StringConcatenation _builder = new StringConcatenation();
+      String _readName = this.program.getGlobalVariable(ve.getVariable()).readName();
+      _builder.append(_readName);
+      return _builder.toString();
+    } else {
+      StringConcatenation _builder_1 = new StringConcatenation();
+      String _readName_1 = this.program.getGlobalVariable(ve.getVariable()).readName();
+      _builder_1.append(_readName_1);
+      _builder_1.append("(");
+      String _join = IterableExtensions.join(ve.getVariable().getDomain().getIndexNames(), ",");
+      _builder_1.append(_join);
+      _builder_1.append(")");
+      return _builder_1.toString();
+    }
   }
 
   public CharSequence caseIntegerExpression(final IntegerExpression ie) {

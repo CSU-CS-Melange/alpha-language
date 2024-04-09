@@ -399,6 +399,10 @@ class AlphaUtil {
 		variable.domain.indexNames.toList
 	}
 	
+	static def List<String> params(Variable variable) {
+		variable.domain.paramNames.toList
+	}
+	
 	static def List<String> indexNames(ISLMultiAff maff) {
 		maff.getDomainSpace.indexNames
 	}

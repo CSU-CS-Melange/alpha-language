@@ -14,11 +14,12 @@ import alpha.codegen.Program
 import alpha.codegen.ReduceFunction
 import alpha.codegen.StatementMacro
 import alpha.codegen.VariableType
+import alpha.codegen.polynomial.PolynomialPrinter
+import alpha.codegen.util.MemoryUtils
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLASTNode
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 
 import static extension alpha.codegen.util.CodegenUtil.*
@@ -91,12 +92,11 @@ class Factory {
 		function
 	}
 	
-	
 	def static ArrayVariable createArrayVariable(Variable v) {
 		val cv = factory.createArrayVariable
 		cv.name = v.name
 		cv.elemType = v.dataType
-		cv.numDims = v.numDims
+		cv.numDims = 1
 		cv.alphaVariable = v
 		if (v.isInput)
 			cv.type = VariableType.INPUT
@@ -117,7 +117,8 @@ class Factory {
 	
 	def static GlobalMemoryMacro createGlobalMemoryMacro(ArrayVariable cv) {
 		val left = '''«cv.name»(«cv.alphaVariable.indices.join(',')»)'''
-		val right = '''«cv.name»[«cv.alphaVariable.indices.join('][')»]'''
+		val rankFormula = MemoryUtils.rank(cv.alphaVariable.domain)
+		val right = '''«cv.name»[«PolynomialPrinter.print(rankFormula).toString»]'''
 		createGlobalMemoryMacro(left, right)
 	}
 	

@@ -5,8 +5,10 @@ import alpha.codegen.CodegenFactory
 import alpha.codegen.DataType
 import alpha.codegen.GlobalMacro
 import alpha.codegen.GlobalMemoryMacro
+import alpha.codegen.GlobalVariable
 import alpha.codegen.Include
 import alpha.codegen.StatementMacro
+import alpha.codegen.VariableType
 import alpha.model.AlphaSystem
 import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLDimType
@@ -54,8 +56,17 @@ class CodegenUtil {
 		cv
 	}
 	
-	def static List<BaseVariable> paramScalarVariables(AlphaSystem s) {
-		s.parameterDomain.paramNames.map[baseVariable(it, DataType.LONG)]
+	def static GlobalVariable globalVariable (String name, DataType dataType) {
+		val cv = factory.createGlobalVariable
+		cv.name = name
+		cv.elemType = dataType
+		cv.numDims = 0
+		cv.type = VariableType.PARAM
+		cv
+	}
+	
+	def static List<GlobalVariable> paramScalarVariables(AlphaSystem s) {
+		s.parameterDomain.paramNames.map[globalVariable(it, DataType.LONG)]
 	}
 	
 	def static List<BaseVariable> indexScalarVariables(Variable v) {

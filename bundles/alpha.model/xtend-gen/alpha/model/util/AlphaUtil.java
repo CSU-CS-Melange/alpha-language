@@ -543,6 +543,10 @@ public class AlphaUtil {
     return IterableExtensions.<String>toList(variable.getDomain().getIndexNames());
   }
 
+  public static List<String> params(final Variable variable) {
+    return IterableExtensions.<String>toList(variable.getDomain().getParamNames());
+  }
+
   public static List<String> indexNames(final ISLMultiAff maff) {
     return maff.getDomainSpace().getIndexNames();
   }

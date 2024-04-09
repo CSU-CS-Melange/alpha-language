@@ -44,6 +44,7 @@ enum VariableType {
 	input
 	output
 	^local
+	param
 }
 
 class Node {
@@ -203,6 +204,10 @@ class GlobalVariable extends BaseVariable {
 		alphaVariable !== null
 	}
 	
+	op boolean hasMemoryMacro() {
+		memoryMacro !== null
+	}
+	
 	op String pointers() {
 		(0..<numDims).map['*'].join('')
 	}
@@ -216,6 +221,10 @@ class GlobalVariable extends BaseVariable {
 			'eval_' + name
 		else
 			name
+	}
+	
+	op String[] params() {
+		AlphaUtil.params(alphaVariable).toEList
 	}
 	
 	op String[] indices() {
