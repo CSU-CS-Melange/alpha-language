@@ -396,6 +396,23 @@ public class GlobalVariableImpl extends BaseVariableImpl implements GlobalVariab
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public String containedType() {
+		int _numDims = this.getNumDims();
+		final Function1<Integer, String> _function = new Function1<Integer, String>() {
+			public String apply(final Integer it) {
+				return "*";
+			}
+		};
+		final String pointersMinusOne = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(1, _numDims, true), _function), "");
+		String _dataType = super.dataType();
+		return (_dataType + pointersMinusOne);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public String readName() {
 		String _xifexpression = null;
 		Boolean _isOutput = this.getAlphaVariable().isOutput();

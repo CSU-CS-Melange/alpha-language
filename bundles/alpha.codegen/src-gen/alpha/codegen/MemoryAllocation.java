@@ -2,8 +2,6 @@
  */
 package alpha.codegen;
 
-import fr.irisa.cairn.jnimap.isl.ISLASTNode;
-import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
 /**
@@ -16,9 +14,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
  * </p>
  * <ul>
  *   <li>{@link alpha.codegen.MemoryAllocation#getVariable <em>Variable</em>}</li>
- *   <li>{@link alpha.codegen.MemoryAllocation#getMap <em>Map</em>}</li>
  *   <li>{@link alpha.codegen.MemoryAllocation#getDomain <em>Domain</em>}</li>
- *   <li>{@link alpha.codegen.MemoryAllocation#getISLASTNode <em>ISLAST Node</em>}</li>
  * </ul>
  *
  * @see alpha.codegen.CodegenPackage#getMemoryAllocation()
@@ -49,28 +45,6 @@ public interface MemoryAllocation extends Node, Visitable {
 	void setVariable(ArrayVariable value);
 
 	/**
-	 * Returns the value of the '<em><b>Map</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the value of the '<em>Map</em>' attribute.
-	 * @see #setMap(ISLMap)
-	 * @see alpha.codegen.CodegenPackage#getMemoryAllocation_Map()
-	 * @model unique="false" dataType="alpha.codegen.ISLMap"
-	 * @generated
-	 */
-	ISLMap getMap();
-
-	/**
-	 * Sets the value of the '{@link alpha.codegen.MemoryAllocation#getMap <em>Map</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @param value the new value of the '<em>Map</em>' attribute.
-	 * @see #getMap()
-	 * @generated
-	 */
-	void setMap(ISLMap value);
-
-	/**
 	 * Returns the value of the '<em><b>Domain</b></em>' attribute.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -91,28 +65,6 @@ public interface MemoryAllocation extends Node, Visitable {
 	 * @generated
 	 */
 	void setDomain(ISLSet value);
-
-	/**
-	 * Returns the value of the '<em><b>ISLAST Node</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the value of the '<em>ISLAST Node</em>' attribute.
-	 * @see #setISLASTNode(ISLASTNode)
-	 * @see alpha.codegen.CodegenPackage#getMemoryAllocation_ISLASTNode()
-	 * @model unique="false" dataType="alpha.codegen.ISLASTNode"
-	 * @generated
-	 */
-	ISLASTNode getISLASTNode();
-
-	/**
-	 * Sets the value of the '{@link alpha.codegen.MemoryAllocation#getISLASTNode <em>ISLAST Node</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @param value the new value of the '<em>ISLAST Node</em>' attribute.
-	 * @see #getISLASTNode()
-	 * @generated
-	 */
-	void setISLASTNode(ISLASTNode value);
 
 	/**
 	 * <!-- begin-user-doc -->

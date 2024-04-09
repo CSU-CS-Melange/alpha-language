@@ -8,6 +8,7 @@ import alpha.codegen.CodegenPackage;
 import alpha.codegen.DataType;
 import alpha.codegen.Function;
 import alpha.codegen.FunctionBody;
+import alpha.codegen.MemoryAllocation;
 import alpha.codegen.Program;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
@@ -47,6 +48,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getName <em>Name</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getScalarArgs <em>Scalar Args</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getArrayArgs <em>Array Args</em>}</li>
+ *   <li>{@link alpha.codegen.impl.FunctionImpl#getMemoryAllocations <em>Memory Allocations</em>}</li>
  *   <li>{@link alpha.codegen.impl.FunctionImpl#getBody <em>Body</em>}</li>
  * </ul>
  *
@@ -112,6 +114,16 @@ public class FunctionImpl extends NodeImpl implements Function {
 	 * @ordered
 	 */
 	protected EList<ArrayVariable> arrayArgs;
+
+	/**
+	 * The cached value of the '{@link #getMemoryAllocations() <em>Memory Allocations</em>}' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getMemoryAllocations()
+	 * @generated
+	 * @ordered
+	 */
+	protected EList<MemoryAllocation> memoryAllocations;
 
 	/**
 	 * The cached value of the '{@link #getBody() <em>Body</em>}' containment reference.
@@ -264,6 +276,18 @@ public class FunctionImpl extends NodeImpl implements Function {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EList<MemoryAllocation> getMemoryAllocations() {
+		if (memoryAllocations == null) {
+			memoryAllocations = new EObjectResolvingEList<MemoryAllocation>(MemoryAllocation.class, this, CodegenPackage.FUNCTION__MEMORY_ALLOCATIONS);
+		}
+		return memoryAllocations;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public FunctionBody getBody() {
 		return body;
 	}
@@ -409,6 +433,8 @@ public class FunctionImpl extends NodeImpl implements Function {
 				return getScalarArgs();
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				return getArrayArgs();
+			case CodegenPackage.FUNCTION__MEMORY_ALLOCATIONS:
+				return getMemoryAllocations();
 			case CodegenPackage.FUNCTION__BODY:
 				return getBody();
 		}
@@ -441,6 +467,10 @@ public class FunctionImpl extends NodeImpl implements Function {
 				getArrayArgs().clear();
 				getArrayArgs().addAll((Collection<? extends ArrayVariable>)newValue);
 				return;
+			case CodegenPackage.FUNCTION__MEMORY_ALLOCATIONS:
+				getMemoryAllocations().clear();
+				getMemoryAllocations().addAll((Collection<? extends MemoryAllocation>)newValue);
+				return;
 			case CodegenPackage.FUNCTION__BODY:
 				setBody((FunctionBody)newValue);
 				return;
@@ -471,6 +501,9 @@ public class FunctionImpl extends NodeImpl implements Function {
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				getArrayArgs().clear();
 				return;
+			case CodegenPackage.FUNCTION__MEMORY_ALLOCATIONS:
+				getMemoryAllocations().clear();
+				return;
 			case CodegenPackage.FUNCTION__BODY:
 				setBody((FunctionBody)null);
 				return;
@@ -496,6 +529,8 @@ public class FunctionImpl extends NodeImpl implements Function {
 				return scalarArgs != null && !scalarArgs.isEmpty();
 			case CodegenPackage.FUNCTION__ARRAY_ARGS:
 				return arrayArgs != null && !arrayArgs.isEmpty();
+			case CodegenPackage.FUNCTION__MEMORY_ALLOCATIONS:
+				return memoryAllocations != null && !memoryAllocations.isEmpty();
 			case CodegenPackage.FUNCTION__BODY:
 				return body != null;
 		}

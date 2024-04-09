@@ -14,7 +14,9 @@ import alpha.codegen.Program
 import alpha.codegen.ReduceFunction
 import alpha.codegen.Visitable
 import alpha.codegen.Visitor
+import alpha.codegen.polynomial.PolynomialPrinter
 import alpha.codegen.util.CodegenSwitch
+import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import org.eclipse.emf.ecore.EObject
 
 class Base extends CodegenSwitch<CharSequence> {
@@ -72,15 +74,11 @@ class Base extends CodegenSwitch<CharSequence> {
 	}
 	
 	def caseMemoryAllocation(MemoryAllocation ma) {
+		val containedType = ma.variable.containedType
+		val cardinality = PolynomialPrinter.print(BarvinokBindings.card(ma.domain))
 		'''
-		{
-		  «FOR i : 0..<ma.variable.numDims»
-		  	int D«i» = ...
-		  «ENDFOR»
-		  
-		  // TODO - mallocs for local memory reflecting memory maps
-		  
-		}
+		«ma.variable.name» = («ma.variable.dataType»)malloc(sizeof(«containedType»)*(«cardinality»));
+		mallocCheck(«ma.variable.name», "«ma.variable.name»");
 		'''
 	}
 	

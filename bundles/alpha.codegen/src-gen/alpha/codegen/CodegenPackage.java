@@ -300,31 +300,13 @@ public interface CodegenPackage extends EPackage {
 	int MEMORY_ALLOCATION__VARIABLE = NODE_FEATURE_COUNT + 0;
 
 	/**
-	 * The feature id for the '<em><b>Map</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_ALLOCATION__MAP = NODE_FEATURE_COUNT + 1;
-
-	/**
 	 * The feature id for the '<em><b>Domain</b></em>' attribute.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION__DOMAIN = NODE_FEATURE_COUNT + 2;
-
-	/**
-	 * The feature id for the '<em><b>ISLAST Node</b></em>' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 * @ordered
-	 */
-	int MEMORY_ALLOCATION__ISLAST_NODE = NODE_FEATURE_COUNT + 3;
+	int MEMORY_ALLOCATION__DOMAIN = NODE_FEATURE_COUNT + 1;
 
 	/**
 	 * The number of structural features of the '<em>Memory Allocation</em>' class.
@@ -333,7 +315,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int MEMORY_ALLOCATION_FEATURE_COUNT = NODE_FEATURE_COUNT + 4;
+	int MEMORY_ALLOCATION_FEATURE_COUNT = NODE_FEATURE_COUNT + 2;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.GlobalMemoryMacroImpl <em>Global Memory Macro</em>}' class.
@@ -757,13 +739,22 @@ public interface CodegenPackage extends EPackage {
 	int FUNCTION__ARRAY_ARGS = NODE_FEATURE_COUNT + 4;
 
 	/**
+	 * The feature id for the '<em><b>Memory Allocations</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int FUNCTION__MEMORY_ALLOCATIONS = NODE_FEATURE_COUNT + 5;
+
+	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int FUNCTION__BODY = NODE_FEATURE_COUNT + 5;
+	int FUNCTION__BODY = NODE_FEATURE_COUNT + 6;
 
 	/**
 	 * The number of structural features of the '<em>Function</em>' class.
@@ -772,7 +763,7 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 * @ordered
 	 */
-	int FUNCTION_FEATURE_COUNT = NODE_FEATURE_COUNT + 6;
+	int FUNCTION_FEATURE_COUNT = NODE_FEATURE_COUNT + 7;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.EvalFunctionImpl <em>Eval Function</em>}' class.
@@ -828,6 +819,15 @@ public interface CodegenPackage extends EPackage {
 	 * @ordered
 	 */
 	int EVAL_FUNCTION__ARRAY_ARGS = FUNCTION__ARRAY_ARGS;
+
+	/**
+	 * The feature id for the '<em><b>Memory Allocations</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EVAL_FUNCTION__MEMORY_ALLOCATIONS = FUNCTION__MEMORY_ALLOCATIONS;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
@@ -928,6 +928,15 @@ public interface CodegenPackage extends EPackage {
 	 * @ordered
 	 */
 	int REDUCE_FUNCTION__ARRAY_ARGS = FUNCTION__ARRAY_ARGS;
+
+	/**
+	 * The feature id for the '<em><b>Memory Allocations</b></em>' reference list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_FUNCTION__MEMORY_ALLOCATIONS = FUNCTION__MEMORY_ALLOCATIONS;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference.
@@ -1423,17 +1432,6 @@ public interface CodegenPackage extends EPackage {
 	EReference getMemoryAllocation_Variable();
 
 	/**
-	 * Returns the meta object for the attribute '{@link alpha.codegen.MemoryAllocation#getMap <em>Map</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the attribute '<em>Map</em>'.
-	 * @see alpha.codegen.MemoryAllocation#getMap()
-	 * @see #getMemoryAllocation()
-	 * @generated
-	 */
-	EAttribute getMemoryAllocation_Map();
-
-	/**
 	 * Returns the meta object for the attribute '{@link alpha.codegen.MemoryAllocation#getDomain <em>Domain</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1443,17 +1441,6 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EAttribute getMemoryAllocation_Domain();
-
-	/**
-	 * Returns the meta object for the attribute '{@link alpha.codegen.MemoryAllocation#getISLASTNode <em>ISLAST Node</em>}'.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @return the meta object for the attribute '<em>ISLAST Node</em>'.
-	 * @see alpha.codegen.MemoryAllocation#getISLASTNode()
-	 * @see #getMemoryAllocation()
-	 * @generated
-	 */
-	EAttribute getMemoryAllocation_ISLASTNode();
 
 	/**
 	 * Returns the meta object for class '{@link alpha.codegen.GlobalMemoryMacro <em>Global Memory Macro</em>}'.
@@ -1722,6 +1709,17 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EReference getFunction_ArrayArgs();
+
+	/**
+	 * Returns the meta object for the reference list '{@link alpha.codegen.Function#getMemoryAllocations <em>Memory Allocations</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the reference list '<em>Memory Allocations</em>'.
+	 * @see alpha.codegen.Function#getMemoryAllocations()
+	 * @see #getFunction()
+	 * @generated
+	 */
+	EReference getFunction_MemoryAllocations();
 
 	/**
 	 * Returns the meta object for the containment reference '{@link alpha.codegen.Function#getBody <em>Body</em>}'.
@@ -2268,28 +2266,12 @@ public interface CodegenPackage extends EPackage {
 		EReference MEMORY_ALLOCATION__VARIABLE = eINSTANCE.getMemoryAllocation_Variable();
 
 		/**
-		 * The meta object literal for the '<em><b>Map</b></em>' attribute feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EAttribute MEMORY_ALLOCATION__MAP = eINSTANCE.getMemoryAllocation_Map();
-
-		/**
 		 * The meta object literal for the '<em><b>Domain</b></em>' attribute feature.
 		 * <!-- begin-user-doc -->
 		 * <!-- end-user-doc -->
 		 * @generated
 		 */
 		EAttribute MEMORY_ALLOCATION__DOMAIN = eINSTANCE.getMemoryAllocation_Domain();
-
-		/**
-		 * The meta object literal for the '<em><b>ISLAST Node</b></em>' attribute feature.
-		 * <!-- begin-user-doc -->
-		 * <!-- end-user-doc -->
-		 * @generated
-		 */
-		EAttribute MEMORY_ALLOCATION__ISLAST_NODE = eINSTANCE.getMemoryAllocation_ISLASTNode();
 
 		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.GlobalMemoryMacroImpl <em>Global Memory Macro</em>}' class.
@@ -2504,6 +2486,14 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EReference FUNCTION__ARRAY_ARGS = eINSTANCE.getFunction_ArrayArgs();
+
+		/**
+		 * The meta object literal for the '<em><b>Memory Allocations</b></em>' reference list feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EReference FUNCTION__MEMORY_ALLOCATIONS = eINSTANCE.getFunction_MemoryAllocations();
 
 		/**
 		 * The meta object literal for the '<em><b>Body</b></em>' containment reference feature.

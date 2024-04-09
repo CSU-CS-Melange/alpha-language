@@ -153,9 +153,7 @@ abstract class AbstractMemoryMacro extends Macro {
 
 class MemoryAllocation extends Node, Visitable {
 	refers ArrayVariable variable
-	ISLMap map
 	ISLSet domain
-	ISLASTNode ISLASTNode
 	
 	op void accept(Visitor visitor) {
 		visitor.visitMemoryAllocation(this)
@@ -215,6 +213,11 @@ class GlobalVariable extends BaseVariable {
 	op String dataType() {
 		super.dataType + pointers
 	}
+	
+	op String containedType() {
+		val pointersMinusOne = (1 ..< numDims).map['*'].join('')
+		return super.dataType + pointersMinusOne
+	}
 
 	op String readName() {
 		if (alphaVariable.isOutput)
@@ -267,6 +270,7 @@ class Function extends Node, Visitable {
 	String name
 	refers BaseVariable[] scalarArgs
 	refers ArrayVariable[] arrayArgs
+	refers MemoryAllocation[] memoryAllocations
 	contains FunctionBody body opposite function
 	
 	op BaseVariable[] args() {

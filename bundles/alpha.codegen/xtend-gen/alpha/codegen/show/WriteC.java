@@ -5,11 +5,13 @@ import alpha.codegen.BaseVariable;
 import alpha.codegen.DataType;
 import alpha.codegen.EvalFunction;
 import alpha.codegen.Function;
+import alpha.codegen.MemoryAllocation;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.Visitable;
 import alpha.codegen.util.AlphaEquationPrinter;
 import alpha.codegen.util.ISLPrintingUtils;
 import alpha.model.REDUCTION_OP;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -85,14 +87,43 @@ public class WriteC extends Base {
     _builder.append("  ");
     _builder.append("}");
     _builder.newLine();
+    _builder.append("  ");
+    _builder.newLine();
+    _builder.append("  ");
+    _builder.append("// memory allocations");
+    _builder.newLine();
+    {
+      EList<MemoryAllocation> _memoryAllocations = f.getMemoryAllocations();
+      for(final MemoryAllocation m : _memoryAllocations) {
+        _builder.append("  ");
+        CharSequence _doSwitch = this.doSwitch(m);
+        _builder.append(_doSwitch, "  ");
+        _builder.newLineIfNotEmpty();
+      }
+    }
     _builder.newLine();
     _builder.append("  ");
     _builder.append("// statements");
     _builder.newLine();
     _builder.append("  ");
-    CharSequence _doSwitch = this.doSwitch(f.getBody());
-    _builder.append(_doSwitch, "  ");
+    CharSequence _doSwitch_1 = this.doSwitch(f.getBody());
+    _builder.append(_doSwitch_1, "  ");
     _builder.newLineIfNotEmpty();
+    _builder.newLine();
+    _builder.append("  ");
+    _builder.append("// free memory");
+    _builder.newLine();
+    {
+      EList<MemoryAllocation> _memoryAllocations_1 = f.getMemoryAllocations();
+      for(final MemoryAllocation m_1 : _memoryAllocations_1) {
+        _builder.append("  ");
+        _builder.append("free(");
+        String _name = m_1.getVariable().getName();
+        _builder.append(_name, "  ");
+        _builder.append(");");
+        _builder.newLineIfNotEmpty();
+      }
+    }
     _builder.append("}");
     _builder.newLine();
     return _builder;

@@ -54,6 +54,9 @@ class WriteCProgram extends BaseProgram {
 		
 		(s.locals + s.outputs).forEach[v | flagCVs.put(v, v.createArrayVariableForFlag)]
 		
+		// memory allocations
+		val allocations = #[localCVs.values, flagCVs.values].flatten.map[it.createMemoryAllocation]
+		
 		// statement macros
 		val statementMacros = s.outputs.map[statementMacro(
 			'''S«s.outputs.indexOf(it)»(«it.indices.join(',')»)''',
@@ -70,7 +73,7 @@ class WriteCProgram extends BaseProgram {
 		val paramArgs = s.paramScalarVariables
 		val arrayArgs = (inputCVs + outputCVs).values
 				
-		val function = createFunction(DataType.VOID, s.name, paramArgs, arrayArgs, localCVs.values, body)
+		val function = createFunction(DataType.VOID, s.name, paramArgs, arrayArgs, localCVs.values, allocations, body)
 
 		program.globalVariables.addAll(paramArgs + arrayArgs + localCVs.values + flagCVs.values)
 		program.functions.add(function)

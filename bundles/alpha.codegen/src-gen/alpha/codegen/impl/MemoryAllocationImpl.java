@@ -10,8 +10,6 @@ import alpha.codegen.Visitor;
 
 import alpha.codegen.show.WriteC;
 
-import fr.irisa.cairn.jnimap.isl.ISLASTNode;
-import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
 import org.eclipse.emf.common.notify.Notification;
@@ -30,9 +28,7 @@ import org.eclipse.emf.ecore.impl.ENotificationImpl;
  * </p>
  * <ul>
  *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getVariable <em>Variable</em>}</li>
- *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getMap <em>Map</em>}</li>
  *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getDomain <em>Domain</em>}</li>
- *   <li>{@link alpha.codegen.impl.MemoryAllocationImpl#getISLASTNode <em>ISLAST Node</em>}</li>
  * </ul>
  *
  * @generated
@@ -47,26 +43,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	 * @ordered
 	 */
 	protected ArrayVariable variable;
-
-	/**
-	 * The default value of the '{@link #getMap() <em>Map</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getMap()
-	 * @generated
-	 * @ordered
-	 */
-	protected static final ISLMap MAP_EDEFAULT = null;
-
-	/**
-	 * The cached value of the '{@link #getMap() <em>Map</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getMap()
-	 * @generated
-	 * @ordered
-	 */
-	protected ISLMap map = MAP_EDEFAULT;
 
 	/**
 	 * The default value of the '{@link #getDomain() <em>Domain</em>}' attribute.
@@ -87,26 +63,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	 * @ordered
 	 */
 	protected ISLSet domain = DOMAIN_EDEFAULT;
-
-	/**
-	 * The default value of the '{@link #getISLASTNode() <em>ISLAST Node</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getISLASTNode()
-	 * @generated
-	 * @ordered
-	 */
-	protected static final ISLASTNode ISLAST_NODE_EDEFAULT = null;
-
-	/**
-	 * The cached value of the '{@link #getISLASTNode() <em>ISLAST Node</em>}' attribute.
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @see #getISLASTNode()
-	 * @generated
-	 * @ordered
-	 */
-	protected ISLASTNode islastNode = ISLAST_NODE_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -170,27 +126,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public ISLMap getMap() {
-		return map;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setMap(ISLMap newMap) {
-		ISLMap oldMap = map;
-		map = newMap;
-		if (eNotificationRequired())
-			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.MEMORY_ALLOCATION__MAP, oldMap, map));
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public ISLSet getDomain() {
 		return domain;
 	}
@@ -205,27 +140,6 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 		domain = newDomain;
 		if (eNotificationRequired())
 			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.MEMORY_ALLOCATION__DOMAIN, oldDomain, domain));
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public ISLASTNode getISLASTNode() {
-		return islastNode;
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public void setISLASTNode(ISLASTNode newISLASTNode) {
-		ISLASTNode oldISLASTNode = islastNode;
-		islastNode = newISLASTNode;
-		if (eNotificationRequired())
-			eNotify(new ENotificationImpl(this, Notification.SET, CodegenPackage.MEMORY_ALLOCATION__ISLAST_NODE, oldISLASTNode, islastNode));
 	}
 
 	/**
@@ -257,12 +171,8 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				if (resolve) return getVariable();
 				return basicGetVariable();
-			case CodegenPackage.MEMORY_ALLOCATION__MAP:
-				return getMap();
 			case CodegenPackage.MEMORY_ALLOCATION__DOMAIN:
 				return getDomain();
-			case CodegenPackage.MEMORY_ALLOCATION__ISLAST_NODE:
-				return getISLASTNode();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -278,14 +188,8 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				setVariable((ArrayVariable)newValue);
 				return;
-			case CodegenPackage.MEMORY_ALLOCATION__MAP:
-				setMap((ISLMap)newValue);
-				return;
 			case CodegenPackage.MEMORY_ALLOCATION__DOMAIN:
 				setDomain((ISLSet)newValue);
-				return;
-			case CodegenPackage.MEMORY_ALLOCATION__ISLAST_NODE:
-				setISLASTNode((ISLASTNode)newValue);
 				return;
 		}
 		super.eSet(featureID, newValue);
@@ -302,14 +206,8 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				setVariable((ArrayVariable)null);
 				return;
-			case CodegenPackage.MEMORY_ALLOCATION__MAP:
-				setMap(MAP_EDEFAULT);
-				return;
 			case CodegenPackage.MEMORY_ALLOCATION__DOMAIN:
 				setDomain(DOMAIN_EDEFAULT);
-				return;
-			case CodegenPackage.MEMORY_ALLOCATION__ISLAST_NODE:
-				setISLASTNode(ISLAST_NODE_EDEFAULT);
 				return;
 		}
 		super.eUnset(featureID);
@@ -325,12 +223,8 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 		switch (featureID) {
 			case CodegenPackage.MEMORY_ALLOCATION__VARIABLE:
 				return variable != null;
-			case CodegenPackage.MEMORY_ALLOCATION__MAP:
-				return MAP_EDEFAULT == null ? map != null : !MAP_EDEFAULT.equals(map);
 			case CodegenPackage.MEMORY_ALLOCATION__DOMAIN:
 				return DOMAIN_EDEFAULT == null ? domain != null : !DOMAIN_EDEFAULT.equals(domain);
-			case CodegenPackage.MEMORY_ALLOCATION__ISLAST_NODE:
-				return ISLAST_NODE_EDEFAULT == null ? islastNode != null : !ISLAST_NODE_EDEFAULT.equals(islastNode);
 		}
 		return super.eIsSet(featureID);
 	}
@@ -345,12 +239,8 @@ public class MemoryAllocationImpl extends NodeImpl implements MemoryAllocation {
 		if (eIsProxy()) return super.toString();
 
 		StringBuilder result = new StringBuilder(super.toString());
-		result.append(" (map: ");
-		result.append(map);
-		result.append(", domain: ");
+		result.append(" (domain: ");
 		result.append(domain);
-		result.append(", ISLASTNode: ");
-		result.append(islastNode);
 		result.append(')');
 		return result.toString();
 	}

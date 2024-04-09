@@ -205,6 +205,14 @@ public interface GlobalVariable extends BaseVariable {
 	 * @model unique="false"
 	 * @generated
 	 */
+	String containedType();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model unique="false"
+	 * @generated
+	 */
 	String readName();
 
 	/**

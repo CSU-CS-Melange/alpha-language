@@ -38,13 +38,13 @@ class Factory {
 		program
 	}
 	
-	def static Function createFunction(DataType returnType, String name, BaseVariable[] scalarArguments, ArrayVariable[] arrayArguments, ArrayVariable[] localVariables, FunctionBody body) {
+	def static Function createFunction(DataType returnType, String name, BaseVariable[] scalarArguments, ArrayVariable[] arrayArguments, ArrayVariable[] localVariables, MemoryAllocation[] allocations,FunctionBody body) {
 		val function = factory.createFunction
 		function.returnType = returnType
 		function.name = name
 		function.scalarArgs.addAll(scalarArguments)
 		function.arrayArgs.addAll(arrayArguments)
-		
+		function.memoryAllocations.addAll(allocations)
 		function.body = body
 	
 		function

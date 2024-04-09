@@ -31,9 +31,19 @@ class WriteC extends Base {
 		    printf("The value of parameters are not valid.\n");
 		    exit(-1);
 		  }
+		  
+		  // memory allocations
+		  «FOR m : f.memoryAllocations»
+		  	«m.doSwitch»
+		  «ENDFOR»
 		
 		  // statements
 		  «f.body.doSwitch»
+		
+		  // free memory
+		  «FOR m : f.memoryAllocations»
+		  free(«m.variable.name»);
+		  «ENDFOR»
 		}
 	'''
 	

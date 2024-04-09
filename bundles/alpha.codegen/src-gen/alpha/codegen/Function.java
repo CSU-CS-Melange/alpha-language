@@ -20,6 +20,7 @@ import org.eclipse.emf.common.util.EList;
  *   <li>{@link alpha.codegen.Function#getName <em>Name</em>}</li>
  *   <li>{@link alpha.codegen.Function#getScalarArgs <em>Scalar Args</em>}</li>
  *   <li>{@link alpha.codegen.Function#getArrayArgs <em>Array Args</em>}</li>
+ *   <li>{@link alpha.codegen.Function#getMemoryAllocations <em>Memory Allocations</em>}</li>
  *   <li>{@link alpha.codegen.Function#getBody <em>Body</em>}</li>
  * </ul>
  *
@@ -122,6 +123,18 @@ public interface Function extends Node, Visitable {
 	 * @generated
 	 */
 	EList<ArrayVariable> getArrayArgs();
+
+	/**
+	 * Returns the value of the '<em><b>Memory Allocations</b></em>' reference list.
+	 * The list contents are of type {@link alpha.codegen.MemoryAllocation}.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Memory Allocations</em>' reference list.
+	 * @see alpha.codegen.CodegenPackage#getFunction_MemoryAllocations()
+	 * @model
+	 * @generated
+	 */
+	EList<MemoryAllocation> getMemoryAllocations();
 
 	/**
 	 * Returns the value of the '<em><b>Body</b></em>' containment reference.

@@ -7,6 +7,7 @@ import alpha.codegen.EvalFunction;
 import alpha.codegen.Function;
 import alpha.codegen.FunctionBody;
 import alpha.codegen.GlobalVariable;
+import alpha.codegen.MemoryAllocation;
 import alpha.codegen.Program;
 import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
@@ -106,7 +107,13 @@ public class WriteCProgram extends BaseProgram {
       this.flagCVs.put(v, Factory.createArrayVariableForFlag(v));
     };
     Iterables.<Variable>concat(_locals, _outputs).forEach(_function);
-    final Function1<Variable, StatementMacro> _function_1 = (Variable it) -> {
+    Collection<ArrayVariable> _values = this.localCVs.values();
+    Collection<ArrayVariable> _values_1 = this.flagCVs.values();
+    final Function1<ArrayVariable, MemoryAllocation> _function_1 = (ArrayVariable it) -> {
+      return Factory.createMemoryAllocation(it);
+    };
+    final Iterable<MemoryAllocation> allocations = IterableExtensions.<ArrayVariable, MemoryAllocation>map(Iterables.<ArrayVariable>concat(Collections.<Collection<ArrayVariable>>unmodifiableList(CollectionLiterals.<Collection<ArrayVariable>>newArrayList(_values, _values_1))), _function_1);
+    final Function1<Variable, StatementMacro> _function_2 = (Variable it) -> {
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("S");
       int _indexOf = s.getOutputs().indexOf(it);
@@ -125,20 +132,20 @@ public class WriteCProgram extends BaseProgram {
       _builder_1.append(")");
       return CodegenUtil.statementMacro(_builder.toString(), _builder_1.toString());
     };
-    final List<StatementMacro> statementMacros = ListExtensions.<Variable, StatementMacro>map(s.getOutputs(), _function_1);
+    final List<StatementMacro> statementMacros = ListExtensions.<Variable, StatementMacro>map(s.getOutputs(), _function_2);
     final ISLSchedule schedule = ISLSchedule.buildFromDomain(this.outputStatementsDomain(s));
     final ISLASTBuild build = ISLASTBuild.buildFromContext(schedule.getDomain().copy().params());
     final ISLASTNode node = build.generate(schedule.copy());
     final FunctionBody body = Factory.createFunctionBody(((StatementMacro[])Conversions.unwrapArray(statementMacros, StatementMacro.class)), node);
     final List<GlobalVariable> paramArgs = CodegenUtil.paramScalarVariables(s);
     final Collection<ArrayVariable> arrayArgs = MapExtensions.union(this.inputCVs, this.outputCVs).values();
-    final Function function = Factory.createFunction(DataType.VOID, s.getName(), ((BaseVariable[])Conversions.unwrapArray(paramArgs, BaseVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(arrayArgs, ArrayVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(this.localCVs.values(), ArrayVariable.class)), body);
+    final Function function = Factory.createFunction(DataType.VOID, s.getName(), ((BaseVariable[])Conversions.unwrapArray(paramArgs, BaseVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(arrayArgs, ArrayVariable.class)), ((ArrayVariable[])Conversions.unwrapArray(this.localCVs.values(), ArrayVariable.class)), ((MemoryAllocation[])Conversions.unwrapArray(allocations, MemoryAllocation.class)), body);
     EList<GlobalVariable> _globalVariables = this.program.getGlobalVariables();
     Iterable<GlobalVariable> _plus = Iterables.<GlobalVariable>concat(paramArgs, arrayArgs);
-    Collection<ArrayVariable> _values = this.localCVs.values();
-    Iterable<GlobalVariable> _plus_1 = Iterables.<GlobalVariable>concat(_plus, _values);
-    Collection<ArrayVariable> _values_1 = this.flagCVs.values();
-    Iterable<GlobalVariable> _plus_2 = Iterables.<GlobalVariable>concat(_plus_1, _values_1);
+    Collection<ArrayVariable> _values_2 = this.localCVs.values();
+    Iterable<GlobalVariable> _plus_1 = Iterables.<GlobalVariable>concat(_plus, _values_2);
+    Collection<ArrayVariable> _values_3 = this.flagCVs.values();
+    Iterable<GlobalVariable> _plus_2 = Iterables.<GlobalVariable>concat(_plus_1, _values_3);
     Iterables.<GlobalVariable>addAll(_globalVariables, _plus_2);
     this.program.getFunctions().add(function);
   }

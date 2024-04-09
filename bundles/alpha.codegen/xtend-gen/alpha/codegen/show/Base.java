@@ -17,11 +17,12 @@ import alpha.codegen.ReduceFunction;
 import alpha.codegen.StatementMacro;
 import alpha.codegen.Visitable;
 import alpha.codegen.Visitor;
+import alpha.codegen.polynomial.PolynomialPrinter;
 import alpha.codegen.util.CodegenSwitch;
+import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import java.util.Arrays;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend2.lib.StringConcatenation;
-import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -128,30 +129,33 @@ public class Base extends CodegenSwitch<CharSequence> {
   }
 
   public CharSequence caseMemoryAllocation(final MemoryAllocation ma) {
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("{");
-    _builder.newLine();
+    CharSequence _xblockexpression = null;
     {
-      int _numDims = ma.getVariable().getNumDims();
-      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _numDims, true);
-      for(final Integer i : _doubleDotLessThan) {
-        _builder.append("  ");
-        _builder.append("int D");
-        _builder.append(i, "  ");
-        _builder.append(" = ...");
-        _builder.newLineIfNotEmpty();
-      }
+      final String containedType = ma.getVariable().containedType();
+      final CharSequence cardinality = PolynomialPrinter.print(BarvinokBindings.card(ma.getDomain()));
+      StringConcatenation _builder = new StringConcatenation();
+      String _name = ma.getVariable().getName();
+      _builder.append(_name);
+      _builder.append(" = (");
+      String _dataType = ma.getVariable().dataType();
+      _builder.append(_dataType);
+      _builder.append(")malloc(sizeof(");
+      _builder.append(containedType);
+      _builder.append(")*(");
+      _builder.append(cardinality);
+      _builder.append("));");
+      _builder.newLineIfNotEmpty();
+      _builder.append("mallocCheck(");
+      String _name_1 = ma.getVariable().getName();
+      _builder.append(_name_1);
+      _builder.append(", \"");
+      String _name_2 = ma.getVariable().getName();
+      _builder.append(_name_2);
+      _builder.append("\");");
+      _builder.newLineIfNotEmpty();
+      _xblockexpression = _builder;
     }
-    _builder.append("  ");
-    _builder.newLine();
-    _builder.append("  ");
-    _builder.append("// TODO - mallocs for local memory reflecting memory maps");
-    _builder.newLine();
-    _builder.append("  ");
-    _builder.newLine();
-    _builder.append("}");
-    _builder.newLine();
-    return _builder;
+    return _xblockexpression;
   }
 
   public CharSequence caseFunctionBody(final FunctionBody fb) {

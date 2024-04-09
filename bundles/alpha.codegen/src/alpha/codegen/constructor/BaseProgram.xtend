@@ -54,7 +54,7 @@ abstract class BaseProgram extends AbstractAlphaCompleteVisitor {
 			#['ceild(a,b)', '(int)ceil(((double)(a))/((double)(b)))'],
 			#['floord(a,b)', '(int)floor(((double)(a))/((double)(b)))'],
 			#['mod(a,b)', '((a)%(b))'],
-			#['mallocCheck(v,s,d)', 'if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }']
+			#['mallocCheck(v,s)', 'if ((v) == NULL) { printf("Failed to allocate memory for variable: %s\\n", s); exit(-1); }']
 		]
 		program.commonMacros.addAll(macros.map[globalMacro(it.get(0), it.get(1))])
 	}

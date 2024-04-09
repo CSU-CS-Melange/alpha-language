@@ -528,26 +528,8 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EAttribute getMemoryAllocation_Map() {
-		return (EAttribute)memoryAllocationEClass.getEStructuralFeatures().get(1);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
 	public EAttribute getMemoryAllocation_Domain() {
-		return (EAttribute)memoryAllocationEClass.getEStructuralFeatures().get(2);
-	}
-
-	/**
-	 * <!-- begin-user-doc -->
-	 * <!-- end-user-doc -->
-	 * @generated
-	 */
-	public EAttribute getMemoryAllocation_ISLASTNode() {
-		return (EAttribute)memoryAllocationEClass.getEStructuralFeatures().get(3);
+		return (EAttribute)memoryAllocationEClass.getEStructuralFeatures().get(1);
 	}
 
 	/**
@@ -780,8 +762,17 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public EReference getFunction_Body() {
+	public EReference getFunction_MemoryAllocations() {
 		return (EReference)functionEClass.getEStructuralFeatures().get(5);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EReference getFunction_Body() {
+		return (EReference)functionEClass.getEStructuralFeatures().get(6);
 	}
 
 	/**
@@ -1149,9 +1140,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		memoryAllocationEClass = createEClass(MEMORY_ALLOCATION);
 		createEReference(memoryAllocationEClass, MEMORY_ALLOCATION__VARIABLE);
-		createEAttribute(memoryAllocationEClass, MEMORY_ALLOCATION__MAP);
 		createEAttribute(memoryAllocationEClass, MEMORY_ALLOCATION__DOMAIN);
-		createEAttribute(memoryAllocationEClass, MEMORY_ALLOCATION__ISLAST_NODE);
 
 		globalMemoryMacroEClass = createEClass(GLOBAL_MEMORY_MACRO);
 		createEReference(globalMemoryMacroEClass, GLOBAL_MEMORY_MACRO__VARIABLE);
@@ -1184,6 +1173,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		createEAttribute(functionEClass, FUNCTION__NAME);
 		createEReference(functionEClass, FUNCTION__SCALAR_ARGS);
 		createEReference(functionEClass, FUNCTION__ARRAY_ARGS);
+		createEReference(functionEClass, FUNCTION__MEMORY_ALLOCATIONS);
 		createEReference(functionEClass, FUNCTION__BODY);
 
 		evalFunctionEClass = createEClass(EVAL_FUNCTION);
@@ -1460,9 +1450,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		initEClass(memoryAllocationEClass, MemoryAllocation.class, "MemoryAllocation", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getMemoryAllocation_Variable(), this.getArrayVariable(), null, "variable", null, 0, 1, MemoryAllocation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getMemoryAllocation_Map(), this.getISLMap(), "map", null, 0, 1, MemoryAllocation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getMemoryAllocation_Domain(), this.getISLSet(), "domain", null, 0, 1, MemoryAllocation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
-		initEAttribute(getMemoryAllocation_ISLASTNode(), this.getISLASTNode(), "ISLASTNode", null, 0, 1, MemoryAllocation.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		op = addEOperation(memoryAllocationEClass, null, "accept", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getVisitor(), "visitor", 0, 1, !IS_UNIQUE, IS_ORDERED);
@@ -1504,6 +1492,8 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "dataType", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
+		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "containedType", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "readName", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		addEOperation(globalVariableEClass, theEcorePackage.getEString(), "params", 0, -1, !IS_UNIQUE, IS_ORDERED);
@@ -1536,6 +1526,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		initEAttribute(getFunction_Name(), theEcorePackage.getEString(), "name", null, 0, 1, Function.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getFunction_ScalarArgs(), this.getBaseVariable(), null, "scalarArgs", null, 0, -1, Function.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getFunction_ArrayArgs(), this.getArrayVariable(), null, "arrayArgs", null, 0, -1, Function.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEReference(getFunction_MemoryAllocations(), this.getMemoryAllocation(), null, "memoryAllocations", null, 0, -1, Function.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_COMPOSITE, IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEReference(getFunction_Body(), this.getFunctionBody(), this.getFunctionBody_Function(), "body", null, 0, 1, Function.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		addEOperation(functionEClass, this.getBaseVariable(), "args", 0, -1, !IS_UNIQUE, IS_ORDERED);

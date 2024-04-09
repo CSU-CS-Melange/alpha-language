@@ -44,7 +44,7 @@ public class Factory {
     return _xblockexpression;
   }
 
-  public static Function createFunction(final DataType returnType, final String name, final BaseVariable[] scalarArguments, final ArrayVariable[] arrayArguments, final ArrayVariable[] localVariables, final FunctionBody body) {
+  public static Function createFunction(final DataType returnType, final String name, final BaseVariable[] scalarArguments, final ArrayVariable[] arrayArguments, final ArrayVariable[] localVariables, final MemoryAllocation[] allocations, final FunctionBody body) {
     Function _xblockexpression = null;
     {
       final Function function = Factory.factory.createFunction();
@@ -52,6 +52,7 @@ public class Factory {
       function.setName(name);
       CollectionExtensions.<BaseVariable>addAll(function.getScalarArgs(), scalarArguments);
       CollectionExtensions.<ArrayVariable>addAll(function.getArrayArgs(), arrayArguments);
+      CollectionExtensions.<MemoryAllocation>addAll(function.getMemoryAllocations(), allocations);
       function.setBody(body);
       _xblockexpression = function;
     }
