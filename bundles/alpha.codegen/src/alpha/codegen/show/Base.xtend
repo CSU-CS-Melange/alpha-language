@@ -77,7 +77,7 @@ class Base extends CodegenSwitch<CharSequence> {
 		val containedType = ma.variable.containedType
 		val cardinality = PolynomialPrinter.print(BarvinokBindings.card(ma.domain))
 		'''
-		«ma.variable.name» = («ma.variable.dataType»)malloc(sizeof(«containedType»)*(«cardinality»));
+		«ma.variable.name» = («ma.variable.dataType»)calloc(«cardinality», sizeof(«containedType»));
 		mallocCheck(«ma.variable.name», "«ma.variable.name»");
 		'''
 	}

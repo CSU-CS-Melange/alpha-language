@@ -98,7 +98,7 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 		}'''
 	
 	def dispatch seRules(StandardEquation se, AlphaExpression ae) {
-		'''«lhs» = «ae.doSwitch»''';
+		'''«lhs» = «ae.doSwitch»;'''
 	}
 	
 
@@ -118,7 +118,7 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 		}'''
 	
 	def dispatch ceRules(CaseExpression ce, AlphaExpression ae) '''
-		{
+		if («ae.contextDomain.indexConstraintsToConditionals») {
 		  «lhs» = «ae.doSwitch»;
 		}'''
 		
@@ -153,7 +153,7 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 		// Emit a call to the function.
 		val reduceFunctionName = program.reduceFunctions.get(re).name
 		val arguments = re.contextDomain.indexNames.join(',')
-		return '''«reduceFunctionName»(«arguments»);'''
+		return '''«reduceFunctionName»(«arguments»)'''
 	}
 	
 	def caseRestrictExpression(RestrictExpression re) {
@@ -173,7 +173,11 @@ class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 	}
 	
 	def caseBinaryExpression(BinaryExpression be) {
-		'''(«be.left.doSwitch») «be.cOperator» («be.right.doSwitch»)'''
+		switch be.operator {
+			case MAX: '''max((«be.left.doSwitch»), («be.right.doSwitch»))'''
+			case MIN: '''min((«be.left.doSwitch»), («be.right.doSwitch»))'''
+			default: '''(«be.left.doSwitch») «be.cOperator» («be.right.doSwitch»)'''
+		}
 	}
 	
 	def caseMultiArgExpression(MultiArgExpression mae) {

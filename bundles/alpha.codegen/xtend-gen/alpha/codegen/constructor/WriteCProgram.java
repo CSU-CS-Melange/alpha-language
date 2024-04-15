@@ -113,6 +113,7 @@ public class WriteCProgram extends BaseProgram {
       return Factory.createMemoryAllocation(it);
     };
     final Iterable<MemoryAllocation> allocations = IterableExtensions.<ArrayVariable, MemoryAllocation>map(Iterables.<ArrayVariable>concat(Collections.<Collection<ArrayVariable>>unmodifiableList(CollectionLiterals.<Collection<ArrayVariable>>newArrayList(_values, _values_1))), _function_1);
+    EList<Variable> _outputs_1 = s.getOutputs();
     final Function1<Variable, StatementMacro> _function_2 = (Variable it) -> {
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("S");
@@ -132,7 +133,7 @@ public class WriteCProgram extends BaseProgram {
       _builder_1.append(")");
       return CodegenUtil.statementMacro(_builder.toString(), _builder_1.toString());
     };
-    final List<StatementMacro> statementMacros = ListExtensions.<Variable, StatementMacro>map(s.getOutputs(), _function_2);
+    final Iterable<StatementMacro> statementMacros = IterableExtensions.<Variable, StatementMacro>map(Iterables.<Variable>concat(Collections.<EList<Variable>>unmodifiableList(CollectionLiterals.<EList<Variable>>newArrayList(_outputs_1))), _function_2);
     final ISLSchedule schedule = ISLSchedule.buildFromDomain(this.outputStatementsDomain(s));
     final ISLASTBuild build = ISLASTBuild.buildFromContext(schedule.getDomain().copy().params());
     final ISLASTNode node = build.generate(schedule.copy());
@@ -152,12 +153,17 @@ public class WriteCProgram extends BaseProgram {
 
   @Override
   public void inStandardEquation(final StandardEquation se) {
-    Boolean _isOutput = se.getVariable().isOutput();
-    boolean _not = (!(_isOutput).booleanValue());
-    if (_not) {
+    if (((!(se.getVariable().isOutput()).booleanValue()) && (!(se.getVariable().isLocal()).booleanValue()))) {
       return;
     }
-    final ArrayVariable evalVar = this.outputCVs.get(se.getVariable());
+    ArrayVariable _xifexpression = null;
+    Boolean _isOutput = se.getVariable().isOutput();
+    if ((_isOutput).booleanValue()) {
+      _xifexpression = this.outputCVs.get(se.getVariable());
+    } else {
+      _xifexpression = this.localCVs.get(se.getVariable());
+    }
+    final ArrayVariable evalVar = _xifexpression;
     final ArrayVariable flagVar = this.flagCVs.get(se.getVariable());
     final List<BaseVariable> scalarArgs = CodegenUtil.indexScalarVariables(se.getVariable());
     final EvalFunction function = Factory.createEvalFunction(evalVar, flagVar, ((BaseVariable[])Conversions.unwrapArray(scalarArgs, BaseVariable.class)), se);

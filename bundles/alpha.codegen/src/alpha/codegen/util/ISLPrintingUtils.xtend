@@ -24,7 +24,7 @@ class ISLPrintingUtils {
 	}
 
 	def static String toCString(ISLConstraint c) {
-		'''«c.aff.toString(ISL_FORMAT.C).replace(' ', '')»«if (c.isEquality) '=' else '>='»0'''
+		'''«c.aff.toString(ISL_FORMAT.C).replace(' ', '')»«if (c.isEquality) '==' else '>='»0'''
 	}
 	
 	def static String indexConstraintsToConditionals(ISLSet set) {

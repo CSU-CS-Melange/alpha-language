@@ -5,6 +5,7 @@ import alpha.codegen.C_UNARY_OP;
 import alpha.codegen.Program;
 import alpha.model.AlphaExpression;
 import alpha.model.AutoRestrictExpression;
+import alpha.model.BINARY_OP;
 import alpha.model.BinaryExpression;
 import alpha.model.BooleanExpression;
 import alpha.model.CaseExpression;
@@ -128,6 +129,7 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
     _builder.append(" = ");
     CharSequence _doSwitch = this.doSwitch(ae);
     _builder.append(_doSwitch);
+    _builder.append(";");
     return _builder;
   }
 
@@ -179,8 +181,11 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
 
   protected CharSequence _ceRules(final CaseExpression ce, final AlphaExpression ae) {
     StringConcatenation _builder = new StringConcatenation();
-    _builder.append("{");
-    _builder.newLine();
+    _builder.append("if (");
+    String _indexConstraintsToConditionals = ISLPrintingUtils.indexConstraintsToConditionals(ae.getContextDomain());
+    _builder.append(_indexConstraintsToConditionals);
+    _builder.append(") {");
+    _builder.newLineIfNotEmpty();
     _builder.append("  ");
     _builder.append(this.lhs, "  ");
     _builder.append(" = ");
@@ -245,7 +250,7 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
     _builder.append(reduceFunctionName);
     _builder.append("(");
     _builder.append(arguments);
-    _builder.append(");");
+    _builder.append(")");
     return _builder.toString();
   }
 
@@ -276,18 +281,62 @@ public class AlphaEquationPrinter extends ModelSwitch<CharSequence> {
   }
 
   public CharSequence caseBinaryExpression(final BinaryExpression be) {
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("(");
-    CharSequence _doSwitch = this.doSwitch(be.getLeft());
-    _builder.append(_doSwitch);
-    _builder.append(") ");
-    C_BINARY_OP _cOperator = AlphaOp.cOperator(be);
-    _builder.append(_cOperator);
-    _builder.append(" (");
-    CharSequence _doSwitch_1 = this.doSwitch(be.getRight());
-    _builder.append(_doSwitch_1);
-    _builder.append(")");
-    return _builder;
+    CharSequence _switchResult = null;
+    BINARY_OP _operator = be.getOperator();
+    if (_operator != null) {
+      switch (_operator) {
+        case MAX:
+          StringConcatenation _builder = new StringConcatenation();
+          _builder.append("max((");
+          CharSequence _doSwitch = this.doSwitch(be.getLeft());
+          _builder.append(_doSwitch);
+          _builder.append("), (");
+          CharSequence _doSwitch_1 = this.doSwitch(be.getRight());
+          _builder.append(_doSwitch_1);
+          _builder.append("))");
+          _switchResult = _builder;
+          break;
+        case MIN:
+          StringConcatenation _builder_1 = new StringConcatenation();
+          _builder_1.append("min((");
+          CharSequence _doSwitch_2 = this.doSwitch(be.getLeft());
+          _builder_1.append(_doSwitch_2);
+          _builder_1.append("), (");
+          CharSequence _doSwitch_3 = this.doSwitch(be.getRight());
+          _builder_1.append(_doSwitch_3);
+          _builder_1.append("))");
+          _switchResult = _builder_1;
+          break;
+        default:
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append("(");
+          CharSequence _doSwitch_4 = this.doSwitch(be.getLeft());
+          _builder_2.append(_doSwitch_4);
+          _builder_2.append(") ");
+          C_BINARY_OP _cOperator = AlphaOp.cOperator(be);
+          _builder_2.append(_cOperator);
+          _builder_2.append(" (");
+          CharSequence _doSwitch_5 = this.doSwitch(be.getRight());
+          _builder_2.append(_doSwitch_5);
+          _builder_2.append(")");
+          _switchResult = _builder_2;
+          break;
+      }
+    } else {
+      StringConcatenation _builder_2 = new StringConcatenation();
+      _builder_2.append("(");
+      CharSequence _doSwitch_4 = this.doSwitch(be.getLeft());
+      _builder_2.append(_doSwitch_4);
+      _builder_2.append(") ");
+      C_BINARY_OP _cOperator = AlphaOp.cOperator(be);
+      _builder_2.append(_cOperator);
+      _builder_2.append(" (");
+      CharSequence _doSwitch_5 = this.doSwitch(be.getRight());
+      _builder_2.append(_doSwitch_5);
+      _builder_2.append(")");
+      _switchResult = _builder_2;
+    }
+    return _switchResult;
   }
 
   public CharSequence caseMultiArgExpression(final MultiArgExpression mae) {

@@ -415,8 +415,7 @@ public class GlobalVariableImpl extends BaseVariableImpl implements GlobalVariab
 	 */
 	public String readName() {
 		String _xifexpression = null;
-		Boolean _isOutput = this.getAlphaVariable().isOutput();
-		if ((_isOutput).booleanValue()) {
+		if (((this.getAlphaVariable().isOutput()).booleanValue() || (this.getAlphaVariable().isLocal()).booleanValue())) {
 			String _name = this.getName();
 			_xifexpression = ("eval_" + _name);
 		}

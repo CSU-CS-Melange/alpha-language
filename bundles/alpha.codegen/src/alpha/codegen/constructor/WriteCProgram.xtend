@@ -58,7 +58,7 @@ class WriteCProgram extends BaseProgram {
 		val allocations = #[localCVs.values, flagCVs.values].flatten.map[it.createMemoryAllocation]
 		
 		// statement macros
-		val statementMacros = s.outputs.map[statementMacro(
+		val statementMacros = #[s.outputs].flatten.map[statementMacro(
 			'''S«s.outputs.indexOf(it)»(«it.indices.join(',')»)''',
 			'''eval_«name»(«(domain.indexNames).join(', ')»)'''
 		)]
@@ -81,10 +81,10 @@ class WriteCProgram extends BaseProgram {
 	
 	
 	override inStandardEquation(StandardEquation se) {
-		if (!se.variable.isOutput)
-			return                 
+		if (!se.variable.isOutput && !se.variable.isLocal)
+			return
 		
-		val evalVar = outputCVs.get(se.variable)
+		val evalVar = se.variable.isOutput ? outputCVs.get(se.variable) : localCVs.get(se.variable)
 		val flagVar = flagCVs.get(se.variable)
 		val scalarArgs = se.variable.indexScalarVariables
 		val function = createEvalFunction(evalVar, flagVar, scalarArgs, se)

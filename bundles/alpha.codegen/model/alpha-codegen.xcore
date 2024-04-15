@@ -220,7 +220,7 @@ class GlobalVariable extends BaseVariable {
 	}
 
 	op String readName() {
-		if (alphaVariable.isOutput)
+		if (alphaVariable.isOutput || alphaVariable.isLocal)
 			'eval_' + name
 		else
 			name

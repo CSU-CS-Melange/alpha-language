@@ -49,7 +49,7 @@ public class ISLPrintingUtils {
     String _xifexpression = null;
     boolean _isEquality = c.isEquality();
     if (_isEquality) {
-      _xifexpression = "=";
+      _xifexpression = "==";
     } else {
       _xifexpression = ">=";
     }

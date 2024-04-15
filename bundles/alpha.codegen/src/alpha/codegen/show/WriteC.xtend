@@ -50,7 +50,7 @@ class WriteC extends Base {
 	def caseEvalFunction(EvalFunction ef) '''
 		«ef.signature» {
 		  // check flag
-		  if («ef.flagVariable.identityAccess» == 'N') {
+		  if («ef.flagVariable.identityAccess» == 0) {
 		    «ef.flagVariable.identityAccess» = 'I';
 		    // Body for «ef.variable.name»
 		    «AlphaEquationPrinter.printStandardEquation(ef.equation, ef.program)»
@@ -101,8 +101,8 @@ class WriteC extends Base {
 	
 	def getReductionInitializer(REDUCTION_OP operator, DataType type) {
 		switch operator {
-			case MIN: type.negativeInfinityValue
-			case MAX: type.infinityValue
+			case MIN: type.infinityValue
+			case MAX: type.negativeInfinityValue
 			case SUM: type.zeroValue
 			case PROD: type.oneValue
 			case AND: "true"

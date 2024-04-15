@@ -139,10 +139,10 @@ public class Base extends CodegenSwitch<CharSequence> {
       _builder.append(" = (");
       String _dataType = ma.getVariable().dataType();
       _builder.append(_dataType);
-      _builder.append(")malloc(sizeof(");
-      _builder.append(containedType);
-      _builder.append(")*(");
+      _builder.append(")calloc(");
       _builder.append(cardinality);
+      _builder.append(", sizeof(");
+      _builder.append(containedType);
       _builder.append("));");
       _builder.newLineIfNotEmpty();
       _builder.append("mallocCheck(");

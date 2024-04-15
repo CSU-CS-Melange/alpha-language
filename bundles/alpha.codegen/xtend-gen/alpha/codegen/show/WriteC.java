@@ -142,7 +142,7 @@ public class WriteC extends Base {
     _builder.append("if (");
     String _identityAccess = ef.getFlagVariable().identityAccess();
     _builder.append(_identityAccess, "  ");
-    _builder.append(" == \'N\') {");
+    _builder.append(" == 0) {");
     _builder.newLineIfNotEmpty();
     _builder.append("    ");
     String _identityAccess_1 = ef.getFlagVariable().identityAccess();
@@ -361,10 +361,10 @@ public class WriteC extends Base {
       if (operator != null) {
         switch (operator) {
           case MIN:
-            _switchResult = this.getNegativeInfinityValue(type);
+            _switchResult = this.getInfinityValue(type);
             break;
           case MAX:
-            _switchResult = this.getInfinityValue(type);
+            _switchResult = this.getNegativeInfinityValue(type);
             break;
           case SUM:
             _switchResult = this.getZeroValue(type);
