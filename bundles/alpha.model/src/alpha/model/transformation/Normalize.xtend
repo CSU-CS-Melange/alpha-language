@@ -359,7 +359,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		
 		if (invalidState(re)) return;
 
-		// D : E -> E if expression domain ofD : E and E are the same (i.e., restrict has no effect)
+		// D : E -> E if expression domain of D : E and E are the same (i.e., restrict has no effect)
 		if (re.expressionDomain.isEqual(re.expr.expressionDomain) && !re.childOfCaseExpression) {
 			debug("redundant restrict", "D : E -> E");
 			EcoreUtil.replace(re, re.expr);
@@ -457,6 +457,14 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		AlphaInternalStateConstructor.recomputeContextDomain(newCE)
 		
 		reapply(origContainer)
+	}
+	
+	protected def dispatch binaryExpressionRules(BinaryExpression be, AlphaExpression aeLeft, RestrictExpression reRight) {
+		val origContainer = be.eContainer as AlphaCompleteVisitable
+		binaryExpressionRules(be, reRight)
+		if (origContainer != be.eContainer) {
+			reapply(origContainer)
+		}
 	}
 	
 	protected def dispatch binaryExpressionRules(BinaryExpression be, AlphaExpression aeLeft, CaseExpression ceRight) {

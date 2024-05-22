@@ -509,7 +509,7 @@ class SystemBody extends AlphaNode, AlphaVisitable, AlphaSystemElement {
 	}
 	
 	op StandardEquation getStandardEquation(Variable v) {
-		standardEquations.findFirst[eq|eq.variable == v]
+		standardEquations.findFirst[eq|eq.variable.name.equals(v.name)]
 	}
 //	
 //	op UseEquation getUseEquation(String eqName) {

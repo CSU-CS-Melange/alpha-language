@@ -15,8 +15,6 @@ import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
 
-import com.google.common.base.Objects;
-
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
 import java.util.Collection;
@@ -250,8 +248,7 @@ public class SystemBodyImpl extends AlphaNodeImpl implements SystemBody {
 	public StandardEquation getStandardEquation(final Variable v) {
 		final Function1<StandardEquation, Boolean> _function = new Function1<StandardEquation, Boolean>() {
 			public Boolean apply(final StandardEquation eq) {
-				Variable _variable = eq.getVariable();
-				return Boolean.valueOf(Objects.equal(_variable, v));
+				return Boolean.valueOf(eq.getVariable().getName().equals(v.getName()));
 			}
 		};
 		return IterableExtensions.<StandardEquation>findFirst(this.getStandardEquations(), _function);
