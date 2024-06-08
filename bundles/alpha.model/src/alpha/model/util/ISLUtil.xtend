@@ -182,29 +182,6 @@ class ISLUtil {
 			[ret, c | ret.addConstraint(c.toEqualityConstraint)]
 		).toSet
 	}
-	
-	/** 
-	 * Returns true if the multiAff is uniform, or false otherwise
-	 */
-	def static boolean isUniform(ISLMultiAff maff) {
-		throw new Exception
-		/*
-		 * 
-		 * TODO 
-		 * 
-		 */
-	}
-	
-	/** 
-	 * Returns the array of index coefficients of the ISLAff
-	 */
-	def static long[] toLongVector(ISLAff aff) {
-		val nbOut = aff.space.dim(ISLDimType.isl_dim_out)
-		val vals = (0..<nbOut).map[i | aff.getCoefficientVal(ISLDimType.isl_dim_out, i)]
-		if (vals.exists[!integer])
-			throw new Exception('ISLAff has non-integer coefficients ' + aff)
-		vals.map[asLong]
-	}
 }
 
 
