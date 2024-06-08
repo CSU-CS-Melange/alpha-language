@@ -6,7 +6,6 @@ import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +20,6 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.MapExtensions;
@@ -260,31 +258,6 @@ public class Face {
     final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
     final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
     return characteristicInequality.copy().getAff().dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
-  }
-
-  /**
-   * Returns the label induced by the uniform vector rho in the context of this face's parent
-   */
-  public Object getLabel(final Face parent, final ISLMultiAff rho) {
-    try {
-      Object _xblockexpression = null;
-      {
-        boolean _isUniform = ISLUtil.isUniform(rho);
-        boolean _not = (!_isUniform);
-        if (_not) {
-          throw new Exception(("Cannot get label from a non-uniform vector " + rho));
-        }
-        final long[] normVec = ISLUtil.toLongVector(this.getNormalVector(parent));
-        final List<Long> rhoVec = AffineFunctionOperations.getConstantVector(rho);
-        InputOutput.<long[]>println(normVec);
-        InputOutput.<List<Long>>println(rhoVec);
-        InputOutput.println();
-        _xblockexpression = null;
-      }
-      return _xblockexpression;
-    } catch (Throwable _e) {
-      throw Exceptions.sneakyThrow(_e);
-    }
   }
 
   /**

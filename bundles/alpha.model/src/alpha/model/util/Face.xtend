@@ -226,21 +226,6 @@ class Face {
 			.setConstant(0)
 	}
 	
-	/** Returns the label induced by the uniform vector rho in the context of this face's parent */
-	def getLabel(Face parent, ISLMultiAff rho) {
-		if (!rho.isUniform)
-			throw new Exception('Cannot get label from a non-uniform vector ' + rho)
-			
-		val normVec = getNormalVector(parent).toLongVector
-		val rhoVec = AffineFunctionOperations.getConstantVector(rho)
-		
-		println(normVec)
-		println(rhoVec)
-		println
-		
-		null
-	}
-	
 	/** Constructs a new face by saturating an additional constraint compared to this face. */
 	def saturateConstraint(int idx) {
 		if (!unsaturatedConstraints.containsKey(idx)) {
@@ -272,7 +257,6 @@ class Face {
 			.fold(universe, [s, c | s.addConstraint(c)])
 			.removeRedundancies
 	}
-	
 	
 	/**
 	 * Creates the (potentially unbounded) linear space of this facet
