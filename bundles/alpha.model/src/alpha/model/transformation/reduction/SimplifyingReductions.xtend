@@ -418,15 +418,11 @@ class SimplifyingReductions {
 			for (f : facets) {
 				debug('(candidateReuse) facet-' + facets.indexOf(f) + ': ' + f.toBasicSet)
 			}
-//			for (lv : validReuseVectors) {
-//				debug('(candidateReuse) labeling ' + lv.key.toString + ' induced by ' + lv.value.toString)
-//			}
 		}
 		
 		for (labelingAndReuse : validReuseVectors) {
 			val labeling = labelingAndReuse.key
 			val reuseVector = labelingAndReuse.value
-			
 			
 			debug('(candidateReuse) labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
 			if (labeling.hasAllZeroNonBoundaries(facets, are.projection)) {
@@ -437,7 +433,6 @@ class SimplifyingReductions {
 		}
 		
 		vectors.addAll(validReuseVectors.map[lv | lv.value])
-		
 		
 		return false -> vectors;
 	}
