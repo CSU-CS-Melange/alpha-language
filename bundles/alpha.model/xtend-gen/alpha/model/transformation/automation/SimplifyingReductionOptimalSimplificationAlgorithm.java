@@ -8,8 +8,6 @@ import alpha.model.AlphaSystem;
 import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
-import alpha.model.analysis.reduction.ShareSpaceAnalysis;
-import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.issue.AlphaIssue;
 import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
@@ -39,7 +37,6 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
-import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper.
@@ -379,32 +376,9 @@ public class SimplifyingReductionOptimalSimplificationAlgorithm {
    * Creates a list of possible transformations that are valid steps in the DP.
    */
   protected LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
-    final int nbParams = targetRE.getExpressionDomain().getNbParams();
-    final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetRE);
-    final LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep> candidates = new LinkedList<SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingStep>();
-    final LinkedList<long[]> vectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
-    for (final long[] vec : vectors) {
-      SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction _stepSimplifyingReduction = new SimplifyingReductionOptimalSimplificationAlgorithm.StepSimplifyingReduction(targetRE, vec, nbParams);
-      candidates.add(_stepSimplifyingReduction);
-    }
-    boolean _testLegality = Idempotence.testLegality(targetRE, SSAR);
-    if (_testLegality) {
-      SimplifyingReductionOptimalSimplificationAlgorithm.StepIdempotence _stepIdempotence = new SimplifyingReductionOptimalSimplificationAlgorithm.StepIdempotence(targetRE);
-      candidates.add(_stepIdempotence);
-    }
-    boolean _testLegality_1 = HigherOrderOperator.testLegality(targetRE, SSAR);
-    if (_testLegality_1) {
-      SimplifyingReductionOptimalSimplificationAlgorithm.StepHigherOrderOperator _stepHigherOrderOperator = new SimplifyingReductionOptimalSimplificationAlgorithm.StepHigherOrderOperator(targetRE);
-      candidates.add(_stepHigherOrderOperator);
-    }
-    LinkedList<Pair<ISLMultiAff, ISLMultiAff>> _generateDecompositionCandidates = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetRE);
-    for (final Pair<ISLMultiAff, ISLMultiAff> pair : _generateDecompositionCandidates) {
-      ISLMultiAff _key = pair.getKey();
-      ISLMultiAff _value = pair.getValue();
-      SimplifyingReductionOptimalSimplificationAlgorithm.StepReductionDecomposition _stepReductionDecomposition = new SimplifyingReductionOptimalSimplificationAlgorithm.StepReductionDecomposition(targetRE, _key, _value);
-      candidates.add(_stepReductionDecomposition);
-    }
-    return candidates;
+    throw new Error("Unresolved compilation problems:"
+      + "\nType mismatch: cannot convert from Pair<Boolean, ? extends List<long[]>> to Iterable<?>"
+      + "\nType mismatch: cannot convert from Object to long[]");
   }
 
   private boolean hasNext(final SimplifyingReductionOptimalSimplificationAlgorithm.DynamicProgrammingContext context) {

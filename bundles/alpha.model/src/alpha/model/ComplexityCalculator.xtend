@@ -24,11 +24,6 @@ class ComplexityCalculator extends AbstractAlphaCompleteVisitor {
 	int maxComplexity
 
 	def static int complexity(AlphaVisitable av) {
-		
-		val system = av.getContainerSystem
-		if (system !== null && system.parameterDomain.dim(ISLDimType.isl_dim_param) > 1)
-			throw new UnsupportedOperationException("Current complexity calculator only works for systems containing a single parameter.")
-		
 		val visitor = new ComplexityCalculator
 		visitor.accept(av)
 		return visitor.maxComplexity

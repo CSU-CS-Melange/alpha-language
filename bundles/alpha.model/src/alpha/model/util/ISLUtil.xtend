@@ -8,12 +8,13 @@ import fr.irisa.cairn.jnimap.isl.ISLContext
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMatrix
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.jni.JNIISLDimType
 
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
-import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 
 class ISLUtil {
 	
@@ -172,4 +173,44 @@ class ISLUtil {
 		
 		return set.nbIndices - effectivelySaturatedCount
 	}
+	
+	/**
+	 * Returns the ISLBasicSet characterizing the null space of the multiAff
+	 */
+	def static ISLSet nullSpace(ISLMultiAff maff) {
+		maff.affs.fold(
+			ISLBasicSet.buildUniverse(maff.space.domain.copy),
+			[ret, c | ret.addConstraint(c.toEqualityConstraint)]
+		).toSet
+	}
+	
+	/** 
+	 * Returns true if the multiAff is uniform, or false otherwise
+	 */
+	def static boolean isUniform(ISLMultiAff maff) {
+		throw new Exception
+		/*
+		 * 
+		 * TODO 
+		 * 
+		 */
+	}
+	
+	/** 
+	 * Returns the array of index coefficients of the ISLAff
+	 */
+	def static long[] toLongVector(ISLAff aff) {
+		val nbOut = aff.space.dim(ISLDimType.isl_dim_out)
+		val vals = (0..<nbOut).map[i | aff.getCoefficientVal(ISLDimType.isl_dim_out, i)]
+		if (vals.exists[!integer])
+			throw new Exception('ISLAff has non-integer coefficients ' + aff)
+		vals.map[asLong]
+	}
 }
+
+
+
+
+
+
+

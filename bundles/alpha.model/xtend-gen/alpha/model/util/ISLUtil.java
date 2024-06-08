@@ -240,4 +240,57 @@ public class ISLUtil {
     int _nbIndices = set.getNbIndices();
     return (_nbIndices - effectivelySaturatedCount);
   }
+
+  /**
+   * Returns the ISLBasicSet characterizing the null space of the multiAff
+   */
+  public static ISLSet nullSpace(final ISLMultiAff maff) {
+    final Function2<ISLBasicSet, ISLAff, ISLBasicSet> _function = (ISLBasicSet ret, ISLAff c) -> {
+      return ret.addConstraint(c.toEqualityConstraint());
+    };
+    return IterableExtensions.<ISLAff, ISLBasicSet>fold(maff.getAffs(), 
+      ISLBasicSet.buildUniverse(maff.getSpace().domain().copy()), _function).toSet();
+  }
+
+  /**
+   * Returns true if the multiAff is uniform, or false otherwise
+   */
+  public static boolean isUniform(final ISLMultiAff maff) {
+    try {
+      throw new Exception();
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Returns the array of index coefficients of the ISLAff
+   */
+  public static long[] toLongVector(final ISLAff aff) {
+    try {
+      Iterable<Long> _xblockexpression = null;
+      {
+        final int nbOut = aff.getSpace().dim(ISLDimType.isl_dim_out);
+        final Function1<Integer, ISLVal> _function = (Integer i) -> {
+          return aff.getCoefficientVal(ISLDimType.isl_dim_out, (i).intValue());
+        };
+        final Iterable<ISLVal> vals = IterableExtensions.<Integer, ISLVal>map(new ExclusiveRange(0, nbOut, true), _function);
+        final Function1<ISLVal, Boolean> _function_1 = (ISLVal it) -> {
+          boolean _isInteger = it.isInteger();
+          return Boolean.valueOf((!_isInteger));
+        };
+        boolean _exists = IterableExtensions.<ISLVal>exists(vals, _function_1);
+        if (_exists) {
+          throw new Exception(("ISLAff has non-integer coefficients " + aff));
+        }
+        final Function1<ISLVal, Long> _function_2 = (ISLVal it) -> {
+          return Long.valueOf(it.asLong());
+        };
+        _xblockexpression = IterableExtensions.<ISLVal, Long>map(vals, _function_2);
+      }
+      return ((long[])Conversions.unwrapArray(_xblockexpression, long.class));
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
 }

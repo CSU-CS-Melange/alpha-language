@@ -1,10 +1,12 @@
 package alpha.model.util;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +21,7 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.MapExtensions;
@@ -129,12 +132,26 @@ public class Face {
   public static Iterable<ArrayList<Face.Label>> enumerateAllPossibleLabelings(final int nbFacets, final boolean includeNeg) {
     List<Face.Label> _xifexpression = null;
     if (includeNeg) {
-      _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.POS, Face.Label.ZERO, Face.Label.NEG));
+      _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.ZERO, Face.Label.POS, Face.Label.NEG));
     } else {
       _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.POS, Face.Label.ZERO));
     }
     final List<Face.Label> labels = _xifexpression;
-    return CommonExtensions.<Face.Label>permutations(labels, nbFacets);
+    final Function1<ArrayList<Face.Label>, Boolean> _function = (ArrayList<Face.Label> it) -> {
+      return Boolean.valueOf(Face.isValid(((Face.Label[])Conversions.unwrapArray(it, Face.Label.class))));
+    };
+    return IterableExtensions.<ArrayList<Face.Label>>filter(CommonExtensions.<Face.Label>permutations(labels, nbFacets), _function);
+  }
+
+  /**
+   * Returns True if labeling contains at least one POS and NEG label, or false otherwise
+   */
+  public static boolean isValid(final Face.Label... labeling) {
+    return (IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
+      return Boolean.valueOf(Objects.equal(it, Face.Label.POS));
+    })) && IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
+      return Boolean.valueOf(Objects.equal(it, Face.Label.NEG));
+    })));
   }
 
   /**
@@ -246,6 +263,31 @@ public class Face {
   }
 
   /**
+   * Returns the label induced by the uniform vector rho in the context of this face's parent
+   */
+  public Object getLabel(final Face parent, final ISLMultiAff rho) {
+    try {
+      Object _xblockexpression = null;
+      {
+        boolean _isUniform = ISLUtil.isUniform(rho);
+        boolean _not = (!_isUniform);
+        if (_not) {
+          throw new Exception(("Cannot get label from a non-uniform vector " + rho));
+        }
+        final long[] normVec = ISLUtil.toLongVector(this.getNormalVector(parent));
+        final List<Long> rhoVec = AffineFunctionOperations.getConstantVector(rho);
+        InputOutput.<long[]>println(normVec);
+        InputOutput.<List<Long>>println(rhoVec);
+        InputOutput.println();
+        _xblockexpression = null;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
    * Constructs a new face by saturating an additional constraint compared to this face.
    */
   public Face saturateConstraint(final int idx) {
@@ -289,13 +331,20 @@ public class Face {
    */
   public ISLBasicSet toLinearSpace() {
     final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space.copy());
+    final int nbParams = this.space.dim(ISLDimType.isl_dim_param);
     final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint c) -> {
       return c.copy().setConstant(0);
     };
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = (ISLBasicSet s, ISLConstraint c) -> {
+    final Function1<ISLConstraint, Iterable<ISLConstraint>> _function_1 = (ISLConstraint c) -> {
+      final Function1<Integer, ISLConstraint> _function_2 = (Integer i) -> {
+        return c.copy().setCoefficient(ISLDimType.isl_dim_param, (i).intValue(), 0);
+      };
+      return IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, nbParams, true), _function_2);
+    };
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
       return s.addConstraint(c);
     };
-    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<ISLConstraint, ISLConstraint>map(this.saturatedConstraints, _function), universe, _function_1);
+    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(Iterables.<ISLConstraint>concat(ListExtensions.<ISLConstraint, Iterable<ISLConstraint>>map(ListExtensions.<ISLConstraint, ISLConstraint>map(this.saturatedConstraints, _function), _function_1)), universe, _function_2);
   }
 
   /**

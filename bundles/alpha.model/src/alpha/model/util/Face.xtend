@@ -4,6 +4,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.ArrayList
 import java.util.HashMap
@@ -17,7 +18,9 @@ import static extension alpha.model.util.CommonExtensions.toIndexHashMap
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.isEffectivelySaturated
+import static extension alpha.model.util.ISLUtil.isUniform
 import static extension alpha.model.util.ISLUtil.toEqualityConstraint
+import static extension alpha.model.util.ISLUtil.toLongVector
 
 /**
  * Represents a face which can be used to construct a face lattice.
@@ -115,8 +118,13 @@ class Face {
 	
 	/** Enumerates the set of all possible label combinations. */
 	static def enumerateAllPossibleLabelings(int nbFacets, boolean includeNeg) {
-		val labels = includeNeg ? #[Label.POS, Label.ZERO, Label.NEG] : #[Label.POS, Label.ZERO] 
-		return labels.permutations(nbFacets)
+		val labels = includeNeg ? #[Label.ZERO, Label.POS, Label.NEG] : #[Label.POS, Label.ZERO]
+		return labels.permutations(nbFacets).filter[isValid]
+	}
+	
+	/** Returns True if labeling contains at least one POS and NEG label, or false otherwise */
+	static def isValid(Label... labeling) {
+		return labeling.exists[it == Label.POS] && labeling.exists[it == Label.NEG]
 	}
 	
 	/**
@@ -218,6 +226,21 @@ class Face {
 			.setConstant(0)
 	}
 	
+	/** Returns the label induced by the uniform vector rho in the context of this face's parent */
+	def getLabel(Face parent, ISLMultiAff rho) {
+		if (!rho.isUniform)
+			throw new Exception('Cannot get label from a non-uniform vector ' + rho)
+			
+		val normVec = getNormalVector(parent).toLongVector
+		val rhoVec = AffineFunctionOperations.getConstantVector(rho)
+		
+		println(normVec)
+		println(rhoVec)
+		println
+		
+		null
+	}
+	
 	/** Constructs a new face by saturating an additional constraint compared to this face. */
 	def saturateConstraint(int idx) {
 		if (!unsaturatedConstraints.containsKey(idx)) {
@@ -250,15 +273,19 @@ class Face {
 			.removeRedundancies
 	}
 	
+	
 	/**
 	 * Creates the (potentially unbounded) linear space of this facet
 	 * from the union of saturated constraints.
 	 */
 	def toLinearSpace() {
-		// The constant terms of each constraint must be "removed" by setting them to 0.
+		// The constant terms and parameter coefficients of each constraint must be "removed" by setting them to 0.
 		val universe = ISLBasicSet.buildUniverse(space.copy)
+		val nbParams = space.dim(ISLDimType.isl_dim_param)
 		return saturatedConstraints
 			.map[c | c.copy.setConstant(0)]
+			.map[c | (0..<nbParams).map[i | c.copy.setCoefficient(ISLDimType.isl_dim_param, i, 0)]]
+			.flatten
 			.fold(universe, [s, c | s.addConstraint(c)])
 	}
 	
