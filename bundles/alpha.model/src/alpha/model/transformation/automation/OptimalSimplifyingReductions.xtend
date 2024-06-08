@@ -22,10 +22,10 @@ import alpha.model.transformation.reduction.RemoveEmbedding
 import alpha.model.transformation.reduction.SameOperatorSimplification
 import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.transformation.reduction.SplitReduction
-import alpha.model.util.AffineFunctionOperations
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import java.util.LinkedList
 import java.util.List
@@ -34,14 +34,13 @@ import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.ComplexityCalculator.complexity
+import static extension alpha.model.util.AffineFunctionOperations.createUniformFunction
 import static extension alpha.model.util.AlphaOperatorUtil.hasNoInverse
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
-import static extension alpha.model.util.AffineFunctionOperations.createUniformFunction
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import fr.irisa.cairn.jnimap.isl.ISLDimType
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current

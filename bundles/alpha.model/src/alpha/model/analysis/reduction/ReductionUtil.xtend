@@ -25,14 +25,6 @@ class ReductionUtil {
 	 * Returns true if all POS and NEG faces are boundaries, or false otherwise
 	 */
 	def static boolean hasAllZeroNonBoundaries(Label[] labeling, Face[] facets, ISLMultiAff fp) {
-		labeling.zipWith(facets).forEach[lf | 
-			val label = lf.key
-			val facet = lf.value
-			println(label + ', ' + if (facet.isBoundary(fp)) {'isBoundary'} else {' '})
-		]
-		if (labeling.toString == '[ZERO, ZERO, ZERO, NEG, POS]')
-			println
-		println
 		return labeling.zipWith(facets).forall[lf | lf.key == Label.ZERO || lf.value.isBoundary(fp)]
 	}
 	
