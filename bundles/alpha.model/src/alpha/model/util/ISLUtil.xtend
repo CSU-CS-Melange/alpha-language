@@ -151,7 +151,7 @@ class ISLUtil {
 	 * this will indicate that the set is 2D.
 	 */
 	def static int dimensionality(ISLSet set) {
-		set.computeDivs.basicSets.map[dimensionality].max
+		set.copy.computeDivs.basicSets.map[dimensionality].max
 	}
 	
 	def static int dimensionality(ISLBasicSet set) {

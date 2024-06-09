@@ -5,6 +5,7 @@ import alpha.model.AlphaInternalStateConstructor
 import alpha.model.AlphaSystem
 import alpha.model.BINARY_OP
 import alpha.model.ReduceExpression
+import alpha.model.RestrictExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult
@@ -32,14 +33,7 @@ import java.util.TreeSet
 import java.util.function.Function
 import org.eclipse.emf.ecore.util.EcoreUtil
 
-import static alpha.model.util.Face.enumerateAllPossibleLabelings
-
-import static extension alpha.model.analysis.reduction.ReductionUtil.hasAllZeroNonBoundaries
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
-import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
-import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
-import static extension alpha.model.util.ISLUtil.isTrivial
-import alpha.model.RestrictExpression
 
 /**
  * Implementation of Theorem 5 in the original Simplifying Reductions paper.
@@ -375,66 +369,6 @@ class SimplifyingReductions {
 		val space = ISLSpace.idMapDimFromSetDim(variableDomainSpace.copy)
 		
 		return AffineFunctionOperations.createUniformFunction(space, projectedB)
-	}
-	
-	/**
-	 * Creates a list of ISLMultiAff that are valid reuse vectors given the share space.
-	 * Exposed to be used by SimplifyingReductionExploration.
-	 * 
-	 */
-	static def generateCandidateReuseVectors(AbstractReduceExpression are, ShareSpaceAnalysisResult SSAR) {
-		val vectors = new LinkedList<long[]>();
-		
-		val areSS = SSAR.getShareSpace(are.body)
-		if (areSS === null)
-			return false -> vectors;
-		
-		// construct reuse space
-		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
-		
-		// construct face lattice
-		val face = are.facet
-		debug('(candidateReuse) Lp = ' + face.toLinearSpace.toString)
-		val facets = face.generateChildren.toList
-		
-		if (facets.size == 0)
-			return false -> vectors
-		
-		// enumerate all valid labelings
-		val labelings = enumerateAllPossibleLabelings(facets.size, true).toList
-		
-		// find the labelings that have none-empty domains
-		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
-		                                       .reject[ld | ld.value.isTrivial]
-		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
-		                                       .reject[ld | ld.value.isTrivial]
-		                                       .toList
-		
-		// select the reuse vector for each labeling domain (closest to the origin)
-		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin]
-		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]
-		
-		if (DEBUG) {
-			for (f : facets) {
-				debug('(candidateReuse) facet-' + facets.indexOf(f) + ': ' + f.toBasicSet)
-			}
-		}
-		
-		for (labelingAndReuse : validReuseVectors) {
-			val labeling = labelingAndReuse.key
-			val reuseVector = labelingAndReuse.value
-			
-			debug('(candidateReuse) labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
-			if (labeling.hasAllZeroNonBoundaries(facets, are.projection)) {
-				debug('(candidateReuse) results in identical answers')
-				return true -> #[reuseVector]
-			}
-			vectors.add(reuseVector)
-		}
-		
-		vectors.addAll(validReuseVectors.map[lv | lv.value])
-		
-		return false -> vectors;
 	}
 	
 	/**

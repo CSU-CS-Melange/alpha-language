@@ -219,7 +219,7 @@ public class ISLUtil {
     final Function1<ISLBasicSet, Integer> _function = (ISLBasicSet it) -> {
       return Integer.valueOf(ISLUtil.dimensionality(it));
     };
-    return (int) IterableExtensions.<Integer>max(ListExtensions.<ISLBasicSet, Integer>map(set.computeDivs().getBasicSets(), _function));
+    return (int) IterableExtensions.<Integer>max(ListExtensions.<ISLBasicSet, Integer>map(set.copy().computeDivs().getBasicSets(), _function));
   }
 
   public static int dimensionality(final ISLBasicSet set) {

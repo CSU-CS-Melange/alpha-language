@@ -18,7 +18,6 @@ import alpha.model.transformation.reduction.NormalizeReduction
 import alpha.model.transformation.reduction.PermutationCaseReduce
 import alpha.model.transformation.reduction.ReductionComposition
 import alpha.model.transformation.reduction.ReductionDecomposition
-import alpha.model.transformation.reduction.RemoveEmbedding
 import alpha.model.transformation.reduction.SameOperatorSimplification
 import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.transformation.reduction.SplitReduction
@@ -41,6 +40,8 @@ import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
+import alpha.model.analysis.reduction.CandidateReuse
+import alpha.model.transformation.reduction.RemoveIdenticalAnswers
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -288,12 +289,13 @@ class OptimalSimplifyingReductions {
 		// SimplifyingReductions 
 		val shouldSimplify = targetRE.shouldSimplify
 		if (shouldSimplify) {
-			val isSpecialAndVectors = SimplifyingReductions.generateCandidateReuseVectors(targetRE, SSAR);
-			val vectors = isSpecialAndVectors.value
-			if (isSpecialAndVectors.key) {
-				return #[getDPStepForSpecialSR(targetRE, vectors.get(0))]
+			val candidateReuse = new CandidateReuse(targetRE, SSAR)
+			if (candidateReuse.hasIdenticalAnswers) {
+				candidates.add(new StepRemoveEmbedding(targetRE, candidateReuse.identicalAnswerBasis))
+				return candidates
+			} else {				
+				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
 			}
-			candidates.addAll(vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
 		}
 		
 		// Splitting
@@ -346,7 +348,7 @@ class OptimalSimplifyingReductions {
 		NormalizeReduction.apply(equation)
 	}
 	protected dispatch def applyDPStep(ReduceExpression re, StepRemoveEmbedding step) {
-		RemoveEmbedding.apply(re, step.rho)
+		RemoveIdenticalAnswers.transform(re, step.rho)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing
@@ -511,14 +513,6 @@ class OptimalSimplifyingReductions {
 	////////////////////////////////////////////////////////////
 	// Miscellaneous helper functions
 	////////////////////////////////////////////////////////////
-	
-	private def DynamicProgrammingStep getDPStepForSpecialSR(AbstractReduceExpression targetRE, long[] vector) {
-		val space = targetRE.body.contextDomain.copy.toIdentityMap.space
-		val nbParams = space.dim(ISLDimType.isl_dim_param)
-		val zeros = (0..<nbParams).map[0L]
-		val specialRho = space.createUniformFunction(zeros + vector)
-		return new StepRemoveEmbedding(targetRE, specialRho)
-	}
 	
 	private def StandardEquation getEquation(AlphaRoot root, String name) {
 		val eqs = root.getSystem(originalSystemName)

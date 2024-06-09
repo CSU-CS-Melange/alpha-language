@@ -6,6 +6,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,6 +52,14 @@ public class Face {
     NEG,
 
     ZERO;
+  }
+
+  public enum Boundary {
+    WEAK,
+
+    STRONG,
+
+    NON;
   }
 
   /**
@@ -318,6 +327,24 @@ public class Face {
       return s.addConstraint(c);
     };
     return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(Iterables.<ISLConstraint>concat(ListExtensions.<ISLConstraint, Iterable<ISLConstraint>>map(ListExtensions.<ISLConstraint, ISLConstraint>map(this.saturatedConstraints, _function), _function_1)), universe, _function_2);
+  }
+
+  /**
+   * Returns the boundary classification of the face.
+   */
+  public Face.Boundary boundaryLabel(final ISLSet accumulationSpace) {
+    final ISLSet lp = this.toLinearSpace().toSet();
+    final int accDims = ISLUtil.dimensionality(accumulationSpace);
+    final int intDims = ISLUtil.dimensionality(accumulationSpace.copy().intersect(lp));
+    if ((intDims == accDims)) {
+      return Face.Boundary.STRONG;
+    } else {
+      if (((0 < intDims) && (intDims < accDims))) {
+        return Face.Boundary.WEAK;
+      } else {
+        return Face.Boundary.NON;
+      }
+    }
   }
 
   /**

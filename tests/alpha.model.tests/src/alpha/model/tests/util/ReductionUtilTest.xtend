@@ -2,7 +2,6 @@ package alpha.model.tests.util
 
 import alpha.model.DependenceExpression
 import alpha.model.ReduceExpression
-import alpha.model.transformation.reduction.RemoveEmbedding
 import org.junit.Test
 
 import static alpha.commands.UtilityBase.GetEquation
@@ -17,6 +16,7 @@ import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.nullSpace
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
+import alpha.model.transformation.reduction.RemoveIdenticalAnswers
 
 class ReductionUtilTest {
 	
@@ -77,7 +77,7 @@ class ReductionUtilTest {
 		assertEquals(system.complexity, 3)
 		
 		val rho = '[N]->{[i,j,k]->[i,j,k+1]}'.toISLMultiAff
-		RemoveEmbedding.apply(reduceExpr, rho)
+		RemoveIdenticalAnswers.apply(reduceExpr, rho)
 		
 		assertEquals(system.complexity, 2)
 	}

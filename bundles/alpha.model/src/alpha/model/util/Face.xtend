@@ -4,7 +4,6 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.ArrayList
 import java.util.HashMap
@@ -18,9 +17,9 @@ import static extension alpha.model.util.CommonExtensions.toIndexHashMap
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.isEffectivelySaturated
-import static extension alpha.model.util.ISLUtil.isUniform
+import static extension alpha.model.util.ISLUtil.nullSpace
 import static extension alpha.model.util.ISLUtil.toEqualityConstraint
-import static extension alpha.model.util.ISLUtil.toLongVector
+import fr.irisa.cairn.jnimap.isl.ISLSet
 
 /**
  * Represents a face which can be used to construct a face lattice.
@@ -42,6 +41,12 @@ class Face {
 		POS,
 		NEG,
 		ZERO
+	}
+	
+	enum Boundary {
+		WEAK,
+		STRONG,
+		NON
 	}
 	
 	////////////////////////////////////////////////////////////
@@ -273,6 +278,23 @@ class Face {
 			.fold(universe, [s, c | s.addConstraint(c)])
 	}
 	
+	/** Returns the boundary classification of the face. */
+	def boundaryLabel(ISLSet accumulationSpace) {
+		val lp = toLinearSpace.toSet
+		
+		val accDims = accumulationSpace.dimensionality
+		val intDims = accumulationSpace.copy.intersect(lp).dimensionality
+		
+		if (intDims == accDims) {
+			return Boundary.STRONG
+		} else if (0 < intDims && intDims < accDims) {
+			return Boundary.WEAK
+		} else {
+			return Boundary.NON
+		}
+	} 
+	
+	
 	/** Returns a string indicating which constraints were saturated to form this face. */
 	override toString() {
 		val saturatedIndexes = (0 ..< originalConstraintCount)
@@ -280,7 +302,6 @@ class Face {
 			.join(",")
 		return "{" + saturatedIndexes + "}"
 	}
-	
 	
 	////////////////////////////////////////////////////////////
 	// Local Methods

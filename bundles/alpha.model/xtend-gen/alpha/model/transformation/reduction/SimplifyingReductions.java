@@ -15,7 +15,6 @@ import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.Variable;
 import alpha.model.VariableExpression;
-import alpha.model.analysis.reduction.ReductionUtil;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.matrix.MatrixOperations;
@@ -27,11 +26,7 @@ import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaOperatorUtil;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.DomainOperations;
-import alpha.model.util.Face;
-import alpha.model.util.ISLUtil;
-import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
@@ -41,7 +36,6 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +43,6 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Function;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
@@ -397,88 +390,6 @@ public class SimplifyingReductions {
     }
     final ISLSpace space = ISLSpace.idMapDimFromSetDim(variableDomainSpace.copy());
     return AffineFunctionOperations.createUniformFunction(space, projectedB);
-  }
-
-  /**
-   * Creates a list of ISLMultiAff that are valid reuse vectors given the share space.
-   * Exposed to be used by SimplifyingReductionExploration.
-   */
-  public static Pair<Boolean, ? extends List<long[]>> generateCandidateReuseVectors(final AbstractReduceExpression are, final ShareSpaceAnalysisResult SSAR) {
-    final LinkedList<long[]> vectors = new LinkedList<long[]>();
-    final long[][] areSS = SSAR.getShareSpace(are.getBody());
-    if ((areSS == null)) {
-      return Pair.<Boolean, LinkedList<long[]>>of(Boolean.valueOf(false), vectors);
-    }
-    final ISLBasicSet reuseSpace = DomainOperations.toBasicSetFromKernel(areSS, are.getBody().getContextDomain().getSpace());
-    final Face face = are.getFacet();
-    String _string = face.toLinearSpace().toString();
-    String _plus = ("(candidateReuse) Lp = " + _string);
-    SimplifyingReductions.debug(_plus);
-    final List<Face> facets = IterableExtensions.<Face>toList(face.generateChildren());
-    int _size = facets.size();
-    boolean _equals = (_size == 0);
-    if (_equals) {
-      return Pair.<Boolean, LinkedList<long[]>>of(Boolean.valueOf(false), vectors);
-    }
-    final List<ArrayList<Face.Label>> labelings = IterableExtensions.<ArrayList<Face.Label>>toList(Face.enumerateAllPossibleLabelings(facets.size(), true));
-    final Function1<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>> _function = (ArrayList<Face.Label> l) -> {
-      return face.getLabelingDomain(((Face.Label[])Conversions.unwrapArray(l, Face.Label.class)));
-    };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_1 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
-    };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>> _function_2 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      Face.Label[] _key = ld.getKey();
-      ISLBasicSet _intersect = ld.getValue().intersect(reuseSpace.copy());
-      return Pair.<Face.Label[], ISLBasicSet>of(_key, _intersect);
-    };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_3 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
-    };
-    final List<Pair<Face.Label[], ISLBasicSet>> labelingInducingDomains = IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>toList(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>>map(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(ListExtensions.<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>>map(labelings, _function), _function_1), _function_2), _function_3));
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>> _function_4 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      Face.Label[] _key = ld.getKey();
-      long[] _integerPointClosestToOrigin = ISLUtil.integerPointClosestToOrigin(ld.getValue());
-      return Pair.<Face.Label[], long[]>of(_key, _integerPointClosestToOrigin);
-    };
-    final List<Pair<Face.Label[], long[]>> candidateReuseVectors = ListExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>>map(labelingInducingDomains, _function_4);
-    final Function1<Pair<Face.Label[], long[]>, Boolean> _function_5 = (Pair<Face.Label[], long[]> lv) -> {
-      return Boolean.valueOf(SimplifyingReductions.testLegality(are, lv.getValue()));
-    };
-    final Iterable<Pair<Face.Label[], long[]>> validReuseVectors = IterableExtensions.<Pair<Face.Label[], long[]>>filter(candidateReuseVectors, _function_5);
-    if (SimplifyingReductions.DEBUG) {
-      for (final Face f : facets) {
-        int _indexOf = facets.indexOf(f);
-        String _plus_1 = ("(candidateReuse) facet-" + Integer.valueOf(_indexOf));
-        String _plus_2 = (_plus_1 + ": ");
-        ISLBasicSet _basicSet = f.toBasicSet();
-        String _plus_3 = (_plus_2 + _basicSet);
-        SimplifyingReductions.debug(_plus_3);
-      }
-    }
-    for (final Pair<Face.Label[], long[]> labelingAndReuse : validReuseVectors) {
-      {
-        final Face.Label[] labeling = labelingAndReuse.getKey();
-        final long[] reuseVector = labelingAndReuse.getValue();
-        String _string_1 = ((List<Face.Label>)Conversions.doWrapArray(labeling)).toString();
-        String _plus_4 = ("(candidateReuse) labeling " + _string_1);
-        String _plus_5 = (_plus_4 + " induced by ");
-        String _string_2 = ((List<Long>)Conversions.doWrapArray(reuseVector)).toString();
-        String _plus_6 = (_plus_5 + _string_2);
-        SimplifyingReductions.debug(_plus_6);
-        boolean _hasAllZeroNonBoundaries = ReductionUtil.hasAllZeroNonBoundaries(labeling, ((Face[])Conversions.unwrapArray(facets, Face.class)), are.getProjection());
-        if (_hasAllZeroNonBoundaries) {
-          SimplifyingReductions.debug("(candidateReuse) results in identical answers");
-          return Pair.<Boolean, List<long[]>>of(Boolean.valueOf(true), Collections.<long[]>unmodifiableList(CollectionLiterals.<long[]>newArrayList(reuseVector)));
-        }
-        vectors.add(reuseVector);
-      }
-    }
-    final Function1<Pair<Face.Label[], long[]>, long[]> _function_6 = (Pair<Face.Label[], long[]> lv) -> {
-      return lv.getValue();
-    };
-    Iterables.<long[]>addAll(vectors, IterableExtensions.<Pair<Face.Label[], long[]>, long[]>map(validReuseVectors, _function_6));
-    return Pair.<Boolean, LinkedList<long[]>>of(Boolean.valueOf(false), vectors);
   }
 
   /**
