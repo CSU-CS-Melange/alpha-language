@@ -4,8 +4,10 @@ import alpha.model.util.Face;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,7 +16,7 @@ public class FaceTest {
   /**
    * Creates a face from the desired set.
    */
-  private static Face makeFace(final String setDescriptor) {
+  public static Face makeFace(final String setDescriptor) {
     final ISLBasicSet set = ISLBasicSet.buildFromString(ISLContext.getInstance(), setDescriptor).removeRedundancies();
     return new Face(set);
   }
@@ -203,5 +205,19 @@ public class FaceTest {
       return Boolean.valueOf(it.toBasicSet().isEqual(iEqualsN.copy()));
     };
     Assert.assertTrue(IterableExtensions.<Face>exists(children, _function_1));
+  }
+
+  @Test
+  public void testToLinearSpace_01() {
+    final String descriptor = "[N] -> {[i,j]: 0<=i,j<=N}";
+    final Face face = FaceTest.makeFace(descriptor);
+    final Function1<Face, ISLBasicSet> _function = (Face it) -> {
+      return it.toLinearSpace();
+    };
+    final List<ISLBasicSet> lps = ListExtensions.<Face, ISLBasicSet>map(face.generateChildren(), _function);
+    Assert.assertEquals(lps.get(0).toString(), "[N] -> { [i, j] : i = 0 }");
+    Assert.assertEquals(lps.get(1).toString(), "[N] -> { [i, j] : i = 0 }");
+    Assert.assertEquals(lps.get(2).toString(), "[N] -> { [i, j] : j = 0 }");
+    Assert.assertEquals(lps.get(3).toString(), "[N] -> { [i, j] : j = 0 }");
   }
 }

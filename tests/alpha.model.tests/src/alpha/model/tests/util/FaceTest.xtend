@@ -13,7 +13,7 @@ class FaceTest {
 	////////////////////////////////////////////////////////////
 	
 	/** Creates a face from the desired set. */
-	private static def makeFace(String setDescriptor) {
+	static def makeFace(String setDescriptor) {
 		val set = ISLBasicSet.buildFromString(ISLContext.instance, setDescriptor).removeRedundancies
 		return new Face(set)
 	}
@@ -105,5 +105,18 @@ class FaceTest {
 		
 		val iEqualsN = ISLBasicSet.buildFromString(ISLContext.instance, "[N] -> {[i]: i=N and N>=1}")
 		assertTrue(children.exists[it.toBasicSet.isEqual(iEqualsN.copy)])
+	}
+	
+	@Test
+	def testToLinearSpace_01() {
+		val descriptor = "[N] -> {[i,j]: 0<=i,j<=N}"
+		val face = makeFace(descriptor)
+		
+		val lps = face.generateChildren.map[toLinearSpace]
+		
+		assertEquals(lps.get(0).toString, '[N] -> { [i, j] : i = 0 }')
+		assertEquals(lps.get(1).toString, '[N] -> { [i, j] : i = 0 }')
+		assertEquals(lps.get(2).toString, '[N] -> { [i, j] : j = 0 }')
+		assertEquals(lps.get(3).toString, '[N] -> { [i, j] : j = 0 }')
 	}
 }

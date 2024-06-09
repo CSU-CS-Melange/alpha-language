@@ -13,7 +13,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 
 class RemoveEmbedding {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	
 	private static def void debug(String msg) {
 		if (DEBUG)

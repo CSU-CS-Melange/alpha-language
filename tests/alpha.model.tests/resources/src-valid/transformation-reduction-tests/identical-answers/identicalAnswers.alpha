@@ -1,0 +1,8 @@
+affine ex1 [N]->{: N>10}
+	inputs X : [N]
+	outputs Y : [N]
+	locals Z : [N,N]
+	let
+		Z[i,k] = reduce(max, (i,j,k->i,k), {: 0<=j and i+j<=N} : X[j]);
+		Y[i] = Z[i,N-1];
+.

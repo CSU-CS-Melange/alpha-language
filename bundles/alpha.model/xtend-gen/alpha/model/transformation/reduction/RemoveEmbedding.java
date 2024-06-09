@@ -20,7 +20,7 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
 
 @SuppressWarnings("all")
 public class RemoveEmbedding {
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   private static void debug(final String msg) {
     if (RemoveEmbedding.DEBUG) {
