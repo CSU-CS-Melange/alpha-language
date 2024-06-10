@@ -22,6 +22,7 @@ import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
 import static extension alpha.model.util.ISLUtil.nullSpace
 
+
 class CandidateReuse {
 	
 	public static boolean DEBUG = false;
@@ -37,7 +38,7 @@ class CandidateReuse {
 	long[] reuseVectorWithIdenticalAnswers
 	
 	@Accessors(PUBLIC_GETTER)
-	ISLSet decompositionDomain
+	ISLSet identicalAnswerDomain
 	
 	@Accessors(PUBLIC_GETTER)
 	List<long[]> vectors
@@ -121,8 +122,9 @@ class CandidateReuse {
 			val reuseVector = labelingAndReuse.value
 			
 			debug('labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
-			decompositionDomain = labeling.allZeroNonBoundariesDecomposition(facets, are.projection)
-			if (!decompositionDomain.isEmpty) {
+			val accumulationSpace = are.projection.nullSpace
+			identicalAnswerDomain = labeling.computeIdenticalAnswerDomain(facets, accumulationSpace)
+			if (!identicalAnswerDomain.isEmpty) {
 				debug('results in identical answers')
 				hasIdenticalAnswers = true
 				reuseVectorWithIdenticalAnswers = reuseVector
@@ -143,33 +145,36 @@ class CandidateReuse {
 	 * combined intersection of their linear spaces with the accumulation space is at least 1-dimensional.
 	 * 
 	 */
-	def static ISLSet allZeroNonBoundariesDecomposition(Label[] labeling, Face[] facets, ISLMultiAff fp) {
-		val accumulationSpace = fp.nullSpace
-		val nonZeroFacets = facets.zipWith(labeling).reject[fl | fl.value == Label.ZERO].map[fl | fl.key]
-		val weakNonZeroFacets = nonZeroFacets.filter[f | f.boundaryLabel(accumulationSpace) == Boundary.WEAK]
-		
+	def static ISLSet computeIdenticalAnswerDomain(Label[] labeling, Face[] facets, ISLSet accumulationSpace) {
+
+		val emptyDomain = ISLSet.buildEmpty(accumulationSpace.space)
+
 		debug('---')
 		debug('accumulation ' + accumulationSpace)
 		debug('---')
-		facets.forEach[f | debug('facet-' + f + ' Lp = ' + f.toLinearSpace)]
-		debug('---')
-		facets.zipWith(labeling).forEach[fl |
-			val f = fl.key
-			val l = fl.value 
-			val b = f.boundaryLabel(accumulationSpace)
-			val flag = (b == Boundary.WEAK) && (l != Label.ZERO)
-			debug('facet-' + f + ' ' + b + ' ' + l + if(flag) {'   <-- potential'} else {''})
-		]
-		debug('---')
 		
-		val universe = ISLSet.buildUniverse(fp.space.domain)
-		val commonWeakSpace = weakNonZeroFacets.map[toLinearSpace.toSet]
+		// get all POS- and NEG-faces in the given labeling
+		val nonZeroFacets = facets.zipWith(labeling)
+			.reject[faceLabel | faceLabel.value == Label.ZERO]
+			.map[faceLabel | faceLabel.key]
+		
+		// return empty set if there is at least one Boundary.NON POS- or NEG-face
+		val nonZeroNonBoundaryFacets = nonZeroFacets
+			.filter[boundaryLabel(accumulationSpace) == Boundary.NON]
+		if (!nonZeroNonBoundaryFacets.isEmpty)
+			return emptyDomain
+
+		nonZeroFacets.forEach[f | debug('relevant facet-' + f)]
+
+		// compute intersection of POS- and NEG-face linear spaces with accumulation space
+		val universe = ISLSet.buildUniverse(accumulationSpace.space)
+		val commonWeakSpace = nonZeroFacets.map[toLinearSpace.toSet]
 			.fold(universe.copy, [ret, lp | ret.intersect(lp)])
 		
-		val decompositionDomain = commonWeakSpace.copy.intersect(accumulationSpace.copy)
-		if (decompositionDomain.dimensionality > 0)
-			return decompositionDomain
-			
-		return ISLSet.buildEmpty(universe.space)
+		val domain = commonWeakSpace.copy.intersect(accumulationSpace.copy)
+		if (domain.dimensionality > 0)
+			return domain
+		
+		return emptyDomain	
 	}
 }

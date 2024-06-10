@@ -33,17 +33,6 @@ public class ReductionUtilTest {
   }
 
   @Test
-  public void testBoundary_01() {
-    throw new Error("Unresolved compilation problems:"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face"
-      + "\nThe method isBoundary(ISLMultiAff) is undefined for the type Face");
-  }
-
-  @Test
   public void testRemoveRedundancy_01() {
     throw new Error("Unresolved compilation problems:"
       + "\nInvalid number of arguments. The method apply(AbstractReduceExpression) is not applicable for the arguments (ReduceExpression,ISLMultiAff)");

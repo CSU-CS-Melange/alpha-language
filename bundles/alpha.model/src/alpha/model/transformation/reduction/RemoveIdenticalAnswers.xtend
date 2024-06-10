@@ -18,6 +18,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import static alpha.model.factory.AlphaUserFactory.createDependenceExpression
 
 import static extension alpha.model.util.AlphaUtil.getContainerSystem
+import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.nullSpace
 
 /**
@@ -100,14 +101,8 @@ class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 			return
 			
 		val rho = candidateReuse.identicalAnswerBasis
-		transform(reduceExpr, rho, candidateReuse.decompositionDomain)
+		transform(reduceExpr, rho, candidateReuse.getIdenticalAnswerDomain)
 	}
-
-
-
-
-	
-	
 	
 	/**
 	 * Apply the transformation:
@@ -127,10 +122,14 @@ class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 		
 		// decompositionDomain is the inner accumulation space along which to do the
 		// decomposition
-		if (!decompositionDomain.isEmpty) {
+		if (reduceExpr.canBeDecomposed && !decompositionDomain.isEmpty) {
 			debug('decompositionDomain: ' + decompositionDomain)
 			val SSAR = ShareSpaceAnalysis.apply(targetReduceExpr)
-			val decomposition = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetReduceExpr)
+			val decompositions = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetReduceExpr)
+			
+			decompositions.forEach[d | debug('decomposition ' + d.toString)]
+			
+			val decomposition = decompositions
 				.findFirst[key.nullSpace.isEqual(decompositionDomain)]
 			
 			if (decomposition === null) {
@@ -170,19 +169,6 @@ class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 		AlphaInternalStateConstructor.recomputeContextDomain(depExpr)
 		Normalize.apply(depExpr)
 		
-//		/*
-//		 * DEBUG
-//		 */
-//		debug('Before transform reduction body\n' + Show.print(newReduceExpr)) 
-//		 
-//		TransformReductionBody.apply(newReduceExpr, h)
-//		
-//		debug('After transform reduction body\n' + Show.print(newReduceExpr))
-//		
-//		/*
-//		 * DEBUG
-//		 */
-		
 		debug('reduce(op, fp, E) -> h@reduce(op, fp, D:E)\n' + Show.print(system))
 	}
 	
@@ -204,6 +190,20 @@ class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 			throw new Exception('Transitive closure should only contain a single piece, something went wrong')
 
 		pieces.get(0).maff
+	}
+	
+	/** 
+	 * Returns the dimensionality of the accumulation space (null space of fp) of the reduction
+	 */
+	def static int accumulationDimensionality(AbstractReduceExpression reduceExpr) {
+		reduceExpr.projection.nullSpace.dimensionality
+	}
+	
+	/** 
+	 * Returns true if the accumulation space is multidimensional, or false otherwise 
+	 */
+	def static boolean canBeDecomposed(AbstractReduceExpression reduceExpr) {
+		reduceExpr.accumulationDimensionality > 1
 	}
 	
 }

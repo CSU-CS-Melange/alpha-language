@@ -48,24 +48,24 @@ class ReductionUtilTest {
 		assertTrue(nullSpace.isSingleton) // i.e., [0,0,0]
 	}
 	
-	@Test
-	def testBoundary_01() {
-		val fp = '[N]->{[i,j]->[i]}'.toISLMultiAff
-		
-		val face1 = '[N]->{[i,j] : i=j}'.makeFace
-		val face2 = '[N]->{[i,j] : j=2}'.makeFace
-		val face3 = '[N]->{[i,j] : i=N}'.makeFace
-		val face4 = '[N]->{[i,j] : i=0}'.makeFace
-		val face5 = '[N]->{[i,j] : i=2}'.makeFace
-		val face6 = '[N]->{[i,j] : i=17}'.makeFace
-		
-		assertFalse(face1.isBoundary(fp))
-		assertFalse(face2.isBoundary(fp))
-		assertTrue(face3.isBoundary(fp))
-		assertTrue(face4.isBoundary(fp))
-		assertTrue(face5.isBoundary(fp))
-		assertTrue(face6.isBoundary(fp))
-	}
+//	@Test
+//	def testBoundary_01() {
+//		val fp = '[N]->{[i,j]->[i]}'.toISLMultiAff
+//		
+//		val face1 = '[N]->{[i,j] : i=j}'.makeFace
+//		val face2 = '[N]->{[i,j] : j=2}'.makeFace
+//		val face3 = '[N]->{[i,j] : i=N}'.makeFace
+//		val face4 = '[N]->{[i,j] : i=0}'.makeFace
+//		val face5 = '[N]->{[i,j] : i=2}'.makeFace
+//		val face6 = '[N]->{[i,j] : i=17}'.makeFace
+//		
+//		assertFalse(face1.isBoundary(fp))
+//		assertFalse(face2.isBoundary(fp))
+//		assertTrue(face3.isBoundary(fp))
+//		assertTrue(face4.isBoundary(fp))
+//		assertTrue(face5.isBoundary(fp))
+//		assertTrue(face6.isBoundary(fp))
+//	}
 	
 	@Test
 	def testRemoveRedundancy_01() {

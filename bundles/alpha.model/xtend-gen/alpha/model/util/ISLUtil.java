@@ -137,6 +137,11 @@ public class ISLUtil {
     return _xblockexpression;
   }
 
+  public static boolean isNonTrivial(final ISLSet set) {
+    boolean _isTrivial = ISLUtil.isTrivial(set);
+    return (!_isTrivial);
+  }
+
   /**
    * Returns true if c is effectively saturated per Theorem 1 in GR06, and false otherwise
    */

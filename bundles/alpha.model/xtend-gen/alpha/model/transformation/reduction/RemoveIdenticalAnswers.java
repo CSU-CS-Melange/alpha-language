@@ -22,7 +22,9 @@ import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -118,7 +120,7 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
       return;
     }
     final ISLMultiAff rho = candidateReuse.identicalAnswerBasis();
-    RemoveIdenticalAnswers.transform(reduceExpr, rho, candidateReuse.getDecompositionDomain());
+    RemoveIdenticalAnswers.transform(reduceExpr, rho, candidateReuse.getIdenticalAnswerDomain());
   }
 
   /**
@@ -137,15 +139,20 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
     try {
       AbstractReduceExpression targetReduceExpr = reduceExpr;
       final AlphaSystem system = AlphaUtil.getContainerSystem(targetReduceExpr);
-      boolean _isEmpty = decompositionDomain.isEmpty();
-      boolean _not = (!_isEmpty);
-      if (_not) {
+      if ((RemoveIdenticalAnswers.canBeDecomposed(reduceExpr) && (!decompositionDomain.isEmpty()))) {
         RemoveIdenticalAnswers.debug(("decompositionDomain: " + decompositionDomain));
         final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetReduceExpr);
-        final Function1<Pair<ISLMultiAff, ISLMultiAff>, Boolean> _function = (Pair<ISLMultiAff, ISLMultiAff> it) -> {
+        final LinkedList<Pair<ISLMultiAff, ISLMultiAff>> decompositions = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetReduceExpr);
+        final Consumer<Pair<ISLMultiAff, ISLMultiAff>> _function = (Pair<ISLMultiAff, ISLMultiAff> d) -> {
+          String _string = d.toString();
+          String _plus = ("decomposition " + _string);
+          RemoveIdenticalAnswers.debug(_plus);
+        };
+        decompositions.forEach(_function);
+        final Function1<Pair<ISLMultiAff, ISLMultiAff>, Boolean> _function_1 = (Pair<ISLMultiAff, ISLMultiAff> it) -> {
           return Boolean.valueOf(ISLUtil.nullSpace(it.getKey()).isEqual(decompositionDomain));
         };
-        final Pair<ISLMultiAff, ISLMultiAff> decomposition = IterableExtensions.<Pair<ISLMultiAff, ISLMultiAff>>findFirst(SimplifyingReductions.generateDecompositionCandidates(SSAR, targetReduceExpr), _function);
+        final Pair<ISLMultiAff, ISLMultiAff> decomposition = IterableExtensions.<Pair<ISLMultiAff, ISLMultiAff>>findFirst(decompositions, _function_1);
         if ((decomposition == null)) {
           throw new Exception("A valid decomposition should exist, something went wrong.");
         }
@@ -205,5 +212,20 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
+  }
+
+  /**
+   * Returns the dimensionality of the accumulation space (null space of fp) of the reduction
+   */
+  public static int accumulationDimensionality(final AbstractReduceExpression reduceExpr) {
+    return ISLUtil.dimensionality(ISLUtil.nullSpace(reduceExpr.getProjection()));
+  }
+
+  /**
+   * Returns true if the accumulation space is multidimensional, or false otherwise
+   */
+  public static boolean canBeDecomposed(final AbstractReduceExpression reduceExpr) {
+    int _accumulationDimensionality = RemoveIdenticalAnswers.accumulationDimensionality(reduceExpr);
+    return (_accumulationDimensionality > 1);
   }
 }

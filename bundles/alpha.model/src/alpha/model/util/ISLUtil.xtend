@@ -84,6 +84,10 @@ class ISLUtil {
 		set.copy.subtract(origin).isEmpty
 	}
 	
+	def static isNonTrivial(ISLSet set) {
+		!(set.isTrivial)
+	}
+	
 	/** Returns true if c is effectively saturated per Theorem 1 in GR06, and false otherwise */
 	def static boolean isEffectivelySaturated(ISLConstraint c, ISLBasicSet P) {
 		if (c.isEquality) {

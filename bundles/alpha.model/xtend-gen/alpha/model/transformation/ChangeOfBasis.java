@@ -19,7 +19,7 @@ public class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
   private ChangeOfBasis(final AlphaSystem system, final Variable variable, final ISLMultiAff f) {
     this.CoBfunction = f;
     this.target = variable;
-    this.CoBfunctionInverse = AffineFunctionOperations.inverseInContext(this.CoBfunction, null, f.getSpace().getInputNames());
+    this.CoBfunctionInverse = AffineFunctionOperations.inverseInContext(this.CoBfunction, variable.getDomain(), null);
   }
 
   private ISLMultiAff CoBfunction;

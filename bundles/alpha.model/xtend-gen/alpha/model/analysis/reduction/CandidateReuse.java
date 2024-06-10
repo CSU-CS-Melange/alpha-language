@@ -47,7 +47,7 @@ public class CandidateReuse {
   private long[] reuseVectorWithIdenticalAnswers;
 
   @Accessors(AccessorType.PUBLIC_GETTER)
-  private ISLSet decompositionDomain;
+  private ISLSet identicalAnswerDomain;
 
   @Accessors(AccessorType.PUBLIC_GETTER)
   private List<long[]> vectors;
@@ -153,8 +153,9 @@ public class CandidateReuse {
         String _string_2 = ((List<Long>)Conversions.doWrapArray(reuseVector)).toString();
         String _plus_6 = (_plus_5 + _string_2);
         CandidateReuse.debug(_plus_6);
-        this.decompositionDomain = CandidateReuse.allZeroNonBoundariesDecomposition(labeling, ((Face[])Conversions.unwrapArray(facets, Face.class)), this.are.getProjection());
-        boolean _isEmpty = this.decompositionDomain.isEmpty();
+        final ISLSet accumulationSpace = ISLUtil.nullSpace(this.are.getProjection());
+        this.identicalAnswerDomain = CandidateReuse.computeIdenticalAnswerDomain(labeling, ((Face[])Conversions.unwrapArray(facets, Face.class)), accumulationSpace);
+        boolean _isEmpty = this.identicalAnswerDomain.isEmpty();
         boolean _not = (!_isEmpty);
         if (_not) {
           CandidateReuse.debug("results in identical answers");
@@ -179,67 +180,53 @@ public class CandidateReuse {
    * decomposition. Multiple weak boundary face can simultaneously be made into strong boundaries if the
    * combined intersection of their linear spaces with the accumulation space is at least 1-dimensional.
    */
-  public static ISLSet allZeroNonBoundariesDecomposition(final Face.Label[] labeling, final Face[] facets, final ISLMultiAff fp) {
-    final ISLSet accumulationSpace = ISLUtil.nullSpace(fp);
-    final Function1<Pair<Face, Face.Label>, Boolean> _function = (Pair<Face, Face.Label> fl) -> {
-      Face.Label _value = fl.getValue();
-      return Boolean.valueOf(Objects.equal(_value, Face.Label.ZERO));
-    };
-    final Function1<Pair<Face, Face.Label>, Face> _function_1 = (Pair<Face, Face.Label> fl) -> {
-      return fl.getKey();
-    };
-    final Iterable<Face> nonZeroFacets = IterableExtensions.<Pair<Face, Face.Label>, Face>map(IterableExtensions.<Pair<Face, Face.Label>>reject(CommonExtensions.<Face, Face.Label>zipWith(((Iterable<Face>)Conversions.doWrapArray(facets)), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function), _function_1);
-    final Function1<Face, Boolean> _function_2 = (Face f) -> {
-      Face.Boundary _boundaryLabel = f.boundaryLabel(accumulationSpace);
-      return Boolean.valueOf(Objects.equal(_boundaryLabel, Face.Boundary.WEAK));
-    };
-    final Iterable<Face> weakNonZeroFacets = IterableExtensions.<Face>filter(nonZeroFacets, _function_2);
+  public static ISLSet computeIdenticalAnswerDomain(final Face.Label[] labeling, final Face[] facets, final ISLSet accumulationSpace) {
+    final ISLSet emptyDomain = ISLSet.buildEmpty(accumulationSpace.getSpace());
     CandidateReuse.debug("---");
     CandidateReuse.debug(("accumulation " + accumulationSpace));
     CandidateReuse.debug("---");
+    final Function1<Pair<Face, Face.Label>, Boolean> _function = (Pair<Face, Face.Label> faceLabel) -> {
+      Face.Label _value = faceLabel.getValue();
+      return Boolean.valueOf(Objects.equal(_value, Face.Label.ZERO));
+    };
+    final Function1<Pair<Face, Face.Label>, Face> _function_1 = (Pair<Face, Face.Label> faceLabel) -> {
+      return faceLabel.getKey();
+    };
+    final Iterable<Face> nonZeroFacets = IterableExtensions.<Pair<Face, Face.Label>, Face>map(IterableExtensions.<Pair<Face, Face.Label>>reject(CommonExtensions.<Face, Face.Label>zipWith(((Iterable<Face>)Conversions.doWrapArray(facets)), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function), _function_1);
+    final Function1<Face, Boolean> _function_2 = (Face it) -> {
+      Face.Boundary _boundaryLabel = it.boundaryLabel(accumulationSpace);
+      return Boolean.valueOf(Objects.equal(_boundaryLabel, Face.Boundary.NON));
+    };
+    final Iterable<Face> nonZeroNonBoundaryFacets = IterableExtensions.<Face>filter(nonZeroFacets, _function_2);
+    boolean _isEmpty = IterableExtensions.isEmpty(nonZeroNonBoundaryFacets);
+    boolean _not = (!_isEmpty);
+    if (_not) {
+      return emptyDomain;
+    }
     final Consumer<Face> _function_3 = (Face f) -> {
-      ISLBasicSet _linearSpace = f.toLinearSpace();
-      String _plus = ((("facet-" + f) + " Lp = ") + _linearSpace);
-      CandidateReuse.debug(_plus);
+      CandidateReuse.debug(("relevant facet-" + f));
     };
-    ((List<Face>)Conversions.doWrapArray(facets)).forEach(_function_3);
-    CandidateReuse.debug("---");
-    final Consumer<Pair<Face, Face.Label>> _function_4 = (Pair<Face, Face.Label> fl) -> {
-      final Face f = fl.getKey();
-      final Face.Label l = fl.getValue();
-      final Face.Boundary b = f.boundaryLabel(accumulationSpace);
-      final boolean flag = (Objects.equal(b, Face.Boundary.WEAK) && (!Objects.equal(l, Face.Label.ZERO)));
-      String _xifexpression = null;
-      if (flag) {
-        _xifexpression = "   <-- potential";
-      } else {
-        _xifexpression = "";
-      }
-      String _plus = (((((("facet-" + f) + " ") + b) + " ") + l) + _xifexpression);
-      CandidateReuse.debug(_plus);
-    };
-    CommonExtensions.<Face, Face.Label>zipWith(((Iterable<Face>)Conversions.doWrapArray(facets)), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))).forEach(_function_4);
-    CandidateReuse.debug("---");
-    final ISLSet universe = ISLSet.buildUniverse(fp.getSpace().domain());
-    final Function1<Face, ISLSet> _function_5 = (Face it) -> {
+    nonZeroFacets.forEach(_function_3);
+    final ISLSet universe = ISLSet.buildUniverse(accumulationSpace.getSpace());
+    final Function1<Face, ISLSet> _function_4 = (Face it) -> {
       return it.toLinearSpace().toSet();
     };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_6 = (ISLSet ret, ISLSet lp) -> {
+    final Function2<ISLSet, ISLSet, ISLSet> _function_5 = (ISLSet ret, ISLSet lp) -> {
       return ret.intersect(lp);
     };
-    final ISLSet commonWeakSpace = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Face, ISLSet>map(weakNonZeroFacets, _function_5), universe.copy(), _function_6);
-    final ISLSet decompositionDomain = commonWeakSpace.copy().intersect(accumulationSpace.copy());
-    int _dimensionality = ISLUtil.dimensionality(decompositionDomain);
+    final ISLSet commonWeakSpace = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Face, ISLSet>map(nonZeroFacets, _function_4), universe.copy(), _function_5);
+    final ISLSet domain = commonWeakSpace.copy().intersect(accumulationSpace.copy());
+    int _dimensionality = ISLUtil.dimensionality(domain);
     boolean _greaterThan = (_dimensionality > 0);
     if (_greaterThan) {
-      return decompositionDomain;
+      return domain;
     }
-    return ISLSet.buildEmpty(universe.getSpace());
+    return emptyDomain;
   }
 
   @Pure
-  public ISLSet getDecompositionDomain() {
-    return this.decompositionDomain;
+  public ISLSet getIdenticalAnswerDomain() {
+    return this.identicalAnswerDomain;
   }
 
   @Pure

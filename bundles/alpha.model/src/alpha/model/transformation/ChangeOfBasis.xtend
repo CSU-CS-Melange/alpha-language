@@ -18,7 +18,7 @@ class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
 		CoBfunction = f;
 		target = variable;
 		
-		CoBfunctionInverse = AffineFunctionOperations.inverseInContext(CoBfunction, null, f.space.getInputNames())
+		CoBfunctionInverse = AffineFunctionOperations.inverseInContext(CoBfunction, variable.domain, null)
 	}
 	
 	ISLMultiAff CoBfunction;
