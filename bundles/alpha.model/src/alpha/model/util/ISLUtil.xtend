@@ -186,4 +186,17 @@ class ISLUtil {
 			[ret, c | ret.addConstraint(c.toEqualityConstraint)]
 		).toSet
 	}
+	
+	/**
+	 * Returns true if the set is a lower dimensional polyhedron embedded in a higher
+	 * dimension space, or false otherwise
+	 */
+	def static boolean isEmbedding(ISLSet set) {
+		val nbIndices = set.dim(ISLDimType.isl_dim_set)
+		set.dimensionality < nbIndices
+	}
+	 
+	 
+	 
+	 
 }

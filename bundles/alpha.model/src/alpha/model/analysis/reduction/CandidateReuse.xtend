@@ -22,7 +22,6 @@ import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
 import static extension alpha.model.util.ISLUtil.nullSpace
 
-
 class CandidateReuse {
 	
 	public static boolean DEBUG = false;
@@ -132,8 +131,6 @@ class CandidateReuse {
 			}
 			vectors.add(reuseVector)
 		}
-		
-		vectors.addAll(validReuseVectors.map[lv | lv.value])
 	}
 	
 	/**

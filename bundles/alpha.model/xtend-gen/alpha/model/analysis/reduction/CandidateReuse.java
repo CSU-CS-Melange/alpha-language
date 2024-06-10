@@ -166,10 +166,6 @@ public class CandidateReuse {
         this.vectors.add(reuseVector);
       }
     }
-    final Function1<Pair<Face.Label[], long[]>, long[]> _function_6 = (Pair<Face.Label[], long[]> lv) -> {
-      return lv.getValue();
-    };
-    Iterables.<long[]>addAll(this.vectors, IterableExtensions.<Pair<Face.Label[], long[]>, long[]>map(validReuseVectors, _function_6));
   }
 
   /**

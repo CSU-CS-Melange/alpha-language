@@ -256,4 +256,18 @@ public class ISLUtil {
     return IterableExtensions.<ISLAff, ISLBasicSet>fold(maff.getAffs(), 
       ISLBasicSet.buildUniverse(maff.getSpace().domain().copy()), _function).toSet();
   }
+
+  /**
+   * Returns true if the set is a lower dimensional polyhedron embedded in a higher
+   * dimension space, or false otherwise
+   */
+  public static boolean isEmbedding(final ISLSet set) {
+    boolean _xblockexpression = false;
+    {
+      final int nbIndices = set.dim(ISLDimType.isl_dim_set);
+      int _dimensionality = ISLUtil.dimensionality(set);
+      _xblockexpression = (_dimensionality < nbIndices);
+    }
+    return _xblockexpression;
+  }
 }

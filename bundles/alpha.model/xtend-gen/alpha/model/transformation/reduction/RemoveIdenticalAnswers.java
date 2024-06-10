@@ -5,6 +5,7 @@ import alpha.model.AlphaExpression;
 import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaSystem;
 import alpha.model.DependenceExpression;
+import alpha.model.Equation;
 import alpha.model.ReduceExpression;
 import alpha.model.analysis.reduction.CandidateReuse;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
@@ -84,7 +85,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
  */
 @SuppressWarnings("all")
 public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   private static void debug(final String msg) {
     if (RemoveIdenticalAnswers.DEBUG) {
@@ -138,7 +139,8 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
   public static void transform(final AbstractReduceExpression reduceExpr, final ISLMultiAff rho, final ISLSet decompositionDomain) {
     try {
       AbstractReduceExpression targetReduceExpr = reduceExpr;
-      final AlphaSystem system = AlphaUtil.getContainerSystem(targetReduceExpr);
+      final Equation eq = AlphaUtil.getContainerEquation(targetReduceExpr);
+      final AlphaSystem system = AlphaUtil.getContainerSystem(eq);
       if ((RemoveIdenticalAnswers.canBeDecomposed(reduceExpr) && (!decompositionDomain.isEmpty()))) {
         RemoveIdenticalAnswers.debug(("decompositionDomain: " + decompositionDomain));
         final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetReduceExpr);

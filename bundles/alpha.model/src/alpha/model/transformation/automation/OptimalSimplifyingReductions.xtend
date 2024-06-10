@@ -7,6 +7,7 @@ import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
+import alpha.model.analysis.reduction.CandidateReuse
 import alpha.model.analysis.reduction.ShareSpaceAnalysis
 import alpha.model.matrix.MatrixOperations
 import alpha.model.transformation.Normalize
@@ -18,14 +19,15 @@ import alpha.model.transformation.reduction.NormalizeReduction
 import alpha.model.transformation.reduction.PermutationCaseReduce
 import alpha.model.transformation.reduction.ReductionComposition
 import alpha.model.transformation.reduction.ReductionDecomposition
+import alpha.model.transformation.reduction.RemoveIdenticalAnswers
 import alpha.model.transformation.reduction.SameOperatorSimplification
 import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.transformation.reduction.SplitReduction
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
-import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLSet
 import java.util.LinkedList
 import java.util.List
 import java.util.Map
@@ -33,15 +35,14 @@ import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.ComplexityCalculator.complexity
-import static extension alpha.model.util.AffineFunctionOperations.createUniformFunction
 import static extension alpha.model.util.AlphaOperatorUtil.hasNoInverse
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.AlphaUtil.getContainerRoot
+import static extension alpha.model.util.AlphaUtil.getContainerSystem
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
+import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
-import alpha.model.analysis.reduction.CandidateReuse
-import alpha.model.transformation.reduction.RemoveIdenticalAnswers
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -190,6 +191,7 @@ class OptimalSimplifyingReductions {
 	 */
 	private def dispatch void optimizeEquation(StandardEquation eq, ReduceExpression re, State state) {
 		val containerSystemBody = eq.getContainerSystemBody
+		val containerSystem = containerSystemBody.containerSystem
 		if (re.isOptimallySimplified) {
 			eq.setExplored
 			return
@@ -208,7 +210,7 @@ class OptimalSimplifyingReductions {
 		
 		// Enumerate the list of candidate dynamic programming steps
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
-		candidates.forEach[c |
+		candidates.toArrayList.forEach[c |
 			debug("candidate: " + c.description)
 		]
 		
@@ -216,7 +218,8 @@ class OptimalSimplifyingReductions {
 		// Then recursively call optimizeUnexploredEquations for the new state
 		for (step : candidates) {
 			val optimizedRoot = EcoreUtil.copy(containerSystemBody.getContainerRoot)
-			val optimizedBody = optimizedRoot.getSystem(originalSystemName).systemBodies.get(systemBodyID)
+			val optimizedSystem = optimizedRoot.getSystem(originalSystemName)
+			val optimizedBody = optimizedSystem.systemBodies.get(systemBodyID)
 			val optimizedEq = optimizedRoot.getEquation(targetEq.name)
 			optimizedEq.expr.applyDPStep(step)
 			optimizedEq.explored = optimizedEq.expr.isNotReduceExpr
@@ -291,7 +294,7 @@ class OptimalSimplifyingReductions {
 		if (shouldSimplify) {
 			val candidateReuse = new CandidateReuse(targetRE, SSAR)
 			if (candidateReuse.hasIdenticalAnswers) {
-				candidates.add(new StepRemoveEmbedding(targetRE, candidateReuse.identicalAnswerBasis))
+				candidates.add(new StepRemoveIndenticalAnswers(targetRE, candidateReuse.identicalAnswerBasis, candidateReuse.identicalAnswerDomain))
 				return candidates
 			} else {				
 				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
@@ -347,8 +350,8 @@ class OptimalSimplifyingReductions {
 		// re is no longer contained in the AST
 		NormalizeReduction.apply(equation)
 	}
-	protected dispatch def applyDPStep(ReduceExpression re, StepRemoveEmbedding step) {
-		RemoveIdenticalAnswers.transform(re, step.rho)
+	protected dispatch def applyDPStep(ReduceExpression re, OptimalSimplifyingReductions.StepRemoveIndenticalAnswers step) {
+		RemoveIdenticalAnswers.transform(re, step.rho, step.identicalAnswerDomain)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing
@@ -450,15 +453,17 @@ class OptimalSimplifyingReductions {
 		}
 	}
 	
-	static class StepRemoveEmbedding extends DynamicProgrammingStep {
+	static class StepRemoveIndenticalAnswers extends DynamicProgrammingStep {
 		ISLMultiAff rho
-		new(AbstractReduceExpression targetRE, ISLMultiAff rho) {
+		ISLSet identicalAnswerDomain
+		new(AbstractReduceExpression targetRE, ISLMultiAff rho, ISLSet identicalAnswerDomain) {
 			super(targetRE)
 			this.rho = rho
+			this.identicalAnswerDomain = identicalAnswerDomain
 		}
 		
 		override description() {
-			String.format("Apply RemoveEmbedding with %s", toEqStr, rho);
+			String.format("Apply RemoveIdenticalAnswers %s with %s", toEqStr, rho);
 		}
 	}
 	
@@ -538,7 +543,7 @@ class OptimalSimplifyingReductions {
 			throw new Exception('Reduction has not been normalized: ' + Show.print(re.getContainerEquation))
 		}
 		val eq = re.getContainerEquation as StandardEquation
-		val lhsDim = eq.variable.domain.nbIndices
+		val lhsDim = eq.variable.domain.dimensionality
 		val rhsDim = re.body.contextDomain.dimensionality
 		lhsDim >= rhsDim
 	}

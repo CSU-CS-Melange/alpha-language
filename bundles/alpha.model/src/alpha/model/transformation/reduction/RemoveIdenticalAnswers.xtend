@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static alpha.model.factory.AlphaUserFactory.createDependenceExpression
 
+import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.AlphaUtil.getContainerSystem
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.nullSpace
@@ -75,7 +76,7 @@ import static extension alpha.model.util.ISLUtil.nullSpace
 
 class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 	
-	public static boolean DEBUG = true;
+	public static boolean DEBUG = false;
 	
 	private static def void debug(String msg) {
 		if (DEBUG)
@@ -118,7 +119,8 @@ class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
 	def static transform(AbstractReduceExpression reduceExpr, ISLMultiAff rho, ISLSet decompositionDomain) {
 		
 		var targetReduceExpr = reduceExpr
-		val system = targetReduceExpr.getContainerSystem
+		val eq = targetReduceExpr.getContainerEquation
+		val system = eq.getContainerSystem
 		
 		// decompositionDomain is the inner accumulation space along which to do the
 		// decomposition
