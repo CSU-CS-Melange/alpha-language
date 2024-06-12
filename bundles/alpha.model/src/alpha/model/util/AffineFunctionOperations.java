@@ -252,6 +252,12 @@ public class AffineFunctionOperations {
 		
 		return b;
 	}
+	public static List<Long> getConstantVectorNoParams(ISLMultiAff f) {
+		int nbParams = f.dim(ISLDimType.isl_dim_param);
+		ISLMultiAff fNoParams = f.copy().dropDims(ISLDimType.isl_dim_param, 0, nbParams);
+		
+		return getConstantVector(fNoParams);
+	}
 
 	public static ISLMultiAff createUniformFunction(ISLSpace space, long[] b) {
 		List<Long> bVec = new ArrayList<Long>(b.length);

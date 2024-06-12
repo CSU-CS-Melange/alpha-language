@@ -377,6 +377,24 @@ public class MatrixOperations {
 	}
 	
 	/**
+	 * Inserts additional columns to an existing matrix.
+	 * 
+	 * @param A
+	 *            Matrix to insert on
+	 * @param num
+	 *            Number of all zero columns to insert
+	 * @return New matrix with appended columns
+	 */
+	public static long[][] columnBindToFront(long[][] A, int num) {
+		long[][] ret = columnBindToFront(A);
+		for (int i = 1; i < num; i++) {
+			ret = columnBindToFront(ret);
+		}
+		
+		return ret;
+	}
+	
+	/**
 	 * Appends additional columns to an existing matrix.
 	 * 
 	 * @param A

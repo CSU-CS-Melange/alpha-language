@@ -13,6 +13,7 @@ import alpha.model.matrix.MatrixOperations
 import alpha.model.transformation.Normalize
 import alpha.model.transformation.SplitUnionIntoCase
 import alpha.model.transformation.reduction.Distributivity
+import alpha.model.transformation.reduction.FractalSimplify
 import alpha.model.transformation.reduction.HigherOrderOperator
 import alpha.model.transformation.reduction.Idempotence
 import alpha.model.transformation.reduction.NormalizeReduction
@@ -24,6 +25,7 @@ import alpha.model.transformation.reduction.SameOperatorSimplification
 import alpha.model.transformation.reduction.SimplifyingReductions
 import alpha.model.transformation.reduction.SplitReduction
 import alpha.model.util.AlphaUtil
+import alpha.model.util.Face
 import alpha.model.util.Show
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
@@ -35,6 +37,9 @@ import org.eclipse.emf.common.util.EList
 import org.eclipse.emf.ecore.util.EcoreUtil
 
 import static extension alpha.model.ComplexityCalculator.complexity
+import static extension alpha.model.analysis.reduction.ReductionUtil.isSimilar
+import static extension alpha.model.transformation.reduction.SplitReduction.requiresFractalSplits
+import static extension alpha.model.util.AlphaOperatorUtil.hasInverse
 import static extension alpha.model.util.AlphaOperatorUtil.hasNoInverse
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.AlphaUtil.getContainerRoot
@@ -80,6 +85,11 @@ class OptimalSimplifyingReductions {
 	public Map<Integer, List<State>> optimizations
 	
 	/**
+	 * Data structure to keep track of 2-faces used to detect fractal simplification
+	 */
+	Map<AbstractReduceExpression, Face> explored2Faces
+	
+	/**
 	 * Creates an OSR instance and initializes exploration space parameters 
 	 */
 	protected new (AlphaSystem system, int limit, int complexity, boolean trySplitting, boolean verbose) {
@@ -99,6 +109,7 @@ class OptimalSimplifyingReductions {
 		this.targetComplexity = complexity
 		this.trySplitting = trySplitting
 		this.verbose = verbose
+		this.explored2Faces = newHashMap
 	}
 	
 	/** 
@@ -275,6 +286,46 @@ class OptimalSimplifyingReductions {
 		trySplitting && shouldSimplify && are.operator.hasNoInverse
 	}
 	
+	/**
+	 * Tests if this reduce expression needs to be fractal simplified. If all of the 
+	 * following hold for the reduction body D:
+	 *   1) the reduction operator does not admit an inverse
+	 *   2) D is 2-dimensional
+	 *   3) D is geometrically similar to a previously encountered reduction (re') body
+	 * 
+	 * Then the similar reduction re' is returned, else null is returned.
+	 */
+	private def AbstractReduceExpression fractalSimplification(AbstractReduceExpression are) {
+		
+		val varName = (are.getContainerEquation as StandardEquation).variable.name 
+		debug('Testing if equation ' + varName + ' needs fractal simplification')
+
+		val facet = are.facet
+		
+		// Fractal simplification is only required on 2-faces when the reduction
+		// operator does not admit an inverse
+		if (are.operator.hasInverse) 
+			return null
+		
+		if (varName == 'Y_NR4')
+			println
+		// check if we have encountered a "similar" 2D reduction body before
+		val similarExplored2Face = explored2Faces.entrySet.findFirst[es | 
+			are.isSimilar(es.key)
+		]
+		if (similarExplored2Face !== null) {
+			val largerReduceExpr = similarExplored2Face.key
+			val similarVarName = (similarExplored2Face.key.getContainerEquation as StandardEquation).variable.name
+			debug(varName + ' is similar to previously encountered reduction ' + similarVarName)
+			return largerReduceExpr
+		}
+		
+		// if not add the pair to previouslySeen and return false
+		explored2Faces.put(are, facet)
+		debug(varName + ' is NOT similar to any previously encountered reductions')
+		return null
+	}
+	
 	/** 
 	 * Creates a list of possible transformations that are valid steps in the DP
 	 * 
@@ -295,20 +346,32 @@ class OptimalSimplifyingReductions {
 				 * This is a special case of simplification.Add single step to remove the identical 
 				 * answers and return.
 				 */
-				return #[new StepRemoveIndenticalAnswers(
-					targetRE,
-					candidateReuse.identicalAnswerBasis,
-					candidateReuse.identicalAnswerDomain
-				)]
+				val maff = candidateReuse.identicalAnswerBasis
+				val domain = candidateReuse.identicalAnswerDomain
+				return #[new StepRemoveIndenticalAnswers(targetRE, maff, domain)]
 			} else {
 				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
 			}
 		}
 		
+		// Fractal Simplification
+		val largerRE = targetRE.fractalSimplification
+		if (largerRE !== null) {
+			/*
+			 * Fractal simplification can only take place on 2-faces as a final step. No additional
+			 * steps should be processed.
+			 */
+			return #[new StepFractalSimplify(targetRE, largerRE)]
+		}
+		
 		// Splitting
-		if (targetRE.shouldSplit(shouldSimplify)) {
-			val splits = SplitReduction.enumerateCandidateSplits(targetRE)
-			candidates.addAll(splits.map[split | new StepSplitReduction(targetRE, split)])
+		if (targetRE.shouldSplit(shouldSimplify) && candidates.empty) {
+			if (targetRE.requiresFractalSplits) {
+				candidates.add(new StepSplitReduction(targetRE))
+			} else {				
+				val splits = SplitReduction.enumerateCandidateSplits(targetRE)
+				candidates.addAll(splits.map[split | new StepSplitReduction(targetRE, split)])
+			}
 		}
 		
 		// Idempotent
@@ -354,8 +417,11 @@ class OptimalSimplifyingReductions {
 		// re is no longer contained in the AST
 		NormalizeReduction.apply(equation)
 	}
-	protected dispatch def applyDPStep(ReduceExpression re, OptimalSimplifyingReductions.StepRemoveIndenticalAnswers step) {
+	protected dispatch def applyDPStep(ReduceExpression re, StepRemoveIndenticalAnswers step) {
 		RemoveIdenticalAnswers.transform(re, step.identicalAnswerBasis, step.identicalAnswerDomain)
+	}
+	protected dispatch def applyDPStep(ReduceExpression re, StepFractalSimplify step) {
+		FractalSimplify.transform(re, step.largerReduceExpr)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing
@@ -447,13 +513,20 @@ class OptimalSimplifyingReductions {
 	
 	static class StepSplitReduction extends DynamicProgrammingStep {
 		ISLConstraint split
+		new(AbstractReduceExpression targetRE) {
+			super(targetRE)
+		}
 		new(AbstractReduceExpression targetRE, ISLConstraint split) {
 			super(targetRE)
 			this.split = split
 		}
 		
 		override description() {
-			String.format("Apply SplitReduction%s with %s", toEqStr, split);
+			if (split !== null) {
+				String.format("Apply SplitReduction%s with %s", toEqStr, split)
+			} else {
+				String.format("Apply SplitReduction%s", toEqStr)
+			}
 		}
 	}
 	
@@ -468,6 +541,19 @@ class OptimalSimplifyingReductions {
 		
 		override description() {
 			String.format("Apply RemoveIdenticalAnswers %s with %s", toEqStr, identicalAnswerBasis);
+		}
+	}
+	
+	static class StepFractalSimplify extends DynamicProgrammingStep {
+		AbstractReduceExpression largerReduceExpr
+		new(AbstractReduceExpression targetRE, AbstractReduceExpression largerReduceExpr) {
+			super(targetRE)
+			this.largerReduceExpr = largerReduceExpr
+		}
+		
+		override description() {
+			val largerEqName = (largerReduceExpr.getContainerEquation as StandardEquation).variable.name
+			String.format("Apply FractalSimplify%s with %s", toEqStr, largerEqName);
 		}
 	}
 	
