@@ -1,9 +1,7 @@
 package alpha.model;
 
 import alpha.model.util.AbstractAlphaCompleteVisitor;
-import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
-import fr.irisa.cairn.jnimap.isl.ISLDimType;
 
 /**
  * This class reports the overall complexity of the given node in the AST.
@@ -21,10 +19,6 @@ public class ComplexityCalculator extends AbstractAlphaCompleteVisitor {
   private int maxComplexity;
 
   public static int complexity(final AlphaVisitable av) {
-    final AlphaSystem system = AlphaUtil.getContainerSystem(av);
-    if (((system != null) && (system.getParameterDomain().dim(ISLDimType.isl_dim_param) > 1))) {
-      throw new UnsupportedOperationException("Current complexity calculator only works for systems containing a single parameter.");
-    }
     final ComplexityCalculator visitor = new ComplexityCalculator();
     visitor.accept(av);
     return visitor.maxComplexity;
