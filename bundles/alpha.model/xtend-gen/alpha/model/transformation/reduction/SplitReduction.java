@@ -13,17 +13,22 @@ import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaUtil;
+import alpha.model.util.CommonExtensions;
 import alpha.model.util.Face;
+import alpha.model.util.ISLUtil;
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
@@ -31,10 +36,13 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
  * This class carries out the analysis required for splitting from the max
@@ -104,10 +112,13 @@ public class SplitReduction {
       if (_greaterThan) {
         throw new Exception("Cannot split a reduction body with multiple basic sets");
       }
-      final ISLSet DS = split.getAff().toInequalityConstraint().toBasicSet().toSet();
-      long _constant = split.getAff().getConstant();
-      final int const_ = Long.valueOf((_constant - 1)).intValue();
-      final ISLSet DSp = split.getAff().negate().setConstant(const_).toInequalityConstraint().toBasicSet().toSet();
+      if ((split == null)) {
+        SplitReduction.apply(are);
+        return;
+      }
+      final Pair<ISLConstraint, ISLConstraint> constraints = SplitReduction.inequalityConstraints(split.getAff());
+      final ISLSet DS = constraints.getKey().toBasicSet().toSet();
+      final ISLSet DSp = constraints.getValue().toBasicSet().toSet();
       final CaseExpression caseExpr = AlphaUserFactory.createCaseExpression();
       EList<AlphaExpression> _exprs = caseExpr.getExprs();
       RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(DS, AlphaUtil.<AlphaExpression>copyAE(are.getBody()));
@@ -119,6 +130,173 @@ public class SplitReduction {
       AlphaInternalStateConstructor.recomputeContextDomain(are);
       Normalize.apply(are);
       PermutationCaseReduce.apply(are);
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Given an ISLAff, construct two inequality ISLConstraints (>= and <)
+   */
+  public static Pair<ISLConstraint, ISLConstraint> inequalityConstraints(final ISLAff splitAff) {
+    final ISLConstraint DS = splitAff.copy().toInequalityConstraint();
+    long _constant = splitAff.getConstant();
+    final int const_ = Long.valueOf((_constant - 1)).intValue();
+    final ISLConstraint DSp = splitAff.copy().negate().setConstant(const_).toInequalityConstraint();
+    return Pair.<ISLConstraint, ISLConstraint>of(DS, DSp);
+  }
+
+  public static ISLSet toSet(final ISLConstraint[] constraints, final ISLSpace space) {
+    final Function2<ISLSet, ISLConstraint, ISLSet> _function = (ISLSet ret, ISLConstraint c) -> {
+      return ret.union(c.toBasicSet().toSet());
+    };
+    return IterableExtensions.<ISLConstraint, ISLSet>fold(((Iterable<ISLConstraint>)Conversions.doWrapArray(constraints)), ISLSet.buildUniverse(space.copy()), _function);
+  }
+
+  /**
+   * Returns true if the body domain is 2D and there exist a pair of opposing edges with an
+   * overlapping component in the answer domain.
+   * 
+   * Returns true if there exists the pair (Fi,Fj) s.t. both:
+   *   1) fp(Fi) \cap fp(Fj) != empty
+   *   2) (rho.dot(vi))*(rho.dot(vj)<0
+   * or false, otherwise.
+   */
+  public static boolean requiresFractalSplits(final AbstractReduceExpression are) {
+    final Face face = are.getFacet();
+    int _dimensionality = face.getDimensionality();
+    boolean _notEquals = (_dimensionality != 2);
+    if (_notEquals) {
+      return false;
+    }
+    final ArrayList<Face> edges = face.generateChildren();
+    int _size = edges.size();
+    final Function1<Integer, Iterable<Pair<Face, Face>>> _function = (Integer i) -> {
+      int _size_1 = edges.size();
+      final Function1<Integer, Pair<Face, Face>> _function_1 = (Integer j) -> {
+        Face _get = edges.get((i).intValue());
+        Face _get_1 = edges.get((j).intValue());
+        return Pair.<Face, Face>of(_get, _get_1);
+      };
+      return IterableExtensions.<Integer, Pair<Face, Face>>map(new ExclusiveRange(((i).intValue() + 1), _size_1, true), _function_1);
+    };
+    final ArrayList<Pair<Face, Face>> edgePairs = CommonExtensions.<Pair<Face, Face>>toArrayList(IterableExtensions.<Integer, Pair<Face, Face>>flatMap(new ExclusiveRange(0, _size, true), _function));
+    final ISLMap fp = are.getProjection().toMap();
+    final List<Long> rho = AffineFunctionOperations.getConstantVectorNoParams(SplitReduction.construct1DBasis(SplitReduction.getReuseMaff(are.getBody())));
+    final Function2<ISLSet, Face, ISLSet> _function_1 = (ISLSet ret, Face v) -> {
+      return ret.union(v.toSet());
+    };
+    final ISLSet vertices = IterableExtensions.<Face, ISLSet>fold(((Iterable<Face>)Conversions.doWrapArray(face.getVertices())), 
+      ISLSet.buildEmpty(are.getBody().getContextDomain().getSpace()), _function_1);
+    final HashMap<Face, ISLSet> disjointEdges = CollectionLiterals.<Face, ISLSet>newHashMap();
+    final Consumer<Face> _function_2 = (Face e) -> {
+      disjointEdges.put(e, e.toSet().subtract(vertices.copy()));
+    };
+    edges.forEach(_function_2);
+    final Function1<Pair<Face, Face>, Boolean> _function_3 = (Pair<Face, Face> it) -> {
+      boolean _xblockexpression = false;
+      {
+        final ISLSet fi = disjointEdges.get(it.getKey()).copy();
+        final ISLSet fj = disjointEdges.get(it.getValue()).copy();
+        _xblockexpression = fi.apply(fp.copy()).intersect(fj.apply(fp.copy())).isEmpty();
+      }
+      return Boolean.valueOf(_xblockexpression);
+    };
+    final Function1<Pair<Face, Face>, Boolean> _function_4 = (Pair<Face, Face> it) -> {
+      boolean _xblockexpression = false;
+      {
+        final long[] vi = ISLUtil.toLinearUnitVector(it.getKey().getNormalVector(face));
+        final long[] vj = ISLUtil.toLinearUnitVector(it.getValue().getNormalVector(face));
+        long _dot = CommonExtensions.dot(vi, ((long[])Conversions.unwrapArray(rho, long.class)));
+        long _dot_1 = CommonExtensions.dot(vj, ((long[])Conversions.unwrapArray(rho, long.class)));
+        long _multiply = (_dot * _dot_1);
+        _xblockexpression = (_multiply < 0);
+      }
+      return Boolean.valueOf(_xblockexpression);
+    };
+    return IterableExtensions.<Pair<Face, Face>>exists(IterableExtensions.<Pair<Face, Face>>reject(edgePairs, _function_3), _function_4);
+  }
+
+  /**
+   * Splits the basic sets of domain into pieces on each side of aff
+   * 
+   * For example, given the following:
+   *   domain: [N]->{[i] : 0<=i<N}
+   *   aff: [N]->{[i,j]->[i-10]}
+   * 
+   * the following ISLSet with 2 ISLBasicSets is returned:
+   *   [N]->{[i] : 0<=i<10; [i] : 10<=i<N}
+   * 
+   * Coalescing the output set should yield the same input set
+   */
+  public static ISLSet separateBasicSets(final ISLSet domain, final ISLAff aff) {
+    try {
+      final Pair<ISLConstraint, ISLConstraint> constraints = SplitReduction.inequalityConstraints(aff);
+      final ISLConstraint upperBound = constraints.getKey();
+      final ISLConstraint lowerBound = constraints.getValue();
+      final ISLSet upperPiece = domain.copy().intersect(upperBound.toBasicSet().toSet());
+      final ISLSet lowerPiece = domain.copy().intersect(lowerBound.toBasicSet().toSet());
+      final ISLSet ret = upperPiece.union(lowerPiece);
+      boolean _isEqual = ret.copy().coalesce().isEqual(domain.copy());
+      boolean _not = (!_isEqual);
+      if (_not) {
+        throw new Exception("failed to separate domain");
+      }
+      return ret;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Transforms the reduction body into as many pieces as possible by making invariant
+   * splits (i.e., splits containing the reuse space) thru all (d-2)-faces.
+   * 
+   * Assumes the input reduction body is 2-dimensional
+   */
+  public static void apply(final AbstractReduceExpression are) {
+    try {
+      final Face face = are.getFacet();
+      int _dimensionality = face.getDimensionality();
+      boolean _notEquals = (_dimensionality != 2);
+      if (_notEquals) {
+        return;
+      }
+      Equation _containerEquation = AlphaUtil.getContainerEquation(are);
+      final StandardEquation eq = ((StandardEquation) _containerEquation);
+      if ((!(eq instanceof StandardEquation))) {
+        throw new Exception("Reduce expression container must be a standard equation");
+      }
+      final StandardEquation stdEq = ((StandardEquation) eq);
+      final Function1<ISLConstraint, ISLAff> _function = (ISLConstraint it) -> {
+        return it.getAff();
+      };
+      final Function1<ISLAff, ISLAff> _function_1 = (ISLAff it) -> {
+        ISLAff _xblockexpression = null;
+        {
+          SplitReduction.debug(("found split aff: " + it));
+          _xblockexpression = it;
+        }
+        return _xblockexpression;
+      };
+      final Function2<ISLSet, ISLAff, ISLSet> _function_2 = (ISLSet ret, ISLAff aff) -> {
+        return SplitReduction.separateBasicSets(ret, aff);
+      };
+      ISLSet branchDomains = IterableExtensions.<ISLAff, ISLSet>fold(CommonExtensions.<ISLAff>toArrayList(ListExtensions.<ISLAff, ISLAff>map(ListExtensions.<ISLConstraint, ISLAff>map(((List<ISLConstraint>)Conversions.doWrapArray(SplitReduction.enumerateCandidateSplits(are))), _function), _function_1)), 
+        are.getBody().getContextDomain().copy(), _function_2);
+      final CaseExpression caseExpr = AlphaUserFactory.createCaseExpression();
+      final Consumer<ISLBasicSet> _function_3 = (ISLBasicSet domain) -> {
+        EList<AlphaExpression> _exprs = caseExpr.getExprs();
+        RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(domain.copy().toSet(), AlphaUtil.<AlphaExpression>copyAE(are.getBody()));
+        _exprs.add(_createRestrictExpression);
+        SplitReduction.debug(("created case branch: " + domain));
+      };
+      branchDomains.getBasicSets().forEach(_function_3);
+      EcoreUtil.replace(are.getBody(), caseExpr);
+      AlphaInternalStateConstructor.recomputeContextDomain(are);
+      Normalize.apply(are);
+      PermutationCaseReduce.apply(are);
+      NormalizeReduction.apply(stdEq);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
@@ -157,8 +335,11 @@ public class SplitReduction {
     }
     final ArrayList<ISLConstraint> splits = CollectionLiterals.<ISLConstraint>newArrayList();
     final Face bodyFace = are.getFacet();
-    final ISLBasicSet bodyDomain = bodyFace.toBasicSet();
     final int bodyDim = bodyFace.getDimensionality();
+    if ((bodyDim <= 1)) {
+      return ((ISLConstraint[])Conversions.unwrapArray(splits, ISLConstraint.class));
+    }
+    final ISLBasicSet bodyDomain = bodyFace.toBasicSet();
     final Function1<Face, ISLBasicSet> _function = (Face it) -> {
       return it.toBasicSet();
     };
@@ -274,7 +455,7 @@ public class SplitReduction {
       if (_notEquals) {
         throw new Exception("Input maff does not have a 1D null space.");
       }
-      final long[][] mat = MatrixOperations.columnBind(MatrixOperations.columnBindToFront(MatrixOperations.createIdentity(nbIn, nbIn)), kernel);
+      final long[][] mat = MatrixOperations.columnBind(MatrixOperations.columnBindToFront(MatrixOperations.createIdentity(nbIn, nbIn), nbParam), kernel);
       final ISLMultiAff outMaff = MatrixOperations.toMatrix(mat, maff.getSpace().getParamNames(), maff.getSpace().getInputNames(), false, true).toMultiAff();
       return outMaff;
     } catch (Throwable _e) {

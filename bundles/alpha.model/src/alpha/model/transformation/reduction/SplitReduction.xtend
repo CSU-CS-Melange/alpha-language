@@ -5,11 +5,15 @@ import alpha.model.AlphaExpression
 import alpha.model.AlphaInternalStateConstructor
 import alpha.model.DependenceExpression
 import alpha.model.RestrictExpression
+import alpha.model.StandardEquation
 import alpha.model.transformation.Normalize
+import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean
 import org.eclipse.emf.ecore.util.EcoreUtil
 
@@ -21,7 +25,9 @@ import static extension alpha.model.matrix.MatrixOperations.*
 import static extension alpha.model.util.AffineFunctionOperations.*
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
-import alpha.model.StandardEquation
+import static extension alpha.model.util.CommonExtensions.dot
+import static extension alpha.model.util.CommonExtensions.toArrayList
+import static extension alpha.model.util.ISLUtil.toLinearUnitVector
 
 /**
  * This class carries out the analysis required for splitting from the max 
@@ -89,10 +95,15 @@ class SplitReduction {
 		if (are.body.contextDomain.nbBasicSets > 1)
 			throw new Exception("Cannot split a reduction body with multiple basic sets")
 		
-		val DS =  split.aff.toInequalityConstraint.toBasicSet.toSet
-		val const = (split.aff.getConstant - 1).intValue
-		val DSp = split.aff.negate.setConstant(const)
-						   .toInequalityConstraint.toBasicSet.toSet
+		// if no split is specified then make all possible splits simultaneously
+		if (split === null) {
+			apply(are)
+			return
+		}
+		
+		val constraints = inequalityConstraints(split.aff)
+		val DS =  constraints.key.toBasicSet.toSet
+		val DSp = constraints.value.toBasicSet.toSet
 		
 		val caseExpr = createCaseExpression()
 		caseExpr.exprs += createRestrictExpression(DS, are.body.copyAE)
@@ -104,6 +115,126 @@ class SplitReduction {
 		PermutationCaseReduce.apply(are)
 	}
 	
+	/** Given an ISLAff, construct two inequality ISLConstraints (>= and <) */
+	static def Pair<ISLConstraint, ISLConstraint> inequalityConstraints(ISLAff splitAff) {
+		val DS =  splitAff.copy.toInequalityConstraint
+		val const = (splitAff.getConstant - 1).intValue
+		val DSp = splitAff.copy.negate.setConstant(const)
+						   .toInequalityConstraint
+		return DS -> DSp
+	}
+	
+	static def ISLSet toSet(ISLConstraint[] constraints, ISLSpace space) {
+		constraints.fold(ISLSet.buildUniverse(space.copy), [ret, c | ret.union(c.toBasicSet.toSet)])
+	}
+	
+	/** 
+	 * Returns true if the body domain is 2D and there exist a pair of opposing edges with an
+	 * overlapping component in the answer domain.
+	 * 
+	 * Returns true if there exists the pair (Fi,Fj) s.t. both:
+	 *   1) fp(Fi) \cap fp(Fj) != empty
+	 *   2) (rho.dot(vi))*(rho.dot(vj)<0
+	 * or false, otherwise.
+	 */
+	static def boolean requiresFractalSplits(AbstractReduceExpression are) {
+		val face = are.facet
+		if (face.dimensionality != 2) return false;
+		
+		val edges = face.generateChildren
+		val edgePairs = (0..<edges.size).flatMap[i | (i+1..<edges.size).map[j | edges.get(i)->edges.get(j)]]
+			.toArrayList
+		val fp = are.projection.toMap
+		val rho = are.body.getReuseMaff.construct1DBasis.getConstantVectorNoParams
+
+		val vertices = face.getVertices.fold(
+			ISLSet.buildEmpty(are.body.contextDomain.space),
+			[ret, v | ret.union(v.toSet)]
+		)
+
+		val disjointEdges = newHashMap
+		edges.forEach[e | disjointEdges.put(e, e.toSet.subtract(vertices.copy))]
+		
+		return edgePairs
+			.reject[
+				val fi = disjointEdges.get(key).copy
+				val fj = disjointEdges.get(value).copy
+				fi.apply(fp.copy).intersect(fj.apply(fp.copy)).isEmpty
+			].exists[
+				val vi = key.getNormalVector(face).toLinearUnitVector
+				val vj = value.getNormalVector(face).toLinearUnitVector
+				vi.dot(rho) * vj.dot(rho) < 0
+			]
+	}
+	
+	/**
+	 * Splits the basic sets of domain into pieces on each side of aff
+	 * 
+	 * For example, given the following:
+	 *   domain: [N]->{[i] : 0<=i<N}
+	 *   aff: [N]->{[i,j]->[i-10]}
+	 * 
+	 * the following ISLSet with 2 ISLBasicSets is returned:
+	 *   [N]->{[i] : 0<=i<10; [i] : 10<=i<N}
+	 * 
+	 * Coalescing the output set should yield the same input set
+	 */
+	static def ISLSet separateBasicSets(ISLSet domain, ISLAff aff) {
+		
+		val constraints = aff.inequalityConstraints
+		val upperBound = constraints.key
+		val lowerBound = constraints.value
+		
+		val upperPiece = domain.copy.intersect(upperBound.toBasicSet.toSet)
+		val lowerPiece = domain.copy.intersect(lowerBound.toBasicSet.toSet)
+		
+		val ret = upperPiece.union(lowerPiece)
+		
+		if (!ret.copy.coalesce.isEqual(domain.copy)) {
+			throw new Exception('failed to separate domain')
+		}
+		return ret
+	}
+	
+	/**
+	 * Transforms the reduction body into as many pieces as possible by making invariant
+	 * splits (i.e., splits containing the reuse space) thru all (d-2)-faces. 
+	 * 
+	 * Assumes the input reduction body is 2-dimensional
+	 */
+	static def void apply(AbstractReduceExpression are) {
+		val face = are.facet
+		
+		if (face.dimensionality != 2) return;
+		
+		val eq = are.getContainerEquation as StandardEquation
+		if (!(eq instanceof StandardEquation))
+			throw new Exception('Reduce expression container must be a standard equation')
+		val stdEq = eq as StandardEquation
+			
+		var branchDomains = enumerateCandidateSplits(are)
+			.map[aff]
+			.map[
+				debug('found split aff: ' + it)
+				it
+			].toArrayList
+			.fold(
+				are.body.contextDomain.copy,
+				[ret, aff | ret.separateBasicSets(aff)]
+			)
+		
+		val caseExpr = createCaseExpression()
+		branchDomains.basicSets.forEach[domain |
+			caseExpr.exprs += createRestrictExpression(domain.copy.toSet, are.body.copyAE)
+			debug('created case branch: ' + domain)
+		]
+		
+		EcoreUtil.replace(are.body, caseExpr)
+		AlphaInternalStateConstructor.recomputeContextDomain(are)
+		Normalize.apply(are)
+		PermutationCaseReduce.apply(are)
+		NormalizeReduction.apply(stdEq)
+	}
 	
 	/** 
 	 * Returns the list of candidate splits that separate the reduction body into 
@@ -128,8 +259,12 @@ class SplitReduction {
 		val splits = newArrayList
 		
 		val bodyFace = are.facet
-		val bodyDomain = bodyFace.toBasicSet
 		val bodyDim = bodyFace.dimensionality
+		if (bodyDim <= 1) {
+			return splits
+		}
+		
+		val bodyDomain = bodyFace.toBasicSet
 		val faces = bodyFace.lattice.getFaces(bodyDim - 2).map[toBasicSet]
 		
 		// Construct splits that saturate the accumulation space
@@ -223,7 +358,7 @@ class SplitReduction {
 		if (kernel.transpose.length != 1)
 			throw new Exception("Input maff does not have a 1D null space.")
 		
-		val mat = columnBind(columnBindToFront(createIdentity(nbIn, nbIn)), kernel)
+		val mat = columnBind(columnBindToFront(createIdentity(nbIn, nbIn), nbParam), kernel)
 		
 		val outMaff = mat.toMatrix(maff.space.paramNames, maff.space.inputNames, false, true)
 						.toMultiAff
