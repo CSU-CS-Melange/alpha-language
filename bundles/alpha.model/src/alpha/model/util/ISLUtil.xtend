@@ -137,7 +137,7 @@ class ISLUtil {
 	 */
 	def static long[] toLinearUnitVector(ISLAff aff) {
 		val constantCol = aff.nbParams + aff.nbInputs
-		val vec = aff.toEqualityConstraint.toBasicSet.toISLEqualityMatrix
+		val vec = aff.copy.toEqualityConstraint.toBasicSet.toISLEqualityMatrix
 			.dropCols(constantCol, 1)
 			.toLongMatrix.get(0)
 		

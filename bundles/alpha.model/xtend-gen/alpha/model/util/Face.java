@@ -266,7 +266,7 @@ public class Face {
     };
     final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
     final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
-    return characteristicInequality.copy().getAff().dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0);
+    return ISLUtil.toISLConstraint(characteristicInequality.copy().getAff().dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0).toEqualityConstraint().toString()).getAff();
   }
 
   /**
@@ -305,6 +305,13 @@ public class Face {
       return s.addConstraint(c);
     };
     return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(IterableExtensions.<ISLConstraint, ISLConstraint>map(Iterables.<ISLConstraint>concat(Collections.<Collection<ISLConstraint>>unmodifiableList(CollectionLiterals.<Collection<ISLConstraint>>newArrayList(_values, this.saturatedConstraints))), _function), universe, _function_1).removeRedundancies();
+  }
+
+  /**
+   * Construct the set which represents this face.
+   */
+  public ISLSet toSet() {
+    return this.toBasicSet().toSet();
   }
 
   /**
@@ -357,6 +364,19 @@ public class Face {
     };
     final String saturatedIndexes = IterableExtensions.join(IterableExtensions.<Integer>reject(new ExclusiveRange(0, this.originalConstraintCount, true), _function), ",");
     return (("{" + saturatedIndexes) + "}");
+  }
+
+  /**
+   * Returns the vertices of the current face
+   */
+  public Face[] getVertices() {
+    final Function1<Face, Boolean> _function = (Face f) -> {
+      return Boolean.valueOf(f.saturatedConstraints.containsAll(this.saturatedConstraints));
+    };
+    final Function1<Face, Boolean> _function_1 = (Face f) -> {
+      return Boolean.valueOf(f.toBasicSet().isEmpty());
+    };
+    return ((Face[])Conversions.unwrapArray(IterableExtensions.<Face>reject(IterableExtensions.<Face>filter(this.lattice.getFaces(0), _function), _function_1), Face.class));
   }
 
   /**

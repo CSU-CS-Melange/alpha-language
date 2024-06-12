@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -114,5 +115,32 @@ public class CommonExtensions {
       return ((T[])Conversions.unwrapArray(elements, Object.class))[remainder.intValue()];
     };
     return CommonExtensions.<T>toArrayList(IterableExtensions.<Integer, T>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, count, true), _function), _function_1), _function_2), _function_3));
+  }
+
+  /**
+   * Returns the dot product between two arrays of the same size
+   */
+  public static long dot(final long[] v1, final long[] v2) {
+    try {
+      int _size = ((List<Long>)Conversions.doWrapArray(v1)).size();
+      int _size_1 = ((List<Long>)Conversions.doWrapArray(v2)).size();
+      boolean _notEquals = (_size != _size_1);
+      if (_notEquals) {
+        throw new Exception("dot product operands must be of same size");
+      }
+      long sum = 0l;
+      int _size_2 = ((List<Long>)Conversions.doWrapArray(v1)).size();
+      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _size_2, true);
+      for (final Integer i : _doubleDotLessThan) {
+        long _sum = sum;
+        long _get = v1[(i).intValue()];
+        long _get_1 = v2[(i).intValue()];
+        long _multiply = (_get * _get_1);
+        sum = (_sum + _multiply);
+      }
+      return sum;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 }
