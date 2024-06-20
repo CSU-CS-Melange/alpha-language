@@ -23,8 +23,9 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
 @SuppressWarnings("all")
 public class LoopGenerator {
   /**
-   * Generates the loop statements that iterate through the points in the given domain
-   * in lexicographic order (i.e., scheduled by the identity function).
+   * Generates the ISL AST node representing the loop statements that
+   * iterate through the points in the given domain in lexicographic order
+   * (i.e., scheduled by the identity function).
    */
   public static ISLASTNode generateLoops(final String macroName, final ISLSet domain) {
     final ISLMap identity = ISLMultiAff.buildIdentity(domain.getSpace().addDims(ISLDimType.isl_dim_in, domain.getNbIndices())).toMap();
@@ -32,8 +33,9 @@ public class LoopGenerator {
   }
 
   /**
-   * Generates the loop statements that iterate through the points in the given domain
-   * according to the timestamps indicated by the given map.
+   * Generates the ISL AST node representing the loop statements that
+   * iterate through the points in the given domain according to the
+   * timestamps indicated by the given map.
    */
   public static ISLASTNode generateLoops(final String macroName, final ISLSet domain, final ISLMap timestamps) {
     final ISLSet context = domain.copy().params();
@@ -47,5 +49,14 @@ public class LoopGenerator {
     };
     final ISLIdentifierList idList = IterableExtensions.<ISLIdentifier, ISLIdentifierList>fold(ids, ISLIdentifierList.build(ISLContext.getInstance(), 0), _function_1);
     return ISLASTBuild.buildFromContext(context).setIterators(idList).generate(schedule);
+  }
+
+  /**
+   * Generates the ISL AST node representing the loop statements that
+   * iterate through the points in the given domain according to the
+   * given domain for the parameters and a union map representing the schedule.
+   */
+  public static ISLASTNode generateLoops(final ISLSet parameterDomain, final ISLUnionMap schedule) {
+    return ISLASTBuild.buildFromContext(parameterDomain).generate(schedule);
   }
 }

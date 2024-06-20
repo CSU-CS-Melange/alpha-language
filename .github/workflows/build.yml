@@ -25,7 +25,8 @@ jobs:
     - name: build alpha
       run: mvn clean package
 
-    # the ghcr.io/csu-cs-melange/alpha-language-image image exposes a junit CLI
+    # The ghcr.io/csu-cs-melange/alpha-language-image image exposes a junit CLI.
+    # Call it once per package that needs to be tested.
     - name: run junit tests and collect code coverage for alpha.codegen.tests
       run: >
         export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}" &&
@@ -34,6 +35,7 @@ jobs:
         alpha.codegen.tests.FactoryTest
         alpha.codegen.tests.ModelTest
         alpha.codegen.tests.NameCheckerTest
+        alpha.codegen.tests.demandDriven.WriteCTest
         alpha.codegen.tests.isl.MemoryUtilsTest
 
     - name: run junit tests and collect code coverage for alpha.model.tests
@@ -74,12 +76,15 @@ jobs:
         alpha.targetmapping.tests.TargetMappingAShowTest
         alpha.targetmapping.tests.TargetMappingShowTest
 
+    # Add a "--classfiles" line for each project being tested.
     - name: generate code coverage report
       run: |
         export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}"
         mkdir -p "${JACOCO_PREFIX}/coverage"
         jacococli report "${JACOCO_PREFIX}/jacoco-${GITHUB_SHA}-*.exec" \
+          --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.codegen/bin" \
           --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.model/bin" \
+          --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.targetmapping/bin" \
           --xml "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" \
           --html "${JACOCO_PREFIX}/coverage/html"
 

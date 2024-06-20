@@ -1,9 +1,9 @@
 package alpha.codegen.tests
 
+import alpha.codegen.BaseDataType
 import alpha.codegen.Factory
 import alpha.codegen.NameChecker
 import alpha.codegen.NameConflictException
-import alpha.codegen.writeC.Common
 import org.junit.Test
 
 import static org.junit.Assert.*
@@ -16,14 +16,14 @@ class NameCheckerTest {
 		checker.checkAddGlobal("a", "b", "c")
 		
 		// Ensure the names added are present.
-		assertTrue(checker.globalNameExists("c"))
-		assertTrue(checker.globalNameExists("a"))
-		assertTrue(checker.globalNameExists("b"))
+		assertTrue(checker.isGlobalOrKeyword("c"))
+		assertTrue(checker.isGlobalOrKeyword("a"))
+		assertTrue(checker.isGlobalOrKeyword("b"))
 		
 		// Ensure that some other names are not present.
-		assertFalse(checker.globalNameExists("d"))
-		assertFalse(checker.globalNameExists("A"))
-		assertFalse(checker.globalNameExists("aaaa"))
+		assertFalse(checker.isGlobalOrKeyword("d"))
+		assertFalse(checker.isGlobalOrKeyword("A"))
+		assertFalse(checker.isGlobalOrKeyword("aaaa"))
 	}
 	
 	@Test
@@ -68,7 +68,8 @@ class NameCheckerTest {
 		checker.checkAddGlobal("a")
 		
 		// Make sure we can't add a local variable of the same name.
-		val variable = Factory.variableDecl(Common.alphaIndexType, "a")
+		val dataType = Factory.dataType(BaseDataType.LONG)
+		val variable = Factory.variableDecl(dataType, "a")
 		assertThrows(typeof(NameConflictException), [|checker.checkAddLocal(variable, newArrayList)]) 
 	}
 	
@@ -79,14 +80,16 @@ class NameCheckerTest {
 		checker.checkAddGlobal("a")
 		
 		// Make sure we can add a local variable of the same name if shadowing is turned off.
-		val variable = Factory.variableDecl(Common.alphaIndexType, "a")
+		val dataType = Factory.dataType(BaseDataType.LONG)
+		val variable = Factory.variableDecl(dataType, "a")
 		checker.checkAddLocal(variable, newArrayList)
 	}
 	
 	@Test
 	def void checkAddLocal_01() {
 		val checker = new NameChecker()
-		val variable = Factory.variableDecl(Common.alphaIndexType, "a")
+		val dataType = Factory.dataType(BaseDataType.LONG)
+		val variable = Factory.variableDecl(dataType, "a")
 		val localsList = newArrayList
 		checker.checkAddLocal(variable, localsList)
 		assertEquals(1, localsList.size)

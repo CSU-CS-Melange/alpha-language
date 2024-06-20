@@ -1,7 +1,8 @@
-package alpha.codegen.tests.writeC
+package alpha.codegen.tests.demandDriven
 
+import alpha.codegen.BaseDataType
 import alpha.codegen.ProgramPrinter
-import alpha.codegen.writeC.SystemConverter
+import alpha.codegen.demandDriven.WriteC
 import alpha.model.AlphaModelLoader
 import org.junit.Test
 
@@ -9,9 +10,9 @@ import static org.junit.Assert.*
 
 import static extension alpha.commands.UtilityBase.*
 
-class SystemConverterTest {
+class WriteCTest {
 	/** The path to the Alpha file for these unit tests. */
-	static val alphaFile = "resources/alpha.codegen.tests.writeC/SystemConverterTest.alpha";
+	static val alphaFile = "resources/alpha.codegen.tests.demandDriven/WriteCTest.alpha";
 	
 	/** Gets the desired system for these unit tests. */
 	static def getSystem(String system) {
@@ -22,7 +23,7 @@ class SystemConverterTest {
 	@Test
 	def void convertSystem_noParameters() {
 		val system = getSystem("NoParameters")
-		val program = SystemConverter.convert(system)
+		val program = WriteC.convert(system, BaseDataType.FLOAT, false)
 		val code = ProgramPrinter.print(program)
 		assertNotNull(code)
 		assertNotEquals("", code)
@@ -31,7 +32,7 @@ class SystemConverterTest {
 	@Test
 	def void convertSystem_noParameterConstraints() {
 		val system = getSystem("NoParameterConstraints")
-		val program = SystemConverter.convert(system)
+		val program = WriteC.convert(system, BaseDataType.FLOAT, false)
 		val code = ProgramPrinter.print(program)
 		assertNotNull(code)
 		assertNotEquals("", code)

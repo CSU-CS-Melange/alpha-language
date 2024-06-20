@@ -1,4 +1,4 @@
-package alpha.codegen.writeC
+package alpha.codegen.alphaBase
 
 import alpha.codegen.BaseDataType
 import alpha.codegen.BinaryOperator
@@ -6,101 +6,11 @@ import alpha.codegen.UnaryOperator
 import alpha.model.BINARY_OP
 import alpha.model.REDUCTION_OP
 import alpha.model.UNARY_OP
-import alpha.model.Variable
-
-import static alpha.codegen.Factory.dataType
-import static alpha.codegen.Factory.macroStmt
 
 import static extension alpha.codegen.Factory.customExpr
-import static extension alpha.codegen.Factory.include
 
-/** Defines common functions used in this package. */
-class Common {
-	////////////////////////////////////////////////
-	// Program Defaults
-	////////////////////////////////////////////////
-	
-	/** The default header comment for a program. */
-	def static defaultHeaderComments() {
-		return #["This code was auto-generated with AlphaZ."]
-	}
-	
-	/** The default "#include" directives for a program. */
-	def static defaultIncludes() {
-		return #[
-			"float.h",
-			"limits.h",
-			"math.h",
-			"stdbool.h",
-			"stdio.h",
-			"stdlib.h",
-			"string.h"
-		].map[include]
-	}
-	
-	/** The default macros for common functions in a program. */
-	def static defaultFunctionMacros() {
-		return #[
-			macroStmt("ceild", #["n", "d"], "((int)ceil(((double)(n))/((double)(d))))"),
-			macroStmt("floord", #["n", "d"], "((int)floor(((double)(n))/((double)(d))))"),
-			macroStmt("div", #["a", "b"], "(ceild((a),(b)))"),
-			macroStmt("max", #["a", "b"], "(((a)>(b))?(a):(b))"),
-			macroStmt("min", #["a", "b"], "(((a)<(b))?(a):(b))"),
-			macroStmt("mallocCheck", #["v", "s"], "if ((v) == NULL) { printf(\"Failed to allocate memory for variable: %s\\n\", (s)); exit(-1); }")
-		]
-	}
-	
-	
-	////////////////////////////////////////////////
-	// Data Types
-	////////////////////////////////////////////////
-	
-	/** The data type for a value within a "flag" variable. */
-	def static flagValueType() {
-		return dataType(BaseDataType.CHAR, 0)
-	}
-	
-	/** The data type for a flag variable itself. */
-	def static flagVariableType() {
-		return dataType(BaseDataType.CHAR, 1)
-	}
-	
-	/** The data type for an index within Alpha. */
-	def static alphaIndexType() {
-		return dataType(BaseDataType.LONG, 0)
-	}
-	
-	
-	////////////////////////////////////////////////
-	// Function and Variable Names
-	////////////////////////////////////////////////
-	
-	/** Gets the name of the function that evaluates an Alpha variable at a specific point. */
-	def static getEvalName(Variable variable) {
-		return "eval_" + variable.name
-	}
-	
-	/**
-	 * Gets the name of a parameter used for supplying the Alpha variables and parameters
-	 * to the entry point of a program.
-	 */
-	def static getParameterName(Variable variable) {
-		return getParameterName(variable.name)
-	}
-	
-	/**
-	 * Gets the name of a parameter used for supplying the Alpha variables and parameters
-	 * to the entry point of a program.
-	 */
-	def static getParameterName(String variable) {
-		return "_local_" + variable
-	}
-	
-	
-	////////////////////////////////////////////////
-	// Expressions and Operators
-	////////////////////////////////////////////////
-	
+/** Various helper methods for the alpha.codegen.alphaBase package. */
+class AlphaBaseHelpers {
 	/** Gets the expression representing a value of a "flag" variable. */
 	def static toExpr(FlagStatus status) {
 		return switch status {
