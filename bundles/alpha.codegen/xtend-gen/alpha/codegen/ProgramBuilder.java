@@ -1,9 +1,9 @@
 package alpha.codegen;
 
-import java.util.List;
+import com.google.common.collect.Iterables;
 import java.util.function.Consumer;
-import org.eclipse.xtext.xbase.lib.CollectionExtensions;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 /**
  * A builder to aid in the construction of C programs.
@@ -64,7 +64,7 @@ public class ProgramBuilder {
    * Adds lines to the program's header comment.
    */
   public ProgramBuilder addHeaderComment(final String... commentLines) {
-    this.instance.getHeaderComment().addAll(((Iterable<String>)Conversions.doWrapArray(commentLines)));
+    this.instance.getHeaderComment().addAll(IterableExtensions.<String>filterNull(((Iterable<String>)Conversions.doWrapArray(commentLines))));
     return this;
   }
 
@@ -72,7 +72,7 @@ public class ProgramBuilder {
    * Adds #include directives to the program.
    */
   public ProgramBuilder addInclude(final Include... includes) {
-    CollectionExtensions.<Include>addAll(this.instance.getIncludes(), includes);
+    Iterables.<Include>addAll(this.instance.getIncludes(), IterableExtensions.<Include>filterNull(((Iterable<Include>)Conversions.doWrapArray(includes))));
     return this;
   }
 
@@ -83,11 +83,16 @@ public class ProgramBuilder {
    * a NameConflictException will be thrown.
    */
   public ProgramBuilder addFunctionMacro(final MacroStmt... macros) {
-    final Consumer<MacroStmt> _function = (MacroStmt it) -> {
-      this.nameChecker.checkAddGlobal(it.getName());
-    };
-    ((List<MacroStmt>)Conversions.doWrapArray(macros)).forEach(_function);
-    CollectionExtensions.<MacroStmt>addAll(this.instance.getFunctionMacros(), macros);
+    final Iterable<MacroStmt> filtered = IterableExtensions.<MacroStmt>filterNull(((Iterable<MacroStmt>)Conversions.doWrapArray(macros)));
+    boolean _isEmpty = IterableExtensions.isEmpty(filtered);
+    boolean _not = (!_isEmpty);
+    if (_not) {
+      final Consumer<MacroStmt> _function = (MacroStmt it) -> {
+        this.nameChecker.checkAddGlobal(it.getName());
+      };
+      filtered.forEach(_function);
+      Iterables.<MacroStmt>addAll(this.instance.getFunctionMacros(), filtered);
+    }
     return this;
   }
 
@@ -110,11 +115,16 @@ public class ProgramBuilder {
    * a NameConflictException will be thrown.
    */
   public ProgramBuilder addGlobalVariable(final VariableDecl... variables) {
-    final Consumer<VariableDecl> _function = (VariableDecl it) -> {
-      this.nameChecker.checkAddGlobal(it.getName());
-    };
-    ((List<VariableDecl>)Conversions.doWrapArray(variables)).forEach(_function);
-    CollectionExtensions.<VariableDecl>addAll(this.instance.getGlobalVariables(), variables);
+    final Iterable<VariableDecl> filtered = IterableExtensions.<VariableDecl>filterNull(((Iterable<VariableDecl>)Conversions.doWrapArray(variables)));
+    boolean _isEmpty = IterableExtensions.isEmpty(filtered);
+    boolean _not = (!_isEmpty);
+    if (_not) {
+      final Consumer<VariableDecl> _function = (VariableDecl it) -> {
+        this.nameChecker.checkAddGlobal(it.getName());
+      };
+      filtered.forEach(_function);
+      Iterables.<VariableDecl>addAll(this.instance.getGlobalVariables(), filtered);
+    }
     return this;
   }
 
@@ -125,7 +135,7 @@ public class ProgramBuilder {
    * to match a global variable's name.
    */
   public ProgramBuilder addMemoryMacro(final MacroStmt... macros) {
-    CollectionExtensions.<MacroStmt>addAll(this.instance.getMemoryMacros(), macros);
+    Iterables.<MacroStmt>addAll(this.instance.getMemoryMacros(), IterableExtensions.<MacroStmt>filterNull(((Iterable<MacroStmt>)Conversions.doWrapArray(macros))));
     return this;
   }
 
@@ -135,12 +145,24 @@ public class ProgramBuilder {
    * a NameConflictException will be thrown.
    */
   public ProgramBuilder addFunction(final Function... functions) {
-    final Consumer<Function> _function = (Function it) -> {
-      this.nameChecker.checkAddGlobal(it.getName());
-    };
-    ((List<Function>)Conversions.doWrapArray(functions)).forEach(_function);
-    CollectionExtensions.<Function>addAll(this.instance.getFunctions(), functions);
+    final Iterable<Function> filtered = IterableExtensions.<Function>filterNull(((Iterable<Function>)Conversions.doWrapArray(functions)));
+    boolean _isEmpty = IterableExtensions.isEmpty(filtered);
+    boolean _not = (!_isEmpty);
+    if (_not) {
+      final Consumer<Function> _function = (Function it) -> {
+        this.nameChecker.checkAddGlobal(it.getName());
+      };
+      filtered.forEach(_function);
+      Iterables.<Function>addAll(this.instance.getFunctions(), filtered);
+    }
     return this;
+  }
+
+  /**
+   * Starts building a function using this program's name checker.
+   */
+  public FunctionBuilder startFunction(final BaseDataType returnType, final String name) {
+    return FunctionBuilder.start(returnType, name, this.nameChecker);
   }
 
   /**

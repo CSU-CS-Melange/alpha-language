@@ -1,104 +1,20 @@
-package alpha.codegen.writeC;
+package alpha.codegen.alphaBase;
 
 import alpha.codegen.BaseDataType;
 import alpha.codegen.BinaryOperator;
 import alpha.codegen.CustomExpr;
-import alpha.codegen.DataType;
 import alpha.codegen.Factory;
-import alpha.codegen.Include;
-import alpha.codegen.MacroStmt;
 import alpha.codegen.UnaryOperator;
 import alpha.model.BINARY_OP;
 import alpha.model.REDUCTION_OP;
 import alpha.model.UNARY_OP;
-import alpha.model.Variable;
-import java.util.Collections;
-import java.util.List;
-import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Exceptions;
-import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
- * Defines common functions used in this package.
+ * Various helper methods for the alpha.codegen.alphaBase package.
  */
 @SuppressWarnings("all")
-public class Common {
-  /**
-   * The default header comment for a program.
-   */
-  public static List<String> defaultHeaderComments() {
-    return Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("This code was auto-generated with AlphaZ."));
-  }
-
-  /**
-   * The default "#include" directives for a program.
-   */
-  public static List<Include> defaultIncludes() {
-    final Function1<String, Include> _function = (String it) -> {
-      return Factory.include(it);
-    };
-    return ListExtensions.<String, Include>map(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("float.h", "limits.h", "math.h", "stdbool.h", "stdio.h", "stdlib.h", "string.h")), _function);
-  }
-
-  /**
-   * The default macros for common functions in a program.
-   */
-  public static List<MacroStmt> defaultFunctionMacros() {
-    MacroStmt _macroStmt = Factory.macroStmt("ceild", new String[] { "n", "d" }, "((int)ceil(((double)(n))/((double)(d))))");
-    MacroStmt _macroStmt_1 = Factory.macroStmt("floord", new String[] { "n", "d" }, "((int)floor(((double)(n))/((double)(d))))");
-    MacroStmt _macroStmt_2 = Factory.macroStmt("div", new String[] { "a", "b" }, "(ceild((a),(b)))");
-    MacroStmt _macroStmt_3 = Factory.macroStmt("max", new String[] { "a", "b" }, "(((a)>(b))?(a):(b))");
-    MacroStmt _macroStmt_4 = Factory.macroStmt("min", new String[] { "a", "b" }, "(((a)<(b))?(a):(b))");
-    MacroStmt _macroStmt_5 = Factory.macroStmt("mallocCheck", new String[] { "v", "s" }, "if ((v) == NULL) { printf(\"Failed to allocate memory for variable: %s\\n\", (s)); exit(-1); }");
-    return Collections.<MacroStmt>unmodifiableList(CollectionLiterals.<MacroStmt>newArrayList(_macroStmt, _macroStmt_1, _macroStmt_2, _macroStmt_3, _macroStmt_4, _macroStmt_5));
-  }
-
-  /**
-   * The data type for a value within a "flag" variable.
-   */
-  public static DataType flagValueType() {
-    return Factory.dataType(BaseDataType.CHAR, 0);
-  }
-
-  /**
-   * The data type for a flag variable itself.
-   */
-  public static DataType flagVariableType() {
-    return Factory.dataType(BaseDataType.CHAR, 1);
-  }
-
-  /**
-   * The data type for an index within Alpha.
-   */
-  public static DataType alphaIndexType() {
-    return Factory.dataType(BaseDataType.LONG, 0);
-  }
-
-  /**
-   * Gets the name of the function that evaluates an Alpha variable at a specific point.
-   */
-  public static String getEvalName(final Variable variable) {
-    String _name = variable.getName();
-    return ("eval_" + _name);
-  }
-
-  /**
-   * Gets the name of a parameter used for supplying the Alpha variables and parameters
-   * to the entry point of a program.
-   */
-  public static String getParameterName(final Variable variable) {
-    return Common.getParameterName(variable.getName());
-  }
-
-  /**
-   * Gets the name of a parameter used for supplying the Alpha variables and parameters
-   * to the entry point of a program.
-   */
-  public static String getParameterName(final String variable) {
-    return ("_local_" + variable);
-  }
-
+public class AlphaBaseHelpers {
   /**
    * Gets the expression representing a value of a "flag" variable.
    */
@@ -266,16 +182,16 @@ public class Common {
       if (op != null) {
         switch (op) {
           case MIN:
-            _switchResult = Common.getMaxValue(dataType);
+            _switchResult = AlphaBaseHelpers.getMaxValue(dataType);
             break;
           case MAX:
-            _switchResult = Common.getMinValue(dataType);
+            _switchResult = AlphaBaseHelpers.getMinValue(dataType);
             break;
           case PROD:
-            _switchResult = Common.getOneValue(dataType);
+            _switchResult = AlphaBaseHelpers.getOneValue(dataType);
             break;
           case SUM:
-            _switchResult = Common.getZeroValue(dataType);
+            _switchResult = AlphaBaseHelpers.getZeroValue(dataType);
             break;
           default:
             throw new Exception((("There is no initial value for reduction operator \'" + op) + "\'."));

@@ -1,10 +1,11 @@
 package alpha.codegen.tests;
 
+import alpha.codegen.BaseDataType;
+import alpha.codegen.DataType;
 import alpha.codegen.Factory;
 import alpha.codegen.NameChecker;
 import alpha.codegen.NameConflictException;
 import alpha.codegen.VariableDecl;
-import alpha.codegen.writeC.Common;
 import com.google.common.base.Objects;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,12 +21,12 @@ public class NameCheckerTest {
   public void globalNameExists_01() {
     final NameChecker checker = new NameChecker();
     checker.checkAddGlobal("a", "b", "c");
-    Assert.assertTrue(checker.globalNameExists("c"));
-    Assert.assertTrue(checker.globalNameExists("a"));
-    Assert.assertTrue(checker.globalNameExists("b"));
-    Assert.assertFalse(checker.globalNameExists("d"));
-    Assert.assertFalse(checker.globalNameExists("A"));
-    Assert.assertFalse(checker.globalNameExists("aaaa"));
+    Assert.assertTrue(checker.isGlobalOrKeyword("c"));
+    Assert.assertTrue(checker.isGlobalOrKeyword("a"));
+    Assert.assertTrue(checker.isGlobalOrKeyword("b"));
+    Assert.assertFalse(checker.isGlobalOrKeyword("d"));
+    Assert.assertFalse(checker.isGlobalOrKeyword("A"));
+    Assert.assertFalse(checker.isGlobalOrKeyword("aaaa"));
   }
 
   @Test
@@ -69,7 +70,8 @@ public class NameCheckerTest {
   public void preventShadowing_01() {
     final NameChecker checker = new NameChecker();
     checker.checkAddGlobal("a");
-    final VariableDecl variable = Factory.variableDecl(Common.alphaIndexType(), "a");
+    final DataType dataType = Factory.dataType(BaseDataType.LONG);
+    final VariableDecl variable = Factory.variableDecl(dataType, "a");
     final ThrowingRunnable _function = () -> {
       checker.checkAddLocal(variable, CollectionLiterals.<VariableDecl>newArrayList());
     };
@@ -80,14 +82,16 @@ public class NameCheckerTest {
   public void allowShadowing_01() {
     final NameChecker checker = new NameChecker(false);
     checker.checkAddGlobal("a");
-    final VariableDecl variable = Factory.variableDecl(Common.alphaIndexType(), "a");
+    final DataType dataType = Factory.dataType(BaseDataType.LONG);
+    final VariableDecl variable = Factory.variableDecl(dataType, "a");
     checker.checkAddLocal(variable, CollectionLiterals.<VariableDecl>newArrayList());
   }
 
   @Test
   public void checkAddLocal_01() {
     final NameChecker checker = new NameChecker();
-    final VariableDecl variable = Factory.variableDecl(Common.alphaIndexType(), "a");
+    final DataType dataType = Factory.dataType(BaseDataType.LONG);
+    final VariableDecl variable = Factory.variableDecl(dataType, "a");
     final ArrayList<VariableDecl> localsList = CollectionLiterals.<VariableDecl>newArrayList();
     checker.checkAddLocal(variable, localsList);
     Assert.assertEquals(1, localsList.size());

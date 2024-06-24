@@ -1,6 +1,7 @@
 package alpha.codegen
 
 import java.util.Collection
+import java.util.HashMap
 import java.util.HashSet
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
@@ -49,13 +50,23 @@ class NameChecker {
 			"_Imaginary", "_Noreturn", "_Static_assert", "_Thread_local")
 	}
 	
+	
+	/////////////////////////////////////////////////////////////////
+	// Checking Existence of Names
+	/////////////////////////////////////////////////////////////////
+	
 	/**
-	 * Returns true if any of the given names exist in the global scope.
-	 * Otherwise, returns false.
+	 * Returns true if any of the given names exist in the global scope
+	 * or are a reserved keyword. Otherwise, returns false.
 	 */
-	def globalNameExists(String... names) {
+	def isGlobalOrKeyword(String... names) {
 		return names.exists[globalNames.contains(it) || reservedKeywords.contains(it)]
 	}
+	
+	
+	/////////////////////////////////////////////////////////////////
+	// Recording Names
+	/////////////////////////////////////////////////////////////////
 	
 	/**
 	 * Checks if all the given global variables are unique and records them if so.
@@ -74,22 +85,6 @@ class NameChecker {
 	}
 	
 	/**
-	 * Repeatedly appends the given suffix to the base name until it is unique.
-	 * If the base name is already unique, the suffix is not added.
-	 * 
-	 * Note: the name returned is NOT added to the list of global names,
-	 * as that would be done when the name is actually declared.
-	 * This is just to get a name that's unique to use in a declaration.
-	 */
-	def getUniqueGlobalName(String baseName, String suffix) {
-		var toAdd = baseName
-		while (globalNames.contains(toAdd)) {
-			toAdd += suffix
-		}
-		return toAdd
-	}
-	
-	/**
 	 * Checks if a local variable declaration is unique,
 	 * and adds it to the given list of declarations if so.
 	 * 
@@ -101,13 +96,14 @@ class NameChecker {
 	 * the duplicate declaration is silently ignored. 
 	 */
 	def checkAddLocal(VariableDecl variable, Collection<VariableDecl> existingLocals) {
-		// If shadowing is disallowed, then the variable's name cannot match any of the global names.
-		// Reserved words are always disallowed.
-		if (preventShadowing && globalNames.contains(variable.name)) {
-			throw new NameConflictException(variable.name)
-		}
+		// Reserved keywords are never allowed.
 		if (reservedKeywords.contains(variable.name)) {
 			throw new ReservedKeywordException(variable.name)
+		}
+		
+		// If shadowing is disallowed, then the variable's name cannot match any of the global names.
+		if (preventShadowing && globalNames.contains(variable.name)) {
+			throw new NameConflictException(variable.name)
 		}
 		
 		// Check if there are any existing local variables with the same name.
@@ -129,6 +125,38 @@ class NameChecker {
 		return false
 	}
 	
+	/** Returns true if the two variables have the same name, and false otherwise. */
+	def protected static hasSameNameAs(VariableDecl first, VariableDecl second) {
+		return first.name == second.name
+	}
+	
+	/** Returns true if the two variables have different types, and false otherwise. */
+	def protected static hasDifferentTypeThan(VariableDecl first, VariableDecl second) {
+		return first.dataType.baseType != second.dataType.baseType
+			|| first.dataType.indirectionLevel != second.dataType.indirectionLevel
+	}
+	
+	
+	/////////////////////////////////////////////////////////////////
+	// Generating New Names
+	/////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Repeatedly appends the given suffix to the base name until it is unique.
+	 * If the base name is already unique, the suffix is not added.
+	 * 
+	 * Note: the name returned is NOT added to the list of global names,
+	 * as that would be done when the name is actually declared.
+	 * This is just to get a name that's unique to use in a declaration.
+	 */
+	def getUniqueGlobalName(String baseName, String suffix) {
+		var toAdd = baseName
+		while (globalNames.contains(toAdd)) {
+			toAdd += suffix
+		}
+		return toAdd
+	}
+	
 	/**
 	 * Repeatedly appends the given suffix to the base name until it is unique.
 	 * If the base name is already unique, the suffix is not added.
@@ -145,14 +173,21 @@ class NameChecker {
 		return toAdd
 	}
 	
-	/** Returns true if the two variables have the same name, and false otherwise. */
-	def protected static hasSameNameAs(VariableDecl first, VariableDecl second) {
-		return first.name == second.name
-	}
-	
-	/** Returns true if the two variables have different types, and false otherwise. */
-	def protected static hasDifferentTypeThan(VariableDecl first, VariableDecl second) {
-		return first.dataType.baseType != second.dataType.baseType
-			|| first.dataType.indirectionLevel != second.dataType.indirectionLevel
+	/**
+	 * Gets a unique name for the given key by prepending the suffix,
+	 * then repeatedly appending underscores until the name is unique.
+	 * This newly generated name is then added to the given storage,
+	 * mapped to the given key.
+	 * If the key was already present in the storage, that name is
+	 * returned instead of generating a new one.
+	 */
+	def protected getUniqueName(String prefix, String key, HashMap<String, String> storage) {
+		// If the storage doesn't contain the key, create a new name
+		// by prepending the prefix and appending "_" until it's unique.
+		if (!storage.containsKey(key)) {
+			val uniqueName = getUniqueLocalName(storage.values, prefix + key, "_")
+			storage.put(key, uniqueName)
+		}
+		return storage.get(key)
 	}
 }

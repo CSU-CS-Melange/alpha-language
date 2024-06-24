@@ -1,11 +1,12 @@
-package alpha.codegen.writeC
+package alpha.codegen.demandDriven
 
-import alpha.codegen.BaseDataType
 import alpha.codegen.Expression
 import alpha.codegen.Factory
 import alpha.codegen.MacroStmt
-import alpha.codegen.NameChecker
 import alpha.codegen.ProgramBuilder
+import alpha.codegen.alphaBase.AlphaBaseHelpers
+import alpha.codegen.alphaBase.AlphaNameChecker
+import alpha.codegen.alphaBase.ExprConverter
 import alpha.codegen.isl.ASTConverter
 import alpha.codegen.isl.LoopGenerator
 import alpha.model.ReduceExpression
@@ -15,31 +16,30 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 
 /**
- * Converts an Alpha reduce expression into the appropriate C AST nodes.
- * A new function is created and added to the program which computes the reduction,
- * and the appropriate function call expression is returned.
+ * Converts Alpha expressions to simpleC expressions.
+ * Adds support for reduce expressions.
  */
-class ReduceExprConverter {
+class WriteCExprConverter extends ExprConverter {
 	/** The name of the reduction variable inside of reduce functions. */
 	protected static val reduceVarName = "reduceVar"
 	
+	/** The program being built. */
+	protected val ProgramBuilder program
+	
+	/** Generates data types compatible with WriteC. */
+	protected val WriteCTypeGenerator typeGenerator
+	
 	/**
 	 * A counter for the number of reductions that have been created.
-	 * This is used for determining the names of functions and macros
-	 * which will be emitted.
+	 * This is used for determining the names of functions and macros which will be emitted.
 	 */
 	protected var nextReductionId = 0
 	
-	/** The data type to use for Alpha values. */
-	protected val BaseDataType alphaValueType
-	
-	/** The converter used for converting the body of a reduce expression into C expressions. */
-	protected val ExprConverter exprConverter
-	
-	/** Constructs a new converter for reduce expressions. */
-	new(BaseDataType alphaValueType, ExprConverter exprConverter) {
-		this.alphaValueType = alphaValueType
-		this.exprConverter = exprConverter
+	/** Constructs a new converter for expressions. */
+	new(WriteCTypeGenerator typeGenerator, AlphaNameChecker nameChecker, ProgramBuilder program) {
+		super(typeGenerator, nameChecker)
+		this.program = program
+		this.typeGenerator = typeGenerator
 	}
 	
 	/**
@@ -47,7 +47,7 @@ class ReduceExprConverter {
 	 * A new function is created and added to the program which computes the reduction,
 	 * and the appropriate function call expression is returned.
 	 */
-	def Expression convertExpr(ProgramBuilder program, ReduceExpression expr) {
+	def dispatch Expression convertExpr(ReduceExpression expr) {
 		// Create the reduce function and add it to the program.
 		val reduceFunction = createReduceFunction(program, expr)
 		program.addFunction(reduceFunction)
@@ -70,16 +70,16 @@ class ReduceExprConverter {
 			reducePointMacroName = "RP" + nextReductionId
 			accumulateMacroName = "R" + nextReductionId
 			nextReductionId += 1
-		} while(program.nameChecker.globalNameExists(reduceFunctionName, reducePointMacroName, accumulateMacroName))
+		} while(program.nameChecker.isGlobalOrKeyword(reduceFunctionName, reducePointMacroName, accumulateMacroName))
 		
 		// Start building the reduce function.
-		val function = program.startFunction(true, false, Factory.dataType(alphaValueType), reduceFunctionName)
+		// The return type is the value type of the variable that the reduce expression writes to.
+		val function = program.startFunction(true, false, typeGenerator.alphaValueType, reduceFunctionName)
 		
 		// Create the "reduction variable", which is what the reduction will accumulate into.
 		// This needs to be initialized to the correct value for the reduction operator.
-		val initializeStmt = Factory.assignmentStmt(reduceVarName, Common.getReductionInitialValue(alphaValueType, expr.operator))
-		function
-			.addVariable(Factory.dataType(alphaValueType), reduceVarName)
+		val initializeStmt = Factory.assignmentStmt(reduceVarName, AlphaBaseHelpers.getReductionInitialValue(typeGenerator.alphaValueBaseType, expr.operator))
+		function.addVariable(typeGenerator.alphaValueType, reduceVarName)
 			.addStatement(initializeStmt)
 			
 		// Create the macros that evaluate points within the reduction body
@@ -89,7 +89,7 @@ class ReduceExprConverter {
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
 		// Use isl to determine what points need to be reduced and how they get reduced.
-		val loopDomain = createReduceLoopDomain(program.nameChecker, expr)
+		val loopDomain = expr.createReduceLoopDomain
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain)
 		
 		// The size parameters for the loop domain need to be added as function parameters.
@@ -97,19 +97,18 @@ class ReduceExprConverter {
 		
 		// Add declarations for all the loop variables and add the loops themselves to the function.
 		val loopResult = ASTConverter.convert(islAST)
-		loopResult.declarations.forEach[function.addVariable(Common.alphaIndexType, it)]
+		loopResult.declarations.forEach[function.addVariable(typeGenerator.indexType, it)]
 		function.addStatement(loopResult.statements)
 			
 		// Undefine the macros, then have the function return the reduce variable.
-		function
-			.addUndefine(reducePointMacro, accumulateMacro)
+		function.addUndefine(reducePointMacro, accumulateMacro)
 			.addReturn(reduceVarExpr)
 			
 		return function.instance
 	}
 	
 	/** Constructs the domain which will represent the loop nest that isl will produce. */
-	def protected createReduceLoopDomain(NameChecker nameChecker, ReduceExpression reduceExpr) {
+	def protected createReduceLoopDomain(ReduceExpression reduceExpr) {
 		// We will use ISL to create the loop nest for the reduction.
 		// This needs two things: the domain of points to iterate over,
 		// and a map to the time at which they are computed at.
@@ -196,19 +195,19 @@ class ReduceExprConverter {
 	}
 	
 	/** Constructs a parameter for the reduce function. */
-	def protected static toParameter(String name) {
-		return Factory.parameter(Common.alphaIndexType, name)
+	def protected toParameter(String name) {
+		return Factory.parameter(typeGenerator.indexType, name)
 	}
 	
 	/** Constructs the macro that evaluates a point within the reduction body. */
 	def protected createReducePointMacro(String macroName, ProgramBuilder program, ReduceExpression expr) {
 		val arguments = expr.body.contextDomain.indexNames
-		val replacement = exprConverter.convertExpr(program, expr.body)
+		val replacement = convertExpr(expr.body)
 		return Factory.macroStmt(macroName, arguments, replacement)
 	}
 	
 	/** Constructs the macro used to accumulate points of the reduction body into the reduce variable. */
-	def protected static createAccumulationMacro(String macroName, ReduceExpression expr, MacroStmt reducePointMacro) {
+	def protected createAccumulationMacro(String macroName, ReduceExpression expr, MacroStmt reducePointMacro) {
 		// Construct a call to the reduce point macro.
 		// Since isl's call to this macro doesn't parenthesize the inputs,
 		// and since the macro for the reduction body might not be parenthesized,
@@ -218,7 +217,7 @@ class ReduceExprConverter {
 		
 		// Construct a binary expression to add the reduce variable to the point which was reduced,
 		// then wrap that in an assignment statement.
-		val operator = Common.getOperator(expr.operator)
+		val operator = AlphaBaseHelpers.getOperator(expr.operator)
 		val accumulateExpr = Factory.binaryExpr(operator, reduceVarExpr, reducePointCall)
 		val accumulateStmt = Factory.assignmentStmt(reduceVarExpr, accumulateExpr)
 		

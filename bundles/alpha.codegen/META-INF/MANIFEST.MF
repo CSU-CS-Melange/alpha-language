@@ -9,10 +9,11 @@ Bundle-Localization: plugin
 Automatic-Module-Name: alpha.codegen
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: alpha.codegen,
+ alpha.codegen.alphaBase,
+ alpha.codegen.demandDriven,
  alpha.codegen.impl,
  alpha.codegen.isl,
- alpha.codegen.util,
- alpha.codegen.writeC
+ alpha.codegen.util
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.emf.ecore;visibility:=reexport,
  org.eclipse.xtext.xbase.lib,

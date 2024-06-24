@@ -1,9 +1,9 @@
-package alpha.codegen.tests.writeC;
+package alpha.codegen.tests.demandDriven;
 
 import alpha.codegen.BaseDataType;
 import alpha.codegen.Program;
 import alpha.codegen.ProgramPrinter;
-import alpha.codegen.writeC.SystemConverter;
+import alpha.codegen.demandDriven.WriteC;
 import alpha.commands.Utility;
 import alpha.loader.AlphaLoader;
 import alpha.model.AlphaRoot;
@@ -32,7 +32,7 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
  * 8. Repeat steps 3-7 for all programs.
  */
 @SuppressWarnings("all")
-public class SystemConverterManualTest {
+public class WriteCManualTest {
   public static void main(final String[] args) {
     try {
       final List<String> programs = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("CopyInput", "LUDecomposition", "PrefixScan"));
@@ -42,7 +42,7 @@ public class SystemConverterManualTest {
           final String alphaFile = (((("resources/" + program) + "/") + program) + ".alpha");
           final AlphaRoot root = AlphaLoader.loadAlpha(alphaFile);
           final AlphaSystem system = Utility.GetSystem(root, program);
-          final Program cAST = SystemConverter.convert(system, BaseDataType.FLOAT, true);
+          final Program cAST = WriteC.convert(system, BaseDataType.FLOAT, true);
           final String cProgram = ProgramPrinter.print(cAST).toString();
           final String cFile = (((("resources/" + program) + "/") + program) + ".c");
           final FileWriter writer = new FileWriter(cFile);

@@ -58,13 +58,13 @@ class ProgramBuilder {
 	
 	/** Adds lines to the program's header comment. */
 	def addHeaderComment(String... commentLines) {
-		instance.headerComment.addAll(commentLines)
+		instance.headerComment.addAll(commentLines.filterNull)
 		return this
 	}
 	
 	/** Adds #include directives to the program. */
 	def addInclude(Include... includes) {
-		instance.includes.addAll(includes)
+		instance.includes.addAll(includes.filterNull)
 		return this
 	}
 	
@@ -75,10 +75,12 @@ class ProgramBuilder {
 	 * a NameConflictException will be thrown.
 	 */
 	def addFunctionMacro(MacroStmt... macros) {
-		// If the name is a duplicate, then an exception will be thrown here.
-		macros.forEach[nameChecker.checkAddGlobal(it.name)]
-		
-		instance.functionMacros.addAll(macros)
+		val filtered = macros.filterNull
+		if (!filtered.empty) {
+			// If the name is a duplicate, then an exception will be thrown here.
+			filtered.forEach[nameChecker.checkAddGlobal(it.name)]
+			instance.functionMacros.addAll(filtered)
+		}
 		return this
 	}
 	
@@ -101,10 +103,12 @@ class ProgramBuilder {
 	 * a NameConflictException will be thrown.
 	 */
 	def addGlobalVariable(VariableDecl... variables) {
-		// If the name is a duplicate, then an exception will be thrown here.
-		variables.forEach[nameChecker.checkAddGlobal(it.name)]
-		
-		instance.globalVariables.addAll(variables)
+		val filtered = variables.filterNull
+		if (!filtered.empty) {
+			// If the name is a duplicate, then an exception will be thrown here.
+			filtered.forEach[nameChecker.checkAddGlobal(it.name)]
+			instance.globalVariables.addAll(filtered)
+		}
 		return this
 	}
 	
@@ -115,7 +119,7 @@ class ProgramBuilder {
 	 * to match a global variable's name.
 	 */
 	def addMemoryMacro(MacroStmt... macros) {
-		instance.memoryMacros.addAll(macros)
+		instance.memoryMacros.addAll(macros.filterNull)
 		return this
 	}
 	
@@ -125,11 +129,18 @@ class ProgramBuilder {
 	 * a NameConflictException will be thrown.
 	 */
 	def addFunction(Function... functions) {
-		// If the name is a duplicate, then an exception will be thrown here.
-		functions.forEach[nameChecker.checkAddGlobal(it.name)]
-		
-		instance.functions.addAll(functions)
+		val filtered = functions.filterNull
+		if (!filtered.empty) {
+			// If the name is a duplicate, then an exception will be thrown here.
+			filtered.forEach[nameChecker.checkAddGlobal(it.name)]
+			instance.functions.addAll(filtered)
+		}
 		return this
+	}
+	
+	/** Starts building a function using this program's name checker. */
+	def startFunction(BaseDataType returnType, String name) {
+		return FunctionBuilder.start(returnType, name, nameChecker)
 	}
 	
 	/** Starts building a function using this program's name checker. */
