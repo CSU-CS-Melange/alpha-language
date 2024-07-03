@@ -37,5 +37,9 @@ workspace/
 */alpha.model.tests/src/alpha/model/tests/Driver*
 */alpha.targetmapping.tests/src/alpha/targetmapping/tests/Driver*
 
+# generated files
+**/src-gen/**
+**/xtend-gen/**
+
 # git specific
 **/.gitignore
