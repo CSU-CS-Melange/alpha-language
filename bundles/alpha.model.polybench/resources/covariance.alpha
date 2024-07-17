@@ -1,0 +1,18 @@
+// Author: Jonathon Yallop
+// Adapted from the work of Tomofumi Yuki
+
+//covariance (sample covariance)
+//
+affine covariance [N, M] -> {: N > 0 and M > 0 }
+	inputs
+		data: {[i, j] : 0 <= i < N and 0 <= j < M}; //NxM array, N data points with M properties
+	outputs
+		cov: {[x, y]: 0 <= x <= y < M}; //covariance matrix
+	locals
+		mean: {[j]: 0 <= j < M};
+	let
+		mean[j] = reduce(+, [i], data[i,j]) / N;
+		//covariance between property x and y
+		// centered value may be pre-computed (data[i,j] - mean[j]) to save work
+		cov[x,y] = reduce(+, [k], (data[k,x] - mean[x]) * (data[k,y] - mean[y])) / (N - 1);
+.

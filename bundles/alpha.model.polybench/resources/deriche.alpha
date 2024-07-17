@@ -1,0 +1,93 @@
+//Original Author: Revathy R.
+//Alpha version: Jonathon Y.
+
+//Deriche Recursive Filter 2D
+
+//External function
+//exp(double);
+
+affine deriche [W, H] -> {: W > 0 and H > 0}
+
+	inputs
+		//Input image
+		Xin: {[i, j]: 0 <= i < W and 0 <= j < H};
+		//Filter coefficient
+		//double alpha;
+		
+	outputs
+		Yout: {[i, j]: 0 <= i < W and 0 <= j < H};
+		
+	locals
+		//Smoothing filter
+		k: {}
+	
+		//Filter parameters computed within code
+		alpha: {};
+		a1, a2, a3, a4, a5, a6, a7, a8: {};
+		b1, b2, c1, c2: {};
+		
+		//Intermediate arrays for horizontal pass
+		y1: {[i, j]: 0 <= i < W and 0 <= j < H};
+		y2: {[i, j]: 0 <= i < W and 0 <= j < H};
+		r:  {[i, j]: 0 <= i < W and 0 <= j < H};
+		
+		//Intermediate arrays for vertical pass
+		z1: {[i, j]: 0 <= i < W and 0 <= j < H};
+		z2: {[i,j]: 0 <= i < W and 0 <= j < H};
+
+	let
+		//Setting alpha to the value used in Polybench C
+		alpha = 0.25;
+	
+		//compute value of smoothing filter
+		k = (1-exp(-1*alpha) * 1-exp(-1*alpha)) / (1 + 2*alpha*exp(-1*alpha) - exp(-2*alpha));
+	
+		//Compute all parameters from alpha
+		a1 = k;
+		a5 = k;
+		
+		a2 = k * exp(-1*alpha) * (alpha-1) ;
+		a6 = a2;
+		
+		a3 = k * exp(-1*alpha) * (alpha+1) ;
+		a7 = a3;
+		
+		a4 = -1*k*exp(-2*alpha);
+		a8 = a4;
+		
+		b1 = 2*exp(-1*alpha);
+		b2 = -1*exp(-2*alpha);
+		
+		c1 = 1;
+		c2 = 1;
+		
+		//Horizontal Pass
+		y1[i,j] = case
+			{|j==0} : a1 * Xin[i,j] + a2*0.0 + b1*0.0 + b2*0.0;
+			{|j==1} : a1*Xin[i,j] + a2*Xin[i,0] + b1*y1[i,0];
+			{|j>1}  : a1*Xin[i,j] + a2*Xin[i,j-1] + b1*y1[i,j-1] + b2*y1[i,j-2];
+		 esac;
+		 
+		y2[i,j] = case
+			{|j==H-2} : a3*Xin[i,j+1] + a4*0.0 + b1*y2[i,j+1]+b2*0.0;
+			{|j==H-1} : 0.0;
+			{|0<=j<H-2}  : a3*Xin[i,j+1] + a4*Xin[i,j+2] + b1*y2[i,j+1] + b2*y2[i,j+2];
+		esac;
+		
+		r[i,j] = c1*(y1[i,j]+y2[i,j]);
+		
+		//Vertical Pass
+		z1[i,j] = case
+			{|i==0} : a5*r[i,j] + a6*0.0 + b1*0.0 + b2*0.0;
+			{|i==1} : a5*r[i,j] + a6*r[i-1,j] + b1*y1[i-1,j] + b2*0.0;
+			{|i>1}  : a5*r[i,j] + a6*r[i-1,j] + b1*y1[i-1,j] + b2*y1[i-2,j];
+		esac;
+		
+		z2[i,j] = case
+			{|i==W-2} : a7*r[i+1,j] + a8*0.0 + b1*y1[i+1,j] + b2*0.0;
+			{|i==W-1} : a7*0.0;
+			{|0<=i<W-2} : a7*r[i+1,j] + a8*r[i+2,j] + b1*y1[i+1,j] + b2*y1[i+2,j];
+		esac;
+		
+		Yout[i,j] = c2*(z1[i,j] + z2[i,j]);
+.
