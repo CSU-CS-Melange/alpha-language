@@ -77,6 +77,7 @@ class NameChecker {
 			if (globalNames.contains(name)) {
 				throw new NameConflictException(name)
 			}
+			
 			if (reservedKeywords.contains(name)) {
 				throw new ReservedKeywordException(name)
 			}
