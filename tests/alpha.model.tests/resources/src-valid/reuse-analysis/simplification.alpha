@@ -73,6 +73,7 @@ package reuse.basic {
 			
 			L1[i] = reduce(+, (i,j->i), C[i,j]);
 			L2[i] = reduce(+, (i,j->j), C[i,j]);
+			L3[i] = reduce(+, (i,j->j), C[i,j]);
 	.
 	
 	// ABFT: jacobi 1D stencil (single trapezoidal tile) v1

@@ -1,0 +1,9 @@
+affine undefinedUnusedLocals [N] -> {  : N > 10 }
+	inputs X: [N]
+	outputs Y, Z: [N]
+	locals A, B: [N]
+	let
+		A[i] = X[i];
+		Z[i] = A[i];
+		Y[i] = Z[i];
+.

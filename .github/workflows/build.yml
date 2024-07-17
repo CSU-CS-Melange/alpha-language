@@ -25,55 +25,77 @@ jobs:
     - name: build alpha
       run: mvn clean package
 
-    # the ghcr.io/csu-cs-melange/alpha-language-image image exposes a junit CLI
-    - name: run junit tests and collect code coverage
-      run: |
-        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}"
-        org.junit.runner.JUnitCore alpha.codegen.tests.FactoryTest
-        org.junit.runner.JUnitCore alpha.codegen.tests.ModelTest
-        org.junit.runner.JUnitCore alpha.codegen.tests.NameCheckerTest
-        org.junit.runner.JUnitCore alpha.codegen.tests.demandDriven.WriteCTest
-        org.junit.runner.JUnitCore alpha.codegen.tests.isl.MemoryUtilsTest
-        org.junit.runner.JUnitCore alpha.model.tests.AlphaAShowTest
-        org.junit.runner.JUnitCore alpha.model.tests.AlphaCheckProgramTest
-        org.junit.runner.JUnitCore alpha.model.tests.AlphaNormalizeTest
-        org.junit.runner.JUnitCore alpha.model.tests.AlphaShowTest
-        org.junit.runner.JUnitCore alpha.model.tests.ComplexityCalculatorTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformation.reduction.NormalizeReductionDeepTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformation.reduction.SplitReductionTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.DistributivityTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.FactorOutFromReductionTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.HigherOrderOperatorTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.HoistOutOfReductionTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.IdempotenceTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.NormalizeTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.PermutationCaseReduceTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.PropagateSimpleEquationsTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.RaiseDependenceTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.SameOperatorSimplificationTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyExpressionsTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.SimplifyingReductionsTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.SplitUnionIntoCaseTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.StandardizeNamesTest
-        org.junit.runner.JUnitCore alpha.model.tests.transformations.SubstituteByDefTest
-        org.junit.runner.JUnitCore alpha.model.tests.util.AffineFactorizerTest
-        org.junit.runner.JUnitCore alpha.model.tests.util.FaceLatticeTest
+    # The ghcr.io/csu-cs-melange/alpha-language-image image exposes a junit CLI.
+    # Call it once per package that needs to be tested.
+    - name: run junit tests and collect code coverage for alpha.codegen.tests
+      run: >
+        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}" &&
+        export TEST_PACKAGE="alpha.codegen.tests" &&
+        org.junit.runner.JUnitCore
+        alpha.codegen.tests.FactoryTest
+        alpha.codegen.tests.ModelTest
+        alpha.codegen.tests.NameCheckerTest
+        alpha.codegen.tests.demandDriven.WriteCTest
+        alpha.codegen.tests.isl.MemoryUtilsTest
 
+    - name: run junit tests and collect code coverage for alpha.model.tests
+      run: >
+        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}" &&
+        export TEST_PACKAGE="alpha.model.tests" &&
+        org.junit.runner.JUnitCore
+        alpha.model.tests.AlphaAShowTest
+        alpha.model.tests.AlphaCheckProgramTest
+        alpha.model.tests.AlphaNormalizeTest
+        alpha.model.tests.AlphaShowTest
+        alpha.model.tests.ComplexityCalculatorTest
+        alpha.model.tests.transformation.reduction.NormalizeReductionDeepTest
+        alpha.model.tests.transformation.reduction.SplitReductionTest
+        alpha.model.tests.transformations.DistributivityTest
+        alpha.model.tests.transformations.FactorOutFromReductionTest
+        alpha.model.tests.transformations.HigherOrderOperatorTest
+        alpha.model.tests.transformations.HoistOutOfReductionTest
+        alpha.model.tests.transformations.IdempotenceTest
+        alpha.model.tests.transformations.NormalizeTest
+        alpha.model.tests.transformations.PermutationCaseReduceTest
+        alpha.model.tests.transformations.PropagateSimpleEquationsTest
+        alpha.model.tests.transformations.RaiseDependenceTest
+        alpha.model.tests.transformations.SameOperatorSimplificationTest
+        alpha.model.tests.transformations.SimplifyExpressionsTest
+        alpha.model.tests.transformations.SimplifyingReductionsTest
+        alpha.model.tests.transformations.SplitUnionIntoCaseTest
+        alpha.model.tests.transformations.StandardizeNamesTest
+        alpha.model.tests.transformations.SubstituteByDefTest
+        alpha.model.tests.util.AffineFactorizerTest
+        alpha.model.tests.util.FaceLatticeTest
+
+    - name: run junit tests and collect code coverage for alpha.targetmapping.tests
+      run: >
+        export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}" &&
+        export TEST_PACKAGE="alpha.targetmapping.tests" &&
+        org.junit.runner.JUnitCore
+        alpha.targetmapping.tests.TargetMappingAShowTest
+        alpha.targetmapping.tests.TargetMappingShowTest
+
+    # Add a "--classfiles" line for each project being tested.
     - name: generate code coverage report
       run: |
         export ALPHA_REPO_ROOT="${GITHUB_WORKSPACE}"
         mkdir -p "${JACOCO_PREFIX}/coverage"
-        jacococli report "${JACOCO_PREFIX}/jacoco-${GITHUB_SHA}.exec" \
+        jacococli report "${JACOCO_PREFIX}/jacoco-${GITHUB_SHA}-*.exec" \
+          --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.codegen/bin" \
           --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.model/bin" \
+          --classfiles "${ALPHA_REPO_ROOT}/bundles/alpha.targetmapping/bin" \
           --xml "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" \
           --html "${JACOCO_PREFIX}/coverage/html"
 
     - name: finish and report Codeclimate statistics
       run: |
         mkdir -p all-src
-        cp -R bundles/alpha.model/src/* all-src/
-        cp -R bundles/alpha.model/src-gen/* all-src/
-        cp -R bundles/alpha.model/xtend-gen/* all-src/
+        for proj in alpha.codegen alpha.model alpha.targetmapping; do
+          cp -R bundles/$proj/src/* all-src/
+          cp -R bundles/$proj/src-gen/* all-src/
+          cp -R bundles/$proj/xtend-gen/* all-src/
+        done
         cd all-src
         cc-test-reporter format-coverage -t jacoco "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" --output "codeclimate.json"
         cc-test-reporter upload-coverage --input "codeclimate.json"

@@ -14,6 +14,7 @@ import alpha.model.ExternalFunction;
 import alpha.model.FuzzyFunction;
 import alpha.model.ModelPackage;
 import alpha.model.POLY_OBJECT_TYPE;
+import alpha.model.ReduceExpression;
 import alpha.model.RestrictExpression;
 import alpha.model.SelectExpression;
 import alpha.model.StandardEquation;
@@ -89,6 +90,11 @@ public class AlphaIssueFactory {
 		return new InvalidSyntaxIssue(TYPE.ERROR, "Self-recursion with identity call parameter is prohibited (infinite recursion).", ue, null);
 	}
 
+	public static InvalidSyntaxIssue undefinedVariable(Variable v, SystemBody body) {
+		return new InvalidSyntaxIssue(TYPE.ERROR, 
+				String.format("Variable '%s' is used but not defined in system body where %s", v.getName(), body.getParameterDomain()),
+				v, ModelPackage.Literals.VARIABLE__NAME);
+	}
 
 	public static CalculatorExpressionIssue expectingSet(UseEquation expr, EStructuralFeature feature) {
 		return new CalculatorExpressionIssue(TYPE.ERROR, "Expecting calculator expression to evaluate as set/domain", expr, feature);
@@ -177,4 +183,10 @@ public class AlphaIssueFactory {
 				ModelPackage.Literals.SELECT_EXPRESSION__RELATION_EXPR);
 	}
 	
+	public static ExpressionDomainIssue unboundedReductionBody(ReduceExpression re) {
+		return new ExpressionDomainIssue(TYPE.ERROR,
+				"The expression has an unbounded reduction body.", re,
+				null);
+
+	}
 }

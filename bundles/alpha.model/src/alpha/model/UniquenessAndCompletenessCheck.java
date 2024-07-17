@@ -4,9 +4,11 @@ import static alpha.model.util.AlphaUtil.callISLwithErrorHandling;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.EcoreUtil2;
@@ -17,6 +19,7 @@ import alpha.model.issue.UnexpectedISLErrorIssue;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.AlphaExpressionUtil;
 import alpha.model.util.AlphaUtil;
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
@@ -44,6 +47,7 @@ public class UniquenessAndCompletenessCheck extends AbstractAlphaCompleteVisitor
 	
 	private List<AlphaIssue> issues = new LinkedList<>();
 	private Map<Variable, List<VariableExpression>> useDefs;
+	private Set<Variable> usedVariables;
 
 	public static List<AlphaIssue> check(List<AlphaRoot> roots) {
 		UniquenessAndCompletenessCheck checker = new UniquenessAndCompletenessCheck();
@@ -105,8 +109,10 @@ public class UniquenessAndCompletenessCheck extends AbstractAlphaCompleteVisitor
 	@Override
 	public void inSystemBody(SystemBody sysBody) {
 		//initialize book-keeping records for UseEquation checks
-		useDefs = new HashMap<Variable, List<VariableExpression>>(); 
-	
+		useDefs = new HashMap<Variable, List<VariableExpression>>();
+		//and variable definition checks
+		usedVariables = new HashSet<Variable>();
+		
 		super.inSystemBody(sysBody);
 	}
 	
@@ -156,6 +162,17 @@ public class UniquenessAndCompletenessCheck extends AbstractAlphaCompleteVisitor
 			}
 		}
 		
+		//check for non-input variables that are used but not defined
+		for(Variable v : sysBody.getSystem().getLocals()) {
+			if(usedVariables.contains(v)) {
+				checkVariableDefined(v, sysBody);
+			}
+		}
+
+		for(Variable v : sysBody.getSystem().getOutputs()) {
+			checkVariableDefined(v, sysBody);
+		}
+		
 		super.outSystemBody(sysBody);
 	}
 	
@@ -168,6 +185,12 @@ public class UniquenessAndCompletenessCheck extends AbstractAlphaCompleteVisitor
 		}
 		
 		throw new RuntimeException("Ancestor of a VariableExpression was not found in the container equation. The model is in an inconsistent state.");
+	}
+	
+	private void checkVariableDefined(Variable v, SystemBody body) {
+		if(body.getStandardEquation(v) == null && useDefs.get(v) == null) {
+			issues.add(AlphaIssueFactory.undefinedVariable(v, body));
+		}
 	}
 	
 	@Override
@@ -249,5 +272,26 @@ public class UniquenessAndCompletenessCheck extends AbstractAlphaCompleteVisitor
 		}
 		
 		super.inUseEquation(ue);
+	}
+	
+	@Override
+	public void inVariableExpression(VariableExpression ve) {
+		//bookkeeping for checking that all used variables are defined
+		usedVariables.add(ve.getVariable());
+		
+		super.inVariableExpression(ve);
+  }
+  
+	public void inReduceExpression(ReduceExpression re) {
+		ISLSet dom = re.getBody().getZ__internal_cache_contextDom().copy().convexHull().toSet();
+		
+		for(int i = 0; i < dom.dim(ISLDimType.isl_dim_out); i++) {
+			if(!dom.hasUpperBound(ISLDimType.isl_dim_out, i) || !dom.hasLowerBound(ISLDimType.isl_dim_out, i)) {
+				issues.add(AlphaIssueFactory.unboundedReductionBody(re));
+			}
+			dom = dom.eliminate(ISLDimType.isl_dim_out, i, 1);
+		}
+		
+		super.inReduceExpression(re);
 	}
 }

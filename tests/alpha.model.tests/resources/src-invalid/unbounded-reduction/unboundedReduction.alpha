@@ -1,0 +1,6 @@
+affine unboundedBody [N] -> {  : N > 0 }
+	inputs Y : [N]
+	outputs X : [N]
+	let
+		X = reduce(+, (i,j->i+j), Y[i+j]);
+.
