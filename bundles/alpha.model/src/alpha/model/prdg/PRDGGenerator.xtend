@@ -89,7 +89,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		
 		//Node for body
 		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions + "_body"
-		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy))
+		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
 
 		//Dependence from result to body
 		val ISLMultiAff resToBody = reduceExpression.projection.copy

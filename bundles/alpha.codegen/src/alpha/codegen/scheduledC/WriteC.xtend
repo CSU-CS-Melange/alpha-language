@@ -17,18 +17,24 @@ import alpha.model.prdg.PRDG
 import alpha.model.prdg.PRDGGenerator
 import alpha.model.scheduler.FoutrierScheduler
 import alpha.model.scheduler.Scheduler
+import alpha.model.transformation.ChangeOfBasis
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
-import alpha.model.transformation.ChangeOfBasis
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.reduction.NormalizeReduction
+import java.util.List
+import javax.lang.model.type.UnionType
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import alpha.codegen.ProgramPrinter
+import fr.irisa.cairn.jnimap.isl.ISLScheduleNode
+import java.util.ArrayList
 
 class WriteC extends CodeGeneratorBase {
 	
@@ -44,12 +50,23 @@ class WriteC extends CodeGeneratorBase {
 	
 	protected val PRDG prdg
 	
-	new(SystemBody systemBody, AlphaNameChecker nameChecker, PRDG prdg, ScheduledTypeGenerator typeGenerator, Scheduler scheduler, boolean cycleDetection) {
+	/** Tells the code generator to add the inline keyword to the evaluate function */
+	protected val boolean inlineFunction
+	
+	/** Tells the code generator to manually inline the function (replace the function call with the actual function body */
+	protected val boolean inlineCode
+	
+	new(SystemBody systemBody, AlphaNameChecker nameChecker, PRDG prdg, ScheduledTypeGenerator typeGenerator, 
+		Scheduler scheduler, boolean cycleDetection, boolean inlineFunction,
+		boolean inlineCode
+	) {
 		super(systemBody, nameChecker, typeGenerator, cycleDetection)
 
 		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler)
 		this.prdg = prdg
 		this.scheduler = scheduler
+		this.inlineFunction = inlineFunction
+		this.inlineCode = inlineCode
 	}
 	
 	override declareMemoryMacro(Variable variable) {
@@ -69,23 +86,38 @@ class WriteC extends CodeGeneratorBase {
 	
 	override declareEvaluation(StandardEquation equation) {
 		// Start building a static, non-inlined function.
-		val returnType = typeGenerator.getAlphaValueType(equation.variable)
+		val returnType = Factory.dataType(BaseDataType.VOID)
 		val evalName = nameChecker.getVariableReadName(equation.variable)
-		val evalBuilder = program.startFunction(true, false, returnType, "eval_" + evalName)
-		 	
-		println("Expr Domain: " + equation.variable.name)
-		println("Prdg Domains: " + this.scheduler.schedule)
+		val evalBuilder = program.startFunction(true, this.inlineFunction, returnType, "eval_" + evalName)
+		
+		//val evalBuilder = program.startFunction(true, this.inlineFunction, returnType, evalName)
+
+//		println("Prdg Domains: " + this.scheduler.schedule)
 
 		// Add a function parameter for each index of the variable's domain.
 		val indexNames = equation.expr.contextDomain.indexNames
 		indexNames.forEach[evalBuilder.addParameter(typeGenerator.indexType, it)]
 		
-		exprConverter.target = "Y_reduce1_body"
+		/** TODO: Expand to multiple edges */
+		val oneStepDep = this.prdg.edges.filter[edge | edge.source.name === equation.variable.name].head
+//		println("one step: " + oneStepDep)
+		val target = oneStepDep !== null ? this.prdg.edges.filter[edge | edge.source.name === oneStepDep.dest.name].head : null
+//		println("Target: " + target)
+		
+		if(target !== null) {
+			exprConverter.target = target.dest.name
+		} else {
+			exprConverter.target = ""
+		}
+		
 		val computeValue = exprConverter.convertExpr(equation.expr)
 		val computeAndStore = Factory.assignmentStmt(equation.identityAccess(false), computeValue)
 		
+		exprConverter.target = ""
 		evalBuilder.addStatement(computeAndStore)
-		program.addFunction(evalBuilder.instance)
+		if(!inlineCode) {
+			program.addFunction(evalBuilder.instance)
+		}
 	}
 		
 	/** Gets the expression used to access a variable (or its flag). */
@@ -131,32 +163,66 @@ class WriteC extends CodeGeneratorBase {
 	
 	override performEvaluations() {
 		entryPoint.addComment("Evaluate all the outputs.")
-		systemBody.system.outputs.forEach[evaluateAllPoints]
+		//systemBody.system.outputs.forEach[x | println("Output: " + x)]
+		evaluateAllPoints(systemBody.system.outputs)
 		entryPoint.addEmptyLine
 	}
 	
 	/** Evaluates all the points within an output variable. */
-	def protected evaluateAllPoints(Variable variable) {
+	def protected evaluateAllPoints(List<Variable> variable) {
 		// Get a unique name for the macro that is called inside the loop.
 		var String macroName
 		do {
 			macroName = "S" + nextStatementId
 			nextStatementId += 1
 		} while (nameChecker.isGlobalOrKeyword(macroName))
-		
+
 		// Add a macro that simply calls the "eval" function.
 		// The loop nest generated by ISL will call this macro.
-		val evalName = "eval_" + nameChecker.getVariableReadName(variable)
-		val callEval = Factory.callExpr(evalName, variable.domain.indexNames)
-		val macro = Factory.macroStmt(macroName, variable.domain.indexNames, callEval)
-		entryPoint.addStatement(macro)
+		val evalName = "eval_" + nameChecker.getVariableReadName(variable.get(0))
+		//val evalName = nameChecker.getVariableReadName(variable)
+		val callEval = Factory.callExpr(evalName, variable.get(0).domain.indexNames)
+		/** TODO: Add check for reduction variable to reduction result in prdg */
+		//val macro = Factory.macroStmt(macroName, variable.domain.indexNames, callEval)
+		//entryPoint.addStatement(macro)
 				
 		// We will have ISL create a loop nest that visits all points in their lexicographic order.
 		// Any loop variables used need to also be declared.
-		val islAST = LoopGenerator.generateLoops(macroName, variable.domain, scheduler.getMacroSchedule(variable.name))
-		println("islAST: " + islAST.copy)
-		val loopResult = ASTConverter.convert(islAST)
-		println("Result: " + loopResult.declarations)
+		
+		//val scheduleMaps = convertToUnionMap(scheduler.schedule.map.copy.maps.filter[ map | !map.getDimNames(ISLDimType.isl_dim_in).head.contains("result")].toList)
+		var ISLUnionMap scheduleMaps
+		for(map : scheduler.schedule.map.maps) {
+			if(!map.copy.inputTupleName.contains("reduce")) {
+				if(scheduleMaps === null) {
+					scheduleMaps = map.copy.toUnionMap
+				} else {
+					scheduleMaps = scheduleMaps.addMap(map)
+				}
+				
+			}
+
+		}
+
+		println("Maps: " + scheduleMaps.copy)
+		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.schedule.domain)
+		var ISLUnionMap namedScheduleMaps
+		for(map : scheduleMaps.maps) {
+			println("Name: " + map.copy.inputTupleName)
+			var name = map.copy.inputTupleName
+			var newMap = map.copy
+			newMap = newMap.setInputTupleName("eval_" + name)
+			if(namedScheduleMaps === null) {
+				namedScheduleMaps = newMap.copy.toUnionMap
+			} else {
+				namedScheduleMaps = namedScheduleMaps.addMap(newMap)
+			}
+
+		}
+		println("Maps: " + namedScheduleMaps)
+		val islAST = LoopGenerator.generateLoops(scheduler.schedule.domain.params, namedScheduleMaps)
+		
+		val loopResult = ScheduledASTConverter.convert(islAST)
+
 		val loopVariables = loopResult.declarations
 			.map[Factory.variableDecl(typeGenerator.indexType, it)]
 			.toArrayList
@@ -164,30 +230,35 @@ class WriteC extends CodeGeneratorBase {
 		entryPoint.addVariable(loopVariables)
 			.addStatement(loopResult.statements)
 		
-		// Undefine the macro now that we're done with it.
-		entryPoint.addStatement(Factory.undefStmt(macroName))
 	}
-
 	
-	def static convert(AlphaSystem system, BaseDataType valueType, boolean normalize) {
+	def static void traverse(ISLScheduleNode node) {
+		if(node === null) {
+			return
+		}
+		println("Node: " + node)
+		if(node.hasNextSibling) {
+			traverse(node.nextSibling)
+		}
+		if(node.hasChildren) {
+			traverse(node.firstChild)
+		}
+	}
+	
+	def static convert(AlphaSystem system, BaseDataType valueType, boolean normalize, boolean inlineFunction, boolean inlineCode) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
-		}
-		val duplicate = system.copyAE
-		val body = duplicate.systemBodies.get(0)
-		val prdg = PRDGGenerator.apply(system)
-		
-				
-		var scheduler = new FoutrierScheduler(prdg)
-		println("Schedule: " + scheduler.schedule)
-		println("Schedule Maps: " + scheduler.schedule.map)
-		println("Schedule Domain: " + scheduler.schedule.domain)
-				
+		}				
 		var alteredSystem = system.copyAE
+		Normalize.apply(alteredSystem)
+		NormalizeReduction.apply(alteredSystem)
+		
+		val prdg = PRDGGenerator.apply(alteredSystem)
+		var scheduler = new FoutrierScheduler(prdg)
 
 		for(Variable local : alteredSystem.locals) {
 			for(ISLMap map : scheduler.schedule.map.maps) {
-				if(map.getTupleName(ISLDimType.isl_dim_in) == local.name) {
+				if(map.getTupleName(ISLDimType.isl_dim_out) == local.name) {
 					ChangeOfBasis.apply(alteredSystem, local, toMultiAff(map))
 				}
 			}
@@ -201,10 +272,21 @@ class WriteC extends CodeGeneratorBase {
 			}
 		}
 
-		println("Map Data: " + scheduler.schedule.map.maps.get(0).getTupleName(ISLDimType.isl_dim_in))	
+		//alteredSystem.systemBodies.get(0).equations.forEach[x | println("Equation: " + x.name)]	
+		//alteredSystem.systemBodies.get(0).standardEquations.forEach[x | println("SE Orig: " + x.expr)])
 		println("PRDG: \n" + prdg.show())
-		return (new WriteC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), prdg, new ScheduledTypeGenerator(valueType, false), scheduler, false)).convertSystemBody
+		return (new WriteC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
+			prdg, new ScheduledTypeGenerator(valueType, false), scheduler, false, inlineFunction, inlineCode
+		)).convertSystemBody
 		
+	}
+	
+	def static ISLUnionMap convertToUnionMap(List<ISLMap> maps) {
+		var ISLUnionMap unionMap
+		for(map : maps) {
+			unionMap = unionMap === null ? map.toUnionMap : unionMap.addMap(map)
+		}
+		unionMap
 	}
 	
 	def static ISLMultiAff toMultiAff(ISLMap map) {

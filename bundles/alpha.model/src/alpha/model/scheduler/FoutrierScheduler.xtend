@@ -23,12 +23,8 @@ class FoutrierScheduler implements Scheduler {
 		this.schedules = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
 	}
 	
-	override getMacroSchedule(String macro) {
-		val domain = prdg.getNode(macro).getDomain
-		domain.space
-			.addDims(ISLDimType.isl_dim_in, domain.nbIndices)
-			.buildIdentity
-			.toMap
+	override getScheduleDomain(String macro) {
+		this.schedule.domain.sets.filter(set | set.tupleName == macro).head
 	}
 	
 	override getSchedule() {
@@ -36,6 +32,11 @@ class FoutrierScheduler implements Scheduler {
 			this.generateSchedule
 		}
 		this.schedules
+	}
+	
+	override getScheduleMap(String variable) {
+		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head
+		
 	}
 
 }

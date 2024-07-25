@@ -16,6 +16,7 @@ import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import alpha.model.scheduler.Scheduler
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -88,8 +89,8 @@ class ScheduledExprConverter extends ExprConverter {
 		// Start building the reduce function.
 		// The return type is the value type of the variable that the reduce expression writes to.
 		val function = program.startFunction(true, false, typeGenerator.alphaValueType, reduceFunctionName)
-		println("Expr: " + reduceVarName)
-		
+
+		//println("Variable: " + this.reductionTarget)		
 		// Create the "reduction variable", which is what the reduction will accumulate into.
 		// This needs to be initialized to the correct value for the reduction operator.
 		val initializeStmt = Factory.assignmentStmt(reduceVarName, AlphaBaseHelpers.getReductionInitialValue(typeGenerator.alphaValueBaseType, expr.operator))
@@ -103,13 +104,23 @@ class ScheduledExprConverter extends ExprConverter {
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
 		// Use isl to determine what points need to be reduced and how they get reduced.
-		val loopDomain = expr.createReduceLoopDomain
+		var initialDomain = expr.createReduceLoopDomain
 		
 		/** TODO Update Name Correctly */		
-		println("Schedules: " + scheduler.schedule.map)
-		println("Domain: " + loopDomain.copy)
-		println("Intersection: " + scheduler.getMacroSchedule(variableName))
-		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain.copy, scheduler.getMacroSchedule(variableName))
+		var scheduleDomain = scheduler.getScheduleDomain(variableName).copy.alignParams(initialDomain.space)
+		scheduleDomain = scheduleDomain.copy.clearTupleName
+		println("Domain: " + initialDomain.space)	
+		println("Domain: " + scheduleDomain.space)	
+		var loopDomain = initialDomain.intersect(scheduleDomain)
+		println("Domain: " + loopDomain)		
+		
+		var scheduleMap = scheduler.getScheduleMap(variableName)
+		scheduleMap = scheduleMap.copy.clearInputTupleName.copy.clearOutputTupleName
+		
+		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
+			loopDomain.copy,
+			scheduleMap.intersectDomain(loopDomain.copy))
+
 		//val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain)
 		
 		// The size parameters for the loop domain need to be added as function parameters.
@@ -150,9 +161,7 @@ class ScheduledExprConverter extends ExprConverter {
 		val existingNames = newHashSet
 		existingNames.addAll(pointsToReduce.paramNames)
 		existingNames.addAll(pointsToReduce.indexNames)
-		
-		println("Reduction Body: " + pointsToReduce)
-		
+				
 		// For each index in the reduction's output domain,
 		// add a new parameter representing that output dimension to the set of points to reduce.
 		// Then, set that new parameter equal to its expression in the reduction's projection function.
@@ -174,10 +183,7 @@ class ScheduledExprConverter extends ExprConverter {
 			val outputConstraint = constrainAddedParameter(pointsToReduce.space, outputExpr)
 			pointsToReduce = pointsToReduce.addConstraint(outputConstraint)
 		}
-		
-		
-		println("Reduction Body Remix: " + pointsToReduce)
-		
+			
 		return pointsToReduce
 	}
 	

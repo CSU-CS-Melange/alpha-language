@@ -88,15 +88,14 @@ class PRDG {
 			map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
 			map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
 
-			if(edge.source.isReductionNode) {
-				println("Original: " + map2.copy)
+			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
+				println("Source: " + edge.source + " Dest: " + edge.dest + " Map: " + map2)
 				map2 = map2.reverse
-				println("Hopeful Inverse: " + map2.copy)
 			}	
 					
 			this.islPRDG = islPRDG.union(map2.copy.toUnionMap)
 		}
-		println("ISL PRDG Maps: " + this.islPRDG)
+		print("ISL PRDG: " + this.islPRDG)
 		this.islPRDG
 	}
 	
