@@ -1,0 +1,51 @@
+//Author: Tomofumi Yuki
+//Modified by Guillaume Iooss
+//Alpha version: Jonathon Y.
+
+//Finite Difference Time Domain
+//  Dirichlet (constant) boundary condition
+affine fdtd_2d [T, Nx, Ny] -> {: Nx, Ny > 2 && T > 2}
+	inputs
+		Ex_in: {[x, y]: 0 <= x < Nx && 0 <= y < Ny};
+		Ey_in: {[x, y]: 0 <= x < Nx && 0 <= y < Ny};
+		Hz_in: {[x,y]: 0 <= x < Nx && 0 <= y < Ny};
+	outputs
+		Ex_out: {[x, y]: 0 <= x < Nx && 0 <= y < Ny};
+		Ey_out: {[x, y]: 0 <= x < Nx && 0 <= y < Ny};
+		Hz_out: {[x, y]: 0 <= x < Nx && 0 <= y < Ny};
+	locals
+		Ex: {[t, x, y]: 0 <= t < T && 0 <= x < Nx && 0 <= y < Ny};
+		Ey: {[t, x, y]: 0 <= t < T && 0 <= x < Nx && 0 <= y < Ny};
+		Hz: {[t,x,y]: 0 <= t < T && 0 <= x < Nx && 0 <= y < Ny};
+	let
+		Ex_out[x,y] = Ex[T - 1, x, y];
+		Ey_out[x,y] = Ey[T - 1, x, y];
+		Hz_out[x,y] = Hz[T - 1, x, y];
+		
+		Ey[t,i,j] = case {
+						{: t == 0} : Ey_in[i, j];
+						{: t > 0 && i == 0} : 0.0;
+						{: t > 0 && i == Nx - 1} : 0.0;
+						{: t > 0 && j == 0 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && j == Ny - 1 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && 0 < i < Nx - 1 && 0 < j < Ny - 1} : Ey[t-1,i,j] - 0.5*(Hz[t-1,i,j] - Hz[t-1,i-1,j]);
+					};
+					
+		Ex[t,i,j] = case {
+						{: t == 0} : Ex_in[i,j];
+						{: t > 0 && i == 0} : 0.0;
+						{: t > 0 && i == Nx - 1} : 0.0;
+						{: t > 0 && j == 0 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && j == Ny - 1 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && 0 < i < Nx - 1 && 0 < j < Ny - 1} :  Ex[t-1,i,j] - 0.5*(Hz[t-1,i,j] - Hz[t-1,i,j-1]);
+					};
+		
+		Hz[t,i,j] = case {
+						{: t == 0} : Hz_in[i,j]; 
+						{: t > 0 && i == 0} : 0.0;
+						{: t > 0 && i == Nx - 1} : 0.0;
+						{: t > 0 && j == 0 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && j == Ny - 1 && 0 < i < Nx - 1} : 0.0;
+						{: t > 0 && 0 < i < Nx - 1 && 0 < j < Ny - 1} : Hz[t-1,i,j] - 0.7*(Ex[t,i,j+1] - Ex[t,i,j] + Ey[t,i+1,j] - Ey[t,i,j]);
+				    };
+.
