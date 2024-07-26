@@ -1,0 +1,24 @@
+// Author: Tomofumi Yuki
+// Translated to alpha by Jonathon Yallop
+
+//BLAS routine (matrix matrix multiply)
+//C := alpha*A*B + beta*C
+affine gemm [P,Q,R] -> {: P, Q, R > 0}
+	inputs
+		alpha: {};
+		beta: {};
+		A: {[i,j]: 0 <= i < P and 0 <= j < Q};
+		B: {[i,j]: 0 <= i < Q and 0 <= j < R};
+		Cin: {[i,j]: 0 <= i < P and 0 <= j < R};
+	outputs
+		Cout: {[i,j]: 0 <= i < P and 0 <= j < R};
+	locals
+		temp: {[i,j,k]: 0 <= i < P and 0 <= j < R and 0 <= k < Q};
+	let
+		Cout[i,j] = alpha * temp[i, j, Q - 1] + beta * Cin[i, j];
+		
+		temp[i,j,k] = case {
+			{: k == 0}: A[i, 0] * B[0, j];
+			{: k > 0} : temp[i, j, k - 1] + A[i, k] * B[k, j];
+		};
+.

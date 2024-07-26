@@ -1,0 +1,17 @@
+// Author: Tomofumi Yuki
+// Translated to Alpha by Jonathon Yallop
+
+//trmm : Triangular matrix multiply
+//
+//  B := alpha * A.B
+//  A is lower triangular
+affine trmm [N] -> {: N > 0}
+	inputs
+		alpha: {};
+		A: {[i, j]: 0 <= j <= i < N};
+		Bin: {[i, j]: 0 <= i, j < N};
+	outputs
+		Bout: {[i, j]: 0 <= i, j < N};
+	let
+		Bout[i, j] = alpha * reduce(+, [k], {: k <= i} : A[i, k] * Bin[k, j]);
+.

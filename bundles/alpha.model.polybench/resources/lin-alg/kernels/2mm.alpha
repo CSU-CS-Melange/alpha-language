@@ -1,0 +1,20 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+// E := alpha*A*B*C + beta*D
+affine two_mm [P, Q, R, S] -> {: P, Q, R, S > 0}
+	inputs
+		alpha: {};
+		beta: {};
+		A: {[i, j]: 0 <= i < P && 0 <= j < Q};
+		B: {[i, j]: 0 <= i < Q && 0 <= j < R};
+		C: {[i, j]: 0 <= i < R && 0 <= j < S};
+		D: {[i, j]: 0 <= i < P && 0 <= j < S};
+	outputs
+		E: {[i, j]: 0 <= i < P && 0 <= j < S};
+	locals
+		temp: {[i, j]: 0 <= i < P && 0 <= j < R};
+	let
+		temp[i,j] = alpha * reduce(+, [k], A[i, k] * B[k, j]);
+		E[i,j] = beta * D[i, j] + reduce(+, [k], temp[i, k] * C[k, j]);
+.

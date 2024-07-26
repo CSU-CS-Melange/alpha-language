@@ -1,0 +1,39 @@
+// Author: Tomofumi Yuki
+// Alpha Author: Jonathon Y.
+
+//LU decomposition + Forward and back substitution
+// Given a matrix A and a vector be, find x such that Ax = b
+// The algorithm first decomposes A into triangular matrices LU such that A = LU
+// and then solves for Ly = b, followed by Ux = y
+//    (Ax = b -> LUx = b -> Ly = b; Ux = y)   
+affine ludcmp [N] -> {: N > 1}
+	inputs
+		A: {[i,j]: 0 <= i, j < N};
+		b: {[i]: 0 <= i < N}; 
+	outputs
+		x: {[i]: 0 <= i < N};
+	locals
+		L: {[i,j]: 0 <= i < N && 0 <= j <= i};
+		U: {[i, j]: 0 <= j < N && 0 <= i <= j};
+		y: {[i]: 0 <= i < N};
+	let
+		U[i,j] = case {
+			{: i == 0}: A[i, j];
+			{: i > 0}: A[i, j] - reduce(+, [k], {: 0 <= k < i} : L[i, k] * U[k, j]);
+		};
+		
+		L[i,j] = case {
+			{: j == 0}: A[i, j] / U[j, j];
+			{: j > 0}: (A[i,j] - reduce(+, [k], {: 0 <= k < j}: L[i, k] * U[k, j])) / U[j, j];
+		};
+		
+		y[i] = case {
+				{: i == 0}: b[i] / L[i,i];
+				{: i > 0}: (b[i] - reduce(+, [j], {: 0 <= j < i} : L[i,j] * y[j])) / L[i,i];
+		}; 
+		
+		x[i] = case {
+				{: i == N - 1}: y[i] / U[i,i];
+				{: i < N - 1}: (y[i] - reduce(+, [j], {: i < j < N} : U[i, j] * x[j])) / U[i, i];
+		};
+.

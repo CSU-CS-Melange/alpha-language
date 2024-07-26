@@ -11,8 +11,8 @@ affine covariance [N, M] -> {: N > 0 and M > 0 }
 	locals
 		mean: {[j]: 0 <= j < M};
 	let
-		mean[j] = reduce(+, [i], data[i,j]) / N;
+		mean[j] = reduce(+, [i], data[i,j]) / val[N];
 		//covariance between property x and y
 		// centered value may be pre-computed (data[i,j] - mean[j]) to save work
-		cov[x,y] = reduce(+, [k], (data[k,x] - mean[x]) * (data[k,y] - mean[y])) / (N - 1);
+		cov[x,y] = reduce(+, [k], (data[k,x] - mean[x]) * (data[k,y] - mean[y])) / val[N - 1];
 .

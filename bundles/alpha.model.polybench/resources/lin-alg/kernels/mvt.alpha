@@ -21,11 +21,11 @@
 affine mvt [N] -> {: N > 0 }
 	inputs
 		A: {[i, j]: 0 <= i, j < N};
-		y1, y2: {[i]: 0 <= i < N}; 
+		Y1, Y2: {[i]: 0 <= i < N}; 
 		x1in, x2in: {[i]: 0 <= i < N};
 	outputs
 		x1out, x2out: {[i]: 0 <= i < N};
 	let
-		x1out[i] = x1in[i] + reduce(+, [j], A[i,j] * y1[j]);
-		x2out[i] = x2in[i] + reduce(+, [j], A[j,i] * y2[j]); 	
+		x1out[i] = x1in[i] + reduce(+, [j], A[i,j] * Y1[j]);
+		x2out[i] = x2in[i] + reduce(+, [j], A[j,i] * Y2[j]); 	
 .

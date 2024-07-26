@@ -1,0 +1,27 @@
+// Author: Tomofumi Yuki
+// Translated to Alpha by Jonathon Yallop
+//
+//Symmetric rank k update
+//
+//  C:= alpha * A * A^T + beta*C
+//  -- C = C^T
+//
+// this is one of many configurations of syrk in BLAS
+//
+// Part of updated BLAS
+//
+// Blackford, L. Susan, et al. 
+// "An updated set of basic linear algebra subprograms (BLAS)." 
+// ACM Transactions on Mathematical Software 28.2 (2002): 135-151.
+//   http://dl.acm.org/citation.cfm?id=567807
+affine syrk [N, M] -> {: N, M > 0}
+	inputs
+		alpha, beta: {};
+		A: {[i, j]: 0 <= i < N && 0 <= j < M};
+		Cin: {[i, j]: 0 <= i, j < N};
+	outputs
+		Cout: {[i,j]: 0 <= i, j < N};
+	let
+		Cout[i, j] = alpha * reduce(+, [k], A[i, k] * A[j, k]) 
+				  + beta * Cin[i,j];
+.

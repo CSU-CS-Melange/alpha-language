@@ -1,0 +1,28 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+//Cholesky decomposition
+// Given a matrix A, find L such that A = LL^T
+//  A must be positive-definite matrix
+//  L is lower triangular
+//
+// The following is either Cholesky–Banachiewicz or Cholesky–Crout algorithm, depending on the schedule.
+//  Banachiewicz is row by row, Crout is column by column
+external sqrt(1)
+affine cholesky [N] -> {: N > 0}
+inputs
+	A: {[i,j]: 0 <= i, j < N};
+outputs
+	L: {[i, j]: 0 <= j <= i < N};
+locals
+	temp: {[i,j]: 0 < j <= i < N};
+let
+	temp[i,j] = reduce(+, [k], {: 0 <= k < j} : L[i,k] * L[j,k]);
+
+	L[i,j] = case {
+		{: i == 0 && j == 0 }: sqrt(A[i,j]);
+		{: i > 0 && j == 0}: A[i,j] / L[j,j];
+	   	{: i == j > 0}: sqrt(A[j,j] - temp[i,j]);
+	    {: i > j > 0}: (A[i,j] - temp[i,j]) / L[j,j];
+	};
+.
