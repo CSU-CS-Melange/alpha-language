@@ -270,4 +270,25 @@ public class ISLUtil {
     }
     return _xblockexpression;
   }
+
+  /**
+   * Given the space {[i,j,k,...]}, returns the multiAff {[i,j,k,...]->[]}
+   */
+  public static ISLMultiAff createConstantMaff(final ISLSpace space) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      ISLSpace _xifexpression = null;
+      boolean _isMapSpace = space.isMapSpace();
+      if (_isMapSpace) {
+        _xifexpression = space.copy();
+      } else {
+        _xifexpression = space.copy().toMapSpaceFromSetSpace();
+      }
+      final ISLSpace mapSpace = _xifexpression;
+      final int nbOut = mapSpace.dim(ISLDimType.isl_dim_out);
+      final ISLMultiAff maff = ISLMultiAff.buildIdentity(mapSpace).dropDims(ISLDimType.isl_dim_out, 0, nbOut);
+      _xblockexpression = maff;
+    }
+    return _xblockexpression;
+  }
 }

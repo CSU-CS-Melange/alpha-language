@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.eclipse.xtext.xbase.lib.Conversions;
 
 /**
  * Share space is the sub space spanned by set of operations that reuse the same value.
@@ -79,6 +80,17 @@ public class ShareSpaceAnalysis extends AbstractAlphaExpressionVisitor {
 
   private void warning(final String message) {
     System.err.println(("[ShareSpaceAnalysis] " + message));
+  }
+
+  public static boolean isConstantInContext(final AlphaExpression ae) {
+    boolean _xblockexpression = false;
+    {
+      final int dim = ae.getContextDomain().dim(ISLDimType.isl_dim_out);
+      final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(ae);
+      final long[][] shareSpace = SSAR.getShareSpace(ae);
+      _xblockexpression = ((shareSpace != null) && (((List<long[]>)Conversions.doWrapArray(shareSpace)).size() == dim));
+    }
+    return _xblockexpression;
   }
 
   @Override

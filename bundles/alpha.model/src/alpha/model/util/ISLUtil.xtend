@@ -14,6 +14,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
+import fr.irisa.cairn.jnimap.isl.ISLSpace
 
 class ISLUtil {
 	
@@ -195,8 +196,18 @@ class ISLUtil {
 		val nbIndices = set.dim(ISLDimType.isl_dim_set)
 		set.dimensionality < nbIndices
 	}
-	 
-	 
-	 
-	 
+	
+	/** Given the space {[i,j,k,...]}, returns the multiAff {[i,j,k,...]->[]} */
+	def static ISLMultiAff createConstantMaff(ISLSpace space) {
+		val mapSpace = if (space.isMapSpace) {
+			space.copy 
+		} else {
+			space.copy.toMapSpaceFromSetSpace
+		}
+		val nbOut = mapSpace.dim(ISLDimType.isl_dim_out)
+		val maff = ISLMultiAff.buildIdentity(mapSpace)
+			.dropDims(ISLDimType.isl_dim_out, 0, nbOut)
+		
+		maff
+	}
 }

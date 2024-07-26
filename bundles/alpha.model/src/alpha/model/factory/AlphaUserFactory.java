@@ -1,7 +1,10 @@
 package alpha.model.factory;
 
+import org.eclipse.emf.common.util.EList;
+
 import alpha.model.AlphaExpression;
 import alpha.model.ArgReduceExpression;
+import alpha.model.AutoRestrictExpression;
 import alpha.model.BINARY_OP;
 import alpha.model.BinaryExpression;
 import alpha.model.BooleanExpression;
@@ -28,9 +31,12 @@ import alpha.model.UnaryExpression;
 import alpha.model.Variable;
 import alpha.model.VariableExpression;
 import alpha.model.util.AlphaPrintingUtil;
+import alpha.model.util.ISLUtil;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
+
 
 /**
  * AlphaUserFactory provides a set of convenience methods for creating nodes in Alpha IR.
@@ -119,6 +125,29 @@ public class AlphaUserFactory {
 		return eq;
 	}
 
+	public static DependenceExpression createZeroExpression(ISLSpace space) {
+		return createIntegerDependenceExpression(space, 0);
+	}
+	
+	public static DependenceExpression createPositiveOneExpression(ISLSpace space) {
+		return createIntegerDependenceExpression(space, 1);
+	}
+	
+	public static DependenceExpression createNegativeOneExpression(ISLSpace space) {
+		return createIntegerDependenceExpression(space, -1);
+	}
+	
+	public static DependenceExpression createIntegerDependenceExpression(ISLSpace space, int value) {
+		nullCheck(space);
+		
+		ISLMultiAff maff = ISLUtil.createConstantMaff(space);
+		
+		DependenceExpression de = createDependenceExpression(maff);
+		IntegerExpression ie = createIntegerExpression(value);
+		de.setExpr(ie);
+		return de;
+	}
+	
 	public static DependenceExpression createDependenceExpression(ISLMultiAff maff) {
 		nullCheck(maff);
 		
@@ -191,6 +220,21 @@ public class AlphaUserFactory {
 		RestrictExpression re = createRestrictExpression(dom);
 		re.setExpr(expr);		
 		return re;
+	}
+	
+	public static AutoRestrictExpression createAutoRestrictExpression() {
+		AutoRestrictExpression are = fact.createAutoRestrictExpression();		
+		
+		return are;
+	}
+	
+	public static AutoRestrictExpression createAutoRestrictExpression(AlphaExpression expr) {
+		nullCheck(expr);
+		
+		AutoRestrictExpression are = fact.createAutoRestrictExpression();		
+		are.setExpr(expr);
+		
+		return are;
 	}
 
 	public static BinaryExpression createBinaryExpression(BINARY_OP op) {
@@ -283,5 +327,31 @@ public class AlphaUserFactory {
 		re.setProjectionExpr(createJNIFunction(projection));
 		re.setBody(expr);
 		return re;
+	}
+	
+	public static BinaryExpression createNegatedExpression(AlphaExpression ae) {
+		nullCheck(ae);
+		
+		DependenceExpression de = createNegativeOneExpression(ae.getContextDomain().getSpace());
+
+		BinaryExpression be = createBinaryExpression(BINARY_OP.MUL);
+		be.setLeft(de);
+		be.setRight(ae);
+		
+		return be;
+	}
+	
+	/** Given the expression ae, return prod(1[], ae) */
+	public static MultiArgExpression createIdentityProdExpression(AlphaExpression ae) {
+		nullCheck(ae);
+		
+		DependenceExpression de = createPositiveOneExpression(ae.getContextDomain().getSpace());
+		
+		MultiArgExpression mae = createMultiArgExpression(REDUCTION_OP.PROD);
+		EList<AlphaExpression> exprs = mae.getExprs();
+		exprs.add(de);
+		exprs.add(ae);
+		
+		return mae;
 	}
 }

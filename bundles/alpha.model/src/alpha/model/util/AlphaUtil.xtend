@@ -29,6 +29,10 @@ import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.util.EcoreUtil.Copier
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import alpha.model.BINARY_OP
+import alpha.model.REDUCTION_OP
+import alpha.model.Variable
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -305,7 +309,8 @@ class AlphaUtil {
 	}
 	static def renameIndices(ISLMultiAff maff, List<String> names) {
 		val n = maff.getNbInputs
-		if (n > names.length) throw new RuntimeException("Need n or more index names to rename n-d space.");
+		if (n > names.length) 
+			throw new RuntimeException("Need n or more index names to rename n-d space.");
 		var res = maff;
 		for (i : 0..<n) {
 			res = res.setDimName(ISLDimType.isl_dim_in, i, names.get(i))
@@ -418,5 +423,25 @@ class AlphaUtil {
 	
 	static def parseIntVector(String intVecStr) {
 		return parseIntArray(intVecStr).toList
+	}
+	
+	/* Returns the set that can be used as the domain of a scalar variable */
+	static def createConstantExprDomain(ISLSpace space) {
+		val nbOut = space.dim(ISLDimType.isl_dim_out)
+		ISLSet.buildUniverse(space.copy)
+			.projectOut(ISLDimType.isl_dim_out, 0, nbOut)
+	}
+	
+	static def boolean isEquivalent(BINARY_OP bop, REDUCTION_OP rop) {
+		switch(rop) {
+			case REDUCTION_OP.MIN : bop == BINARY_OP.MIN
+			case REDUCTION_OP.MAX : bop == BINARY_OP.MAX
+			case REDUCTION_OP.PROD : bop == BINARY_OP.MUL
+			case REDUCTION_OP.SUM : bop == BINARY_OP.ADD
+			case REDUCTION_OP.AND : bop == BINARY_OP.AND
+			case REDUCTION_OP.OR : bop == BINARY_OP.OR
+			case REDUCTION_OP.XOR : bop == BINARY_OP.XOR
+			default : false
+		}
 	}
 }

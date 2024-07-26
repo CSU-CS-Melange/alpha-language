@@ -7,8 +7,11 @@ import alpha.model.AlphaPackage;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.AlphaVisitable;
+import alpha.model.BINARY_OP;
 import alpha.model.Equation;
+import alpha.model.REDUCTION_OP;
 import alpha.model.SystemBody;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
@@ -21,6 +24,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.JNIISLTools;
 import fr.irisa.cairn.jnimap.runtime.JNIObject;
@@ -566,6 +570,53 @@ public class AlphaUtil {
 
   public static List<Integer> parseIntVector(final String intVecStr) {
     return IterableExtensions.<Integer>toList(((Iterable<Integer>)Conversions.doWrapArray(AlphaUtil.parseIntArray(intVecStr))));
+  }
+
+  /**
+   * Returns the set that can be used as the domain of a scalar variable
+   */
+  public static ISLSet createConstantExprDomain(final ISLSpace space) {
+    ISLSet _xblockexpression = null;
+    {
+      final int nbOut = space.dim(ISLDimType.isl_dim_out);
+      _xblockexpression = ISLSet.buildUniverse(space.copy()).projectOut(ISLDimType.isl_dim_out, 0, nbOut);
+    }
+    return _xblockexpression;
+  }
+
+  public static boolean isEquivalent(final BINARY_OP bop, final REDUCTION_OP rop) {
+    boolean _switchResult = false;
+    if (rop != null) {
+      switch (rop) {
+        case MIN:
+          _switchResult = Objects.equal(bop, BINARY_OP.MIN);
+          break;
+        case MAX:
+          _switchResult = Objects.equal(bop, BINARY_OP.MAX);
+          break;
+        case PROD:
+          _switchResult = Objects.equal(bop, BINARY_OP.MUL);
+          break;
+        case SUM:
+          _switchResult = Objects.equal(bop, BINARY_OP.ADD);
+          break;
+        case AND:
+          _switchResult = Objects.equal(bop, BINARY_OP.AND);
+          break;
+        case OR:
+          _switchResult = Objects.equal(bop, BINARY_OP.OR);
+          break;
+        case XOR:
+          _switchResult = Objects.equal(bop, BINARY_OP.XOR);
+          break;
+        default:
+          _switchResult = false;
+          break;
+      }
+    } else {
+      _switchResult = false;
+    }
+    return _switchResult;
   }
 
   private static Iterable<AlphaConstant> gatherAlphaConstants(final EObject ap) {

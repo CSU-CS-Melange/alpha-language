@@ -73,6 +73,15 @@ class ShareSpaceAnalysis extends AbstractAlphaExpressionVisitor {
 		System.err.println("[ShareSpaceAnalysis] " + message)
 	}
 	
+	def static isConstantInContext(AlphaExpression ae) {
+		val dim = ae.contextDomain.dim(ISLDimType.isl_dim_out)
+		
+		val SSAR = apply(ae)
+		val shareSpace = SSAR.getShareSpace(ae)
+		
+		shareSpace !== null && shareSpace.size == dim
+	}
+	
 	//Expressions with Trivial Share Space
 	 
 	override outConstantExpression(ConstantExpression ce) {
