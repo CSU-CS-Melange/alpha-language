@@ -6,8 +6,8 @@ import alpha.model.AlphaExpression;
 import alpha.model.AlphaExpressionVisitor;
 import alpha.model.ModelPackage;
 
+import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
-import alpha.model.util.Show;
 
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 
@@ -258,7 +258,7 @@ public abstract class AlphaExpressionImpl extends AlphaNodeImpl implements Alpha
 	 * @generated
 	 */
 	public String toString() {
-		return Show.<AlphaExpression>print(this);
+		return AShow.print(this);
 	}
 
 	/**

@@ -8,7 +8,7 @@ import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Face
 import alpha.model.util.FaceLattice
-import alpha.model.util.Show
+import alpha.model.util.AShow
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
@@ -680,7 +680,7 @@ abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 	}
 	
 	op String toString() {
-		return Show.print(this)
+		return AShow.print(this)
 	}
 }
 

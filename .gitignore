@@ -39,3 +39,6 @@ workspace/
 
 # git specific
 **/.gitignore
+
+# misc resources
+bundles/alpha.abft/resources/generated

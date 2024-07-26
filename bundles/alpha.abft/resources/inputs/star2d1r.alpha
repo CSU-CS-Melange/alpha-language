@@ -1,0 +1,14 @@
+affine star2d1r [T,N]->{: N>=50 and T>=10}
+  inputs
+    X : {[i,j] : 0<=i,j<=N}
+  outputs
+  	Y : {[t,i,j] : 0<=t<=T and 0<=i,j<=N}
+  let
+    Y = case {
+      {[t,i,j]: 0<=t<=1 } : X[i,j]; 
+      {[t,i,j]: 1<t and (i=0 or i=N or j=0 or j=N)} : Y[t-1,i,j];
+      {[t,i,j]: 1<t and 0<i,j<N} : 0.5002[] * Y[t-1,i,j] +
+      	0.1048[] * Y[t-1,i-1,j] + 0.1249[] * Y[t-1,i+1,j] +
+      	0.1250[] * Y[t-1,i,j-1] + 0.1251[] * Y[t-1,i,j+1];
+    };
+.
