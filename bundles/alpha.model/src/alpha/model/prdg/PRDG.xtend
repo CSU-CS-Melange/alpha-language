@@ -84,18 +84,20 @@ class PRDG {
 				System.out.println("set = " + set)
 				throw new RuntimeException("Problem while intersecting domain")
 			}
-
-			map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
-			map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
-
+			
 			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
 				println("Source: " + edge.source + " Dest: " + edge.dest + " Map: " + map2)
 				map2 = map2.reverse
+
 			}	
+			map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
+			map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
 					
 			this.islPRDG = islPRDG.union(map2.copy.toUnionMap)
-		}
-		print("ISL PRDG: " + this.islPRDG)
+		}		
+		println("ISL PRDG: ")
+		
+		this.islPRDG.maps.forEach[ map | println(map)]
 		this.islPRDG
 	}
 	

@@ -35,6 +35,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLScheduleNode
 import java.util.ArrayList
+import alpha.model.util.AShow
 
 class WriteC extends CodeGeneratorBase {
 	
@@ -218,8 +219,12 @@ class WriteC extends CodeGeneratorBase {
 			}
 
 		}
-		println("Maps: " + namedScheduleMaps)
+		println("Schedule Maps")
+		this.scheduler.schedule.map.maps.forEach[map | println(map)]
 		val islAST = LoopGenerator.generateLoops(scheduler.schedule.domain.params, namedScheduleMaps)
+		val tempAST = LoopGenerator.generateLoops(scheduler.schedule.domain.params, this.scheduler.schedule)
+		
+		println("Unedited C output: " + tempAST.toCString)
 		
 		val loopResult = ScheduledASTConverter.convert(islAST)
 
@@ -252,6 +257,7 @@ class WriteC extends CodeGeneratorBase {
 		var alteredSystem = system.copyAE
 		Normalize.apply(alteredSystem)
 		NormalizeReduction.apply(alteredSystem)
+		println(AShow.print(alteredSystem))
 		
 		val prdg = PRDGGenerator.apply(alteredSystem)
 		var scheduler = new FoutrierScheduler(prdg)

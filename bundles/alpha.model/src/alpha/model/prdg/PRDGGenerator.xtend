@@ -12,6 +12,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import java.util.Stack
 
 import static extension alpha.model.util.AlphaUtil.copyAE
+import fr.irisa.cairn.jnimap.isl.ISLMap
 
 class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	PRDG prdg = new PRDG()
@@ -93,6 +94,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
 		//Dependence from result to body
 		val ISLMultiAff resToBody = reduceExpression.projection.copy
+		println("result to body: " + resToBody.copy.toMap.reverse)
 		prdg.addEdge(new PRDGEdge(prdg.getNode(reduction_name), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
 
 		//Inside the reduction, dependence is from the body
@@ -106,5 +108,4 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		this.sources.pop
 		this.functions.pop
 	}
-		
 }
