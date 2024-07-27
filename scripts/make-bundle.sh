@@ -96,7 +96,9 @@ if [[ $OS == "mac" ]]; then
     ln -s /Applications alpha-language-bundle/Applications
     hdiutil create -fs HFS+ -srcfolder alpha-language-bundle -volname "eclipse-alpha-language-$version" "eclipse-alpha-language-$version.dmg"
 
+    # clean up
+    rm -rf alpha-language-bundle eclipse-download-$version
+
 fi
 
-mkdir -p eclipse-bundle-$version
-mv eclipse-alpha-language-$version.$suffix eclipse-bundle-$version/
+echo "created eclipse-alpha-language-$version.$suffix"
