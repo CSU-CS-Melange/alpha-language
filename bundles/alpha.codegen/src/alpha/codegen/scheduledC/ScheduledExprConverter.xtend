@@ -38,6 +38,9 @@ class ScheduledExprConverter extends ExprConverter {
 	/** Represents the current reduction target for schedule lookup */
 	protected var String reductionTarget
 	
+	/** Represents the number of reductions for the current reduction target for schedule lookup */
+	protected var reductionTargetNumber = 0
+	
 	/**
 	 * A counter for the number of reductions that have been created.
 	 * This is used for determining the names of functions and macros which will be emitted.
@@ -54,6 +57,9 @@ class ScheduledExprConverter extends ExprConverter {
 	}
 	
 	def setTarget(String reductionTarget) { 
+		if(this.reductionTarget != reductionTarget) {
+			reductionTargetNumber = 0
+		}
 		this.reductionTarget = reductionTarget
 	}
 	/**
@@ -64,6 +70,7 @@ class ScheduledExprConverter extends ExprConverter {
 	def dispatch Expression convertExpr(ReduceExpression expr) {
 		// Create the reduce function and add it to the program.
 		val reduceFunction = createReduceFunction(program, expr, this.reductionTarget)
+		println("var: " + this.reductionTarget)
 		program.addFunction(reduceFunction)
 		
 		// Return a call to the reduce function.
@@ -103,23 +110,22 @@ class ScheduledExprConverter extends ExprConverter {
 		val accumulateMacro = createAccumulationMacro(accumulateMacroName, expr, reducePointMacro)
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
+		val reduceBodyName = variableName + "_reduce" + reductionTargetNumber + "_body"
+		val reduceResultName = variableName + "_reduce" + reductionTargetNumber + "_result"
+		
+		
 		// Use isl to determine what points need to be reduced and how they get reduced.
-		var initialDomain = expr.createReduceLoopDomain
+		var loopDomain = expr.createReduceLoopDomain
+		loopDomain = loopDomain.setTupleName(reduceBodyName)
 		
-		/** TODO Update Name Correctly */		
-		var scheduleDomain = scheduler.getScheduleDomain(variableName).copy.alignParams(initialDomain.space)
-		scheduleDomain = scheduleDomain.copy.clearTupleName
-		println("Domain: " + initialDomain.space)	
-		println("Domain: " + scheduleDomain.space)	
-		var loopDomain = initialDomain.intersect(scheduleDomain)
-		println("Domain: " + loopDomain)		
+		var scheduleMap = scheduler.getScheduleMap(reduceBodyName).copy
 		
-		var scheduleMap = scheduler.getScheduleMap(variableName)
-		scheduleMap = scheduleMap.copy.clearInputTupleName.copy.clearOutputTupleName
+		println("scheduleMap: " + scheduleMap.copy)
+		println("Domain: " + loopDomain.copy)
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
-			scheduleMap.intersectDomain(loopDomain.copy))
+			scheduleMap.intersectDomain(loopDomain.copy).copy)
 
 		//val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain)
 		

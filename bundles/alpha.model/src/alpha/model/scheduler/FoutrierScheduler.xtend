@@ -24,18 +24,18 @@ class FoutrierScheduler implements Scheduler {
 	}
 	
 	override getScheduleDomain(String macro) {
-		this.schedule.domain.sets.filter(set | set.tupleName == macro).head
+		this.schedule.domain.sets.filter(set | set.tupleName == macro).head.copy
 	}
 	
 	override getSchedule() {
 		if (this.schedules === null) {
 			this.generateSchedule
 		}
-		this.schedules
+		this.schedules.copy
 	}
 	
 	override getScheduleMap(String variable) {
-		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head
+		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head.copy
 		
 	}
 

@@ -74,11 +74,14 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	}
 	
 	override void inReduceExpression(ReduceExpression reduceExpression) {
-		this.numberReductions++
 
-		//Node for result
-		var reduction_name = this.sources.peek.name + "_reduce" + this.numberReductions + "_result";
-		this.prdg.nodes.add(new PRDGNode(reduction_name, reduceExpression.contextDomain.copy, true))
+		//Names for the new reduction nodes
+		var reductionName = this.sources.peek.name + "_reduce" + this.numberReductions + "_result"
+		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions + "_body"
+		this.numberReductions++
+		
+		
+		this.prdg.nodes.add(new PRDGNode(reductionName, reduceExpression.contextDomain.copy, true))
 		
 		//Dependence from use to the result
 		val useToRes = this.functions.peek.copy
@@ -86,21 +89,21 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		//When the parent is a dependence expression, the context domain of that dependence is what we want
 		//otherwise, assume identity dependence and use the context domain of the variable
 		val dom = !this.domains.empty() ? this.domains.peek.copy : reduceExpression.contextDomain.copy
-		this.prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(reduction_name), dom, useToRes))
+		this.prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(reductionName), dom, useToRes))
 		
 		//Node for body
-		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions + "_body"
 		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
 
 		//Dependence from result to body
 		val ISLMultiAff resToBody = reduceExpression.projection.copy
 		println("result to body: " + resToBody.copy.toMap.reverse)
-		prdg.addEdge(new PRDGEdge(prdg.getNode(reduction_name), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
+		prdg.addEdge(new PRDGEdge(prdg.getNode(reductionName), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
 
 		//Inside the reduction, dependence is from the body
 		this.sources.push(this.prdg.getNode(bodyName))
 		//Inside the reduction, dependence starts from identity to the reduction body
 		this.functions.push(ISLMultiAff.buildIdentity(reduceExpression.body.contextDomain.copy.identity.space))
+		
 
 	}
 	
