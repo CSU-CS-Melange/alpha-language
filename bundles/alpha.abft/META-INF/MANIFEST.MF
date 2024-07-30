@@ -9,8 +9,11 @@ Require-Bundle: alpha.loader;bundle-version="0.1.0",
  alpha.model;bundle-version="0.1.0",
  alpha.model.xtext;bundle-version="0.1.0",
  alpha.targetmapping.xtext;bundle-version="0.1.0",
- alpha.commands;bundle-version="0.1.0"
+ alpha.commands;bundle-version="0.1.0",
+ alpha.codegen;bundle-version="1.0.0",
+ fr.irisa.cairn.jnimap.barvinok;bundle-version="2.5.1"
 Export-Package: alpha.abft,
  alpha.abft.analysis,
+ alpha.abft.codegen,
  alpha.abft.transformation,
  alpha.ablt.util

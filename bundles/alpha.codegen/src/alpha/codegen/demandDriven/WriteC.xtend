@@ -279,7 +279,7 @@ class WriteC extends CodeGeneratorBase {
 	}
 	
 	/** Gets the simpleC expression for the cardinality of the given domain. */
-	def protected getCardinalityExpr(ISLSet domain) {
+	def static getCardinalityExpr(ISLSet domain) {
 		val cardinalityPolynomial = BarvinokBindings.card(domain)
 		return PolynomialConverter.convert(cardinalityPolynomial)
 	}

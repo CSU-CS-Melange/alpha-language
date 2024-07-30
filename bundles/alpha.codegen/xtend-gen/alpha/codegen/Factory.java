@@ -1,6 +1,7 @@
 package alpha.codegen;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.eclipse.xtext.xbase.lib.CollectionExtensions;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -244,6 +245,22 @@ public class Factory {
     final CallExpr sizeofCall = Factory.callExpr("sizeof", dataTypeExpr);
     final BinaryExpr bytesAllocated = Factory.binaryExpr(BinaryOperator.TIMES, sizeofCall, amount);
     final CallExpr mallocCall = Factory.callExpr("malloc", bytesAllocated);
+    return Factory.castExpr(dataType, mallocCall);
+  }
+
+  /**
+   * Creates a call to which allocates the desired number of bytes,
+   * then casts it as the appropriate data type.
+   */
+  public static CastExpr callocCall(final DataType dataType, final Expression amount) {
+    BaseDataType _baseType = dataType.getBaseType();
+    int _indirectionLevel = dataType.getIndirectionLevel();
+    int _minus = (_indirectionLevel - 1);
+    final DataType sizeofType = Factory.dataType(_baseType, _minus);
+    final CustomExpr dataTypeExpr = Factory.customExpr(ProgramPrinter.print(sizeofType));
+    final CallExpr sizeofCall = Factory.callExpr("sizeof", dataTypeExpr);
+    final List<? extends Expression> args = Collections.<Expression>unmodifiableList(CollectionLiterals.<Expression>newArrayList(amount, sizeofCall));
+    final CallExpr mallocCall = Factory.callExpr("calloc", ((Expression[])Conversions.unwrapArray(args, Expression.class)));
     return Factory.castExpr(dataType, mallocCall);
   }
 

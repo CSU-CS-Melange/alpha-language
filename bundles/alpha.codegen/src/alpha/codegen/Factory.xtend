@@ -247,6 +247,25 @@ class Factory {
 		return castExpr(dataType, mallocCall)
 	}
 	
+	/**
+	 * Creates a call to which allocates the desired number of bytes,
+	 * then casts it as the appropriate data type.
+	 */
+	def static callocCall(DataType dataType, Expression amount) {
+		// First, we need to call "sizeof" on the data type to know
+		// how large each element being allocated is.
+		// We need to remove one level of indirection first.
+		val sizeofType = Factory.dataType(dataType.baseType, dataType.indirectionLevel - 1)
+		val dataTypeExpr = customExpr(ProgramPrinter.print(sizeofType))
+		val sizeofCall = callExpr("sizeof", dataTypeExpr)
+		val args = #[amount, sizeofCall]
+		
+		val mallocCall = callExpr("calloc", args)
+		
+		// Finally, cast it as the correct data type.
+		return castExpr(dataType, mallocCall)
+	}
+	
 	def static unaryExpr(UnaryOperator operator, Expression expression) {
 		val expr = factory.createUnaryExpr
 		expr.operator = operator

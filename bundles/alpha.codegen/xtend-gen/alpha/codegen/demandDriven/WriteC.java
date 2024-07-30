@@ -282,7 +282,7 @@ public class WriteC extends CodeGeneratorBase {
     this.allocateLinearMemory(name, variable.getDomain(), dataType);
     final CustomExpr nameExpr = Factory.customExpr(name);
     final CustomExpr initialValue = AlphaBaseHelpers.toExpr(FlagStatus.NOT_EVALUATED);
-    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(variable.getDomain());
+    final ParenthesizedExpr cardinalityExpr = WriteC.getCardinalityExpr(variable.getDomain());
     final ExpressionStmt memsetCall = Factory.callStmt("memset", nameExpr, initialValue, cardinalityExpr);
     this.entryPoint.addStatement(memsetCall);
   }
@@ -292,7 +292,7 @@ public class WriteC extends CodeGeneratorBase {
    */
   protected void allocateLinearMemory(final String name, final ISLSet domain, final DataType dataType) {
     this.allocatedVariables.add(name);
-    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(domain);
+    final ParenthesizedExpr cardinalityExpr = WriteC.getCardinalityExpr(domain);
     final CastExpr mallocCall = Factory.mallocCall(dataType, cardinalityExpr);
     final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
     this.entryPoint.addStatement(mallocAssignment);
@@ -308,7 +308,7 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Gets the simpleC expression for the cardinality of the given domain.
    */
-  protected ParenthesizedExpr getCardinalityExpr(final ISLSet domain) {
+  public static ParenthesizedExpr getCardinalityExpr(final ISLSet domain) {
     final ISLPWQPolynomial cardinalityPolynomial = BarvinokBindings.card(domain);
     return PolynomialConverter.convert(cardinalityPolynomial);
   }

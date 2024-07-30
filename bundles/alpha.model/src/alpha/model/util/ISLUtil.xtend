@@ -15,6 +15,12 @@ import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
 import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLIdentifierList
+import fr.irisa.cairn.jnimap.isl.ISLIdentifier
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLMultiUnionPWAff
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 
 class ISLUtil {
 	
@@ -28,9 +34,26 @@ class ISLUtil {
 		ISLSet.buildFromString(ISLContext.instance, descriptor)
 	}
 	
+	/** Creates an ISLUnionSet from a string */
+	def static toISLUnionSet(CharSequence descriptor) { descriptor.toString.toISLUnionSet }
+	def static toISLUnionSet(String descriptor) { 
+		ISLUnionSet.buildFromString(ISLContext.instance, descriptor)		
+	}
+	
+	/** Creates an ISLMultiUnionPWAff from a string */
+	def static toISLMultiUnionPWAff(CharSequence descriptor) { descriptor.toString.toISLMultiUnionPWAff }
+	def static toISLMultiUnionPWAff(String descriptor) { 
+		ISLMultiUnionPWAff.buildFromString(ISLContext.instance, descriptor)		
+	}
+	
 	/** Creates an ISLBasicMap from a string */
 	def static toISLBasicMap(String descriptor) {
 		ISLBasicMap.buildFromString(ISLContext.instance, descriptor)
+	}
+	
+	/** Creates an ISLMap from a string */
+	def static toISLMap(String descriptor) {
+		ISLMap.buildFromString(ISLContext.instance, descriptor)
 	}
 	
 	/** Creates an ISLAff from a string */
@@ -54,6 +77,21 @@ class ISLUtil {
 	/** Creates an ISLPWQPolynomial from a string */
 	def static toISLPWQPolynomial(String descriptor) {
 		ISLPWQPolynomial.buildFromString(ISLContext.instance, descriptor)
+	}
+
+	/** Creates an ISLIdentifierList from a list of index names */
+	def static ISLIdentifierList toISLIdentifierList(String[] names) {
+		names.fold(0->ISLIdentifierList.build(ISLContext.instance, names.size), [iRet, name |
+			val i = iRet.key
+			val ret = iRet.value 
+			i+1 -> ret.insert(i, ISLIdentifier.alloc(ISLContext.instance, name))
+		]).value
+	}
+	
+	/** Creates an ISLSchedule from a string */
+	def static toISLSchedule(CharSequence descriptor) { descriptor.toString.toISLSchedule }
+	def static toISLSchedule(String descriptor) {
+		ISLSchedule.buildFromString(ISLContext.instance, descriptor)
 	}
 	
 	/** Transposes an ISLMatrix */

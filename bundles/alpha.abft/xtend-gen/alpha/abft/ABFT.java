@@ -22,6 +22,9 @@ import alpha.model.SystemBody;
 import alpha.model.Variable;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.issue.AlphaIssue;
+import alpha.model.transformation.Normalize;
+import alpha.model.transformation.Tiler;
+import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
@@ -146,94 +149,110 @@ public class ABFT {
     ABFT.save(system);
   }
 
-  public static void insertChecksumV1(final AlphaSystem system, final int[] tileSizes) {
-    ABFT.insertChecksumV1(system, tileSizes, true);
+  public static AlphaSystem insertChecksumV1(final AlphaSystem system, final int[] tileSizes) {
+    return ABFT.insertChecksumV1(system, tileSizes, true);
   }
 
-  public static void insertChecksumV1(final AlphaSystem system, final int[] tileSizes, final boolean renameSystem) {
-    final SystemBody systemBody = system.getSystemBodies().get(0);
-    final Variable outputVar = system.getOutputs().get(0);
-    ABFT.assertAssumptions(system, tileSizes);
-    final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(system);
-    final Integer radius = convolutionKernel.getKey();
-    final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
-    final ISLSet checksumDomain = ABFT.buildChecksumDomain(outputVar, tileSizes, (radius).intValue(), false);
-    final ISLSet weightsDomain = ABFT.buildWeightsDomain(outputVar, (radius).intValue());
-    final ISLSet kernelDomain = ABFT.buildWeightsDomain(outputVar, (2 * (radius).intValue()));
-    final ISLSet patchDomain = ABFT.buildPatchDomain(weightsDomain, tileSizes, (radius).intValue());
-    final ISLSet C2Domain = ABFT.buildC2Domain(checksumDomain, kernelDomain, false);
-    final Variable IVar = AlphaUserFactory.createVariable("I", checksumDomain.copy());
-    final Variable WVar = AlphaUserFactory.createVariable("W", weightsDomain.copy());
-    final Variable patchVar = AlphaUserFactory.createVariable("patch", patchDomain.copy());
-    final Variable C1Var = AlphaUserFactory.createVariable("C1", checksumDomain.copy());
-    final Variable C2Var = AlphaUserFactory.createVariable("C2", C2Domain.copy());
-    system.getLocals().addAll(Collections.<Variable>unmodifiableList(CollectionLiterals.<Variable>newArrayList(WVar, C1Var, C2Var, IVar, patchVar)));
-    ABFT.addWeightsEquation(systemBody, WVar, kernel);
-    ABFT.addPatchEquation(systemBody, patchVar, WVar, tileSizes);
-    ABFT.addC1Equation(systemBody, C1Var, outputVar, WVar, tileSizes, (radius).intValue(), false);
-    ABFT.addV1C2Equation(systemBody, C2Var, outputVar, WVar, patchVar, tileSizes, (radius).intValue());
-    ABFT.addIEquation(systemBody, IVar, C1Var, C2Var, WVar, false);
-    if (renameSystem) {
-      ABFT.rename(system, tileSizes, "v1");
-    }
-  }
-
-  public static void insertChecksumV2(final AlphaSystem system, final int[] tileSizes) {
-    ABFT.insertChecksumV2(system, tileSizes, true);
-  }
-
-  public static void insertChecksumV2(final AlphaSystem system, final int[] tileSizes, final boolean renameSystem) {
-    final SystemBody systemBody = system.getSystemBodies().get(0);
-    final Variable outputVar = system.getOutputs().get(0);
-    ABFT.assertAssumptions(system, tileSizes);
-    final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(system);
-    final Integer radius = convolutionKernel.getKey();
-    final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
-    final int TT = tileSizes[0];
-    final Consumer<Integer> _function = (Integer TS) -> {
-      try {
-        if ((((2 * (radius).intValue()) * TT) >= (TS).intValue())) {
-          final int max_tt = Integer.valueOf((((TS).intValue() / 2) / (radius).intValue())).intValue();
-          StringConcatenation _builder = new StringConcatenation();
-          _builder.append("Invalid tile sizes for V2, [");
-          String _join = IterableExtensions.join(((Iterable<?>)Conversions.doWrapArray(tileSizes)), ",");
-          _builder.append(_join);
-          _builder.append("]. Given a radius of ");
-          _builder.append(radius);
-          _builder.append(" and spatial tile size ");
-          _builder.append(TS);
-          _builder.append(", the maximum time tile size can be ");
-          _builder.append(max_tt);
-          throw new Exception(_builder.toString());
-        }
-      } catch (Throwable _e) {
-        throw Exceptions.sneakyThrow(_e);
+  public static AlphaSystem insertChecksumV1(final AlphaSystem system, final int[] tileSizes, final boolean renameSystem) {
+    AlphaSystem _xblockexpression = null;
+    {
+      final SystemBody systemBody = system.getSystemBodies().get(0);
+      final Variable outputVar = system.getOutputs().get(0);
+      ABFT.assertAssumptions(system, tileSizes);
+      final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(system);
+      final Integer radius = convolutionKernel.getKey();
+      final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
+      final ISLSet checksumDomain = ABFT.buildChecksumDomain(outputVar, tileSizes, (radius).intValue(), false);
+      final ISLSet weightsDomain = ABFT.buildWeightsDomain(outputVar, (radius).intValue());
+      final ISLSet kernelDomain = ABFT.buildWeightsDomain(outputVar, (2 * (radius).intValue()));
+      final ISLSet patchDomain = ABFT.buildPatchDomain(weightsDomain, tileSizes, (radius).intValue());
+      final ISLSet C2Domain = ABFT.buildC2Domain(checksumDomain, kernelDomain, false);
+      final Variable IVar = AlphaUserFactory.createVariable("I", checksumDomain.copy());
+      final Variable WVar = AlphaUserFactory.createVariable("W", weightsDomain.copy());
+      final Variable patchVar = AlphaUserFactory.createVariable("patch", patchDomain.copy());
+      final Variable C1Var = AlphaUserFactory.createVariable("C1", checksumDomain.copy());
+      final Variable C2Var = AlphaUserFactory.createVariable("C2", C2Domain.copy());
+      system.getLocals().addAll(Collections.<Variable>unmodifiableList(CollectionLiterals.<Variable>newArrayList(WVar, C1Var, C2Var, IVar, patchVar)));
+      ABFT.addWeightsEquation(systemBody, WVar, kernel);
+      ABFT.addPatchEquation(systemBody, patchVar, WVar, tileSizes);
+      ABFT.addC1Equation(systemBody, C1Var, outputVar, WVar, tileSizes, (radius).intValue(), false);
+      ABFT.addV1C2Equation(systemBody, C2Var, outputVar, WVar, patchVar, tileSizes, (radius).intValue());
+      ABFT.addIEquation(systemBody, IVar, C1Var, C2Var, WVar, false);
+      if (renameSystem) {
+        ABFT.rename(system, tileSizes, "v1");
       }
-    };
-    ABFT.spatialSizes(tileSizes).forEach(_function);
-    final ISLSet checksumDomain = ABFT.buildChecksumDomain(outputVar, tileSizes, (radius).intValue(), true);
-    final ISLSet weightsDomain = ABFT.buildWeightsDomain(outputVar, (radius).intValue());
-    final ISLSet kernelDomain = ABFT.buildWeightsDomain(outputVar, (2 * (radius).intValue()));
-    final ISLSet allWeightsDomain = ABFT.buildAllWeightsDomain(outputVar, TT);
-    final ISLSet C2Domain = ABFT.buildC2Domain(checksumDomain, kernelDomain, true);
-    final Variable IVar = AlphaUserFactory.createVariable("I", checksumDomain.copy());
-    final Variable WVar = AlphaUserFactory.createVariable("W", weightsDomain.copy());
-    final Variable C1Var = AlphaUserFactory.createVariable("C1", checksumDomain.copy());
-    final Variable C2Var = AlphaUserFactory.createVariable("C2", C2Domain.copy());
-    final Variable kernelWVar = AlphaUserFactory.createVariable("kernelW", kernelDomain.copy());
-    final Variable combosWVar = AlphaUserFactory.createVariable("combosW", kernelDomain.copy());
-    final Variable allWVar = AlphaUserFactory.createVariable("allW", allWeightsDomain.copy());
-    system.getLocals().addAll(Collections.<Variable>unmodifiableList(CollectionLiterals.<Variable>newArrayList(WVar, C1Var, C2Var, IVar, kernelWVar, combosWVar, allWVar)));
-    ABFT.addWeightsEquation(systemBody, WVar, kernel);
-    ABFT.addKernelWEquation(systemBody, kernelWVar, weightsDomain);
-    ABFT.addCombosWEquation(systemBody, combosWVar, kernelWVar, WVar);
-    ABFT.addAllWEquation(systemBody, allWVar, combosWVar);
-    ABFT.addC1Equation(systemBody, C1Var, outputVar, WVar, tileSizes, (radius).intValue(), true);
-    ABFT.addV2C2Equation(systemBody, C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, (radius).intValue());
-    ABFT.addIEquation(systemBody, IVar, C1Var, C2Var, WVar, true);
-    if (renameSystem) {
-      ABFT.rename(system, tileSizes, "v2");
+      Tiler.apply(system, outputVar, tileSizes);
+      Normalize.apply(system);
+      NormalizeReduction.apply(system);
+      _xblockexpression = system;
     }
+    return _xblockexpression;
+  }
+
+  public static AlphaSystem insertChecksumV2(final AlphaSystem system, final int[] tileSizes) {
+    return ABFT.insertChecksumV2(system, tileSizes, true);
+  }
+
+  public static AlphaSystem insertChecksumV2(final AlphaSystem system, final int[] tileSizes, final boolean renameSystem) {
+    AlphaSystem _xblockexpression = null;
+    {
+      final SystemBody systemBody = system.getSystemBodies().get(0);
+      final Variable outputVar = system.getOutputs().get(0);
+      ABFT.assertAssumptions(system, tileSizes);
+      final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(system);
+      final Integer radius = convolutionKernel.getKey();
+      final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
+      final int TT = tileSizes[0];
+      final Consumer<Integer> _function = (Integer TS) -> {
+        try {
+          if ((((2 * (radius).intValue()) * TT) >= (TS).intValue())) {
+            final int max_tt = Integer.valueOf((((TS).intValue() / 2) / (radius).intValue())).intValue();
+            StringConcatenation _builder = new StringConcatenation();
+            _builder.append("Invalid tile sizes for V2, [");
+            String _join = IterableExtensions.join(((Iterable<?>)Conversions.doWrapArray(tileSizes)), ",");
+            _builder.append(_join);
+            _builder.append("]. Given a radius of ");
+            _builder.append(radius);
+            _builder.append(" and spatial tile size ");
+            _builder.append(TS);
+            _builder.append(", the maximum time tile size can be ");
+            _builder.append(max_tt);
+            throw new Exception(_builder.toString());
+          }
+        } catch (Throwable _e) {
+          throw Exceptions.sneakyThrow(_e);
+        }
+      };
+      ABFT.spatialSizes(tileSizes).forEach(_function);
+      final ISLSet checksumDomain = ABFT.buildChecksumDomain(outputVar, tileSizes, (radius).intValue(), true);
+      final ISLSet weightsDomain = ABFT.buildWeightsDomain(outputVar, (radius).intValue());
+      final ISLSet kernelDomain = ABFT.buildWeightsDomain(outputVar, (2 * (radius).intValue()));
+      final ISLSet allWeightsDomain = ABFT.buildAllWeightsDomain(outputVar, TT);
+      final ISLSet C2Domain = ABFT.buildC2Domain(checksumDomain, kernelDomain, true);
+      final Variable IVar = AlphaUserFactory.createVariable("I", checksumDomain.copy());
+      final Variable WVar = AlphaUserFactory.createVariable("W", weightsDomain.copy());
+      final Variable C1Var = AlphaUserFactory.createVariable("C1", checksumDomain.copy());
+      final Variable C2Var = AlphaUserFactory.createVariable("C2", C2Domain.copy());
+      final Variable kernelWVar = AlphaUserFactory.createVariable("kernelW", kernelDomain.copy());
+      final Variable combosWVar = AlphaUserFactory.createVariable("combosW", kernelDomain.copy());
+      final Variable allWVar = AlphaUserFactory.createVariable("allW", allWeightsDomain.copy());
+      system.getLocals().addAll(Collections.<Variable>unmodifiableList(CollectionLiterals.<Variable>newArrayList(WVar, C1Var, C2Var, IVar, kernelWVar, combosWVar, allWVar)));
+      ABFT.addWeightsEquation(systemBody, WVar, kernel);
+      ABFT.addKernelWEquation(systemBody, kernelWVar, weightsDomain);
+      ABFT.addCombosWEquation(systemBody, combosWVar, kernelWVar, WVar);
+      ABFT.addAllWEquation(systemBody, allWVar, combosWVar);
+      ABFT.addC1Equation(systemBody, C1Var, outputVar, WVar, tileSizes, (radius).intValue(), true);
+      ABFT.addV2C2Equation(systemBody, C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, (radius).intValue());
+      ABFT.addIEquation(systemBody, IVar, C1Var, C2Var, WVar, true);
+      if (renameSystem) {
+        ABFT.rename(system, tileSizes, "v2");
+      }
+      Tiler.apply(system, outputVar, tileSizes);
+      Normalize.apply(system);
+      NormalizeReduction.apply(system);
+      _xblockexpression = system;
+    }
+    return _xblockexpression;
   }
 
   public static List<AlphaIssue> addPatchEquation(final SystemBody systemBody, final Variable patchVar, final Variable WVar, final int[] tileSizes) {
@@ -1309,7 +1328,7 @@ public class ABFT {
         case "star1d1r":
           Pair<List<Integer>, Double> _mappedTo = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)))), Double.valueOf(0.3332));
           Pair<List<Integer>, Double> _mappedTo_1 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0))), Double.valueOf(0.3333));
-          Pair<List<Integer>, Double> _mappedTo_2 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))), Double.valueOf(0.1335));
+          Pair<List<Integer>, Double> _mappedTo_2 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))), Double.valueOf(0.3335));
           _switchResult = Pair.<Integer, Map<List<Integer>, Double>>of(Integer.valueOf(1), Collections.<List<Integer>, Double>unmodifiableMap(CollectionLiterals.<List<Integer>, Double>newHashMap(_mappedTo, _mappedTo_1, _mappedTo_2)));
           break;
         case "star2d1r":

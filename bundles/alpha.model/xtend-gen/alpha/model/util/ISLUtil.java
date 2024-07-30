@@ -7,11 +7,17 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLIdentifier;
+import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLMultiUnionPWAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +29,7 @@ import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class ISLUtil {
@@ -41,10 +48,39 @@ public class ISLUtil {
   }
 
   /**
+   * Creates an ISLUnionSet from a string
+   */
+  public static ISLUnionSet toISLUnionSet(final CharSequence descriptor) {
+    return ISLUtil.toISLUnionSet(descriptor.toString());
+  }
+
+  public static ISLUnionSet toISLUnionSet(final String descriptor) {
+    return ISLUnionSet.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLMultiUnionPWAff from a string
+   */
+  public static ISLMultiUnionPWAff toISLMultiUnionPWAff(final CharSequence descriptor) {
+    return ISLUtil.toISLMultiUnionPWAff(descriptor.toString());
+  }
+
+  public static ISLMultiUnionPWAff toISLMultiUnionPWAff(final String descriptor) {
+    return ISLMultiUnionPWAff.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
    * Creates an ISLBasicMap from a string
    */
   public static ISLBasicMap toISLBasicMap(final String descriptor) {
     return ISLBasicMap.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLMap from a string
+   */
+  public static ISLMap toISLMap(final String descriptor) {
+    return ISLMap.buildFromString(ISLContext.getInstance(), descriptor);
   }
 
   /**
@@ -87,6 +123,36 @@ public class ISLUtil {
    */
   public static ISLPWQPolynomial toISLPWQPolynomial(final String descriptor) {
     return ISLPWQPolynomial.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLIdentifierList from a list of index names
+   */
+  public static ISLIdentifierList toISLIdentifierList(final String[] names) {
+    ISLIdentifierList _build = ISLIdentifierList.build(ISLContext.getInstance(), ((List<String>)Conversions.doWrapArray(names)).size());
+    Pair<Integer, ISLIdentifierList> _mappedTo = Pair.<Integer, ISLIdentifierList>of(Integer.valueOf(0), _build);
+    final Function2<Pair<Integer, ISLIdentifierList>, String, Pair<Integer, ISLIdentifierList>> _function = (Pair<Integer, ISLIdentifierList> iRet, String name) -> {
+      Pair<Integer, ISLIdentifierList> _xblockexpression = null;
+      {
+        final Integer i = iRet.getKey();
+        final ISLIdentifierList ret = iRet.getValue();
+        ISLIdentifierList _insert = ret.insert((i).intValue(), ISLIdentifier.alloc(ISLContext.getInstance(), name));
+        _xblockexpression = Pair.<Integer, ISLIdentifierList>of(Integer.valueOf(((i).intValue() + 1)), _insert);
+      }
+      return _xblockexpression;
+    };
+    return IterableExtensions.<String, Pair<Integer, ISLIdentifierList>>fold(((Iterable<String>)Conversions.doWrapArray(names)), _mappedTo, _function).getValue();
+  }
+
+  /**
+   * Creates an ISLSchedule from a string
+   */
+  public static ISLSchedule toISLSchedule(final CharSequence descriptor) {
+    return ISLUtil.toISLSchedule(descriptor.toString());
+  }
+
+  public static ISLSchedule toISLSchedule(final String descriptor) {
+    return ISLSchedule.buildFromString(ISLContext.getInstance(), descriptor);
   }
 
   /**

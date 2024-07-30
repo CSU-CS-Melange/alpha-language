@@ -31,6 +31,10 @@ import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.createConstantMaff
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
+import alpha.model.transformation.reduction.NormalizeReduction
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.ChangeOfBasis
+import alpha.model.transformation.Tiler
 
 class ABFT {
 	
@@ -141,6 +145,13 @@ class ABFT {
 		if (renameSystem) {
 			system.rename(tileSizes, 'v1')
 		}
+		
+		Tiler.apply(system, outputVar, tileSizes)
+
+		Normalize.apply(system)
+		NormalizeReduction.apply(system)
+		
+		system
 	}
 	
 	def static insertChecksumV2(AlphaSystem system, int[] tileSizes) {
@@ -213,6 +224,13 @@ class ABFT {
 		if (renameSystem) {
 			system.rename(tileSizes, 'v2')
 		}
+		
+		Tiler.apply(system, outputVar, tileSizes)
+		
+		Normalize.apply(system)
+		NormalizeReduction.apply(system)
+		
+		system
 	}
 	
 	def static addPatchEquation(SystemBody systemBody, Variable patchVar, Variable WVar, int[] tileSizes) {
@@ -734,7 +752,7 @@ class ABFT {
 			case 'star1d1r' : 1 -> #{
 										#[-1]->0.3332,
 										#[ 0]->0.3333,
-										#[ 1]->0.1335
+										#[ 1]->0.3335
 									}
 			case 'star2d1r' : 1 -> #{
 										#[ 0, 0]->0.5002,
