@@ -1,5 +1,6 @@
 package alpha.codegen.scheduledC
 
+import alpha.codegen.AssignmentStmt
 import alpha.codegen.BaseDataType
 import alpha.codegen.Factory
 import alpha.codegen.alphaBase.AlphaNameChecker
@@ -18,29 +19,22 @@ import alpha.model.prdg.PRDGGenerator
 import alpha.model.scheduler.FoutrierScheduler
 import alpha.model.scheduler.Scheduler
 import alpha.model.transformation.ChangeOfBasis
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.StandardizeNames
+import alpha.model.util.AShow
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import java.util.HashMap
+import java.util.List
+import java.util.Map
 
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
-import alpha.model.transformation.Normalize
-import alpha.model.transformation.reduction.NormalizeReduction
-import java.util.List
-import javax.lang.model.type.UnionType
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
-import fr.irisa.cairn.jnimap.isl.ISLScheduleNode
-import java.util.ArrayList
-import alpha.model.util.AShow
-import alpha.model.transformation.StandardizeNames
-import java.util.Map
-import java.util.HashMap
-import org.eclipse.xtext.validation.impl.AssignmentQuantityIntervalProvider
-import alpha.codegen.AssignmentStmt
+import static extension alpha.model.util.ISLUtil.toMultiAff
+import static extension alpha.model.util.ISLUtil.convertToUnionMap
 
 class WriteC extends CodeGeneratorBase {
 	
@@ -52,10 +46,7 @@ class WriteC extends CodeGeneratorBase {
 	
 	/** Takes an Alpha System and a PRDG and generates a schedule for them */
 	protected val Scheduler scheduler
-	//ISLSchedule schedule
-	
-	protected val PRDG prdg
-	
+		
 	/** Tells the code generator to add the inline keyword to the evaluate function */
 	protected val boolean inlineFunction
 	
@@ -71,7 +62,6 @@ class WriteC extends CodeGeneratorBase {
 		super(systemBody, nameChecker, typeGenerator, cycleDetection)
 
 		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler)
-		this.prdg = prdg
 		this.scheduler = scheduler
 		this.inlineFunction = inlineFunction
 		this.inlineCode = inlineCode
@@ -82,7 +72,6 @@ class WriteC extends CodeGeneratorBase {
 	/** Overide the preprocess step to not normalize reductions */
 	override void preprocess() {
 		Normalize.apply(systemBody)
-		//NormalizeReduction.apply(systemBody)
 		StandardizeNames.apply(systemBody)
 	}
 	
@@ -276,28 +265,12 @@ class WriteC extends CodeGeneratorBase {
 			}
 		}
 
-		//alteredSystem.systemBodies.get(0).equations.forEach[x | println("Equation: " + x.name)]	
-		//alteredSystem.systemBodies.get(0).standardEquations.forEach[x | println("SE Orig: " + x.expr)])
 		println("PRDG: \n" + prdg.show())
 		return (new WriteC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
 			prdg, new ScheduledTypeGenerator(valueType, false), scheduler, false, inlineFunction, inlineCode
 		)).convertSystemBody
 		
 	}
-	
-	def static ISLUnionMap convertToUnionMap(List<ISLMap> maps) {
-		var ISLUnionMap unionMap
-		for(map : maps) {
-			unionMap = unionMap === null ? map.toUnionMap : unionMap.addMap(map)
-		}
-		unionMap
-	}
-	
-	def static ISLMultiAff toMultiAff(ISLMap map) {
-		val local = map.copy
-		val pma = local.toPWMultiAff
-		val piece = pma.getPiece(0)
-		piece.maff
-	}
+
 	
 }

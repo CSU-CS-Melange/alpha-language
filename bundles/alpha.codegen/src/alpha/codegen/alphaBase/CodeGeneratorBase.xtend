@@ -165,12 +165,8 @@ abstract class CodeGeneratorBase {
 	// Setup and Default Elements
 	/////////////////////////////////////////////////////////////////
 	
-	/** Normalizes the system body and standardizes all names prior to conversion. */
-	def void preprocess() {
-		Normalize.apply(systemBody)
-		NormalizeReduction.apply(systemBody)
-		StandardizeNames.apply(systemBody)
-	}
+	/** Define any preprocessing steps that are necessary prior to conversion. */
+	def void preprocess() 
 	
 	/** Adds the header comment lines to add to the program. */
 	def void addDefaultHeaderComment() {

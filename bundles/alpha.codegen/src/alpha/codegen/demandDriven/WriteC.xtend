@@ -23,6 +23,9 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.reduction.NormalizeReduction
+import alpha.model.transformation.StandardizeNames
 
 /**
  * Generates demand-driven code that performs cycle detection.
@@ -328,4 +331,12 @@ class WriteC extends CodeGeneratorBase {
 		// Undefine the macro now that we're done with it.
 		entryPoint.addStatement(Factory.undefStmt(macroName))
 	}
+	
+	/** Normalizes the system body and standardizes all names prior to conversion. */
+	override preprocess() {
+		Normalize.apply(systemBody)
+		NormalizeReduction.apply(systemBody)
+		StandardizeNames.apply(systemBody)
+	}
+	
 }
