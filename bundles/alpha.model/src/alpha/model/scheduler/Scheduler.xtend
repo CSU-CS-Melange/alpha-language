@@ -6,7 +6,6 @@ import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 interface Scheduler {
- 	def void generateSchedule()
  	def ISLMap getScheduleMap(String variable)
  	def ISLSet getScheduleDomain(String macro)
  	def ISLSchedule getSchedule()
