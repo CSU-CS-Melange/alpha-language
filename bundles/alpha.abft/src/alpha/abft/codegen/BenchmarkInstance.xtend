@@ -93,8 +93,7 @@ class BenchmarkInstance {
 	//////////////////////////////////////////////////////////////
 	
 	def static MemoryMap v1MemoryMap(AlphaSystem system) {
-//		system.baselineMemoryMap
-		new MemoryMap(system)
+		system.baselineMemoryMap
 	}
 
 	def static AlphaSchedule v1Schedule(AlphaSystem system, int[] tileSizes) {
@@ -146,15 +145,6 @@ class BenchmarkInstance {
 		val paramStr = outVar.buildParamStr
 		
 		val TT = tileSizes.get(0)
-		val TI = tileSizes.get(1)
-		
-		/*
-		 * first by tt
-		 * then by ti
-		 * for a given tt and ti
-		 * 		
-		 * 	
-		 */
 		
 		val islSchedule = '''
 			domain: "«domain.toString»"
@@ -171,19 +161,19 @@ class BenchmarkInstance {
 			        - filter: "{ «patchNR» }"
 			        - filter: "{ «patch0»; «patch1»; «patch2» }"
 			  - filter: "{ «Y0» }"
-			  - filter: "{ «Y1»; «Y2» }"
+			  - filter: "{ «I»; «C1»; «C2»; «Y1»; «Y2» }"
 			    child:
 			      schedule: "«paramStr»->[\
-			        { «Y1»->[t]; «Y2»->[t] }, \
-			        { «Y1»->[i]; «Y2»->[i] }, \
-			        { «Y1»->[j]; «Y2»->[j] } \
+			      	{ «C1»->[tt]; «C2»->[tt-1]; «I»->[tt]; «Y1»->[t/«TT»]; «Y2»->[t/«TT»] }, \
+			      	{ «C1»->[«TT»tt]; «C2»->[«TT»tt-«TT»]; «I»->[«TT»tt]; «Y1»->[t]; «Y2»->[t] } \
 			      ]"
-			  - filter: "{ «C1» }"
-			  - filter: "{ «C2» }"
-			  - filter: "{ «I» }"
-			    
+			      child:
+			        sequence:
+			        - filter: "{ «Y1»; «Y2» }"
+			        - filter: "{ «C1» }"
+			        - filter: "{ «C2» }"
+			        - filter: "{ «I» }"
 		'''.toISLSchedule
-		
 		
 		new AlphaSchedule(islSchedule, exprStmtMap)
 	}

@@ -1,6 +1,7 @@
 package alpha.model.transformation
 
 import alpha.model.AlphaSystem
+import alpha.model.DependenceExpression
 import alpha.model.StandardEquation
 import alpha.model.UseEquation
 import alpha.model.Variable
@@ -8,8 +9,8 @@ import alpha.model.VariableExpression
 import alpha.model.factory.AlphaUserFactory
 import alpha.model.util.AbstractAlphaCompleteVisitor
 import org.eclipse.emf.ecore.util.EcoreUtil
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import alpha.model.DependenceExpression
+
+import static extension alpha.model.util.ISLUtil.toISLSet
 
 class Tiler extends AbstractAlphaCompleteVisitor {
 	
@@ -29,7 +30,17 @@ class Tiler extends AbstractAlphaCompleteVisitor {
 	override inVariable(Variable variable) {
 		if (variable != target) return;
 		
-		val newDom = null as ISLSet
+		val paramStr = '[' + variable.domain.copy.params.paramNames.join(',') + ']'
+		val pointIndexNames = variable.domain.indexNames
+		val tileIndexNames = pointIndexNames.map[i | 't' + i]
+		val indexNames = pointIndexNames + tileIndexNames
+		
+		val constraints = variable.
+		
+		val newDom = '''«paramStr»->{«indexNames.join(',')» : «constraints»}'''.toString.toISLSet
+		
+		
+		
 		variable.domainExpr = AlphaUserFactory.createJNIDomain(newDom)
 		
 	}

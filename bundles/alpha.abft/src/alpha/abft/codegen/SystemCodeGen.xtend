@@ -39,7 +39,7 @@ class SystemCodeGen {
 		this.system = system
 		this.alphaSchedule = alphaSchedule
 		this.schedule = alphaSchedule.schedule
-		this.memoryMap = memoryMap
+		this.memoryMap = memoryMap ?: new MemoryMap(system)
 		
 		val typeGenerator = new WriteCTypeGenerator(BaseDataType.FLOAT, false)
 		val nameChecker = new AlphaNameChecker(false)
@@ -81,9 +81,14 @@ class SystemCodeGen {
 			  «localMemoryAllocation»
 			
 			  «defStmtMacros»
-			  
+«««			  «undefStmtMacros»
+«««
+«««			  #define S_Y_2(t,i) printf(" Y(%d,%d)\r", (t),(i))
+«««			  #define S_C1_0(tt,ti,i) printf("C1(%d,%d,%d)\r", 3*(tt),(ti),(i))
+«««			  #define S_C2_0(tt,ti,i) printf("C2(%d,%d,%d)\r", 3*(tt)-3,(ti),(i))
+
 			  «stmtLoops»
-			  «dbg»
+			  
 			  «undefStmtMacros»
 			  
 			  // Print I values
@@ -298,7 +303,7 @@ class SystemCodeGen {
 				long N = «N»;
 				
 				float *X = malloc(sizeof(float)*«mallocSize»);
-				float *Y = malloc(sizeof(float)*(T+1)*«mallocSize»);
+				float *Y = malloc(sizeof(float)*2*«mallocSize»);
 				
 				«XLoops»
 				

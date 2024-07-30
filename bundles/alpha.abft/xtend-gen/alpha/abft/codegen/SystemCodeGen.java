@@ -68,7 +68,14 @@ public class SystemCodeGen {
     this.system = system;
     this.alphaSchedule = alphaSchedule;
     this.schedule = alphaSchedule.schedule();
-    this.memoryMap = memoryMap;
+    MemoryMap _elvis = null;
+    if (memoryMap != null) {
+      _elvis = memoryMap;
+    } else {
+      MemoryMap _memoryMap = new MemoryMap(system);
+      _elvis = _memoryMap;
+    }
+    this.memoryMap = _elvis;
     final WriteCTypeGenerator typeGenerator = new WriteCTypeGenerator(BaseDataType.FLOAT, false);
     final AlphaNameChecker nameChecker = new AlphaNameChecker(false);
     ExprConverter _exprConverter = new ExprConverter(typeGenerator, nameChecker);
@@ -148,16 +155,13 @@ public class SystemCodeGen {
       String _defStmtMacros = this.defStmtMacros();
       _builder.append(_defStmtMacros, "  ");
       _builder.newLineIfNotEmpty();
-      _builder.append("  ");
       _builder.newLine();
       _builder.append("  ");
       String _stmtLoops = this.stmtLoops();
       _builder.append(_stmtLoops, "  ");
       _builder.newLineIfNotEmpty();
       _builder.append("  ");
-      CharSequence _dbg = this.dbg();
-      _builder.append(_dbg, "  ");
-      _builder.newLineIfNotEmpty();
+      _builder.newLine();
       _builder.append("  ");
       String _undefStmtMacros = this.undefStmtMacros();
       _builder.append(_undefStmtMacros, "  ");
@@ -609,7 +613,7 @@ public class SystemCodeGen {
       _builder_2.append(");");
       _builder_2.newLineIfNotEmpty();
       _builder_2.append("\t");
-      _builder_2.append("float *Y = malloc(sizeof(float)*(T+1)*");
+      _builder_2.append("float *Y = malloc(sizeof(float)*2*");
       _builder_2.append(mallocSize, "\t");
       _builder_2.append(");");
       _builder_2.newLineIfNotEmpty();

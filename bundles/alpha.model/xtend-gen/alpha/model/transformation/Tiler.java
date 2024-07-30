@@ -6,10 +6,8 @@ import alpha.model.StandardEquation;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
 import alpha.model.VariableExpression;
-import alpha.model.factory.AlphaUserFactory;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import com.google.common.base.Objects;
-import fr.irisa.cairn.jnimap.isl.ISLSet;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 @SuppressWarnings("all")
@@ -28,12 +26,8 @@ public class Tiler extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void inVariable(final Variable variable) {
-    boolean _notEquals = (!Objects.equal(variable, this.target));
-    if (_notEquals) {
-      return;
-    }
-    final ISLSet newDom = ((ISLSet) null);
-    variable.setDomainExpr(AlphaUserFactory.createJNIDomain(newDom));
+    throw new Error("Unresolved compilation problems:"
+      + "\nno viable alternative at input \'val\'");
   }
 
   @Override
