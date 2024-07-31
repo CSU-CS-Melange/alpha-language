@@ -9,7 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildIdentity
 
 class FoutrierScheduler implements Scheduler {
-	ISLSchedule schedules
+	ISLSchedule schedule
 	PRDG prdg
 	
 	new(PRDG prdg) {
@@ -20,23 +20,24 @@ class FoutrierScheduler implements Scheduler {
 	def generateSchedule() {
 		var ISLUnionSet domains = this.prdg.generateDomains
 		var islPRDG = this.prdg.generateISLPRDG
-		this.schedules = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+		this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
 	}
 	
 	override getScheduleDomain(String macro) {
 		this.schedule.domain.sets.filter(set | set.tupleName == macro).head.copy
 	}
-	
-	override getSchedule() {
-		if (this.schedules === null) {
-			this.generateSchedule
-		}
-		this.schedules.copy
-	}
-	
+
 	override getScheduleMap(String variable) {
 		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head.copy
 		
+	}
+	
+	override getMaps() {
+		this.schedule.map
+	}
+	
+	override getDomains() {
+		this.schedule.domain
 	}
 
 }

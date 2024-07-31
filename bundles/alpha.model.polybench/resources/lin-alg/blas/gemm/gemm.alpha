@@ -3,7 +3,7 @@
 
 //BLAS routine (matrix matrix multiply)
 //C := alpha*A*B + beta*C
-affine gemm [P, Q, R] -> {: P, Q, R >0}
+affine gemm [P, Q, R] -> {: P, Q, R > 0}
 	inputs
 		alpha: {};
 		beta: {};
@@ -13,5 +13,5 @@ affine gemm [P, Q, R] -> {: P, Q, R >0}
 	outputs
 		Cout: {[i,j]: 0 <= i < P and 0 <= j < R};
 	let
-		Cout[i,j] = alpha * reduce(+, [k], A[i,k] * B[k,j]) + beta * Cin[i,j];
+		Cout[i, j] = alpha[] * reduce(+, [k], A[i, k] * B[k, j]) + beta[] * Cin[i, j];
 .

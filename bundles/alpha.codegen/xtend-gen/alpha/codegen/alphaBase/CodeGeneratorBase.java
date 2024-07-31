@@ -21,9 +21,6 @@ import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
-import alpha.model.transformation.Normalize;
-import alpha.model.transformation.StandardizeNames;
-import alpha.model.transformation.reduction.NormalizeReduction;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -205,13 +202,9 @@ public abstract class CodeGeneratorBase {
   }
 
   /**
-   * Normalizes the system body and standardizes all names prior to conversion.
+   * Define any preprocessing steps that are necessary prior to conversion.
    */
-  public void preprocess() {
-    Normalize.apply(this.systemBody);
-    NormalizeReduction.apply(this.systemBody);
-    StandardizeNames.apply(this.systemBody);
-  }
+  public abstract void preprocess();
 
   /**
    * Adds the header comment lines to add to the program.

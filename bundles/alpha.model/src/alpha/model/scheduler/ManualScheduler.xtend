@@ -10,24 +10,26 @@ import static extension alpha.model.util.ISLUtil.toISLUnionSet
 class ManualScheduler implements Scheduler {
 	ISLUnionMap maps
 	ISLUnionSet domains
-	ISLSchedule schedule
 	
 	new(String maps, String domains) {
 		this.maps = toISLUnionMap(maps)
 		this.domains = toISLUnionSet(domains)
-		this.schedule = ISLSchedule.buildFromDomain(this.domains).insertPartialSchedule(this.maps.copy.toMultiUnionPWAff)
 	}
 	
 	override getScheduleMap(String variable) {
-		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head.copy
+		this.maps.maps.filter(map | map.inputTupleName == variable).head.copy
 	}
 	
 	override getScheduleDomain(String macro) {
-		this.schedule.domain.sets.filter(set | set.tupleName == macro).head.copy
+		this.domains.sets.filter(set | set.tupleName == macro).head.copy
 	}
 	
-	override getSchedule() {
-		this.schedule.copy
+	override getMaps() {
+		this.maps
+	}
+	
+	override getDomains() {
+		this.domains
 	}
 	
 }

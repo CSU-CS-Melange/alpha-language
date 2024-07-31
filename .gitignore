@@ -39,3 +39,5 @@ workspace/
 
 # git specific
 **/.gitignore
+
+alpha-language-bundle

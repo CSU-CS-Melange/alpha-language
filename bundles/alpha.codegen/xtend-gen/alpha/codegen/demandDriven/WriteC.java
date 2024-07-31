@@ -35,6 +35,9 @@ import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
+import alpha.model.transformation.Normalize;
+import alpha.model.transformation.StandardizeNames;
+import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
@@ -354,5 +357,15 @@ public class WriteC extends CodeGeneratorBase {
       _xblockexpression = this.entryPoint.addStatement(Factory.undefStmt(macroName));
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Normalizes the system body and standardizes all names prior to conversion.
+   */
+  @Override
+  public void preprocess() {
+    Normalize.apply(this.systemBody);
+    NormalizeReduction.apply(this.systemBody);
+    StandardizeNames.apply(this.systemBody);
   }
 }

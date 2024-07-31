@@ -14,14 +14,11 @@ import alpha.model.StandardEquation
 import alpha.model.SystemBody
 import alpha.model.UseEquation
 import alpha.model.Variable
-import alpha.model.prdg.PRDG
-import alpha.model.prdg.PRDGGenerator
-import alpha.model.scheduler.FoutrierScheduler
+import alpha.model.memorymapper.MemoryMapper
 import alpha.model.scheduler.Scheduler
 import alpha.model.transformation.ChangeOfBasis
 import alpha.model.transformation.Normalize
 import alpha.model.transformation.StandardizeNames
-import alpha.model.util.AShow
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
@@ -31,10 +28,12 @@ import java.util.HashMap
 import java.util.List
 import java.util.Map
 
+import static alpha.model.util.ISLUtil.*
+
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
-import static extension alpha.model.util.ISLUtil.toMultiAff
-import static extension alpha.model.util.ISLUtil.convertToUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 
 class WriteC extends CodeGeneratorBase {
 	
@@ -44,8 +43,10 @@ class WriteC extends CodeGeneratorBase {
 	/** Converts Alpha expressions to simpleC expressions. */
 	protected val ScheduledExprConverter exprConverter
 	
-	/** Takes an Alpha System and a PRDG and generates a schedule for them */
+	/** An object that returns the schedule of the outputted C code */
 	protected val Scheduler scheduler
+	
+	protected val MemoryMapper mapper
 		
 	/** Tells the code generator to add the inline keyword to the evaluate function */
 	protected val boolean inlineFunction
@@ -53,19 +54,22 @@ class WriteC extends CodeGeneratorBase {
 	/** Tells the code generator to manually inline the function (replace the function call with the actual function body */
 	protected val boolean inlineCode
 	
+	/**  */
+	
 	protected var Map<String, AssignmentStmt> variableStatements
 	
-	new(SystemBody systemBody, AlphaNameChecker nameChecker, PRDG prdg, ScheduledTypeGenerator typeGenerator, 
-		Scheduler scheduler, boolean cycleDetection, boolean inlineFunction,
+	new(SystemBody systemBody, AlphaNameChecker nameChecker, ScheduledTypeGenerator typeGenerator, 
+		Scheduler scheduler, MemoryMapper mapper, boolean cycleDetection, boolean inlineFunction,
 		boolean inlineCode
 	) {
 		super(systemBody, nameChecker, typeGenerator, cycleDetection)
 
-		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler)
+		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler, mapper)
 		this.scheduler = scheduler
 		this.inlineFunction = inlineFunction
 		this.inlineCode = inlineCode
 		this.variableStatements = new HashMap()
+		this.mapper = mapper
 	}
 	
 	/** Normalizes the system body and standardizes all names prior to conversion. */
@@ -75,10 +79,46 @@ class WriteC extends CodeGeneratorBase {
 		StandardizeNames.apply(systemBody)
 	}
 	
+		/** Constructs an equality constraint that index i equals the parameter for that index. */
+	def private static addTotalOrderEquality(ISLSet domain, int originalParamCount, int index) {
+		val constraint = ISLConstraint.buildEquality(domain.space)
+			.setCoefficient(ISLDimType.isl_dim_param, originalParamCount + index, 1)
+			.setCoefficient(ISLDimType.isl_dim_set, index, -1)
+		
+		return domain.addConstraint(constraint)
+	}
+	
+	/** Constructs an inequality that index i is less than the parameter for that index. */
+	def private static addTotalOrderInequality(ISLSet domain, int originalParamCount, int index) {
+		val constraint = ISLConstraint.buildInequality(domain.space)
+			.setCoefficient(ISLDimType.isl_dim_param, originalParamCount + index, 1)
+			.setCoefficient(ISLDimType.isl_dim_set, index, -1)
+			.setConstant(-1)
+		
+		return domain.addConstraint(constraint)
+	}
+	
+	def static createOrderingForIndex(ISLSet domain, ISLMap map, int originalParamCount, int index, String name) {
+		(0 ..< index)
+			.fold(domain.copy, [d, i | d.addTotalOrderEquality( originalParamCount, i)])
+			.addTotalOrderInequality( originalParamCount, index)
+	}
+	
+	def static ISLPWQPolynomial card(ISLSet domain) {
+		BarvinokBindings.card(domain.copy)
+	}
+	
+	
 	override declareMemoryMacro(Variable variable) {
 		val name = nameChecker.getVariableStorageName(variable)
-		val domain = variable.domain
+		var ISLMap memoryMap = mapper.getMemoryMap(variable)
+		var ISLSet domain = variable.domain.copy
+		val names = domain.indexNames
 		
+		domain = domain
+			.apply(memoryMap.copy)
+			.renameIndices(names)
+
 		val rank = MemoryUtils.rank(domain)
 		val accessExpression = PolynomialConverter.convert(rank)
 		val macroReplacement = Factory.arrayAccessExpr(name, accessExpression)
@@ -96,10 +136,6 @@ class WriteC extends CodeGeneratorBase {
 		val evalName = nameChecker.getVariableReadName(equation.variable)
 		val evalBuilder = program.startFunction(true, this.inlineFunction, returnType, "eval_" + evalName)
 		
-		//val evalBuilder = program.startFunction(true, this.inlineFunction, returnType, evalName)
-
-//		println("Prdg Domains: " + this.scheduler.schedule)
-
 		// Add a function parameter for each index of the variable's domain.
 		val indexNames = equation.expr.contextDomain.indexNames
 		indexNames.forEach[evalBuilder.addParameter(typeGenerator.indexType, it)]
@@ -138,7 +174,7 @@ class WriteC extends CodeGeneratorBase {
 		allocatedVariables.add(name)
 		
 		// Call "malloc" to allocate memory and assign it to the variable.
-		val cardinalityExpr = variable.domain.cardinalityExpr
+		val cardinalityExpr = variable.domain.apply(mapper.getMemoryMap(variable)).cardinalityExpr
 		val mallocCall = Factory.mallocCall(dataType, cardinalityExpr)
 		val mallocAssignment = Factory.assignmentStmt(name, mallocCall)
 		entryPoint.addStatement(mallocAssignment)
@@ -178,7 +214,7 @@ class WriteC extends CodeGeneratorBase {
 		
 		//val scheduleMaps = convertToUnionMap(scheduler.schedule.map.copy.maps.filter[ map | !map.getDimNames(ISLDimType.isl_dim_in).head.contains("result")].toList)
 		var ISLUnionMap scheduleMaps
-		for(map : scheduler.schedule.map.maps) {
+		for(map : scheduler.maps.maps) {
 			for(variable : variables) {
 				var name = map.copy.inputTupleName
 				println("Name: " + name)
@@ -193,7 +229,7 @@ class WriteC extends CodeGeneratorBase {
 		}
 
 		println("Maps: " + scheduleMaps.copy)
-		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.schedule.domain)
+		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		var ISLUnionMap namedScheduleMaps
 		for(map : scheduleMaps.maps) {
 			println("Name: " + map.copy.inputTupleName)
@@ -220,12 +256,9 @@ class WriteC extends CodeGeneratorBase {
 
 		}
 		println("Schedule Maps")
-		this.scheduler.schedule.map.maps.forEach[map | println(map)]
-		val islAST = LoopGenerator.generateLoops(scheduler.schedule.domain.params, namedScheduleMaps)
-		val tempAST = LoopGenerator.generateLoops(scheduler.schedule.domain.params, this.scheduler.schedule)
-		
-		println("Unedited C output: " + tempAST.toCString)
-		
+		this.scheduler.maps.maps.forEach[map | println(map)]
+		val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
+				
 		val loopResult = ASTConverter.convert(islAST)
 
 		val loopVariables = loopResult.declarations
@@ -237,20 +270,17 @@ class WriteC extends CodeGeneratorBase {
 		
 	}
 	
-	def static convert(AlphaSystem system, BaseDataType valueType, boolean normalize, boolean inlineFunction, boolean inlineCode) {
+	def static convert(AlphaSystem system, BaseDataType valueType, Scheduler scheduler, MemoryMapper mapper, 
+		boolean normalize, boolean inlineFunction, boolean inlineCode
+	) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
 		}				
 		var alteredSystem = system.copyAE
 		Normalize.apply(alteredSystem)
-		//NormalizeReduction.apply(alteredSystem)
-		println(AShow.print(alteredSystem))
-		
-		val prdg = PRDGGenerator.apply(alteredSystem)
-		var scheduler = new FoutrierScheduler(prdg)
 
 		for(Variable local : alteredSystem.locals) {
-			for(ISLMap map : scheduler.schedule.map.maps) {
+			for(ISLMap map : scheduler.maps.maps) {
 				if(map.getTupleName(ISLDimType.isl_dim_out) == local.name) {
 					ChangeOfBasis.apply(alteredSystem, local, toMultiAff(map))
 				}
@@ -258,16 +288,15 @@ class WriteC extends CodeGeneratorBase {
 		}
 		
 		for(Variable input : alteredSystem.inputs) {
-			for(ISLMap map : scheduler.schedule.map.maps) {
+			for(ISLMap map : scheduler.maps.maps) {
 				if(map.getTupleName(ISLDimType.isl_dim_in) == input.name) {
 					ChangeOfBasis.apply(alteredSystem, input, toMultiAff(map))
 				}	
 			}
 		}
-
-		println("PRDG: \n" + prdg.show())
+		
 		return (new WriteC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
-			prdg, new ScheduledTypeGenerator(valueType, false), scheduler, false, inlineFunction, inlineCode
+			 new ScheduledTypeGenerator(valueType, false), scheduler, mapper, false, inlineFunction, inlineCode
 		)).convertSystemBody
 		
 	}

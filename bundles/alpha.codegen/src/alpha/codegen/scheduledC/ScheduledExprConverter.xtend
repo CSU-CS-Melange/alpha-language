@@ -17,6 +17,13 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import alpha.model.scheduler.Scheduler
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
+import alpha.model.VariableExpression
+import alpha.model.memorymapper.MemoryMapper
+import alpha.model.DependenceExpression
+import alpha.codegen.isl.AffineConverter
+
+
+import static alpha.model.util.ISLUtil.*
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -41,6 +48,8 @@ class ScheduledExprConverter extends ExprConverter {
 	/** Represents the number of reductions for the current reduction target for schedule lookup */
 	protected var reductionTargetNumber = 0
 	
+	protected var MemoryMapper mapper
+	
 	/**
 	 * A counter for the number of reductions that have been created.
 	 * This is used for determining the names of functions and macros which will be emitted.
@@ -48,12 +57,13 @@ class ScheduledExprConverter extends ExprConverter {
 	protected var nextReductionId = 0
 	
 	/** Constructs a new converter for expressions. */
-	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, ProgramBuilder program, Scheduler scheduler) {
+	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, ProgramBuilder program, Scheduler scheduler, MemoryMapper mapper) {
 		super(typeGenerator, nameChecker)
 		this.program = program
 		this.typeGenerator = typeGenerator
 		this.scheduler = scheduler
 		this.reductionTarget = ""
+		this.mapper = mapper
 	}
 	
 	def setTarget(String reductionTarget) { 
@@ -70,13 +80,36 @@ class ScheduledExprConverter extends ExprConverter {
 	def dispatch Expression convertExpr(ReduceExpression expr) {
 		// Create the reduce function and add it to the program.
 		val reduceFunction = createReduceFunction(program, expr, this.reductionTarget)
-		println("var: " + this.reductionTarget)
 		program.addFunction(reduceFunction)
 		
 		// Return a call to the reduce function.
 		val callArguments = #[expr.contextDomain.paramNames, expr.contextDomain.indexNames].flatten
 		return Factory.callExpr(reduceFunction.name, callArguments)
 	}
+	
+	/**
+	 * Translates a variable expression into a variable access.
+	 * Note: variable expressions inside dependence expressions are handled
+	 * by the dependence expression converter, not here.
+	 * If this is reached, then the variable is implicitly being accessed by the identity function.
+	*/
+	override dispatch Expression convertExpr(VariableExpression expr) {
+		// Emit a call to this variable's indexing function/macro
+		// using the indices themselves as the arguments (i.e., the identity function).
+		val name = nameChecker.getVariableReadName(expr.variable)
+		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mapper.getMemoryMap(expr.variable)))
+		return Factory.callExpr(name, indexExprs)
+	}
+	
+	/** If the child is a variable, read the value indexed by the dependence function. */
+	override dispatch convertDependence(DependenceExpression parent, VariableExpression child) {
+		// We read the variable by calling a function of the variable's "read name"
+		// with the indexing expression indicated by the dependence.
+		val name = nameChecker.getVariableReadName(child.variable)
+		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mapper.getMemoryMap(child.variable)).pullback(parent.function))
+		return Factory.callExpr(name, indexExprs)
+	}
+	
 	
 	/** Creates the function which evaluates the reduction at a specific output point. */
 	def protected createReduceFunction(ProgramBuilder program, ReduceExpression expr, String variableName) {
