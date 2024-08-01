@@ -27,6 +27,7 @@ import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
 import alpha.model.transformation.StandardizeNames;
+import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
@@ -48,6 +49,7 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -87,7 +89,14 @@ public class SystemCodeGen {
     String _xblockexpression = null;
     {
       final SystemCodeGen generator = new SystemCodeGen(system, schedule, memoryMap);
-      _xblockexpression = generator.generate();
+      String _xifexpression = null;
+      boolean _contains = system.getName().contains("v2");
+      if (_contains) {
+        _xifexpression = generator.generateV2();
+      } else {
+        _xifexpression = generator.generate();
+      }
+      _xblockexpression = _xifexpression;
     }
     return _xblockexpression;
   }
@@ -96,12 +105,9 @@ public class SystemCodeGen {
     String _xblockexpression = null;
     {
       StringConcatenation _builder = new StringConcatenation();
-      _builder.append("// ");
-      String _name = this.system.getName();
-      _builder.append(_name);
-      _builder.append(".c");
+      String _aboutComments = this.aboutComments();
+      _builder.append(_aboutComments);
       _builder.newLineIfNotEmpty();
-      _builder.newLine();
       _builder.append("#include<stdio.h>");
       _builder.newLine();
       _builder.append("#include<stdlib.h>");
@@ -169,7 +175,333 @@ public class SystemCodeGen {
       _builder.append("  ");
       _builder.newLine();
       _builder.append("  ");
-      _builder.append("// Print I values");
+      String _ILoops = this.ILoops();
+      _builder.append(_ILoops, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("}");
+      _builder.newLine();
+      _builder.newLine();
+      String _debugMain = this.debugMain();
+      _builder.append(_debugMain);
+      _builder.newLineIfNotEmpty();
+      final String code = _builder.toString();
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  private String generateV2() {
+    String _xblockexpression = null;
+    {
+      final String S_Y_2 = "Y(t,i) = (((0.3332) * (Y((-1 + (t)),(-1 + (i))))) + ((0.3333) * (Y((-1 + (t)),((i)))))) + ((0.3) * (Y((-1 + (t)),(1 + (i)))))";
+      final String S_C1_0 = "C1(tt,ti) += Y((3*(tt)),((i)))";
+      final String S_C2_0 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR(tt,ti,p))";
+      final String S_C2_1 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR2(tt,ti,p))";
+      final String S_C2_2 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR3(tt,ti,p))";
+      final String S_C2_NR2_0 = "C2_NR2(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))))";
+      final String S_C2_NR3_0 = "C2_NR3(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),((i))))";
+      final String S_C2_NR_0 = "C2_NR(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(9*(ti) + (p) + (w))))";
+      StringConcatenation _builder = new StringConcatenation();
+      String _aboutComments = this.aboutComments();
+      _builder.append(_aboutComments);
+      _builder.newLineIfNotEmpty();
+      _builder.append("#include<stdio.h>");
+      _builder.newLine();
+      _builder.append("#include<stdlib.h>");
+      _builder.newLine();
+      _builder.append("#include<math.h>");
+      _builder.newLine();
+      _builder.append("#include<time.h>");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("#define max(x, y)   ((x)>(y) ? (x) : (y))");
+      _builder.newLine();
+      _builder.append("#define min(x, y)   ((x)>(y) ? (y) : (x))");
+      _builder.newLine();
+      _builder.append("#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define floord(n,d) (int)floor(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define mallocCheck(v,s,d) if ((v) == NULL) { printf(\"Failed to allocate memory for %s : size=%lu\\n\", \"sizeof(d)*(s)\", sizeof(d)*(s)); exit(-1); }");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("// Memory mapped targets");
+      _builder.newLine();
+      final Function1<Pair<String, ISLSet>, String> _function = (Pair<String, ISLSet> it) -> {
+        return this.memoryTargetMacro(it);
+      };
+      String _join = IterableExtensions.join(ListExtensions.<Pair<String, ISLSet>, String>map(this.memoryMap.uniqueTargets(), _function), "\n");
+      _builder.append(_join);
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("// Memory access functions");
+      _builder.newLine();
+      final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
+        return this.memoryMacro(it);
+      };
+      String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(this.system.getVariables(), _function_1), "\n");
+      _builder.append(_join_1);
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w);");
+      _builder.newLine();
+      _builder.newLine();
+      CharSequence _signature = this.signature();
+      _builder.append(_signature);
+      _builder.newLineIfNotEmpty();
+      _builder.append("{");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("  ");
+      String _localMemoryAllocation = this.localMemoryAllocation();
+      _builder.append(_localMemoryAllocation, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("  ");
+      String _defStmtMacros = this.defStmtMacros();
+      _builder.append(_defStmtMacros, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_Y_2");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C1_0");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_0");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_1");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_2");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_NR2_0");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_NR3_0");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#undef S_C2_NR_0");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#define S_Y_2(t,i)  do { ");
+      _builder.append(S_Y_2, "  ");
+      _builder.append("; if (3<=t && t<=6 && 15<=i && i<=35) printf(\"  Y(%d,%2d) %0.4f\\n\", t, i, Y((t),(i))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#define S_C1_0(tt,ti,i)  do { if (tt==2 && ti==2) printf(\" C1(%d) Y(%d,%2d) %0.4f\\n\", (3*(tt)), (3*(tt)),(i), Y((3*(tt)),(i))); ");
+      _builder.append(S_C1_0, "  ");
+      _builder.append("; } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("float before;");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#define S_C2_NR2_0(tt,ti,p,w)   do { before=C2_NR2((tt),(ti),(p)); ");
+      _builder.append(S_C2_NR2_0, "  ");
+      _builder.append("; if (tt==2 && ti==2) printf(\"C2L(%d,%2d) %0.04f * (Y(%d,%2d) %0.4f) <--- %0.4f   (before: %0.4f  after: %0.4f)\\n\", 3*(tt) - (w), (p), allW((w)),(3*(tt) - (w)),(14 + 9*(ti) + (p) - (w)),Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))), allW((w))*Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))), before, C2_NR2((tt),(ti),(p))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.append("#define S_C2_NR3_0(tt,ti,p,w,i) do { ");
+      _builder.append(S_C2_NR3_0, "  ");
+      _builder.append("; if (tt==2 && ti==2) printf(\"C2M(%d,%2d) %0.04f * (Y(%d,%2d) %0.4f) <--- %0.4f   (+=\'ed %3.4f)\\n\", 3*(tt) - (w), (p), allW((w)),(3*(tt) - (w)),(i),Y((3*(tt) - (w)),(i)), allW((w))*Y((3*(tt) - (w)),(i)), C2_NR3((tt),(ti),(p))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("// This does not work (bug here, when invoking macro functions)");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#define S_C2_NR_0(tt,ti,p,w)    do { before=C2_NR(tt,ti,p); ");
+      _builder.append(S_C2_NR_0, "  ");
+      _builder.append("; if (tt==2 && ti==2) { printf(\"C2R(%d,%2d) %0.4f + %0.4f -> %0.4f\\n\", 3*(tt) - (w), (p), before, allW((w))*Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), C2_NR((tt),(ti),(p))); printf(\"tt(%d) ti(%d) p(%d) w(%d)\\n\", tt, ti, p, w); }} while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("#define S_C2_0(tt,ti,p) do { ");
+      _builder.append(S_C2_0, "  ");
+      _builder.append("; if (tt==2 && ti==2) printf(\" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\\n\", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR((tt),(ti),(p))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.append("#define S_C2_1(tt,ti,p) do { ");
+      _builder.append(S_C2_1, "  ");
+      _builder.append("; if (tt==2 && ti==2) printf(\" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\\n\", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR2((tt),(ti),(p))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.append("#define S_C2_2(tt,ti,p) do { ");
+      _builder.append(S_C2_2, "  ");
+      _builder.append("; if (tt==2 && ti==2) printf(\" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\\n\", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR3((tt),(ti),(p))); } while(0)");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("  ");
+      String _stmtLoops = this.stmtLoops();
+      _builder.append(_stmtLoops, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      CharSequence _debug = this.debug();
+      _builder.append(_debug, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      String _ILoops = this.ILoops();
+      _builder.append(_ILoops, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("}");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w) {");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("float* before_ptr = &(C2_NR((tt),(ti),(p)));");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("float before = C2_NR((tt),(ti),(p));");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append(S_C2_NR_0, "\t");
+      _builder.append("; ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t");
+      _builder.append("float after = C2_NR((tt),(ti),(p));");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("if (tt==2 && ti==2) {");
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.append("printf(\"C2R(%d,%2d) %0.4f + %0.4f -> %0.4f\\n\", 3*(tt) - (w), (p), before, allW((w))*Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), C2_NR((tt),(ti),(p)));");
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.append("printf(\"tt(%d) ti(%d) p(%d) w(%d)\\n\", tt, ti, p, w);");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("}");
+      _builder.newLine();
+      _builder.append("}");
+      _builder.newLine();
+      String _undefStmtMacros = this.undefStmtMacros();
+      _builder.append(_undefStmtMacros);
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      String _debugMain = this.debugMain();
+      _builder.append(_debugMain);
+      _builder.newLineIfNotEmpty();
+      final String code = _builder.toString();
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  private String generate2() {
+    String _xblockexpression = null;
+    {
+      final String S_Y_2 = "Y(t,i) = (((0.3332) * (Y((-1 + (t)),(-1 + (i))))) + ((0.3333) * (Y((-1 + (t)),((i)))))) + ((0.3) * (Y((-1 + (t)),(1 + (i)))))";
+      final String S_C1_0 = "C1(tt,ti) += Y((3*(tt)),((i)))";
+      final String S_C2_0 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR(tt,ti,p))";
+      final String S_C2_1 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR2(tt,ti,p))";
+      final String S_C2_2 = "C2(tt,ti,p) = (combosW(((p)))) * (C2_NR3(tt,ti,p))";
+      final String S_C2_NR2_0 = "C2_NR2(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))))";
+      final String S_C2_NR3_0 = "C2_NR3(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),((i))))";
+      final String S_C2_NR_0 = "C2_NR(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(9*(ti) + (p) + (w))))";
+      StringConcatenation _builder = new StringConcatenation();
+      String _aboutComments = this.aboutComments();
+      _builder.append(_aboutComments);
+      _builder.newLineIfNotEmpty();
+      _builder.append("#include<stdio.h>");
+      _builder.newLine();
+      _builder.append("#include<stdlib.h>");
+      _builder.newLine();
+      _builder.append("#include<math.h>");
+      _builder.newLine();
+      _builder.append("#include<time.h>");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("// Common macros");
+      _builder.newLine();
+      _builder.append("#define max(x, y)   ((x)>(y) ? (x) : (y))");
+      _builder.newLine();
+      _builder.append("#define min(x, y)   ((x)>(y) ? (y) : (x))");
+      _builder.newLine();
+      _builder.append("#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define floord(n,d) (int)floor(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define mallocCheck(v,s,d) if ((v) == NULL) { printf(\"Failed to allocate memory for %s : size=%lu\\n\", \"sizeof(d)*(s)\", sizeof(d)*(s)); exit(-1); }");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("// Memory mapped targets");
+      _builder.newLine();
+      final Function1<Pair<String, ISLSet>, String> _function = (Pair<String, ISLSet> it) -> {
+        return this.memoryTargetMacro(it);
+      };
+      String _join = IterableExtensions.join(ListExtensions.<Pair<String, ISLSet>, String>map(this.memoryMap.uniqueTargets(), _function), "\n");
+      _builder.append(_join);
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("// Memory access functions");
+      _builder.newLine();
+      final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
+        return this.memoryMacro(it);
+      };
+      String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(this.system.getVariables(), _function_1), "\n");
+      _builder.append(_join_1);
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      CharSequence _signature = this.signature();
+      _builder.append(_signature);
+      _builder.newLineIfNotEmpty();
+      _builder.append("{");
+      _builder.newLine();
+      _builder.append("  ");
+      String _localMemoryAllocation = this.localMemoryAllocation();
+      _builder.append(_localMemoryAllocation, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("  ");
+      String _defStmtMacros = this.defStmtMacros();
+      _builder.append(_defStmtMacros, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      String _stmtLoops = this.stmtLoops();
+      _builder.append(_stmtLoops, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      CharSequence _debug = this.debug();
+      _builder.append(_debug, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
+      _builder.newLine();
+      _builder.append("  ");
+      String _undefStmtMacros = this.undefStmtMacros();
+      _builder.append(_undefStmtMacros, "  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("  ");
       _builder.newLine();
       _builder.append("  ");
       String _ILoops = this.ILoops();
@@ -183,6 +515,85 @@ public class SystemCodeGen {
       String _debugMain = this.debugMain();
       _builder.append(_debugMain);
       _builder.newLineIfNotEmpty();
+      final String code = _builder.toString();
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  public CharSequence debug() {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("\t\t");
+    _builder.newLine();
+    _builder.append("\t\t");
+    _builder.newLine();
+    _builder.newLine();
+    return _builder;
+  }
+
+  public String aboutComments() {
+    String _xblockexpression = null;
+    {
+      final String[] scheduleLines = this.schedule.getRoot().toString().split("\n");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("/* ");
+      String _name = this.system.getName();
+      _builder.append(_name);
+      _builder.append(".c");
+      _builder.newLineIfNotEmpty();
+      _builder.append(" ");
+      _builder.append("* ");
+      _builder.newLine();
+      _builder.append(" ");
+      _builder.append("* Code generation of the following Alpha system:");
+      _builder.newLine();
+      {
+        String[] _split = AShow.print(this.system).split("\n");
+        for(final String line : _split) {
+          _builder.append(" ");
+          _builder.append("*   ");
+          _builder.append(line, " ");
+          _builder.newLineIfNotEmpty();
+        }
+      }
+      _builder.append(" ");
+      _builder.append("*");
+      _builder.newLine();
+      _builder.append(" ");
+      _builder.append("* Uses the memory map:");
+      _builder.newLine();
+      {
+        String[] _split_1 = this.memoryMap.toString().split("\n");
+        for(final String line_1 : _split_1) {
+          _builder.append(" ");
+          _builder.append("*   ");
+          _builder.append(line_1, " ");
+          _builder.newLineIfNotEmpty();
+        }
+      }
+      _builder.append(" ");
+      _builder.append("*");
+      _builder.newLine();
+      _builder.append(" ");
+      _builder.append("* Implements the schedule:");
+      _builder.newLine();
+      {
+        int _size = ((List<String>)Conversions.doWrapArray(scheduleLines)).size();
+        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(1, _size, true);
+        for(final Integer i : _doubleDotLessThan) {
+          _builder.append(" ");
+          _builder.append("*   ");
+          String _get = scheduleLines[(i).intValue()];
+          _builder.append(_get, " ");
+          _builder.newLineIfNotEmpty();
+        }
+      }
+      _builder.append(" ");
+      _builder.append("*");
+      _builder.newLine();
+      _builder.append(" ");
+      _builder.append("*/");
+      _builder.newLine();
       final String code = _builder.toString();
       _xblockexpression = code;
     }
@@ -250,6 +661,10 @@ public class SystemCodeGen {
           final String indexNamesStr = IterableExtensions.join(expr.getContextDomain().getIndexNames(), ",");
           Equation _containerEquation = AlphaUtil.getContainerEquation(expr);
           final StandardEquation eq = ((StandardEquation) _containerEquation);
+          boolean _equals = Objects.equal(name, "S_C2_NR2_0");
+          if (_equals) {
+            InputOutput.println();
+          }
           final CharSequence rhs = ProgramPrinter.printExpr(this.exprConverter.convertExpr(expr));
           String lhs = ((String) null);
           String op = ((String) null);
@@ -301,15 +716,24 @@ public class SystemCodeGen {
   public String ILoops() {
     String _xblockexpression = null;
     {
-      final Function1<ISLSet, Boolean> _function = (ISLSet s) -> {
+      final Function1<Variable, Boolean> _function = (Variable v) -> {
+        String _name = v.getName();
+        return Boolean.valueOf(Objects.equal(_name, "I"));
+      };
+      Variable _findFirst = IterableExtensions.<Variable>findFirst(this.system.getLocals(), _function);
+      boolean _tripleEquals = (_findFirst == null);
+      if (_tripleEquals) {
+        return "";
+      }
+      final Function1<ISLSet, Boolean> _function_1 = (ISLSet s) -> {
         String _tupleName = s.getTupleName();
         return Boolean.valueOf(Objects.equal(_tupleName, "S_I_0"));
       };
-      final ISLUnionSet IDomain = IterableExtensions.<ISLSet>findFirst(this.schedule.getDomain().getSets(), _function).toUnionSet();
+      final ISLUnionSet IDomain = IterableExtensions.<ISLSet>findFirst(this.schedule.getDomain().getSets(), _function_1).setTupleName("printI").toUnionSet();
       final List<String> indexNames = IDomain.getSets().get(0).getIndexNames();
       final String idxStr = IterableExtensions.join(indexNames, ",");
       StringConcatenation _builder = new StringConcatenation();
-      _builder.append("S_I_0[");
+      _builder.append("printI[");
       _builder.append(idxStr);
       _builder.append("]");
       final String SI = _builder.toString();
@@ -350,13 +774,15 @@ public class SystemCodeGen {
       final ISLASTNode node = build.generate(ISchedule.copy());
       final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
       StringConcatenation _builder_2 = new StringConcatenation();
-      _builder_2.append("#define S_I_0(");
+      _builder_2.append("// Print I values");
+      _builder_2.newLine();
+      _builder_2.append("#define printI(");
       _builder_2.append(idxStr);
       _builder_2.append(") printf(\"I(");
-      final Function1<String, String> _function_1 = (String it) -> {
+      final Function1<String, String> _function_2 = (String it) -> {
         return "%d";
       };
-      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_1), ",");
+      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), ",");
       _builder_2.append(_join_1);
       _builder_2.append(") = %E\\n\",");
       _builder_2.append(idxStr);
@@ -369,7 +795,7 @@ public class SystemCodeGen {
       _builder_2.append(_code);
       _builder_2.newLineIfNotEmpty();
       _builder_2.newLine();
-      _builder_2.append("#undef S_I_0");
+      _builder_2.append("#undef printI");
       _builder_2.newLine();
       final String code = _builder_2.toString();
       _xblockexpression = code;
@@ -555,7 +981,7 @@ public class SystemCodeGen {
       _builder_1.append("(");
       String _join_3 = IterableExtensions.join(idxs, ",");
       _builder_1.append(_join_3);
-      _builder_1.append(") = rand() * 10");
+      _builder_1.append(") = rand() % 100 + 1");
       _builder_1.newLineIfNotEmpty();
       String _code = codegenVisitor.toCode();
       _builder_1.append(_code);
@@ -617,6 +1043,11 @@ public class SystemCodeGen {
       _builder_2.append(mallocSize, "\t");
       _builder_2.append(");");
       _builder_2.newLineIfNotEmpty();
+      _builder_2.append("\t");
+      _builder_2.newLine();
+      _builder_2.append("\t");
+      _builder_2.append("srand(0);");
+      _builder_2.newLine();
       _builder_2.append("\t");
       _builder_2.newLine();
       _builder_2.append("\t");

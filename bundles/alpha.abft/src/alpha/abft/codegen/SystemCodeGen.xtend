@@ -26,6 +26,9 @@ import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
 import alpha.model.transformation.StandardizeNames
+import alpha.model.util.AShow
+import alpha.codegen.isl.ASTConverter
+import alpha.codegen.ProgramPrinter
 
 class SystemCodeGen {
 	
@@ -50,14 +53,16 @@ class SystemCodeGen {
 	
 	def static generateSystemCode(AlphaSystem system, AlphaSchedule schedule, MemoryMap memoryMap) {
 		val generator = new SystemCodeGen(system, schedule, memoryMap)
-		generator.generate
+		if (system.name.contains('v2'))
+			generator.generateV2
+		else
+			generator.generate
 	}
 	
 	private def generate() {
 		
 		val code = '''
-			// «system.name».c
-			
+			«aboutComments»
 			#include<stdio.h>
 			#include<stdlib.h>
 			#include<math.h>
@@ -81,17 +86,182 @@ class SystemCodeGen {
 			  «localMemoryAllocation»
 			
 			  «defStmtMacros»
-«««			  «undefStmtMacros»
-«««
-«««			  #define S_Y_2(t,i) printf(" Y(%d,%d)\r", (t),(i))
-«««			  #define S_C1_0(tt,ti,i) printf("C1(%d,%d,%d)\r", 3*(tt),(ti),(i))
-«««			  #define S_C2_0(tt,ti,i) printf("C2(%d,%d,%d)\r", 3*(tt)-3,(ti),(i))
 
 			  «stmtLoops»
 			  
 			  «undefStmtMacros»
 			  
-			  // Print I values
+			  «ILoops»
+			
+			}
+			
+			«debugMain»
+		'''
+		code	
+	}
+	
+	private def generateV2() {
+		// fully parenthesized
+		val S_Y_2 = 'Y(t,i) = (((0.3332) * (Y((-1 + (t)),(-1 + (i))))) + ((0.3333) * (Y((-1 + (t)),((i)))))) + ((0.3) * (Y((-1 + (t)),(1 + (i)))))'
+		val S_C1_0 = 'C1(tt,ti) += Y((3*(tt)),((i)))'
+		val S_C2_0 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR(tt,ti,p))'
+		val S_C2_1 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR2(tt,ti,p))'
+		val S_C2_2 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR3(tt,ti,p))'
+		val S_C2_NR2_0 = 'C2_NR2(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))))'
+		val S_C2_NR3_0 = 'C2_NR3(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),((i))))'
+		val S_C2_NR_0 = 'C2_NR(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(9*(ti) + (p) + (w))))'
+		
+		val code = '''
+			«aboutComments»
+			#include<stdio.h>
+			#include<stdlib.h>
+			#include<math.h>
+			#include<time.h>
+			
+			#define max(x, y)   ((x)>(y) ? (x) : (y))
+			#define min(x, y)   ((x)>(y) ? (y) : (x))
+			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
+			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
+			#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
+
+			// Memory mapped targets
+			«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
+			
+			// Memory access functions
+			«system.variables.map[memoryMacro].join('\n')»
+			
+			void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w);
+			
+			«signature»
+			{
+			
+			  «localMemoryAllocation»
+			
+			  «defStmtMacros»
+
+			  #undef S_Y_2
+			  #undef S_C1_0
+			  #undef S_C2_0
+			  #undef S_C2_1
+			  #undef S_C2_2
+			  #undef S_C2_NR2_0
+			  #undef S_C2_NR3_0
+			  #undef S_C2_NR_0
+			  
+			  #define S_Y_2(t,i)  do { «S_Y_2»; if (3<=t && t<=6 && 15<=i && i<=35) printf("  Y(%d,%2d) %0.4f\n", t, i, Y((t),(i))); } while(0)
+			  
+			  #define S_C1_0(tt,ti,i)  do { if (tt==2 && ti==2) printf(" C1(%d) Y(%d,%2d) %0.4f\n", (3*(tt)), (3*(tt)),(i), Y((3*(tt)),(i))); «S_C1_0»; } while(0)
+			  
+			  float before;
+			  
+			  
+			  #define S_C2_NR2_0(tt,ti,p,w)   do { before=C2_NR2((tt),(ti),(p)); «S_C2_NR2_0»; if (tt==2 && ti==2) printf("C2L(%d,%2d) %0.04f * (Y(%d,%2d) %0.4f) <--- %0.4f   (before: %0.4f  after: %0.4f)\n", 3*(tt) - (w), (p), allW((w)),(3*(tt) - (w)),(14 + 9*(ti) + (p) - (w)),Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))), allW((w))*Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))), before, C2_NR2((tt),(ti),(p))); } while(0)
+			  #define S_C2_NR3_0(tt,ti,p,w,i) do { «S_C2_NR3_0»; if (tt==2 && ti==2) printf("C2M(%d,%2d) %0.04f * (Y(%d,%2d) %0.4f) <--- %0.4f   (+='ed %3.4f)\n", 3*(tt) - (w), (p), allW((w)),(3*(tt) - (w)),(i),Y((3*(tt) - (w)),(i)), allW((w))*Y((3*(tt) - (w)),(i)), C2_NR3((tt),(ti),(p))); } while(0)
+«««			  #define S_C2_NR_0(tt,ti,p,w)    do { «S_C2_NR_0»; if (tt==2 && ti==2) printf("C2R(%d,%2d) %0.04f * (Y(%d,%2d) %0.4f) <--- %0.4f   (+='ed %3.4f)\n", 3*(tt) - (w), (p), allW((w)),(3*(tt) - (w)),(9*(ti) + (p) + (w)),Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), allW((w))*Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), C2_NR((tt),(ti),(p))); } while(0)
+			  
+			  // This does not work (bug here, when invoking macro functions)
+			  #define S_C2_NR_0(tt,ti,p,w)    do { before=C2_NR(tt,ti,p); «S_C2_NR_0»; if (tt==2 && ti==2) { printf("C2R(%d,%2d) %0.4f + %0.4f -> %0.4f\n", 3*(tt) - (w), (p), before, allW((w))*Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), C2_NR((tt),(ti),(p))); printf("tt(%d) ti(%d) p(%d) w(%d)\n", tt, ti, p, w); }} while(0)
+«««			  // This works:
+«««			  #define S_C2_NR_0(tt,ti,p,w)    do { here(C2_NR,allW,Y,T,N,tt,ti,p,w); } while(0)
+			  
+			  #define S_C2_0(tt,ti,p) do { «S_C2_0»; if (tt==2 && ti==2) printf(" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\n", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR((tt),(ti),(p))); } while(0)
+			  #define S_C2_1(tt,ti,p) do { «S_C2_1»; if (tt==2 && ti==2) printf(" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\n", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR2((tt),(ti),(p))); } while(0)
+			  #define S_C2_2(tt,ti,p) do { «S_C2_2»; if (tt==2 && ti==2) printf(" C2(%d,%2d) <- %0.4f <- %0.4f * %0.4f\n", tt, (p), C2((tt),(ti),(p)), combosW((p)), C2_NR3((tt),(ti),(p))); } while(0)
+«««			  
+
+			  «stmtLoops»
+			  
+			  «debug»
+			  
+			  
+			  «ILoops»
+			
+			}
+			
+			void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w) {
+				
+				float* before_ptr = &(C2_NR((tt),(ti),(p)));
+				float before = C2_NR((tt),(ti),(p));
+				«S_C2_NR_0»; 
+				float after = C2_NR((tt),(ti),(p));
+				if (tt==2 && ti==2) {
+					printf("C2R(%d,%2d) %0.4f + %0.4f -> %0.4f\n", 3*(tt) - (w), (p), before, allW((w))*Y((3*(tt) - (w)),(9*(ti) + (p) + (w))), C2_NR((tt),(ti),(p)));
+					printf("tt(%d) ti(%d) p(%d) w(%d)\n", tt, ti, p, w);
+				}
+			}
+			«undefStmtMacros»
+			
+			«debugMain»
+		'''
+		code	
+	}
+	
+	private def generate2() {
+		
+		val S_Y_2 = 'Y(t,i) = (((0.3332) * (Y((-1 + (t)),(-1 + (i))))) + ((0.3333) * (Y((-1 + (t)),((i)))))) + ((0.3) * (Y((-1 + (t)),(1 + (i)))))'
+		val S_C1_0 = 'C1(tt,ti) += Y((3*(tt)),((i)))'
+		val S_C2_0 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR(tt,ti,p))'
+		val S_C2_1 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR2(tt,ti,p))'
+		val S_C2_2 = 'C2(tt,ti,p) = (combosW(((p)))) * (C2_NR3(tt,ti,p))'
+		val S_C2_NR2_0 = 'C2_NR2(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w))))'
+		val S_C2_NR3_0 = 'C2_NR3(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),((i))))'
+		val S_C2_NR_0 = 'C2_NR(tt,ti,p) += (allW(((w)))) * (Y((3*(tt) - (w)),(9*(ti) + (p) + (w))))'
+		
+		val code = '''
+			«aboutComments»
+			#include<stdio.h>
+			#include<stdlib.h>
+			#include<math.h>
+			#include<time.h>
+			
+			// Common macros
+			#define max(x, y)   ((x)>(y) ? (x) : (y))
+			#define min(x, y)   ((x)>(y) ? (y) : (x))
+			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
+			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
+			#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
+
+			// Memory mapped targets
+			«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
+			
+			// Memory access functions
+			«system.variables.map[memoryMacro].join('\n')»
+			
+			«signature»
+			{
+			  «localMemoryAllocation»
+			
+			  «defStmtMacros»
+			  
+«««			  #undef S_Y_2
+«««			  #undef S_C1_0
+«««			  #undef S_C2_0
+«««			  #undef S_C2_1
+«««			  #undef S_C2_2
+«««			  #undef S_C2_NR2_0
+«««			  #undef S_C2_NR3_0
+«««			  #undef S_C2_NR_0
+«««			  
+«««			  #define S_Y_2(t,i)  do { «S_Y_2»; if (3<=t && t<=6 && 17<=i && i<=33) printf("  Y(%d,%2d) %0.4f\n", t, i, Y((t),(i))); } while(0)
+«««			  
+«««			  #define S_C1_0(tt,ti,i)  do { if (tt==2 && ti==2) printf(" C1(%d) Y(%d,%2d) %0.4f\n", (3*(tt)), (3*(tt)),(i), Y((3*(tt)),(i))); «S_C1_0»; } while(0)
+«««			  
+«««			  #define S_C2_0(tt,ti,p) do { if (tt==2 && ti==2) printf(" C2(%d)\n", tt); «S_C2_0»; } while(0)
+«««			  #define S_C2_1(tt,ti,p) do { if (tt==2 && ti==2) printf(" C2(%d)\n", tt); «S_C2_1»; } while(0)
+«««			  #define S_C2_2(tt,ti,p) do { if (tt==2 && ti==2) printf(" C2(%d)\n", tt); «S_C2_2»; } while(0)
+««««««			  
+«««			  #define S_C2_NR2_0(tt,ti,p,w)   do { if (tt==2 && ti==2) printf("C2L(%d) Y(%d,%2d) %0.4f\n", 3*(tt) - (w),(3*(tt) - (w)),(14 + 9*(ti) + (p) - (w)),Y((3*(tt) - (w)),(14 + 9*(ti) + (p) - (w)))); «S_C2_NR2_0»; } while(0)
+«««			  #define S_C2_NR3_0(tt,ti,p,w,i) do { if (tt==2 && ti==2) printf("C2M(%d) Y(%d,%2d) %0.4f\n", 3*(tt) - (w),(3*(tt) - (w)),(i),Y((3*(tt) - (w)),(i))); «S_C2_NR3_0»; } while(0)
+«««			  #define S_C2_NR_0(tt,ti,p,w)    do { if (tt==2 && ti==2) printf("C2R(%d) Y(%d,%2d) %0.4f\n", 3*(tt) - (w),(3*(tt) - (w)),(9*(ti) + (p) + (w)),Y((3*(tt) - (w)),(9*(ti) + (p) + (w)))); «S_C2_NR_0»; } while(0)
+«««			  
+«««			  
+«««			  
+			  «stmtLoops»
+			  
+			  «debug»
+			  
+			  «undefStmtMacros»
+			  
 			  «ILoops»
 			
 			}
@@ -100,6 +270,46 @@ class SystemCodeGen {
 			«debugMain»
 		'''
 		code	
+	}
+	
+	def debug() '''
+		
+«««		// debug
+«««		for (int t=6; t>=3; t--) {
+«««			printf("here ");
+«««			for (int i=15; i<=35; i++) {
+«««				printf("%0.4f,", Y(t,i));
+«««			}
+«««			printf("\n");
+«««		}
+		
+
+	'''
+	
+	def aboutComments() {
+		val scheduleLines = schedule.root.toString.split('\n')
+		
+		val code = '''
+			/* «system.name».c
+			 * 
+			 * Code generation of the following Alpha system:
+			 «FOR line : AShow.print(system).split('\n')»
+			 *   «line»
+			«ENDFOR»
+			 *
+			 * Uses the memory map:
+			 «FOR line : memoryMap.toString.split('\n')»
+			 *   «line»
+			 «ENDFOR»
+			 *
+			 * Implements the schedule:
+			 «FOR i : 1..<scheduleLines.size»
+			 *   «scheduleLines.get(i)»
+ 			 «ENDFOR»
+			 *
+			 */
+		'''
+		code
 	}
 	
 	def localMemoryAllocation() {
@@ -137,6 +347,8 @@ class SystemCodeGen {
 			
 			val indexNamesStr = expr.contextDomain.indexNames.join(',')
 			val eq = expr.getContainerEquation as StandardEquation
+			if (name == 'S_C2_NR2_0')
+				println
 			val rhs = exprConverter.convertExpr(expr).printExpr
 			var lhs = null as String
 			var op = null as String
@@ -157,10 +369,12 @@ class SystemCodeGen {
 	}
 	
 	def ILoops() {
-		val IDomain = schedule.domain.sets.findFirst[s | s.tupleName == 'S_I_0'].toUnionSet
+		if (system.locals.findFirst[v | v.name == 'I'] === null)
+			return '';
+		val IDomain = schedule.domain.sets.findFirst[s | s.tupleName == 'S_I_0'].setTupleName('printI').toUnionSet
 		val indexNames = IDomain.sets.get(0).indexNames
 		val idxStr = indexNames.join(',')
-		val SI = '''S_I_0[«idxStr»]'''
+		val SI = '''printI[«idxStr»]'''
 		val paramStr = '[' + IDomain.copy.params.paramNames.join(',') + ']'
 		val ISchedule = '''
 			domain: "«IDomain.toString»"
@@ -181,11 +395,12 @@ class SystemCodeGen {
 		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
 		
 		val code = '''
-			#define S_I_0(«idxStr») printf("I(«indexNames.map['%d'].join(',')») = %E\n",«idxStr»,I(«idxStr»))
+			// Print I values
+			#define printI(«idxStr») printf("I(«indexNames.map['%d'].join(',')») = %E\n",«idxStr»,I(«idxStr»))
 			
 			«codegenVisitor.toCode»
 			
-			#undef S_I_0
+			#undef printI
 		'''
 		code
 	}
@@ -196,6 +411,9 @@ class SystemCodeGen {
 //						.setIterators(iterators.copy)
 		
 		val node = build.generate(schedule.copy)
+		
+//		val result = ASTConverter.convert(node)
+//		result.statements.map[s | ProgramPrinter.printStmt(s)].join('\n')
 		
 		val scheduleLines = schedule.root.toString.split('\n')
 		
@@ -279,7 +497,7 @@ class SystemCodeGen {
 		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
 		
 		val XLoops = '''
-			#define «stmtName»(«idxs.join(',')») «XVar.name»(«idxs.join(',')») = rand() * 10
+			#define «stmtName»(«idxs.join(',')») «XVar.name»(«idxs.join(',')») = rand() % 100 + 1
 			«codegenVisitor.toCode»
 			#undef «stmtName»
 			
@@ -304,6 +522,8 @@ class SystemCodeGen {
 				
 				float *X = malloc(sizeof(float)*«mallocSize»);
 				float *Y = malloc(sizeof(float)*2*«mallocSize»);
+				
+				srand(0);
 				
 				«XLoops»
 				

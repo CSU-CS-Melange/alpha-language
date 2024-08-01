@@ -23,7 +23,11 @@ class AffineConverter {
 	
 	/** Converts a single affine expression to a single C expression. */
 	def static convertAff(ISLAff aff) {
-		val literal = aff.toString(ISL_FORMAT.C)
+		val literal = aff.inputNames.fold(
+			aff.toString(ISL_FORMAT.C),
+			[ret, index | ret.replace(index, '(' + index + ')')]
+		)
+//		val literal = aff.toString(ISL_FORMAT.C) 
 		return Factory.customExpr("(" + literal + ")")
 	}
 }

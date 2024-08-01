@@ -1328,7 +1328,7 @@ public class ABFT {
         case "star1d1r":
           Pair<List<Integer>, Double> _mappedTo = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)))), Double.valueOf(0.3332));
           Pair<List<Integer>, Double> _mappedTo_1 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0))), Double.valueOf(0.3333));
-          Pair<List<Integer>, Double> _mappedTo_2 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))), Double.valueOf(0.3335));
+          Pair<List<Integer>, Double> _mappedTo_2 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1))), Double.valueOf(0.3));
           _switchResult = Pair.<Integer, Map<List<Integer>, Double>>of(Integer.valueOf(1), Collections.<List<Integer>, Double>unmodifiableMap(CollectionLiterals.<List<Integer>, Double>newHashMap(_mappedTo, _mappedTo_1, _mappedTo_2)));
           break;
         case "star2d1r":
