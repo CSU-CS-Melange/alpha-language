@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -137,13 +138,40 @@ public class MemoryMap {
       }
       final List<String> indexNames = this.mappedIndexNames.get(name);
       final ISLSet mappedDomain = domain.copy().apply(this.getMap(name));
-      _xblockexpression = AlphaUtil.renameIndices(mappedDomain, indexNames);
+      ISLSet _xifexpression = null;
+      int _size = indexNames.size();
+      boolean _greaterThan = (_size > 0);
+      if (_greaterThan) {
+        _xifexpression = AlphaUtil.renameIndices(mappedDomain, indexNames);
+      } else {
+        _xifexpression = mappedDomain;
+      }
+      _xblockexpression = _xifexpression;
     }
     return _xblockexpression;
   }
 
   public String[] getIndexNames(final Variable variable) {
     return null;
+  }
+
+  public MemoryMap setMemoryMap(final String name, final String mappedName) {
+    MemoryMap _xblockexpression = null;
+    {
+      final Function1<Variable, Boolean> _function = (Variable v) -> {
+        String _name = v.getName();
+        return Boolean.valueOf(Objects.equal(_name, name));
+      };
+      Variable _findFirst = IterableExtensions.<Variable>findFirst(this.system.getVariables(), _function);
+      ISLSet _domain = null;
+      if (_findFirst!=null) {
+        _domain=_findFirst.getDomain();
+      }
+      final ISLSet domain = _domain;
+      final ISLMap map = domain.copy().toIdentityMap();
+      _xblockexpression = this.setMemoryMap(name, mappedName, map, domain, new String[] {});
+    }
+    return _xblockexpression;
   }
 
   public MemoryMap setMemoryMap(final String name, final String mappedName, final String map, final String[] indexNames) {
@@ -170,5 +198,26 @@ public class MemoryMap {
     this.variableDomains.put(name, domain);
     this.mappedIndexNames.put(name, ((List<String>)Conversions.doWrapArray(indexNames)));
     return this;
+  }
+
+  @Override
+  public String toString() {
+    final Function1<Map.Entry<String, String>, String> _function = (Map.Entry<String, String> it) -> {
+      String _xblockexpression = null;
+      {
+        final String name = it.getKey();
+        final String mappedName = it.getValue();
+        final ISLMap map = this.getMap(name);
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append(name);
+        _builder.append(" -> ");
+        _builder.append(mappedName);
+        _builder.append(" by ");
+        _builder.append(map);
+        _xblockexpression = _builder.toString();
+      }
+      return _xblockexpression;
+    };
+    return IterableExtensions.join(IterableExtensions.<Map.Entry<String, String>, String>map(this.memoryMapNames.entrySet(), _function), "\n");
   }
 }

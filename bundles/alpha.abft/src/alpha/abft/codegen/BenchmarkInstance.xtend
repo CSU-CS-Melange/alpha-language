@@ -187,12 +187,12 @@ class BenchmarkInstance {
 	//////////////////////////////////////////////////////////////
 	
 	def static MemoryMap v2MemoryMap(AlphaSystem system) {
-//		val c2nrs = system.locals.filter[v | v.name.contains('C2_NR')].map[name]
-//		
-//		c2nrs.fold(system.baselineMemoryMap, [mm, name |
-//			mm.setMemoryMap(name, 'C2_NR')
-//		])
-		system.baselineMemoryMap
+		val c2nrs = system.locals.filter[v | v.name.contains('C2_NR')].map[name]
+		
+		c2nrs.fold(system.baselineMemoryMap, [mm, name |
+			mm.setMemoryMap(name, 'C2_NR')
+		])
+//		system.baselineMemoryMap
 	}
 	
 	def static AlphaSchedule v2Schedule(AlphaSystem system, int[] tileSizes) {
@@ -255,8 +255,6 @@ class BenchmarkInstance {
 		// TODO - undo debug
 		val C2XsStr = C2Xs.join(';')
 		val C2NRXsStr = C2NRXs.join(';')
-//		val C2XsStr = C2Xs.get(0)
-//		val C2NRXsStr = C2NRXs.get(0)
 		
 		
 		var islSchedule = '''
@@ -308,7 +306,7 @@ class BenchmarkInstance {
 			  - filter: "{ «I»; «INR»; «C1»; «C2NRXsStr»; «C2XsStr»; «Y1»; «Y2» }"
 			    child:
 			      schedule: "«paramStr»->[\
-«««			      	{ «band1» }, \
+			      	{ «band1» }, \
 			      	{ «band2» } \
 			      ]"
 			      child:

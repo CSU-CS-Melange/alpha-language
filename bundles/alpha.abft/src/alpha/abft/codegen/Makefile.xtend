@@ -5,19 +5,22 @@ import alpha.model.AlphaSystem
 class Makefile {
 	
 	def static generateMakefile(AlphaSystem inputSystem, AlphaSystem v1System, AlphaSystem v2System) '''
-		all: baseline v1 v2
+		all: bin/«inputSystem.name» bin/«v1System.name» bin/«v2System.name»
 		
-		baseline: «inputSystem.name».c
-			gcc -o $@ $^
+		mkdir:
+			mkdir -p bin
 		
-		v1: «v1System.name».c
-			gcc -o $@ $^
+		bin/«inputSystem.name»: src/«inputSystem.name».c mkdir
+			gcc -o $@ $<
+		
+		bin/«v1System.name»: src/«v1System.name».c mkdir
+			gcc -o $@ $<
 			
-		v2: «v2System.name».c
-			gcc -o $@ $^
+		bin/«v2System.name»: src/«v2System.name».c mkdir
+			gcc -o $@ $<
 		
 		clean:
-			rm -f «inputSystem.name» «v1System.name» «v2System.name»
+			rm -f bin/*
 	'''
 	
 	

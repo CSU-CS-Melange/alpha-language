@@ -75,13 +75,23 @@ class MemoryMap {
 		
 		val mappedDomain = domain.copy.apply(getMap(name))
 		
-		AlphaUtil.renameIndices(mappedDomain, indexNames)
+		if (indexNames.size > 0)
+			AlphaUtil.renameIndices(mappedDomain, indexNames)
+		else
+			mappedDomain
 	}
 
 	def String[] getIndexNames(Variable variable) {
 		
 	}
 
+
+	def MemoryMap setMemoryMap(String name, String mappedName) {
+		val domain = system.variables.findFirst[v | v.name == name]?.domain
+		val map = domain.copy.toIdentityMap
+		
+		setMemoryMap(name, mappedName, map, domain, #[])
+	}
 	def MemoryMap setMemoryMap(String name, String mappedName, String map, String[] indexNames) {
 		val domain = system.variables.findFirst[v | v.name == name]?.domain
 		setMemoryMap(name, mappedName, map.toISLMap, domain, indexNames)
@@ -94,6 +104,16 @@ class MemoryMap {
 		return this
 	}
 	
+	override String toString() {
+		memoryMapNames.entrySet.map[
+			val name = key
+			val mappedName = value
+			val map = getMap(name)
+			'''«name» -> «mappedName» by «map»'''
+		].join('\n')
+		
+		
+	}
 	
 	
 	

@@ -27,7 +27,6 @@ class AffineConverter {
 			aff.toString(ISL_FORMAT.C),
 			[ret, index | ret.replace(index, '(' + index + ')')]
 		)
-//		val literal = aff.toString(ISL_FORMAT.C) 
 		return Factory.customExpr("(" + literal + ")")
 	}
 }

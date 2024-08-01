@@ -170,6 +170,23 @@ class SystemCodeGen {
 	
 	def localMemoryAllocation() {
 		
+//		/*
+//		 * get all unique memory mapped Names
+//		 */
+//		val uniqueChunks = newHashMap
+//		println
+//		memoryMap.uniqueTargets.forEach[
+//			val mappedName = key
+//			val domain = value
+//			
+//			val varsMappedToThisName = 
+//			val list = uniqueChunks.get(mappedName) ?: newLinkedList
+//			list.add
+//			
+//			println(it)
+//		]
+//		println		
+		
 		val mallocStmts = system.locals
 			.map[domain -> 'float *' + memoryMap.getName(name)]
 			.map[mallocStmt(key, value)]

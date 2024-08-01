@@ -411,7 +411,21 @@ public class BenchmarkInstance {
   }
 
   public static MemoryMap v2MemoryMap(final AlphaSystem system) {
-    return BenchmarkInstance.baselineMemoryMap(system);
+    MemoryMap _xblockexpression = null;
+    {
+      final Function1<Variable, Boolean> _function = (Variable v) -> {
+        return Boolean.valueOf(v.getName().contains("C2_NR"));
+      };
+      final Function1<Variable, String> _function_1 = (Variable it) -> {
+        return it.getName();
+      };
+      final Iterable<String> c2nrs = IterableExtensions.<Variable, String>map(IterableExtensions.<Variable>filter(system.getLocals(), _function), _function_1);
+      final Function2<MemoryMap, String, MemoryMap> _function_2 = (MemoryMap mm, String name) -> {
+        return mm.setMemoryMap(name, "C2_NR");
+      };
+      _xblockexpression = IterableExtensions.<String, MemoryMap>fold(c2nrs, BenchmarkInstance.baselineMemoryMap(system), _function_2);
+    }
+    return _xblockexpression;
   }
 
   public static AlphaSchedule v2Schedule(final AlphaSystem system, final int[] tileSizes) {
@@ -727,6 +741,11 @@ public class BenchmarkInstance {
       _builder_13.append("schedule: \"");
       _builder_13.append(paramStr, "      ");
       _builder_13.append("->[\\");
+      _builder_13.newLineIfNotEmpty();
+      _builder_13.append("      \t");
+      _builder_13.append("{ ");
+      _builder_13.append(band1, "      \t");
+      _builder_13.append(" }, \\");
       _builder_13.newLineIfNotEmpty();
       _builder_13.append("      \t");
       _builder_13.append("{ ");
