@@ -8,6 +8,8 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT;
 import java.util.ArrayList;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
@@ -32,7 +34,11 @@ public class AffineConverter {
    * Converts a single affine expression to a single C expression.
    */
   public static CustomExpr convertAff(final ISLAff aff) {
-    final String literal = aff.toString(ISL_FORMAT.C);
+    final Function2<String, String, String> _function = (String ret, String index) -> {
+      return ret.replace(index, (("(" + index) + ")"));
+    };
+    final String literal = IterableExtensions.<String, String>fold(aff.getInputNames(), 
+      aff.toString(ISL_FORMAT.C), _function);
     return Factory.customExpr((("(" + literal) + ")"));
   }
 }
