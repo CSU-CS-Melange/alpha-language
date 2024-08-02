@@ -13,6 +13,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
@@ -85,6 +86,13 @@ public class ISLUtil {
    */
   public static ISLUnionSet toISLUnionSet(final String descriptor) {
     return ISLUnionSet.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLSchedule from a string
+   */
+  public static ISLSchedule toISLSchedule(final String descriptor) {
+    return ISLSchedule.buildFromString(ISLContext.getInstance(), descriptor);
   }
 
   /**

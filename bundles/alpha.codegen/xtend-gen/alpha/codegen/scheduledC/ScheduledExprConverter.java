@@ -192,7 +192,15 @@ public class ScheduledExprConverter extends ExprConverter {
     final String reduceResultName = (((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber)) + "_result");
     ISLSet loopDomain = this.createReduceLoopDomain(expr);
     loopDomain = loopDomain.setTupleName(reduceBodyName);
-    ISLMap scheduleMap = this.scheduler.getScheduleMap(reduceBodyName).copy();
+    ISLMap _elvis = null;
+    ISLMap _scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
+    if (_scheduleMap != null) {
+      _elvis = _scheduleMap;
+    } else {
+      ISLMap _identity = loopDomain.copy().identity();
+      _elvis = _identity;
+    }
+    ISLMap scheduleMap = _elvis;
     ISLMap _copy = scheduleMap.copy();
     String _plus = ("scheduleMap: " + _copy);
     InputOutput.<String>println(_plus);
@@ -201,11 +209,11 @@ public class ScheduledExprConverter extends ExprConverter {
     InputOutput.<String>println(_plus_1);
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
-      scheduleMap.intersectDomain(loopDomain.copy()).copy());
+      scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());
     final Function1<String, Parameter> _function = (String it) -> {
       return this.toParameter(it);
     };
-    function.addParameter(((Parameter[])Conversions.unwrapArray(ListExtensions.<String, Parameter>map(loopDomain.getParamNames(), _function), Parameter.class)));
+    function.addParameter(((Parameter[])Conversions.unwrapArray(ListExtensions.<String, Parameter>map(loopDomain.copy().getParamNames(), _function), Parameter.class)));
     final ASTConversionResult loopResult = ASTConverter.convert(islAST);
     final Consumer<String> _function_1 = (String it) -> {
       function.addVariable(this.typeGenerator.getIndexType(), it);

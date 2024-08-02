@@ -9,7 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 public interface Scheduler {
   ISLMap getScheduleMap(final String variable);
 
-  ISLSet getScheduleDomain(final String macro);
+  ISLSet getScheduleDomain(final String variable);
 
   ISLUnionMap getMaps();
 

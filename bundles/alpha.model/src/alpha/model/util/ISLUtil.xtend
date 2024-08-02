@@ -18,6 +18,7 @@ import java.util.List
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 
 class ISLUtil {
 	
@@ -60,6 +61,12 @@ class ISLUtil {
 	def static toISLUnionSet(String descriptor) {
 		ISLUnionSet.buildFromString(ISLContext.instance, descriptor)
 	}
+	
+	/** Creates an ISLSchedule from a string */
+	def static toISLSchedule(String descriptor) {
+		ISLSchedule.buildFromString(ISLContext.instance, descriptor)
+	}
+	
 	
 	/** Creates an ISLConstraint from a string */
 	def static toISLConstraint(String descriptor) {

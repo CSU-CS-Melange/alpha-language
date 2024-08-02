@@ -19,7 +19,10 @@ class ManualMemoryMapper implements MemoryMapper {
 	}
 	
 	override getMemoryMap(Variable variable) {
-		this.maps.get(variable.name).copy
+		if(this.maps.get(variable.name) !== null){
+			this.maps.get(variable.name).copy
+		} else {
+			variable.domain.copy.identity
+		}
 	}
-	
 }

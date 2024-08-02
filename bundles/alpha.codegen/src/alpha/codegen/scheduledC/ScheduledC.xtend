@@ -35,7 +35,7 @@ import static extension alpha.model.util.CommonExtensions.toArrayList
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 
-class WriteC extends CodeGeneratorBase {
+class ScheduledC extends CodeGeneratorBase {
 	
 	/** The next ID to use as a statement macro. */
 	protected var int nextStatementId = 0
@@ -217,22 +217,20 @@ class WriteC extends CodeGeneratorBase {
 		for(map : scheduler.maps.maps) {
 			for(variable : variables) {
 				var name = map.copy.inputTupleName
-				println("Name: " + name)
 				if(name == variable.name) {
 					if(scheduleMaps === null) {
 						scheduleMaps = map.copy.toUnionMap
 					} else {
-						scheduleMaps = scheduleMaps.addMap(map.copy)
+						scheduleMaps = scheduleMaps.copy.addMap(map.copy)
 					}
 				}
 			}
 		}
+		scheduleMaps.maps.forEach[x | println("ASDF: " + x)]
 
-		println("Maps: " + scheduleMaps.copy)
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		var ISLUnionMap namedScheduleMaps
 		for(map : scheduleMaps.maps) {
-			println("Name: " + map.copy.inputTupleName)
 			val name = map.copy.inputTupleName
 			var newMap = map.copy
 			if(inlineCode) {
@@ -295,7 +293,7 @@ class WriteC extends CodeGeneratorBase {
 			}
 		}
 		
-		return (new WriteC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
+		return (new ScheduledC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
 			 new ScheduledTypeGenerator(valueType, false), scheduler, mapper, false, inlineFunction, inlineCode
 		)).convertSystemBody
 		

@@ -22,6 +22,14 @@ public class ManualMemoryMapper implements MemoryMapper {
 
   @Override
   public ISLMap getMemoryMap(final Variable variable) {
-    return this.maps.get(variable.getName()).copy();
+    ISLMap _xifexpression = null;
+    ISLMap _get = this.maps.get(variable.getName());
+    boolean _tripleNotEquals = (_get != null);
+    if (_tripleNotEquals) {
+      _xifexpression = this.maps.get(variable.getName()).copy();
+    } else {
+      _xifexpression = variable.getDomain().copy().identity();
+    }
+    return _xifexpression;
   }
 }

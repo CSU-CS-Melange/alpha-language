@@ -151,19 +151,19 @@ class ScheduledExprConverter extends ExprConverter {
 		var loopDomain = expr.createReduceLoopDomain
 		loopDomain = loopDomain.setTupleName(reduceBodyName)
 		
-		var scheduleMap = scheduler.getScheduleMap(reduceBodyName).copy
+		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity
 		
 		println("scheduleMap: " + scheduleMap.copy)
 		println("Domain: " + loopDomain.copy)
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
-			scheduleMap.intersectDomain(loopDomain.copy).copy)
+			scheduleMap.copy.intersectDomain(loopDomain.copy).copy)
 
 		//val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain)
 		
 		// The size parameters for the loop domain need to be added as function parameters.
-		function.addParameter(loopDomain.paramNames.map[toParameter])
+		function.addParameter(loopDomain.copy.paramNames.map[toParameter])
 		
 		// Add declarations for all the loop variables and add the loops themselves to the function.
 		val loopResult = ASTConverter.convert(islAST)

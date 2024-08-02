@@ -32,10 +32,10 @@ public class FoutrierScheduler implements Scheduler {
   }
 
   @Override
-  public ISLSet getScheduleDomain(final String macro) {
+  public ISLSet getScheduleDomain(final String variable) {
     final Function1<ISLSet, Boolean> _function = (ISLSet set) -> {
       String _tupleName = set.getTupleName();
-      return Boolean.valueOf(Objects.equal(_tupleName, macro));
+      return Boolean.valueOf(Objects.equal(_tupleName, variable));
     };
     return IterableExtensions.<ISLSet>head(IterableExtensions.<ISLSet>filter(this.schedule.getDomain().getSets(), _function)).copy();
   }
@@ -51,11 +51,11 @@ public class FoutrierScheduler implements Scheduler {
 
   @Override
   public ISLUnionMap getMaps() {
-    return this.schedule.getMap();
+    return this.schedule.getMap().copy();
   }
 
   @Override
   public ISLUnionSet getDomains() {
-    return this.schedule.getDomain();
+    return this.schedule.getDomain().copy();
   }
 }

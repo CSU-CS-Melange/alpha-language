@@ -1,12 +1,10 @@
 package alpha.model.scheduler
 
+import alpha.model.Variable
 import alpha.model.prdg.PRDG
-import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-
-import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildIdentity
 
 class FoutrierScheduler implements Scheduler {
 	ISLSchedule schedule
@@ -23,8 +21,8 @@ class FoutrierScheduler implements Scheduler {
 		this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
 	}
 	
-	override getScheduleDomain(String macro) {
-		this.schedule.domain.sets.filter(set | set.tupleName == macro).head.copy
+	override getScheduleDomain(String variable) {
+		this.schedule.domain.sets.filter(set | set.tupleName == variable).head.copy
 	}
 
 	override getScheduleMap(String variable) {
@@ -33,11 +31,11 @@ class FoutrierScheduler implements Scheduler {
 	}
 	
 	override getMaps() {
-		this.schedule.map
+		this.schedule.map.copy
 	}
 	
 	override getDomains() {
-		this.schedule.domain
+		this.schedule.domain.copy
 	}
 
 }

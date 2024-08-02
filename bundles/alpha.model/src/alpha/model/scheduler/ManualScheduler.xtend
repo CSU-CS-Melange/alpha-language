@@ -1,11 +1,10 @@
 package alpha.model.scheduler
 
+import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 
-import static extension alpha.model.util.ISLUtil.toISLUnionMap
-import static extension alpha.model.util.ISLUtil.toISLUnionSet
+import static alpha.model.util.ISLUtil.*
 
 class ManualScheduler implements Scheduler {
 	ISLUnionMap maps
@@ -16,20 +15,39 @@ class ManualScheduler implements Scheduler {
 		this.domains = toISLUnionSet(domains)
 	}
 	
-	override getScheduleMap(String variable) {
-		this.maps.maps.filter(map | map.inputTupleName == variable).head.copy
+		
+	new(String scheduleString) {
+		val schedule = toISLSchedule(scheduleString)
+		println("BLAH: " + schedule)
+		this.maps = schedule.map
+		this.domains = schedule.domain
 	}
 	
-	override getScheduleDomain(String macro) {
-		this.domains.sets.filter(set | set.tupleName == macro).head.copy
+	
+	override getScheduleMap(String variable) {
+		val map = this.maps.maps.filter(map | map.inputTupleName == variable).head ?: null
+		if(map === null) {
+			null
+		} else {
+			map.copy
+		}
+	}
+	
+	override getScheduleDomain(String variable) {
+		val domain = this.domains.sets.filter(set | set.tupleName == variable).head ?: null
+		if(domain === null) {
+			null
+		} else {
+			domain.copy
+		}
 	}
 	
 	override getMaps() {
-		this.maps
+		this.maps.copy
 	}
 	
 	override getDomains() {
-		this.domains
+		this.domains.copy
 	}
 	
 }

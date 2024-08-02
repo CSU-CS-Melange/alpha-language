@@ -61,7 +61,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
-public class WriteC extends CodeGeneratorBase {
+public class ScheduledC extends CodeGeneratorBase {
   /**
    * The next ID to use as a statement macro.
    */
@@ -91,7 +91,7 @@ public class WriteC extends CodeGeneratorBase {
 
   protected Map<String, AssignmentStmt> variableStatements;
 
-  public WriteC(final SystemBody systemBody, final AlphaNameChecker nameChecker, final ScheduledTypeGenerator typeGenerator, final Scheduler scheduler, final MemoryMapper mapper, final boolean cycleDetection, final boolean inlineFunction, final boolean inlineCode) {
+  public ScheduledC(final SystemBody systemBody, final AlphaNameChecker nameChecker, final ScheduledTypeGenerator typeGenerator, final Scheduler scheduler, final MemoryMapper mapper, final boolean cycleDetection, final boolean inlineFunction, final boolean inlineCode) {
     super(systemBody, nameChecker, typeGenerator, cycleDetection);
     ScheduledExprConverter _scheduledExprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, this.program, scheduler, mapper);
     this.exprConverter = _scheduledExprConverter;
@@ -130,9 +130,9 @@ public class WriteC extends CodeGeneratorBase {
 
   public static ISLSet createOrderingForIndex(final ISLSet domain, final ISLMap map, final int originalParamCount, final int index, final String name) {
     final Function2<ISLSet, Integer, ISLSet> _function = (ISLSet d, Integer i) -> {
-      return WriteC.addTotalOrderEquality(d, originalParamCount, (i).intValue());
+      return ScheduledC.addTotalOrderEquality(d, originalParamCount, (i).intValue());
     };
-    return WriteC.addTotalOrderInequality(IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, index, true), domain.copy(), _function), originalParamCount, index);
+    return ScheduledC.addTotalOrderInequality(IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, index, true), domain.copy(), _function), originalParamCount, index);
   }
 
   public static ISLPWQPolynomial card(final ISLSet domain) {
@@ -241,30 +241,27 @@ public class WriteC extends CodeGeneratorBase {
         for (final Variable variable : variables) {
           {
             String name = map.copy().getInputTupleName();
-            InputOutput.<String>println(("Name: " + name));
             String _name = variable.getName();
             boolean _equals = Objects.equal(name, _name);
             if (_equals) {
               if ((scheduleMaps == null)) {
                 scheduleMaps = map.copy().toUnionMap();
               } else {
-                scheduleMaps = scheduleMaps.addMap(map.copy());
+                scheduleMaps = scheduleMaps.copy().addMap(map.copy());
               }
             }
           }
         }
       }
-      ISLUnionMap _copy = scheduleMaps.copy();
-      String _plus = ("Maps: " + _copy);
-      InputOutput.<String>println(_plus);
+      final Consumer<ISLMap> _function = (ISLMap x) -> {
+        InputOutput.<String>println(("ASDF: " + x));
+      };
+      scheduleMaps.getMaps().forEach(_function);
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
       ISLUnionMap namedScheduleMaps = null;
       List<ISLMap> _maps_1 = scheduleMaps.getMaps();
       for (final ISLMap map_1 : _maps_1) {
         {
-          String _inputTupleName = map_1.copy().getInputTupleName();
-          String _plus_1 = ("Name: " + _inputTupleName);
-          InputOutput.<String>println(_plus_1);
           final String name = map_1.copy().getInputTupleName();
           ISLMap newMap = map_1.copy();
           if (this.inlineCode) {
@@ -276,11 +273,11 @@ public class WriteC extends CodeGeneratorBase {
                 this.nextStatementId = (_nextStatementId + 1);
               }
             } while(this.nameChecker.isGlobalOrKeyword(macroName));
-            final Function1<Variable, Boolean> _function = (Variable x) -> {
+            final Function1<Variable, Boolean> _function_1 = (Variable x) -> {
               String _name = x.getName();
               return Boolean.valueOf(Objects.equal(_name, name));
             };
-            final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function));
+            final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function_1));
             final MacroStmt macro = Factory.macroStmt(macroName, ((String[])Conversions.unwrapArray(variable_1.getDomain().getIndexNames(), String.class)), this.variableStatements.get(name));
             this.entryPoint.addStatement(macro);
             newMap = newMap.<ISLMap>setInputTupleName(macroName);
@@ -295,16 +292,16 @@ public class WriteC extends CodeGeneratorBase {
         }
       }
       InputOutput.<String>println("Schedule Maps");
-      final Consumer<ISLMap> _function = (ISLMap map_2) -> {
+      final Consumer<ISLMap> _function_1 = (ISLMap map_2) -> {
         InputOutput.<ISLMap>println(map_2);
       };
-      this.scheduler.getMaps().getMaps().forEach(_function);
+      this.scheduler.getMaps().getMaps().forEach(_function_1);
       final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
       final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function_1 = (String it) -> {
+      final Function1<String, VariableDecl> _function_2 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_1));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_2));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;
@@ -345,6 +342,6 @@ public class WriteC extends CodeGeneratorBase {
     SystemBody _get = alteredSystem.getSystemBodies().get(0);
     AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
     ScheduledTypeGenerator _scheduledTypeGenerator = new ScheduledTypeGenerator(valueType, false);
-    return new WriteC(_get, _alphaNameChecker, _scheduledTypeGenerator, scheduler, mapper, false, inlineFunction, inlineCode).convertSystemBody();
+    return new ScheduledC(_get, _alphaNameChecker, _scheduledTypeGenerator, scheduler, mapper, false, inlineFunction, inlineCode).convertSystemBody();
   }
 }
