@@ -14,6 +14,8 @@ import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.Variable
+import alpha.model.transformation.StandardizeNames
+import alpha.model.util.AShow
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
@@ -23,12 +25,9 @@ import static extension alpha.codegen.ProgramPrinter.printStmt
 import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
+import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
-import alpha.model.transformation.StandardizeNames
-import alpha.model.util.AShow
-import alpha.codegen.isl.ASTConverter
-import alpha.codegen.ProgramPrinter
 
 class SystemCodeGen {
 	
@@ -141,10 +140,9 @@ class SystemCodeGen {
 		'''
 		code	
 	}
-		
+
 	def aboutComments() {
 		val scheduleLines = schedule.root.toString.split('\n')
-		
 		val code = '''
 			/* «system.name».c
 			 * 
@@ -156,7 +154,7 @@ class SystemCodeGen {
 			 * Uses the memory map:
 			 «FOR line : memoryMap.toString.split('\n')»
 			 *   «line»
-			 «ENDFOR»
+  			 «ENDFOR»
 			 *
 			 * Implements the schedule:
 			 «FOR i : 1..<scheduleLines.size»
@@ -165,31 +163,41 @@ class SystemCodeGen {
 			 *
 			 */
 		'''
+		println
 		code
 	}
 	
 	def localMemoryAllocation() {
 		
-//		/*
-//		 * get all unique memory mapped Names
-//		 */
-//		val uniqueChunks = newHashMap
-//		println
-//		memoryMap.uniqueTargets.forEach[
-//			val mappedName = key
-//			val domain = value
-//			
-//			val varsMappedToThisName = 
-//			val list = uniqueChunks.get(mappedName) ?: newLinkedList
-//			list.add
-//			
-//			println(it)
-//		]
-//		println		
+		/*
+		 * get list of local variables associated with each mapped name
+		 */
+		val chunkVariables = newHashMap
+		system.variables.forEach[v | 
+			val mappedName = memoryMap.getName(v.name)
+			val list = chunkVariables.get(mappedName) ?: newLinkedList
+			list.add(v)
+			chunkVariables.put(mappedName, list)
+		]
 		
-		val mallocStmts = system.locals
-			.map[domain -> 'float *' + memoryMap.getName(name)]
-			.map[mallocStmt(key, value)]
+		/*
+		 * For now, assert that mapping across locals and inputs/outputs
+		 * do not exist
+		 */
+		chunkVariables.entrySet.filter[value.size > 0]
+			.filter[value.filter[isLocal].size > 0 && (value.filter[isInput || isOutput].size > 0)]
+			.forEach[
+				throw new Exception('Mappings across locals and inputs/outputs not currently supported')
+			]
+		
+		/*
+		 * construct the domain (union of all variable domains) for each
+		 * mapped name
+		 */
+		val mallocStmts = chunkVariables.entrySet
+			.filter[value.filter[isLocal].size > 0]
+			.map[value.map[domain.copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
+			.map[mallocStmt(key, 'float *' + value)]
 		
 		val code = '''
 			// Local memory allocation

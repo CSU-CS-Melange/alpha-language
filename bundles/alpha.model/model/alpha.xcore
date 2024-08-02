@@ -1008,6 +1008,7 @@ enum REDUCTION_OP {
 	MAX as "max"
 	PROD as "prod"
 	SUM as "sum"
+	DIFF as "diff"
 	AND as "and"
 	OR as "or"
 	XOR as "xor"

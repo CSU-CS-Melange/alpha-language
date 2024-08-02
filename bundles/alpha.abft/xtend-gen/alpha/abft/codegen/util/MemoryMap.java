@@ -174,6 +174,16 @@ public class MemoryMap {
     return _xblockexpression;
   }
 
+  public MemoryMap setMemoryMap(final Variable variable, final String mappedName) {
+    MemoryMap _xblockexpression = null;
+    {
+      final ISLSet domain = variable.getDomain();
+      final ISLMap map = domain.copy().toIdentityMap();
+      _xblockexpression = this.setMemoryMap(variable.getName(), mappedName, map, domain, new String[] {});
+    }
+    return _xblockexpression;
+  }
+
   public MemoryMap setMemoryMap(final String name, final String mappedName, final String map, final String[] indexNames) {
     MemoryMap _xblockexpression = null;
     {
@@ -200,24 +210,41 @@ public class MemoryMap {
     return this;
   }
 
+  public boolean isEmpty() {
+    int _size = this.memoryMapNames.size();
+    return (_size == 0);
+  }
+
+  public boolean isNonEmpty() {
+    boolean _isEmpty = this.isEmpty();
+    return (!_isEmpty);
+  }
+
   @Override
   public String toString() {
-    final Function1<Map.Entry<String, String>, String> _function = (Map.Entry<String, String> it) -> {
-      String _xblockexpression = null;
-      {
-        final String name = it.getKey();
-        final String mappedName = it.getValue();
-        final ISLMap map = this.getMap(name);
-        StringConcatenation _builder = new StringConcatenation();
-        _builder.append(name);
-        _builder.append(" -> ");
-        _builder.append(mappedName);
-        _builder.append(" by ");
-        _builder.append(map);
-        _xblockexpression = _builder.toString();
-      }
-      return _xblockexpression;
-    };
-    return IterableExtensions.join(IterableExtensions.<Map.Entry<String, String>, String>map(this.memoryMapNames.entrySet(), _function), "\n");
+    String _xifexpression = null;
+    boolean _isNonEmpty = this.isNonEmpty();
+    if (_isNonEmpty) {
+      final Function1<Map.Entry<String, String>, String> _function = (Map.Entry<String, String> it) -> {
+        String _xblockexpression = null;
+        {
+          final String name = it.getKey();
+          final String mappedName = it.getValue();
+          final ISLMap map = this.getMap(name);
+          StringConcatenation _builder = new StringConcatenation();
+          _builder.append(name);
+          _builder.append(" -> ");
+          _builder.append(mappedName);
+          _builder.append(" by ");
+          _builder.append(map);
+          _xblockexpression = _builder.toString();
+        }
+        return _xblockexpression;
+      };
+      _xifexpression = IterableExtensions.join(IterableExtensions.<Map.Entry<String, String>, String>map(this.memoryMapNames.entrySet(), _function), "\n");
+    } else {
+      _xifexpression = "None";
+    }
+    return _xifexpression;
   }
 }

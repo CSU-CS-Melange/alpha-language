@@ -59,6 +59,16 @@ public enum REDUCTION_OP implements Enumerator {
 	SUM(0, "SUM", "sum"),
 
 	/**
+	 * The '<em><b>DIFF</b></em>' literal object.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #DIFF_VALUE
+	 * @generated
+	 * @ordered
+	 */
+	DIFF(0, "DIFF", "diff"),
+
+	/**
 	 * The '<em><b>AND</b></em>' literal object.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -143,6 +153,17 @@ public enum REDUCTION_OP implements Enumerator {
 	public static final int SUM_VALUE = 0;
 
 	/**
+	 * The '<em><b>DIFF</b></em>' literal value.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #DIFF
+	 * @model literal="diff"
+	 * @generated
+	 * @ordered
+	 */
+	public static final int DIFF_VALUE = 0;
+
+	/**
 	 * The '<em><b>AND</b></em>' literal value.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -198,6 +219,7 @@ public enum REDUCTION_OP implements Enumerator {
 			MAX,
 			PROD,
 			SUM,
+			DIFF,
 			AND,
 			OR,
 			XOR,

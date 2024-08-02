@@ -41,14 +41,19 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -346,6 +351,7 @@ public class SystemCodeGen {
       _builder.append("*/");
       _builder.newLine();
       final String code = _builder.toString();
+      InputOutput.println();
       _xblockexpression = code;
     }
     return _xblockexpression;
@@ -354,23 +360,72 @@ public class SystemCodeGen {
   public String localMemoryAllocation() {
     String _xblockexpression = null;
     {
-      final Function1<Variable, Pair<ISLSet, String>> _function = (Variable it) -> {
-        ISLSet _domain = it.getDomain();
-        String _name = this.memoryMap.getName(it.getName());
-        String _plus = ("float *" + _name);
-        return Pair.<ISLSet, String>of(_domain, _plus);
+      final HashMap<String, LinkedList<Variable>> chunkVariables = CollectionLiterals.<String, LinkedList<Variable>>newHashMap();
+      final Consumer<Variable> _function = (Variable v) -> {
+        final String mappedName = this.memoryMap.getName(v.getName());
+        LinkedList<Variable> _elvis = null;
+        LinkedList<Variable> _get = chunkVariables.get(mappedName);
+        if (_get != null) {
+          _elvis = _get;
+        } else {
+          LinkedList<Variable> _newLinkedList = CollectionLiterals.<Variable>newLinkedList();
+          _elvis = _newLinkedList;
+        }
+        final LinkedList<Variable> list = _elvis;
+        list.add(v);
+        chunkVariables.put(mappedName, list);
       };
-      final Function1<Pair<ISLSet, String>, AssignmentStmt> _function_1 = (Pair<ISLSet, String> it) -> {
-        return this.mallocStmt(it.getKey(), it.getValue());
+      this.system.getVariables().forEach(_function);
+      final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_1 = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        int _size = it.getValue().size();
+        return Boolean.valueOf((_size > 0));
       };
-      final List<AssignmentStmt> mallocStmts = ListExtensions.<Pair<ISLSet, String>, AssignmentStmt>map(ListExtensions.<Variable, Pair<ISLSet, String>>map(this.system.getLocals(), _function), _function_1);
+      final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_2 = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        return Boolean.valueOf(((IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), ((Function1<Variable, Boolean>) (Variable it_1) -> {
+          return it_1.isLocal();
+        }))) > 0) && (IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), ((Function1<Variable, Boolean>) (Variable it_1) -> {
+          return Boolean.valueOf(((it_1.isInput()).booleanValue() || (it_1.isOutput()).booleanValue()));
+        }))) > 0)));
+      };
+      final Consumer<Map.Entry<String, LinkedList<Variable>>> _function_3 = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        try {
+          throw new Exception("Mappings across locals and inputs/outputs not currently supported");
+        } catch (Throwable _e) {
+          throw Exceptions.sneakyThrow(_e);
+        }
+      };
+      IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(chunkVariables.entrySet(), _function_1), _function_2).forEach(_function_3);
+      final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_4 = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        final Function1<Variable, Boolean> _function_5 = (Variable it_1) -> {
+          return it_1.isLocal();
+        };
+        int _size = IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), _function_5));
+        return Boolean.valueOf((_size > 0));
+      };
+      final Function1<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>> _function_5 = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        final Function1<Variable, ISLSet> _function_6 = (Variable it_1) -> {
+          return it_1.getDomain().copy();
+        };
+        final Function2<ISLSet, ISLSet, ISLSet> _function_7 = (ISLSet v1, ISLSet v2) -> {
+          return v1.union(v2);
+        };
+        ISLSet _coalesce = IterableExtensions.<ISLSet>reduce(ListExtensions.<Variable, ISLSet>map(it.getValue(), _function_6), _function_7).coalesce();
+        String _key = it.getKey();
+        return Pair.<ISLSet, String>of(_coalesce, _key);
+      };
+      final Function1<Pair<ISLSet, String>, AssignmentStmt> _function_6 = (Pair<ISLSet, String> it) -> {
+        String _value = it.getValue();
+        String _plus = ("float *" + _value);
+        return this.mallocStmt(it.getKey(), _plus);
+      };
+      final Iterable<AssignmentStmt> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, AssignmentStmt>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(chunkVariables.entrySet(), _function_4), _function_5), _function_6);
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("// Local memory allocation");
       _builder.newLine();
-      final Function1<AssignmentStmt, CharSequence> _function_2 = (AssignmentStmt it) -> {
+      final Function1<AssignmentStmt, CharSequence> _function_7 = (AssignmentStmt it) -> {
         return ProgramPrinter.printStmt(it);
       };
-      String _join = IterableExtensions.join(ListExtensions.<AssignmentStmt, CharSequence>map(mallocStmts, _function_2), "\n");
+      String _join = IterableExtensions.join(IterableExtensions.<AssignmentStmt, CharSequence>map(mallocStmts, _function_7), "\n");
       _builder.append(_join);
       _builder.newLineIfNotEmpty();
       final String code = _builder.toString();

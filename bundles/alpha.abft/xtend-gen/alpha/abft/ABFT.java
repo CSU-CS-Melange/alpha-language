@@ -23,7 +23,6 @@ import alpha.model.Variable;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.issue.AlphaIssue;
 import alpha.model.transformation.Normalize;
-import alpha.model.transformation.Tiler;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
@@ -181,7 +180,6 @@ public class ABFT {
       if (renameSystem) {
         ABFT.rename(system, tileSizes, "v1");
       }
-      Tiler.apply(system, outputVar, tileSizes);
       Normalize.apply(system);
       NormalizeReduction.apply(system);
       _xblockexpression = system;
@@ -247,7 +245,6 @@ public class ABFT {
       if (renameSystem) {
         ABFT.rename(system, tileSizes, "v2");
       }
-      Tiler.apply(system, outputVar, tileSizes);
       Normalize.apply(system);
       NormalizeReduction.apply(system);
       _xblockexpression = system;
@@ -868,7 +865,7 @@ public class ABFT {
       stencilVarDepExpr.setExpr(AlphaUserFactory.createVariableExpression(stencilVar));
       final RestrictExpression restrictExpr = AlphaUserFactory.createRestrictExpression(bodyDom);
       restrictExpr.setExpr(stencilVarDepExpr);
-      final ReduceExpression reduceExpr = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr);
+      final ReduceExpression reduceExpr = AlphaUserFactory.createReduceExpression(REDUCTION_OP.DIFF, projection, restrictExpr);
       final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, reduceExpr);
       EList<Equation> _equations = systemBody.getEquations();
       _equations.add(equ);

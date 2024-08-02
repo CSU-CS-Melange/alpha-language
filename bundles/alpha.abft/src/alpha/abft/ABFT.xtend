@@ -12,6 +12,8 @@ import alpha.model.REDUCTION_OP
 import alpha.model.RestrictExpression
 import alpha.model.SystemBody
 import alpha.model.Variable
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.reduction.NormalizeReduction
 import alpha.model.util.AShow
 import alpha.model.util.AlphaUtil
 import fr.irisa.cairn.jnimap.isl.ISLDimType
@@ -31,10 +33,6 @@ import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.createConstantMaff
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
-import alpha.model.transformation.reduction.NormalizeReduction
-import alpha.model.transformation.Normalize
-import alpha.model.transformation.ChangeOfBasis
-import alpha.model.transformation.Tiler
 
 class ABFT {
 	
@@ -145,8 +143,6 @@ class ABFT {
 		if (renameSystem) {
 			system.rename(tileSizes, 'v1')
 		}
-		
-		Tiler.apply(system, outputVar, tileSizes)
 
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
@@ -224,8 +220,6 @@ class ABFT {
 		if (renameSystem) {
 			system.rename(tileSizes, 'v2')
 		}
-		
-		Tiler.apply(system, outputVar, tileSizes)
 		
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
@@ -506,7 +500,9 @@ class ABFT {
 		val restrictExpr = createRestrictExpression(bodyDom)
 		restrictExpr.expr = stencilVarDepExpr
 		
-		val reduceExpr = createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr)
+		val reduceExpr = createReduceExpression(REDUCTION_OP.DIFF, projection, restrictExpr)
+		
+//		val binExpr = createBinaryExpression(BINARY_OP.MUL, createNegativeOneExpression(CVar.domain.space), reduceExpr)
 		
 		val equ = createStandardEquation(CVar, reduceExpr)
 		systemBody.equations += equ

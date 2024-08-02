@@ -92,6 +92,12 @@ class MemoryMap {
 		
 		setMemoryMap(name, mappedName, map, domain, #[])
 	}
+	def MemoryMap setMemoryMap(Variable variable, String mappedName) {
+		val domain = variable.domain
+		val map = domain.copy.toIdentityMap
+		
+		setMemoryMap(variable.name, mappedName, map, domain, #[])
+	}
 	def MemoryMap setMemoryMap(String name, String mappedName, String map, String[] indexNames) {
 		val domain = system.variables.findFirst[v | v.name == name]?.domain
 		setMemoryMap(name, mappedName, map.toISLMap, domain, indexNames)
@@ -104,14 +110,24 @@ class MemoryMap {
 		return this
 	}
 	
+	def isEmpty() {
+		memoryMapNames.size == 0
+	}
+	
+	def isNonEmpty() {
+		!empty
+	}
+	
 	override String toString() {
-		memoryMapNames.entrySet.map[
-			val name = key
-			val mappedName = value
-			val map = getMap(name)
-			'''«name» -> «mappedName» by «map»'''
-		].join('\n')
-		
+		if (nonEmpty)
+			memoryMapNames.entrySet.map[
+				val name = key
+				val mappedName = value
+				val map = getMap(name)
+				'''«name» -> «mappedName» by «map»'''
+			].join('\n')
+		else
+			'None'
 		
 	}
 	

@@ -477,7 +477,7 @@ RealExpression:
 
 
 AREDUCTION_OP returns REDUCTION_OP:
-	"min" | "max" | "prod" | "sum" | "and" | "or" | "xor" | "+" | "*"
+	"min" | "max" | "prod" | "sum" | "--" | "and" | "or" | "xor" | "+" | "*"
 ;
 
 AOrOP returns BINARY_OP:

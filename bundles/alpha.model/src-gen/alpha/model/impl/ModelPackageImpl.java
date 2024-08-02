@@ -4512,6 +4512,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.MAX);
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.PROD);
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.SUM);
+		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.DIFF);
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.AND);
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.OR);
 		addEEnumLiteral(reductioN_OPEEnum, alpha.model.REDUCTION_OP.XOR);

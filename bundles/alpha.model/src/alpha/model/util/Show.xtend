@@ -295,6 +295,9 @@ class Show extends ModelSwitch<CharSequence> {
 			case SUM: {
 				return "+"
 			}
+			case DIFF: {
+				return "--"
+			}
 			case PROD: {
 				return "*"
 			}
