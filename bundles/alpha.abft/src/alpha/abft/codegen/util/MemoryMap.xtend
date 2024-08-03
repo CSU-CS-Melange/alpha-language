@@ -8,6 +8,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import java.util.HashMap
 import java.util.List
 
+import static extension alpha.codegen.ProgramPrinter.printExpr
+import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.model.util.ISLUtil.toISLMap
 
 class MemoryMap {
@@ -90,13 +92,12 @@ class MemoryMap {
 		val domain = system.variables.findFirst[v | v.name == name]?.domain
 		val map = domain.copy.toIdentityMap
 		
-		setMemoryMap(name, mappedName, map, domain, #[])
+		setMemoryMap(name, mappedName, map, domain, domain.indexNames)
 	}
 	def MemoryMap setMemoryMap(Variable variable, String mappedName) {
 		val domain = variable.domain
 		val map = domain.copy.toIdentityMap
-		
-		setMemoryMap(variable.name, mappedName, map, domain, #[])
+		setMemoryMap(variable.name, mappedName, map, domain, domain.indexNames)
 	}
 	def MemoryMap setMemoryMap(String name, String mappedName, String map, String[] indexNames) {
 		val domain = system.variables.findFirst[v | v.name == name]?.domain
@@ -120,11 +121,15 @@ class MemoryMap {
 	
 	override String toString() {
 		if (nonEmpty)
-			memoryMapNames.entrySet.map[
-				val name = key
-				val mappedName = value
+			memoryMapNames.keySet.sort.map[name | 
+				val mappedName = getName(name)
 				val map = getMap(name)
-				'''«name» -> «mappedName» by «map»'''
+				val maff = map.toPWMultiAff.getPiece(0).maff
+				val lhsIndexStr = maff.space.inputNames.join(',')
+				val rhsIndexStr = maff.convertMultiAff(false).map[printExpr].join(',')
+				
+				'''«name»(«lhsIndexStr») -> «mappedName»(«rhsIndexStr»)'''
+
 			].join('\n')
 		else
 			'None'

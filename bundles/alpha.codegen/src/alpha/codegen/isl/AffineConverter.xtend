@@ -18,15 +18,25 @@ class AffineConverter {
 	 * one for each output dimension.
 	 */
 	def static convertMultiAff(ISLMultiAff multiAff) {
-		return multiAff.affs.map[convertAff].toArrayList
+		multiAff.convertMultiAff(true)
+	}
+	def static convertMultiAff(ISLMultiAff multiAff, boolean explicitParentheses) {
+		return multiAff.affs.map[convertAff(explicitParentheses)].toArrayList
 	}
 	
 	/** Converts a single affine expression to a single C expression. */
 	def static convertAff(ISLAff aff) {
-		val literal = aff.inputNames.fold(
-			aff.toString(ISL_FORMAT.C),
-			[ret, index | ret.replace(index, '(' + index + ')')]
-		)
-		return Factory.customExpr("(" + literal + ")")
+		aff.convertAff(true)
+	}
+	def static convertAff(ISLAff aff, boolean explicitParentheses) {
+		if (explicitParentheses) {
+			val literal = aff.inputNames.fold(
+				aff.toString(ISL_FORMAT.C),
+				[ret, index | ret.replace(index, '(' + index + ')')]
+			)
+			return Factory.customExpr("(" + literal + ")")
+		} else {
+			return Factory.customExpr(aff.toString(ISL_FORMAT.C))
+		}
 	}
 }

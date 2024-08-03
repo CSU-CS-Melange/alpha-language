@@ -231,9 +231,9 @@ public class ABFT {
       final Variable WVar = AlphaUserFactory.createVariable("W", weightsDomain.copy());
       final Variable C1Var = AlphaUserFactory.createVariable("C1", checksumDomain.copy());
       final Variable C2Var = AlphaUserFactory.createVariable("C2", C2Domain.copy());
-      final Variable kernelWVar = AlphaUserFactory.createVariable("kernelW", kernelDomain.copy());
-      final Variable combosWVar = AlphaUserFactory.createVariable("combosW", kernelDomain.copy());
-      final Variable allWVar = AlphaUserFactory.createVariable("allW", allWeightsDomain.copy());
+      final Variable kernelWVar = AlphaUserFactory.createVariable("WKernel", kernelDomain.copy());
+      final Variable combosWVar = AlphaUserFactory.createVariable("WCombos", kernelDomain.copy());
+      final Variable allWVar = AlphaUserFactory.createVariable("WAll", allWeightsDomain.copy());
       system.getLocals().addAll(Collections.<Variable>unmodifiableList(CollectionLiterals.<Variable>newArrayList(WVar, C1Var, C2Var, IVar, kernelWVar, combosWVar, allWVar)));
       ABFT.addWeightsEquation(systemBody, WVar, kernel);
       ABFT.addKernelWEquation(systemBody, kernelWVar, weightsDomain);
@@ -865,7 +865,7 @@ public class ABFT {
       stencilVarDepExpr.setExpr(AlphaUserFactory.createVariableExpression(stencilVar));
       final RestrictExpression restrictExpr = AlphaUserFactory.createRestrictExpression(bodyDom);
       restrictExpr.setExpr(stencilVarDepExpr);
-      final ReduceExpression reduceExpr = AlphaUserFactory.createReduceExpression(REDUCTION_OP.DIFF, projection, restrictExpr);
+      final ReduceExpression reduceExpr = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr);
       final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, reduceExpr);
       EList<Equation> _equations = systemBody.getEquations();
       _equations.add(equ);

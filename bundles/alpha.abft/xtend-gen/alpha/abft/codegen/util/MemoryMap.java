@@ -1,11 +1,15 @@
 package alpha.abft.codegen.util;
 
+import alpha.codegen.CustomExpr;
+import alpha.codegen.ProgramPrinter;
+import alpha.codegen.isl.AffineConverter;
 import alpha.model.AlphaSystem;
 import alpha.model.Variable;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -169,7 +173,7 @@ public class MemoryMap {
       }
       final ISLSet domain = _domain;
       final ISLMap map = domain.copy().toIdentityMap();
-      _xblockexpression = this.setMemoryMap(name, mappedName, map, domain, new String[] {});
+      _xblockexpression = this.setMemoryMap(name, mappedName, map, domain, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)));
     }
     return _xblockexpression;
   }
@@ -179,7 +183,7 @@ public class MemoryMap {
     {
       final ISLSet domain = variable.getDomain();
       final ISLMap map = domain.copy().toIdentityMap();
-      _xblockexpression = this.setMemoryMap(variable.getName(), mappedName, map, domain, new String[] {});
+      _xblockexpression = this.setMemoryMap(variable.getName(), mappedName, map, domain, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)));
     }
     return _xblockexpression;
   }
@@ -225,23 +229,31 @@ public class MemoryMap {
     String _xifexpression = null;
     boolean _isNonEmpty = this.isNonEmpty();
     if (_isNonEmpty) {
-      final Function1<Map.Entry<String, String>, String> _function = (Map.Entry<String, String> it) -> {
+      final Function1<String, String> _function = (String name) -> {
         String _xblockexpression = null;
         {
-          final String name = it.getKey();
-          final String mappedName = it.getValue();
+          final String mappedName = this.getName(name);
           final ISLMap map = this.getMap(name);
+          final ISLMultiAff maff = map.toPWMultiAff().getPiece(0).getMaff();
+          final String lhsIndexStr = IterableExtensions.join(maff.getSpace().getInputNames(), ",");
+          final Function1<CustomExpr, CharSequence> _function_1 = (CustomExpr it) -> {
+            return ProgramPrinter.printExpr(it);
+          };
+          final String rhsIndexStr = IterableExtensions.join(ListExtensions.<CustomExpr, CharSequence>map(AffineConverter.convertMultiAff(maff, false), _function_1), ",");
           StringConcatenation _builder = new StringConcatenation();
           _builder.append(name);
-          _builder.append(" -> ");
+          _builder.append("(");
+          _builder.append(lhsIndexStr);
+          _builder.append(") -> ");
           _builder.append(mappedName);
-          _builder.append(" by ");
-          _builder.append(map);
+          _builder.append("(");
+          _builder.append(rhsIndexStr);
+          _builder.append(")");
           _xblockexpression = _builder.toString();
         }
         return _xblockexpression;
       };
-      _xifexpression = IterableExtensions.join(IterableExtensions.<Map.Entry<String, String>, String>map(this.memoryMapNames.entrySet(), _function), "\n");
+      _xifexpression = IterableExtensions.join(ListExtensions.<String, String>map(IterableExtensions.<String>sort(this.memoryMapNames.keySet()), _function), "\n");
     } else {
       _xifexpression = "None";
     }

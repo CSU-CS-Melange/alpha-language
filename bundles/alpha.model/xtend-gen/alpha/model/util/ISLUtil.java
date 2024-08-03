@@ -59,6 +59,13 @@ public class ISLUtil {
   }
 
   /**
+   * Creates an empty ISLUnionSet from the space
+   */
+  public static ISLUnionSet toEmptyUnionSet(final ISLSpace space) {
+    return ISLSet.buildEmpty(space.copy()).toUnionSet();
+  }
+
+  /**
    * Creates an ISLMultiUnionPWAff from a string
    */
   public static ISLMultiUnionPWAff toISLMultiUnionPWAff(final CharSequence descriptor) {

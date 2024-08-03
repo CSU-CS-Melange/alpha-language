@@ -1,6 +1,5 @@
 package alpha.abft.codegen
 
-import alpha.abft.codegen.util.AlphaSchedule
 import alpha.abft.codegen.util.ISLASTNodeVisitor
 import alpha.abft.codegen.util.MemoryMap
 import alpha.codegen.BaseDataType
@@ -10,6 +9,7 @@ import alpha.codegen.alphaBase.ExprConverter
 import alpha.codegen.demandDriven.WriteCTypeGenerator
 import alpha.codegen.isl.MemoryUtils
 import alpha.codegen.isl.PolynomialConverter
+import alpha.model.AlphaExpression
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
@@ -25,81 +25,56 @@ import static extension alpha.codegen.ProgramPrinter.printStmt
 import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
-import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
+import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
+import static extension alpha.abft.ABFT.buildParamStr
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import alpha.model.SystemBody
 
 class SystemCodeGen {
 	
 	val AlphaSystem system
-	val AlphaSchedule alphaSchedule
+	val SystemBody systemBody
 	val ISLSchedule schedule
+	val String scheduleStr
+	val ISLUnionSet scheduleDomain
 	val MemoryMap memoryMap
 	val ExprConverter exprConverter
+	val String stmtPrefix
 	
-	new(AlphaSystem system, AlphaSchedule alphaSchedule, MemoryMap memoryMap) {
+	new(AlphaSystem system, String schedule, MemoryMap memoryMap) {
 		this.system = system
-		this.alphaSchedule = alphaSchedule
-		this.schedule = alphaSchedule.schedule
+		this.systemBody = system.systemBodies.get(0)
 		this.memoryMap = memoryMap ?: new MemoryMap(system)
 		
 		val typeGenerator = new WriteCTypeGenerator(BaseDataType.FLOAT, false)
 		val nameChecker = new AlphaNameChecker(false)
 		this.exprConverter = new ExprConverter(typeGenerator, nameChecker)
+		this.stmtPrefix = 'S'
+		
+		this.scheduleDomain = systemBody.standardEquations
+		.map[variable.name -> variable.getStmtDomain(expr)]
+		.map[value.setTupleName(key).copy.toUnionSet]
+		.fold(systemBody.parameterDomain.space.toEmptyUnionSet, [ret, d | ret.union(d)])
+		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
+		this.schedule = scheduleStr.toISLSchedule
 		
 		StandardizeNames.apply(system)
 	}
 	
-	def static generateSystemCode(AlphaSystem system, AlphaSchedule schedule, MemoryMap memoryMap) {
+	def static generateSystemCode(AlphaSystem system, CharSequence schedule, MemoryMap memoryMap) {
+		system.generateSystemCode(schedule.toString, memoryMap)
+	}
+	def static generateSystemCode(AlphaSystem system, String schedule, MemoryMap memoryMap) {
+		if (system.systemBodies.size > 1) {
+			throw new Exception('Only systems with a single body are currently supported')
+		}
 		val generator = new SystemCodeGen(system, schedule, memoryMap)
-		if (system.name.contains('v2'))
-			generator.generateV2
-		else
-			generator.generate
+		generator.generate
 	}
 	
 	private def generate() {
-		
-		val code = '''
-			«aboutComments»
-			#include<stdio.h>
-			#include<stdlib.h>
-			#include<math.h>
-			#include<time.h>
-			
-			#define max(x, y)   ((x)>(y) ? (x) : (y))
-			#define min(x, y)   ((x)>(y) ? (y) : (x))
-			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
-			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
-			#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-
-			// Memory mapped targets
-			«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
-			
-			// Memory access functions
-			«system.variables.map[memoryMacro].join('\n')»
-			
-			«signature»
-			{
-			
-			  «localMemoryAllocation»
-			
-			  «defStmtMacros»
-
-			  «stmtLoops»
-			  
-			  «undefStmtMacros»
-			  
-			  «ILoops»
-			
-			}
-			
-			«debugMain»
-		'''
-		code	
-	}
-	
-	private def generateV2() {
 		val code = '''
 			«aboutComments»
 			#include<stdio.h>
@@ -132,7 +107,7 @@ class SystemCodeGen {
 
 			  «undefStmtMacros»
 
-			  «ILoops»
+			  «printResultLoops('I')»
 			
 			}
 			
@@ -142,7 +117,7 @@ class SystemCodeGen {
 	}
 
 	def aboutComments() {
-		val scheduleLines = schedule.root.toString.split('\n')
+		val scheduleLines = scheduleStr.toString.split('\n')
 		val code = '''
 			/* «system.name».c
 			 * 
@@ -216,54 +191,58 @@ class SystemCodeGen {
 	}
 	
 	def undefStmtMacros() {
-		alphaSchedule.exprStmtMap.keySet
-			.map[name | '''#undef «name»''']
+		system.systemBodies.get(0).standardEquations
+			.map['''#undef S«variable.name»''']
 			.join('\n')
 	}
 	
+	def dispatch printStmtExpr(ReduceExpression re) {
+		exprConverter.convertExpr(re.body).printExpr
+	}
+	def dispatch printStmtExpr(AlphaExpression ae) {
+		exprConverter.convertExpr(ae).printExpr
+	}
+	
 	def defStmtMacros() {
-		val macros = alphaSchedule.exprStmtMap.entrySet.map[
-			val name = key
-			val expr = value
-			
+		
+		val macros = system.systemBodies.get(0).standardEquations.map[
 			val indexNamesStr = expr.contextDomain.indexNames.join(',')
+			val name = 'S' + variable.name
 			val eq = expr.getContainerEquation as StandardEquation
-			if (name == 'S_C2_NR2_0')
-				println
-			val rhs = exprConverter.convertExpr(expr).printExpr
-			var lhs = null as String
-			var op = null as String
+			
+			val rhs = expr.printStmtExpr
+			val lhs = '''«eq.variable.name»(«indexNamesStr»)'''
+			var defIndexNamesStr = indexNamesStr
+			var op = '='
+			
 			if (eq.expr instanceof ReduceExpression) {
-				val reduceVarIndexNamesStr = eq.variable.domain.indexNames.join(',')
-				lhs = '''«eq.variable.name»(«reduceVarIndexNamesStr»)'''
+				val re = eq.expr as ReduceExpression
+				val reduceVarIndexNamesStr = re.body.contextDomain.indexNames.join(',')
+				defIndexNamesStr = reduceVarIndexNamesStr
 				op = '+='				
-			} else {
-				lhs = '''«eq.variable.name»(«indexNamesStr»)'''
-				op = '='
 			}
 			val stmtStr = '''«lhs» «op» «rhs»''' 
 			
-			'''#define «name»(«indexNamesStr») «stmtStr»'''
+			'''#define «name»(«defIndexNamesStr») «stmtStr»'''
 		].sort
 		
 		macros.join('\n')
 	}
 	
-	def ILoops() {
-		if (system.locals.findFirst[v | v.name == 'I'] === null)
+	def printResultLoops(String name) {
+		val variable = system.locals.findFirst[v | v.name == name] 
+		if (variable === null)
 			return '';
-		val IDomain = schedule.domain.sets.findFirst[s | s.tupleName == 'S_I_0'].setTupleName('printI').toUnionSet
-		val indexNames = IDomain.sets.get(0).indexNames
+			
+		val domain = variable.domain.setTupleName(stmtPrefix + name).toUnionSet
+		val indexNames = domain.sets.get(0).indexNames
 		val idxStr = indexNames.join(',')
-		val SI = '''printI[«idxStr»]'''
-		val paramStr = '[' + IDomain.copy.params.paramNames.join(',') + ']'
+		val SVar = '''«stmtPrefix»«name»[«idxStr»]'''
+		val paramStr = '[' + domain.copy.params.paramNames.join(',') + ']'
 		val ISchedule = '''
-			domain: "«IDomain.toString»"
+			domain: "«domain.toString»"
 			child:
-			  schedule: "«paramStr»->[\
-			    { «SI»->[tt] }, \
-			    { «SI»->[ti] } \
-			  ]"
+			  schedule: "«paramStr»->[«indexNames.map[i | '''{ «SVar»->[«i»] }'''].join(',')»]"
 			  
 		'''.toISLSchedule
 		
@@ -276,25 +255,20 @@ class SystemCodeGen {
 		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
 		
 		val code = '''
-			// Print I values
-			#define printI(«idxStr») printf("I(«indexNames.map['%d'].join(',')») = %E\n",«idxStr»,I(«idxStr»))
+			// Print «name» values
+			#define «stmtPrefix»«name»(«idxStr») printf("«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr»,«name»(«idxStr»))
 			
 			«codegenVisitor.toCode»
 			
-			#undef printI
+			#undef «stmtPrefix»«name»
 		'''
 		code
 	}
 	
 	def stmtLoops() {
-//		val iterators = #['tt','t','ti','i'].toISLIdentifierList
-		val build = ISLASTBuild.buildFromContext(schedule.domain.copy.params)
-//						.setIterators(iterators.copy)
+		val build = ISLASTBuild.buildFromContext(scheduleDomain.copy.params)
 		
 		val node = build.generate(schedule.copy)
-		
-//		val result = ASTConverter.convert(node)
-//		result.statements.map[s | ProgramPrinter.printStmt(s)].join('\n')
 		
 		val scheduleLines = schedule.root.toString.split('\n')
 		
@@ -416,11 +390,36 @@ class SystemCodeGen {
 		code
 	}
 	
-	def dbg() '''
-	'''
 	
 	
 	
+	
+	/* Gets the tuple with the name 'name' and its indices */
+	def static String stmt(ISLUnionSet uset, String name) {
+		val set = uset.sets.findFirst[s | s.tupleName == name]
+		set.tupleName + '[' + set.indexNames.join(',') + ']' 
+	}
+	
+	/* Replaces the variable strings in the schedule with their statement names */
+	def static injectIndices(CharSequence schedule, ISLUnionSet domain) {
+		schedule.injectIndices(domain, 'S')
+	}
+	def static injectIndices(CharSequence schedule, ISLUnionSet domain, String stmtPrefix) {
+		val domStr = domain.sets.map[setTupleName(stmtPrefix + tupleName).toUnionSet]
+			.reduce[d1,d2|d1.union(d2)]
+			.toString
+		domain.sets.map[tupleName].fold(schedule.toString, [ret, n | ret.replace(n+"'", stmtPrefix+domain.stmt(n))])
+			.replace("domain'", domStr)
+			.replace("params'", domain.space.buildParamStr)
+	}
+	
+	/* Returns the context domain of the expression or the body of the reduce expression */
+	def static dispatch getStmtDomain(Variable variable, ReduceExpression re) {
+		re.body.contextDomain.copy
+	}
+	def static dispatch getStmtDomain(Variable variable, AlphaExpression ae) {
+		ae.contextDomain.copy
+	}
 	
 	
 	

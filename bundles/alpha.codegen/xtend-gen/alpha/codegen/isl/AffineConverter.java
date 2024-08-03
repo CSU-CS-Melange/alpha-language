@@ -24,8 +24,12 @@ public class AffineConverter {
    * one for each output dimension.
    */
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff) {
+    return AffineConverter.convertMultiAff(multiAff, true);
+  }
+
+  public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff, final boolean explicitParentheses) {
     final Function1<ISLAff, CustomExpr> _function = (ISLAff it) -> {
-      return AffineConverter.convertAff(it);
+      return AffineConverter.convertAff(it, explicitParentheses);
     };
     return CommonExtensions.<CustomExpr>toArrayList(ListExtensions.<ISLAff, CustomExpr>map(multiAff.getAffs(), _function));
   }
@@ -34,11 +38,19 @@ public class AffineConverter {
    * Converts a single affine expression to a single C expression.
    */
   public static CustomExpr convertAff(final ISLAff aff) {
-    final Function2<String, String, String> _function = (String ret, String index) -> {
-      return ret.replace(index, (("(" + index) + ")"));
-    };
-    final String literal = IterableExtensions.<String, String>fold(aff.getInputNames(), 
-      aff.toString(ISL_FORMAT.C), _function);
-    return Factory.customExpr((("(" + literal) + ")"));
+    return AffineConverter.convertAff(aff, true);
+  }
+
+  public static CustomExpr convertAff(final ISLAff aff, final boolean explicitParentheses) {
+    if (explicitParentheses) {
+      final Function2<String, String, String> _function = (String ret, String index) -> {
+        return ret.replace(index, (("(" + index) + ")"));
+      };
+      final String literal = IterableExtensions.<String, String>fold(aff.getInputNames(), 
+        aff.toString(ISL_FORMAT.C), _function);
+      return Factory.customExpr((("(" + literal) + ")"));
+    } else {
+      return Factory.customExpr(aff.toString(ISL_FORMAT.C));
+    }
   }
 }

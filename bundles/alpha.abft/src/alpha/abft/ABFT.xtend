@@ -200,9 +200,9 @@ class ABFT {
 		val WVar = createVariable('W', weightsDomain.copy)
 		val C1Var = createVariable('C1', checksumDomain.copy)
 		val C2Var = createVariable('C2', C2Domain.copy)
-		val kernelWVar = createVariable('kernelW', kernelDomain.copy)
-		val combosWVar = createVariable('combosW', kernelDomain.copy)
-		val allWVar = createVariable('allW', allWeightsDomain.copy)
+		val kernelWVar = createVariable('WKernel', kernelDomain.copy)
+		val combosWVar = createVariable('WCombos', kernelDomain.copy)
+		val allWVar = createVariable('WAll', allWeightsDomain.copy)
 //		system.outputs.add(IVar)
 		system.locals.addAll(#[WVar, C1Var, C2Var, IVar, kernelWVar, combosWVar, allWVar])
 		
@@ -500,7 +500,7 @@ class ABFT {
 		val restrictExpr = createRestrictExpression(bodyDom)
 		restrictExpr.expr = stencilVarDepExpr
 		
-		val reduceExpr = createReduceExpression(REDUCTION_OP.DIFF, projection, restrictExpr)
+		val reduceExpr = createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr)
 		
 //		val binExpr = createBinaryExpression(BINARY_OP.MUL, createNegativeOneExpression(CVar.domain.space), reduceExpr)
 		

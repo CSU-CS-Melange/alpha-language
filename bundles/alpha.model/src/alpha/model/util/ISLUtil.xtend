@@ -40,6 +40,11 @@ class ISLUtil {
 		ISLUnionSet.buildFromString(ISLContext.instance, descriptor)		
 	}
 	
+	/** Creates an empty ISLUnionSet from the space */
+	def static toEmptyUnionSet(ISLSpace space) {
+		ISLSet.buildEmpty(space.copy).toUnionSet
+	}
+	
 	/** Creates an ISLMultiUnionPWAff from a string */
 	def static toISLMultiUnionPWAff(CharSequence descriptor) { descriptor.toString.toISLMultiUnionPWAff }
 	def static toISLMultiUnionPWAff(String descriptor) { 
