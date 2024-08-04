@@ -49,35 +49,52 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.xtend.lib.annotations.AccessorType;
+import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.ArrayExtensions;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
+import org.eclipse.xtext.xbase.lib.Pure;
 
 @SuppressWarnings("all")
 public class SystemCodeGen {
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final AlphaSystem system;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final SystemBody systemBody;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final ISLSchedule schedule;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final String scheduleStr;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final ISLUnionSet scheduleDomain;
 
-  private final MemoryMap memoryMap;
-
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final ExprConverter exprConverter;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
+  private final MemoryMap memoryMap;
+
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final String stmtPrefix;
+
+  private final BaseDataType dataType;
+
+  public SystemCodeGen(final AlphaSystem system, final MemoryMap memoryMap) {
+    this(system, SystemCodeGen.defaultSchedule(system), memoryMap);
+  }
 
   public SystemCodeGen(final AlphaSystem system, final String schedule, final MemoryMap memoryMap) {
     this.system = system;
@@ -90,7 +107,8 @@ public class SystemCodeGen {
       _elvis = _memoryMap;
     }
     this.memoryMap = _elvis;
-    final WriteCTypeGenerator typeGenerator = new WriteCTypeGenerator(BaseDataType.FLOAT, false);
+    this.dataType = BaseDataType.FLOAT;
+    final WriteCTypeGenerator typeGenerator = new WriteCTypeGenerator(this.dataType, false);
     final AlphaNameChecker nameChecker = new AlphaNameChecker(false);
     ExprConverter _exprConverter = new ExprConverter(typeGenerator, nameChecker);
     this.exprConverter = _exprConverter;
@@ -110,6 +128,33 @@ public class SystemCodeGen {
     this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
     this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
     StandardizeNames.apply(system);
+  }
+
+  public static String defaultSchedule(final AlphaSystem system) {
+    String _xblockexpression = null;
+    {
+      final Function1<Variable, Boolean> _function = (Variable it) -> {
+        return it.isInput();
+      };
+      final Function1<Variable, ISLSet> _function_1 = (Variable it) -> {
+        return it.getDomain().setTupleName(it.getName());
+      };
+      final Function1<ISLSet, ISLUnionSet> _function_2 = (ISLSet it) -> {
+        return it.toUnionSet();
+      };
+      final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_3 = (ISLUnionSet d1, ISLUnionSet d2) -> {
+        return d1.union(d2);
+      };
+      final ISLUnionSet domain = IterableExtensions.<ISLUnionSet>reduce(IterableExtensions.<ISLSet, ISLUnionSet>map(IterableExtensions.<Variable, ISLSet>map(IterableExtensions.<Variable>reject(system.getVariables(), _function), _function_1), _function_2), _function_3);
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("domain: \"");
+      _builder.append(domain);
+      _builder.append("\"");
+      _builder.newLineIfNotEmpty();
+      final String schedule = _builder.toString();
+      _xblockexpression = schedule.toString();
+    }
+    return _xblockexpression;
   }
 
   public static String generateSystemCode(final AlphaSystem system, final CharSequence schedule, final MemoryMap memoryMap) {
@@ -134,91 +179,154 @@ public class SystemCodeGen {
     }
   }
 
-  private String generate() {
+  protected String generate() {
     String _xblockexpression = null;
     {
       StringConcatenation _builder = new StringConcatenation();
+      _builder.append("\t");
       String _aboutComments = this.aboutComments();
-      _builder.append(_aboutComments);
+      _builder.append(_aboutComments, "\t");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.append("#include<stdio.h>");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#include<stdlib.h>");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#include<math.h>");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#include<time.h>");
       _builder.newLine();
+      _builder.append("\t");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#define max(x, y)   ((x)>(y) ? (x) : (y))");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#define min(x, y)   ((x)>(y) ? (y) : (x))");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#define floord(n,d) (int)floor(((double)(n))/((double)(d)))");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("#define mallocCheck(v,s,d) if ((v) == NULL) { printf(\"Failed to allocate memory for %s : size=%lu\\n\", \"sizeof(d)*(s)\", sizeof(d)*(s)); exit(-1); }");
       _builder.newLine();
+      _builder.append("\t");
       _builder.newLine();
+      _builder.append("\t");
+      _builder.append("void initialize_timer();");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("void reset_timer();");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("void start_timer();");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("void stop_timer();");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("double elapsed_time();");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.newLine();
+      _builder.append("\t");
       _builder.append("// Memory mapped targets");
       _builder.newLine();
+      _builder.append("\t");
       final Function1<Pair<String, ISLSet>, String> _function = (Pair<String, ISLSet> it) -> {
         return this.memoryTargetMacro(it);
       };
       String _join = IterableExtensions.join(ListExtensions.<Pair<String, ISLSet>, String>map(this.memoryMap.uniqueTargets(), _function), "\n");
-      _builder.append(_join);
+      _builder.append(_join, "\t");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.newLine();
+      _builder.append("\t");
       _builder.append("// Memory access functions");
       _builder.newLine();
+      _builder.append("\t");
       final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
         return this.memoryMacro(it);
       };
       String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(this.system.getVariables(), _function_1), "\n");
-      _builder.append(_join_1);
+      _builder.append(_join_1, "\t");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.newLine();
-      _builder.append("void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w);");
-      _builder.newLine();
-      _builder.newLine();
-      CharSequence _signature = this.signature();
-      _builder.append(_signature);
+      _builder.append("\t");
+      CharSequence _signature = this.signature(this.system);
+      _builder.append(_signature, "\t");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.append("{");
       _builder.newLine();
-      _builder.newLine();
-      _builder.append("  ");
+      _builder.append("\t  ");
       String _localMemoryAllocation = this.localMemoryAllocation();
-      _builder.append(_localMemoryAllocation, "  ");
+      _builder.append(_localMemoryAllocation, "\t  ");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("\t  ");
       String _defStmtMacros = this.defStmtMacros();
-      _builder.append(_defStmtMacros, "  ");
+      _builder.append(_defStmtMacros, "\t  ");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("\t  ");
+      _builder.append("// Timers");
+      _builder.newLine();
+      _builder.append("\t  ");
+      _builder.append("double execution_time;");
+      _builder.newLine();
+      _builder.append("\t  ");
+      _builder.append("initialize_timer();");
+      _builder.newLine();
+      _builder.append("\t  ");
+      _builder.append("start_timer();");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("\t  ");
       String _stmtLoops = this.stmtLoops();
-      _builder.append(_stmtLoops, "  ");
+      _builder.append(_stmtLoops, "\t  ");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("\t  ");
+      _builder.append("stop_timer();");
+      _builder.newLine();
+      _builder.append("\t  ");
+      _builder.append("execution_time = elapsed_time();");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("\t  ");
       String _undefStmtMacros = this.undefStmtMacros();
-      _builder.append(_undefStmtMacros, "  ");
+      _builder.append(_undefStmtMacros, "\t  ");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("\t  ");
       String _printResultLoops = this.printResultLoops("I");
-      _builder.append(_printResultLoops, "  ");
+      _builder.append(_printResultLoops, "\t  ");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t  ");
       _builder.newLine();
+      _builder.append("\t  ");
+      _builder.append("printf(\"");
+      String _name = this.system.getName();
+      _builder.append(_name, "\t  ");
+      _builder.append(": %lf sec\\n\", execution_time);");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t");
+      _builder.newLine();
+      _builder.append("\t  ");
+      String _localMemoryFree = this.localMemoryFree();
+      _builder.append(_localMemoryFree, "\t  ");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.append("}");
       _builder.newLine();
-      _builder.newLine();
-      String _debugMain = this.debugMain();
-      _builder.append(_debugMain);
-      _builder.newLineIfNotEmpty();
       final String code = _builder.toString();
       _xblockexpression = code;
     }
@@ -289,14 +397,82 @@ public class SystemCodeGen {
       _builder.append("*/");
       _builder.newLine();
       final String code = _builder.toString();
-      InputOutput.println();
       _xblockexpression = code;
     }
     return _xblockexpression;
   }
 
+  public String localMemoryFree() {
+    return this.memoryFree(((Variable[])Conversions.unwrapArray(this.system.getLocals(), Variable.class)));
+  }
+
+  public String memoryFree(final Variable[] variables) {
+    final Function1<Map.Entry<String, LinkedList<Variable>>, String> _function = (Map.Entry<String, LinkedList<Variable>> it) -> {
+      return it.getKey();
+    };
+    final Function1<String, String> _function_1 = (String chunkName) -> {
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("free(");
+      _builder.append(chunkName);
+      _builder.append(");");
+      return _builder.toString();
+    };
+    return IterableExtensions.join(IterableExtensions.<String, String>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, String>map(this.getMemoryChunks(variables), _function), _function_1), "\n");
+  }
+
   public String localMemoryAllocation() {
+    return this.memoryAllocation(((Variable[])Conversions.unwrapArray(this.system.getLocals(), Variable.class)));
+  }
+
+  public String memoryAllocation(final Variable[] variables) {
     String _xblockexpression = null;
+    {
+      final Function1<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>> _function = (Map.Entry<String, LinkedList<Variable>> it) -> {
+        final Function1<Variable, ISLSet> _function_1 = (Variable it_1) -> {
+          return this.memoryMap.getRange(it_1.getName()).copy();
+        };
+        final Function2<ISLSet, ISLSet, ISLSet> _function_2 = (ISLSet v1, ISLSet v2) -> {
+          return v1.union(v2);
+        };
+        ISLSet _coalesce = IterableExtensions.<ISLSet>reduce(ListExtensions.<Variable, ISLSet>map(it.getValue(), _function_1), _function_2).coalesce();
+        String _key = it.getKey();
+        return Pair.<ISLSet, String>of(_coalesce, _key);
+      };
+      final Function1<Pair<ISLSet, String>, AssignmentStmt> _function_1 = (Pair<ISLSet, String> it) -> {
+        String _value = it.getValue();
+        String _plus = ("float *" + _value);
+        return this.mallocStmt(it.getKey(), _plus);
+      };
+      final Iterable<AssignmentStmt> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, AssignmentStmt>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(this.getMemoryChunks(variables), _function), _function_1);
+      String _xifexpression = null;
+      int _size = IterableExtensions.size(mallocStmts);
+      boolean _greaterThan = (_size > 0);
+      if (_greaterThan) {
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("// Local memory allocation");
+        _builder.newLine();
+        final Function1<AssignmentStmt, CharSequence> _function_2 = (AssignmentStmt it) -> {
+          return ProgramPrinter.printStmt(it);
+        };
+        String _join = IterableExtensions.join(IterableExtensions.<AssignmentStmt, CharSequence>map(mallocStmts, _function_2));
+        _builder.append(_join);
+        _builder.newLineIfNotEmpty();
+        _xifexpression = _builder.toString();
+      } else {
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _xifexpression = _builder_1.toString();
+      }
+      final String code = _xifexpression;
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Returns the map of memory chunk name and its domain
+   */
+  public Iterable<Map.Entry<String, LinkedList<Variable>>> getMemoryChunks(final Variable[] variables) {
+    Iterable<Map.Entry<String, LinkedList<Variable>>> _xblockexpression = null;
     {
       final HashMap<String, LinkedList<Variable>> chunkVariables = CollectionLiterals.<String, LinkedList<Variable>>newHashMap();
       final Consumer<Variable> _function = (Variable v) -> {
@@ -315,59 +491,13 @@ public class SystemCodeGen {
       };
       this.system.getVariables().forEach(_function);
       final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_1 = (Map.Entry<String, LinkedList<Variable>> it) -> {
-        int _size = it.getValue().size();
+        final Function1<Variable, Boolean> _function_2 = (Variable v) -> {
+          return Boolean.valueOf(ArrayExtensions.contains(variables, v));
+        };
+        int _size = IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), _function_2));
         return Boolean.valueOf((_size > 0));
       };
-      final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_2 = (Map.Entry<String, LinkedList<Variable>> it) -> {
-        return Boolean.valueOf(((IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), ((Function1<Variable, Boolean>) (Variable it_1) -> {
-          return it_1.isLocal();
-        }))) > 0) && (IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), ((Function1<Variable, Boolean>) (Variable it_1) -> {
-          return Boolean.valueOf(((it_1.isInput()).booleanValue() || (it_1.isOutput()).booleanValue()));
-        }))) > 0)));
-      };
-      final Consumer<Map.Entry<String, LinkedList<Variable>>> _function_3 = (Map.Entry<String, LinkedList<Variable>> it) -> {
-        try {
-          throw new Exception("Mappings across locals and inputs/outputs not currently supported");
-        } catch (Throwable _e) {
-          throw Exceptions.sneakyThrow(_e);
-        }
-      };
-      IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(chunkVariables.entrySet(), _function_1), _function_2).forEach(_function_3);
-      final Function1<Map.Entry<String, LinkedList<Variable>>, Boolean> _function_4 = (Map.Entry<String, LinkedList<Variable>> it) -> {
-        final Function1<Variable, Boolean> _function_5 = (Variable it_1) -> {
-          return it_1.isLocal();
-        };
-        int _size = IterableExtensions.size(IterableExtensions.<Variable>filter(it.getValue(), _function_5));
-        return Boolean.valueOf((_size > 0));
-      };
-      final Function1<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>> _function_5 = (Map.Entry<String, LinkedList<Variable>> it) -> {
-        final Function1<Variable, ISLSet> _function_6 = (Variable it_1) -> {
-          return it_1.getDomain().copy();
-        };
-        final Function2<ISLSet, ISLSet, ISLSet> _function_7 = (ISLSet v1, ISLSet v2) -> {
-          return v1.union(v2);
-        };
-        ISLSet _coalesce = IterableExtensions.<ISLSet>reduce(ListExtensions.<Variable, ISLSet>map(it.getValue(), _function_6), _function_7).coalesce();
-        String _key = it.getKey();
-        return Pair.<ISLSet, String>of(_coalesce, _key);
-      };
-      final Function1<Pair<ISLSet, String>, AssignmentStmt> _function_6 = (Pair<ISLSet, String> it) -> {
-        String _value = it.getValue();
-        String _plus = ("float *" + _value);
-        return this.mallocStmt(it.getKey(), _plus);
-      };
-      final Iterable<AssignmentStmt> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, AssignmentStmt>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(chunkVariables.entrySet(), _function_4), _function_5), _function_6);
-      StringConcatenation _builder = new StringConcatenation();
-      _builder.append("// Local memory allocation");
-      _builder.newLine();
-      final Function1<AssignmentStmt, CharSequence> _function_7 = (AssignmentStmt it) -> {
-        return ProgramPrinter.printStmt(it);
-      };
-      String _join = IterableExtensions.join(IterableExtensions.<AssignmentStmt, CharSequence>map(mallocStmts, _function_7), "\n");
-      _builder.append(_join);
-      _builder.newLineIfNotEmpty();
-      final String code = _builder.toString();
-      _xblockexpression = code;
+      _xblockexpression = IterableExtensions.<Map.Entry<String, LinkedList<Variable>>>filter(chunkVariables.entrySet(), _function_1);
     }
     return _xblockexpression;
   }
@@ -513,41 +643,64 @@ public class SystemCodeGen {
       final ISLASTNode node = build.generate(ISchedule.copy());
       final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
       StringConcatenation _builder_2 = new StringConcatenation();
-      _builder_2.append("// Print ");
-      _builder_2.append(name);
-      _builder_2.append(" values");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("#define ");
-      _builder_2.append(this.stmtPrefix);
       _builder_2.append(name);
       _builder_2.append("(");
       _builder_2.append(idxStr);
-      _builder_2.append(") printf(\"");
-      _builder_2.append(name);
-      _builder_2.append("(");
+      _builder_2.append(")");
+      final String varAcc = _builder_2.toString();
+      StringConcatenation _builder_3 = new StringConcatenation();
+      _builder_3.append("// Print ");
+      _builder_3.append(name);
+      _builder_3.append(" values");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      _builder_3.append("#define ");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.append("(");
+      _builder_3.append(idxStr);
+      _builder_3.append(") if (fabs(");
+      _builder_3.append(varAcc);
+      _builder_3.append(")>=threshold) printf(\"");
+      String _name = this.system.getName();
+      _builder_3.append(_name);
+      _builder_3.append(".");
+      _builder_3.append(name);
+      _builder_3.append("(");
       final Function1<String, String> _function_2 = (String it) -> {
         return "%d";
       };
       String _join_2 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), ",");
-      _builder_2.append(_join_2);
-      _builder_2.append(") = %E\\n\",");
-      _builder_2.append(idxStr);
-      _builder_2.append(",");
-      _builder_2.append(name);
-      _builder_2.append("(");
-      _builder_2.append(idxStr);
-      _builder_2.append("))");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.newLine();
+      _builder_3.append(_join_2);
+      _builder_3.append(") = %E\\n\",");
+      _builder_3.append(idxStr);
+      _builder_3.append(", ");
+      _builder_3.append(varAcc);
+      _builder_3.append(")");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      CharSequence _print = ProgramPrinter.print(this.dataType);
+      _builder_3.append(_print);
+      _builder_3.append(" threshold = 0;");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.append("const char* env_threshold = getenv(\"THRESHOLD\");");
+      _builder_3.newLine();
+      _builder_3.append("if (env_threshold != NULL) {");
+      _builder_3.newLine();
+      _builder_3.append("  ");
+      _builder_3.append("threshold = atof(env_threshold);");
+      _builder_3.newLine();
+      _builder_3.append("}");
+      _builder_3.newLine();
       String _code = codegenVisitor.toCode();
-      _builder_2.append(_code);
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.newLine();
-      _builder_2.append("#undef ");
-      _builder_2.append(this.stmtPrefix);
-      _builder_2.append(name);
-      _builder_2.newLineIfNotEmpty();
-      final String code = _builder_2.toString();
+      _builder_3.append(_code);
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      _builder_3.append("#undef ");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.newLineIfNotEmpty();
+      final String code = _builder_3.toString();
       _xblockexpression = code;
     }
     return _xblockexpression;
@@ -586,23 +739,23 @@ public class SystemCodeGen {
     return _xblockexpression;
   }
 
-  public CharSequence signature() {
+  public CharSequence signature(final AlphaSystem system) {
     CharSequence _xblockexpression = null;
     {
       final Function1<String, String> _function = (String p) -> {
         return ("long " + p);
       };
-      final String paramArgs = IterableExtensions.join(ListExtensions.<String, String>map(this.system.getParameterDomain().getParamNames(), _function), ",");
-      EList<Variable> _inputs = this.system.getInputs();
-      EList<Variable> _outputs = this.system.getOutputs();
+      final String paramArgs = IterableExtensions.join(ListExtensions.<String, String>map(system.getParameterDomain().getParamNames(), _function), ", ");
+      EList<Variable> _inputs = system.getInputs();
+      EList<Variable> _outputs = system.getOutputs();
       final Function1<Variable, String> _function_1 = (Variable v) -> {
         String _name = v.getName();
         return ("float *" + _name);
       };
-      final String ioArgs = IterableExtensions.join(IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function_1), ",");
+      final String ioArgs = IterableExtensions.join(IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function_1), ", ");
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("void ");
-      String _name = this.system.getName();
+      String _name = system.getName();
       _builder.append(_name);
       _builder.append("(");
       _builder.append(paramArgs);
@@ -663,164 +816,6 @@ public class SystemCodeGen {
     CharSequence _printStmt = ProgramPrinter.printStmt(macroStmt);
     _builder.append(_printStmt);
     return _builder.toString();
-  }
-
-  public String debugMain() {
-    String _xblockexpression = null;
-    {
-      final Variable XVar = this.system.getInputs().get(0);
-      String _name = XVar.getName();
-      final String stmtName = ("S" + _name);
-      final ISLSet XDomain = XVar.getDomain().copy().setTupleName(stmtName);
-      final Function1<String, String> _function = (String it) -> {
-        return "(N+1)";
-      };
-      final String mallocSize = IterableExtensions.join(ListExtensions.<String, String>map(XDomain.getIndexNames(), _function), "*");
-      final String paramStr = IterableExtensions.join(XDomain.copy().params().getParamNames(), ",");
-      final List<String> idxs = XDomain.getIndexNames();
-      String _join = IterableExtensions.join(idxs, ",");
-      String _plus = ((stmtName + "[") + _join);
-      final String X = (_plus + "]");
-      StringConcatenation _builder = new StringConcatenation();
-      _builder.append("domain: \"");
-      String _string = XDomain.toString();
-      _builder.append(_string);
-      _builder.append("\"");
-      _builder.newLineIfNotEmpty();
-      _builder.append("child:");
-      _builder.newLine();
-      _builder.append("  ");
-      _builder.append("schedule: \"[");
-      _builder.append(paramStr, "  ");
-      _builder.append("]->[\\");
-      _builder.newLineIfNotEmpty();
-      _builder.append("    ");
-      final Function1<String, String> _function_1 = (String idx) -> {
-        StringConcatenation _builder_1 = new StringConcatenation();
-        _builder_1.append("{ ");
-        _builder_1.append(X);
-        _builder_1.append("->[");
-        _builder_1.append(idx);
-        _builder_1.append("] }");
-        return _builder_1.toString();
-      };
-      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(idxs, _function_1), ", \\\n");
-      _builder.append(_join_1, "    ");
-      _builder.append(" \\");
-      _builder.newLineIfNotEmpty();
-      _builder.append("  ");
-      _builder.append("]\"");
-      _builder.newLine();
-      _builder.append("  ");
-      _builder.newLine();
-      final String xInitSchedStr = _builder.toString();
-      final ISLSchedule xInitSched = ISLUtil.toISLSchedule(xInitSchedStr);
-      final ISLIdentifierList iterators = ISLUtil.toISLIdentifierList(((String[])Conversions.unwrapArray(idxs, String.class)));
-      final ISLASTBuild build = ISLASTBuild.buildFromContext(xInitSched.getDomain().copy().params()).setIterators(iterators.copy());
-      final ISLASTNode node = build.generate(xInitSched.copy());
-      final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
-      StringConcatenation _builder_1 = new StringConcatenation();
-      _builder_1.append("#define ");
-      _builder_1.append(stmtName);
-      _builder_1.append("(");
-      String _join_2 = IterableExtensions.join(idxs, ",");
-      _builder_1.append(_join_2);
-      _builder_1.append(") ");
-      String _name_1 = XVar.getName();
-      _builder_1.append(_name_1);
-      _builder_1.append("(");
-      String _join_3 = IterableExtensions.join(idxs, ",");
-      _builder_1.append(_join_3);
-      _builder_1.append(") = rand() % 100 + 1");
-      _builder_1.newLineIfNotEmpty();
-      String _code = codegenVisitor.toCode();
-      _builder_1.append(_code);
-      _builder_1.newLineIfNotEmpty();
-      _builder_1.append("#undef ");
-      _builder_1.append(stmtName);
-      _builder_1.newLineIfNotEmpty();
-      _builder_1.newLine();
-      final String XLoops = _builder_1.toString();
-      final int nd = idxs.size();
-      int _switchResult = (int) 0;
-      switch (nd) {
-        case 1:
-          _switchResult = 100;
-          break;
-        case 2:
-          _switchResult = 50;
-          break;
-        case 3:
-          _switchResult = 15;
-          break;
-      }
-      final int T = _switchResult;
-      int _switchResult_1 = (int) 0;
-      switch (nd) {
-        case 1:
-          _switchResult_1 = 1000;
-          break;
-        case 2:
-          _switchResult_1 = 300;
-          break;
-        case 3:
-          _switchResult_1 = 70;
-          break;
-      }
-      final int N = _switchResult_1;
-      StringConcatenation _builder_2 = new StringConcatenation();
-      _builder_2.append("int main() {");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.append("long T = ");
-      _builder_2.append(T, "\t");
-      _builder_2.append(";");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.append("long N = ");
-      _builder_2.append(N, "\t");
-      _builder_2.append(";");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.append("float *X = malloc(sizeof(float)*");
-      _builder_2.append(mallocSize, "\t");
-      _builder_2.append(");");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.append("float *Y = malloc(sizeof(float)*2*");
-      _builder_2.append(mallocSize, "\t");
-      _builder_2.append(");");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.append("srand(0);");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.append(XLoops, "\t");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      String _name_2 = this.system.getName();
-      _builder_2.append(_name_2, "\t");
-      _builder_2.append("(T, N, X, Y);");
-      _builder_2.newLineIfNotEmpty();
-      _builder_2.append("\t");
-      _builder_2.newLine();
-      _builder_2.append("\t");
-      _builder_2.append("return 0;");
-      _builder_2.newLine();
-      _builder_2.append("}");
-      _builder_2.newLine();
-      final String code = _builder_2.toString();
-      _xblockexpression = code;
-    }
-    return _xblockexpression;
   }
 
   /**
@@ -906,5 +901,45 @@ public class SystemCodeGen {
       throw new IllegalArgumentException("Unhandled parameter types: " +
         Arrays.<Object>asList(variable, re).toString());
     }
+  }
+
+  @Pure
+  public AlphaSystem getSystem() {
+    return this.system;
+  }
+
+  @Pure
+  public SystemBody getSystemBody() {
+    return this.systemBody;
+  }
+
+  @Pure
+  public ISLSchedule getSchedule() {
+    return this.schedule;
+  }
+
+  @Pure
+  public String getScheduleStr() {
+    return this.scheduleStr;
+  }
+
+  @Pure
+  public ISLUnionSet getScheduleDomain() {
+    return this.scheduleDomain;
+  }
+
+  @Pure
+  public ExprConverter getExprConverter() {
+    return this.exprConverter;
+  }
+
+  @Pure
+  public MemoryMap getMemoryMap() {
+    return this.memoryMap;
+  }
+
+  @Pure
+  public String getStmtPrefix() {
+    return this.stmtPrefix;
   }
 }

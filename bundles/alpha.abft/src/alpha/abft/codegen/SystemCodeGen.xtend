@@ -13,42 +13,67 @@ import alpha.model.AlphaExpression
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
+import alpha.model.SystemBody
 import alpha.model.Variable
 import alpha.model.transformation.StandardizeNames
 import alpha.model.util.AShow
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import org.eclipse.xtend.lib.annotations.Accessors
 
+import static extension alpha.abft.ABFT.buildParamStr
+import static extension alpha.codegen.ProgramPrinter.print
 import static extension alpha.codegen.ProgramPrinter.printExpr
 import static extension alpha.codegen.ProgramPrinter.printStmt
 import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
+import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
-import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
-import static extension alpha.abft.ABFT.buildParamStr
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import alpha.model.SystemBody
+import alpha.codegen.DataType
 
 class SystemCodeGen {
 	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val AlphaSystem system
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val SystemBody systemBody
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val ISLSchedule schedule
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val String scheduleStr
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val ISLUnionSet scheduleDomain
-	val MemoryMap memoryMap
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val ExprConverter exprConverter
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
+	val MemoryMap memoryMap
+	
+	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val String stmtPrefix
+	
+	val BaseDataType dataType
+	
+	new(AlphaSystem system, MemoryMap memoryMap) {
+		this(system, system.defaultSchedule, memoryMap)
+	}
 	
 	new(AlphaSystem system, String schedule, MemoryMap memoryMap) {
 		this.system = system
 		this.systemBody = system.systemBodies.get(0)
 		this.memoryMap = memoryMap ?: new MemoryMap(system)
 		
-		val typeGenerator = new WriteCTypeGenerator(BaseDataType.FLOAT, false)
+		this.dataType = BaseDataType.FLOAT
+		val typeGenerator = new WriteCTypeGenerator(dataType, false)
 		val nameChecker = new AlphaNameChecker(false)
 		this.exprConverter = new ExprConverter(typeGenerator, nameChecker)
 		this.stmtPrefix = 'S'
@@ -63,6 +88,18 @@ class SystemCodeGen {
 		StandardizeNames.apply(system)
 	}
 	
+	def static String defaultSchedule(AlphaSystem system) {
+		val domain = system.variables.reject[isInput]
+			.map[domain.setTupleName(name)]
+			.map[toUnionSet]
+			.reduce[d1, d2 | d1.union(d2)]
+		val schedule = '''
+			domain: "«domain»"
+		'''
+		
+		schedule.toString
+	}
+	
 	def static generateSystemCode(AlphaSystem system, CharSequence schedule, MemoryMap memoryMap) {
 		system.generateSystemCode(schedule.toString, memoryMap)
 	}
@@ -74,7 +111,7 @@ class SystemCodeGen {
 		generator.generate
 	}
 	
-	private def generate() {
+	protected def generate() {
 		val code = '''
 			«aboutComments»
 			#include<stdio.h>
@@ -87,31 +124,43 @@ class SystemCodeGen {
 			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 			#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-
+			
+			void initialize_timer();
+			void reset_timer();
+			void start_timer();
+			void stop_timer();
+			double elapsed_time();
+			
 			// Memory mapped targets
 			«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
 			
 			// Memory access functions
 			«system.variables.map[memoryMacro].join('\n')»
 			
-			void here(float* C2_NR, float* allW, float* Y, long T, long N, int tt, int ti, int p, int w);
-			
-			«signature»
+			«system.signature»
 			{
-			
 			  «localMemoryAllocation»
 
 			  «defStmtMacros»
 
+			  // Timers
+			  double execution_time;
+			  initialize_timer();
+			  start_timer();
+
 			  «stmtLoops»
+		
+			  stop_timer();
+			  execution_time = elapsed_time();
 
 			  «undefStmtMacros»
 
 			  «printResultLoops('I')»
+			  
+			  printf("«system.name»: %lf sec\n", execution_time);
 			
+			  «localMemoryFree»
 			}
-			
-			«debugMain»
 		'''
 		code	
 	}
@@ -138,12 +187,41 @@ class SystemCodeGen {
 			 *
 			 */
 		'''
-		println
 		code
 	}
 	
+	def localMemoryFree() {
+		system.locals.memoryFree
+	}
+	
+	def memoryFree(Variable[] variables) {
+		variables.getMemoryChunks.map[key].map[chunkName | 
+			'''free(«chunkName»);'''
+		].join('\n')
+	}
+	
 	def localMemoryAllocation() {
+		system.locals.memoryAllocation
+	}
+	
+	def memoryAllocation(Variable[] variables) {
+		/*
+		 * construct the domain (union of all variable domains) for each
+		 * mapped name
+		 */
+		val mallocStmts = variables.getMemoryChunks
+			.map[value.map[memoryMap.getRange(name).copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
+			.map[mallocStmt(key, 'float *' + value)]
 		
+		val code = if (mallocStmts.size > 0) '''
+			// Local memory allocation
+			«mallocStmts.map[printStmt].join»
+		''' else ''''''
+		code
+	}
+	
+	/* Returns the map of memory chunk name and its domain */
+	def getMemoryChunks(Variable[] variables) {
 		/*
 		 * get list of local variables associated with each mapped name
 		 */
@@ -155,30 +233,7 @@ class SystemCodeGen {
 			chunkVariables.put(mappedName, list)
 		]
 		
-		/*
-		 * For now, assert that mapping across locals and inputs/outputs
-		 * do not exist
-		 */
-		chunkVariables.entrySet.filter[value.size > 0]
-			.filter[value.filter[isLocal].size > 0 && (value.filter[isInput || isOutput].size > 0)]
-			.forEach[
-				throw new Exception('Mappings across locals and inputs/outputs not currently supported')
-			]
-		
-		/*
-		 * construct the domain (union of all variable domains) for each
-		 * mapped name
-		 */
-		val mallocStmts = chunkVariables.entrySet
-			.filter[value.filter[isLocal].size > 0]
-			.map[value.map[domain.copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
-			.map[mallocStmt(key, 'float *' + value)]
-		
-		val code = '''
-			// Local memory allocation
-			«mallocStmts.map[printStmt].join('\n')»
-		'''
-		code
+		chunkVariables.entrySet.filter[value.filter[v | variables.contains(v)].size > 0]
 	}
 	
 	def mallocStmt(ISLSet domain, String name) {
@@ -254,10 +309,18 @@ class SystemCodeGen {
 		
 		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
 		
+		val varAcc = '''«name»(«idxStr»)'''
+		
 		val code = '''
 			// Print «name» values
-			#define «stmtPrefix»«name»(«idxStr») printf("«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr»,«name»(«idxStr»))
 			
+			#define «stmtPrefix»«name»(«idxStr») if (fabs(«varAcc»)>=threshold) printf("«system.name».«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», «varAcc»)
+			
+			«dataType.print» threshold = 0;
+			const char* env_threshold = getenv("THRESHOLD");
+			if (env_threshold != NULL) {
+			  threshold = atof(env_threshold);
+			}
 			«codegenVisitor.toCode»
 			
 			#undef «stmtPrefix»«name»
@@ -284,13 +347,13 @@ class SystemCodeGen {
 		code
 	}
 	
-	def signature() {
+	def signature(AlphaSystem system) {
 		val paramArgs = system.parameterDomain.paramNames
 			.map[p | 'long ' + p]
-			.join(',')
+			.join(', ')
 		val ioArgs = (system.inputs + system.outputs)
 			.map[v | 'float *' + v.name]
-			.join(',')
+			.join(', ')
 		'''void «system.name»(«paramArgs», «ioArgs»)'''
 	}
 	
@@ -321,74 +384,6 @@ class SystemCodeGen {
 		return '''«macroStmt.printStmt»'''
 	}
 	
-	
-	
-	
-	def debugMain() {
-		val XVar = system.inputs.get(0)
-		val stmtName = 'S' + XVar.name
-		val XDomain = XVar.domain.copy.setTupleName(stmtName)
-		val mallocSize = XDomain.indexNames.map['(N+1)'].join('*')
-		val paramStr = XDomain.copy.params.paramNames.join(',')
-		val idxs = XDomain.indexNames
-		val X = stmtName + '[' + idxs.join(',') + ']'
-		
-		
-		val xInitSchedStr = '''
-			domain: "«XDomain.toString»"
-			child:
-			  schedule: "[«paramStr»]->[\
-			    «idxs.map[idx | '''{ «X»->[«idx»] }'''].join(', \\\n')» \
-			  ]"
-			  
-		'''
-		val xInitSched = xInitSchedStr.toISLSchedule
-		
-		val iterators = idxs.toISLIdentifierList
-		val build = ISLASTBuild.buildFromContext(xInitSched.domain.copy.params)
-						.setIterators(iterators.copy)
-		
-		val node = build.generate(xInitSched.copy)
-		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
-		
-		val XLoops = '''
-			#define «stmtName»(«idxs.join(',')») «XVar.name»(«idxs.join(',')») = rand() % 100 + 1
-			«codegenVisitor.toCode»
-			#undef «stmtName»
-			
-		'''
-		val nd = idxs.size
-		val T = switch (nd) {
-			case 1 : 100
-			case 2 : 50
-			case 3 : 15
-		}
-		val N = switch (nd) {
-			case 1 : 1000
-			case 2 : 300
-			case 3 : 70
-		}
-		
-		
-		val code = '''
-			int main() {
-				long T = «T»;
-				long N = «N»;
-				
-				float *X = malloc(sizeof(float)*«mallocSize»);
-				float *Y = malloc(sizeof(float)*2*«mallocSize»);
-				
-				srand(0);
-				
-				«XLoops»
-				
-				«system.name»(T, N, X, Y);
-				
-				return 0;
-			}
-		'''
-		code
-	}
 	
 	
 	
