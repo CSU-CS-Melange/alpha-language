@@ -1319,9 +1319,9 @@ public class ABFT {
    */
   public static Pair<Integer, Map<List<Integer>, Double>> identify_convolution(final AlphaSystem system) {
     Pair<Integer, Map<List<Integer>, Double>> _switchResult = null;
-    String _name = system.getName();
-    if (_name != null) {
-      switch (_name) {
+    String _get = system.getName().split("_")[0];
+    if (_get != null) {
+      switch (_get) {
         case "star1d1r":
           Pair<List<Integer>, Double> _mappedTo = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)))), Double.valueOf(0.3332));
           Pair<List<Integer>, Double> _mappedTo_1 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0))), Double.valueOf(0.3333));

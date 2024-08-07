@@ -5,42 +5,45 @@ import java.util.List
 
 class Makefile {
 	
-	def static generateMakefile(AlphaSystem system, List<List<Integer>> sizes) {
-	
-		val sizeSuffixes = sizes.map[join('_')]
-		val name = system.name
+	def static generateMakefile(AlphaSystem system, AlphaSystem systemV1, AlphaSystem systemV2, int[] tileSizes) {
 		
-		val v1DepTargets = sizeSuffixes.map[s | '''«system.name»_abft_v1_«s»''']
-		val v1Targets = v1DepTargets.map[s | '''
-			«s».o: src/«s».c src/time.o mkdir
-				gcc -c -o src/$@ $<
-		''']
+		 
 		
-		val v2DepTargets = sizeSuffixes.map[s | '''«system.name»_abft_v2_«s»''']
-		val v2Targets = v2DepTargets.map[s | '''
-			«s».o: src/«s».c src/time.o mkdir
-				gcc -c -o src/$@ $<
-		''']
-		
+		val name = '''«system.name».«tileSizes.join('.')»'''
 	
 		val content = '''
-			all: bin/«name»
+			FLAGS := -O3 -lm
+			all: bin/«name» bin/«name».inj
 			
-			mkdir:
+			mkbin:
 				mkdir -p bin
-				
-			src/time.o: src/time.c
-				gcc -c -o $@ $<
 			
-			«name».o: src/«name».c mkdir
-				gcc -c -o src/$@ $<
+			src/time.o: src/time.c mkbin
+				gcc -c $(FLAGS) -o $@ $<
 			
-			«v1Targets.join('\n\n')»
+			src/«system.name».o: src/«system.name».c mkbin
+				gcc -c $(FLAGS) -o $@ $<
+
+
+			src/«systemV1.name».o: src/«systemV1.name».c mkbin
+				gcc -c $(FLAGS) -o $@ $<	
 			
-			«v2Targets.join('\n\n')»
+			src/«systemV2.name».o: src/«systemV2.name».c mkbin
+				gcc -c $(FLAGS) -o $@ $<			
 			
-			bin/«name»: src/«name»-wrapper.c src/«name».o «(v1DepTargets + v2DepTargets).map[t | 'src/' + t + '.o'].join(' ')» src/time.o mkdir
-				gcc -o $@ src/«name»-wrapper.c src/«name».o «(v1DepTargets + v2DepTargets).map[t | 'src/' + t + '.o'].join(' ')» src/time.o
+			bin/«name»: src/«system.name»-wrapper.c src/«system.name».o src/«systemV1.name».o src/«systemV2.name».o src/time.o
+				gcc $(FLAGS) -o $@ $^
+
+
+			src/«systemV1.name».inj.o: src/«systemV1.name».c mkbin
+				gcc -c $(FLAGS) -o $@ $< -DERROR_INJECTION			
+			
+			src/«systemV2.name».inj.o: src/«systemV2.name».c mkbin
+				gcc -c $(FLAGS) -o $@ $<  -DERROR_INJECTION
+			
+			bin/«name».inj: src/«system.name»-wrapper.c src/«system.name».o src/«systemV1.name».inj.o src/«systemV2.name».inj.o src/time.o
+				gcc $(FLAGS) -o $@ $^ -DERROR_INJECTION
+
 			
 			clean:
 				rm -f src/*.o bin/*

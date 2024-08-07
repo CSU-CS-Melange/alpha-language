@@ -21,6 +21,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import fr.irisa.cairn.jnimap.isl.ISLMultiUnionPWAff
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 
 class ISLUtil {
 	
@@ -59,6 +60,12 @@ class ISLUtil {
 	/** Creates an ISLMap from a string */
 	def static toISLMap(String descriptor) {
 		ISLMap.buildFromString(ISLContext.instance, descriptor)
+	}
+	
+	/** Creates an ISLUnionMap from a string */
+	def static toISLUnionMap(CharSequence descriptor) { descriptor.toString.toISLUnionMap }
+	def static toISLUnionMap(String descriptor) { 
+		ISLUnionMap.buildFromString(ISLContext.instance, descriptor)		
 	}
 	
 	/** Creates an ISLAff from a string */

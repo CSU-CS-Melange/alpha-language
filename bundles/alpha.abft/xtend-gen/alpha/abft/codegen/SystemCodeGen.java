@@ -30,19 +30,26 @@ import alpha.model.Variable;
 import alpha.model.transformation.StandardizeNames;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
+import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
+import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
+import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -90,44 +97,66 @@ public class SystemCodeGen {
   @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final String stmtPrefix;
 
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
+  private final Variable stencilVar;
+
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
+  private final Version version;
+
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
+  private final int[] tileSizes;
+
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final BaseDataType dataType;
 
-  public SystemCodeGen(final AlphaSystem system, final MemoryMap memoryMap) {
-    this(system, SystemCodeGen.defaultSchedule(system), memoryMap);
+  public SystemCodeGen(final AlphaSystem system, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
+    this(system, SystemCodeGen.defaultSchedule(system), memoryMap, version, tileSizes);
   }
 
-  public SystemCodeGen(final AlphaSystem system, final String schedule, final MemoryMap memoryMap) {
-    this.system = system;
-    this.systemBody = system.getSystemBodies().get(0);
-    MemoryMap _elvis = null;
-    if (memoryMap != null) {
-      _elvis = memoryMap;
-    } else {
-      MemoryMap _memoryMap = new MemoryMap(system);
-      _elvis = _memoryMap;
+  public SystemCodeGen(final AlphaSystem system, final String schedule, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
+    try {
+      int _size = system.getOutputs().size();
+      boolean _greaterThan = (_size > 1);
+      if (_greaterThan) {
+        throw new Exception("Codegen for systems with more than 1 output variable not currently implemented");
+      }
+      this.system = system;
+      this.systemBody = system.getSystemBodies().get(0);
+      MemoryMap _elvis = null;
+      if (memoryMap != null) {
+        _elvis = memoryMap;
+      } else {
+        MemoryMap _memoryMap = new MemoryMap(system);
+        _elvis = _memoryMap;
+      }
+      this.memoryMap = _elvis;
+      this.dataType = BaseDataType.FLOAT;
+      final WriteCTypeGenerator typeGenerator = new WriteCTypeGenerator(this.dataType, false);
+      final AlphaNameChecker nameChecker = new AlphaNameChecker(false);
+      ExprConverter _exprConverter = new ExprConverter(typeGenerator, nameChecker);
+      this.exprConverter = _exprConverter;
+      this.stmtPrefix = "S";
+      final Function1<StandardEquation, Pair<String, ISLSet>> _function = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        ISLSet _stmtDomain = SystemCodeGen.getStmtDomain(it.getVariable(), it.getExpr());
+        return Pair.<String, ISLSet>of(_name, _stmtDomain);
+      };
+      final Function1<Pair<String, ISLSet>, ISLUnionSet> _function_1 = (Pair<String, ISLSet> it) -> {
+        return it.getValue().setTupleName(it.getKey()).copy().toUnionSet();
+      };
+      final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_2 = (ISLUnionSet ret, ISLUnionSet d) -> {
+        return ret.union(d);
+      };
+      this.scheduleDomain = IterableExtensions.<ISLUnionSet, ISLUnionSet>fold(ListExtensions.<Pair<String, ISLSet>, ISLUnionSet>map(ListExtensions.<StandardEquation, Pair<String, ISLSet>>map(this.systemBody.getStandardEquations(), _function), _function_1), ISLUtil.toEmptyUnionSet(this.systemBody.getParameterDomain().getSpace()), _function_2);
+      this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
+      this.stencilVar = system.getOutputs().get(0);
+      this.version = version;
+      this.tileSizes = tileSizes;
+      this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
+      StandardizeNames.apply(system);
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
     }
-    this.memoryMap = _elvis;
-    this.dataType = BaseDataType.FLOAT;
-    final WriteCTypeGenerator typeGenerator = new WriteCTypeGenerator(this.dataType, false);
-    final AlphaNameChecker nameChecker = new AlphaNameChecker(false);
-    ExprConverter _exprConverter = new ExprConverter(typeGenerator, nameChecker);
-    this.exprConverter = _exprConverter;
-    this.stmtPrefix = "S";
-    final Function1<StandardEquation, Pair<String, ISLSet>> _function = (StandardEquation it) -> {
-      String _name = it.getVariable().getName();
-      ISLSet _stmtDomain = SystemCodeGen.getStmtDomain(it.getVariable(), it.getExpr());
-      return Pair.<String, ISLSet>of(_name, _stmtDomain);
-    };
-    final Function1<Pair<String, ISLSet>, ISLUnionSet> _function_1 = (Pair<String, ISLSet> it) -> {
-      return it.getValue().setTupleName(it.getKey()).copy().toUnionSet();
-    };
-    final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_2 = (ISLUnionSet ret, ISLUnionSet d) -> {
-      return ret.union(d);
-    };
-    this.scheduleDomain = IterableExtensions.<ISLUnionSet, ISLUnionSet>fold(ListExtensions.<Pair<String, ISLSet>, ISLUnionSet>map(ListExtensions.<StandardEquation, Pair<String, ISLSet>>map(this.systemBody.getStandardEquations(), _function), _function_1), ISLUtil.toEmptyUnionSet(this.systemBody.getParameterDomain().getSpace()), _function_2);
-    this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
-    this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
-    StandardizeNames.apply(system);
   }
 
   public static String defaultSchedule(final AlphaSystem system) {
@@ -157,11 +186,11 @@ public class SystemCodeGen {
     return _xblockexpression;
   }
 
-  public static String generateSystemCode(final AlphaSystem system, final CharSequence schedule, final MemoryMap memoryMap) {
-    return SystemCodeGen.generateSystemCode(system, schedule.toString(), memoryMap);
+  public static String generateSystemCode(final AlphaSystem system, final CharSequence schedule, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
+    return SystemCodeGen.generateSystemCode(system, schedule.toString(), memoryMap, version, tileSizes);
   }
 
-  public static String generateSystemCode(final AlphaSystem system, final String schedule, final MemoryMap memoryMap) {
+  public static String generateSystemCode(final AlphaSystem system, final String schedule, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
     try {
       String _xblockexpression = null;
       {
@@ -170,7 +199,7 @@ public class SystemCodeGen {
         if (_greaterThan) {
           throw new Exception("Only systems with a single body are currently supported");
         }
-        final SystemCodeGen generator = new SystemCodeGen(system, schedule, memoryMap);
+        final SystemCodeGen generator = new SystemCodeGen(system, schedule, memoryMap, version, tileSizes);
         _xblockexpression = generator.generate();
       }
       return _xblockexpression;
@@ -183,148 +212,338 @@ public class SystemCodeGen {
     String _xblockexpression = null;
     {
       StringConcatenation _builder = new StringConcatenation();
-      _builder.append("\t");
+      _builder.append("\t\t");
       String _aboutComments = this.aboutComments();
-      _builder.append(_aboutComments, "\t");
+      _builder.append(_aboutComments, "\t\t");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#include<stdio.h>");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#include<stdlib.h>");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#include<math.h>");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#include<time.h>");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#define max(x, y)   ((x)>(y) ? (x) : (y))");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#define min(x, y)   ((x)>(y) ? (y) : (x))");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#define floord(n,d) (int)floor(((double)(n))/((double)(d)))");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("#define mallocCheck(v,s,d) if ((v) == NULL) { printf(\"Failed to allocate memory for %s : size=%lu\\n\", \"sizeof(d)*(s)\", sizeof(d)*(s)); exit(-1); }");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("void initialize_timer();");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("void reset_timer();");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("void start_timer();");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("void stop_timer();");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("double elapsed_time();");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
+      _builder.append("struct INJ {");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int t;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int i;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int j;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int k;");
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.append("};");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.append("struct Result {");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int valid;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("long TP;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("long FP;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("long TN;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("long FN;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("float TPR;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("float FPR;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("float FNR;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("int bit;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("struct INJ inj;");
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.append("};");
+      _builder.newLine();
+      _builder.append("\t\t");
+      _builder.newLine();
+      _builder.append("\t\t");
       _builder.append("// Memory mapped targets");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       final Function1<Pair<String, ISLSet>, String> _function = (Pair<String, ISLSet> it) -> {
         return this.memoryTargetMacro(it);
       };
       String _join = IterableExtensions.join(ListExtensions.<Pair<String, ISLSet>, String>map(this.memoryMap.uniqueTargets(), _function), "\n");
-      _builder.append(_join, "\t");
+      _builder.append(_join, "\t\t");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("// Memory access functions");
       _builder.newLine();
-      _builder.append("\t");
+      _builder.append("\t\t");
       final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
         return this.memoryMacro(it);
       };
       String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(this.system.getVariables(), _function_1), "\n");
-      _builder.append(_join_1, "\t");
+      _builder.append(_join_1, "\t\t");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.newLine();
-      _builder.append("\t");
+      {
+        if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
+          _builder.append("\t\t");
+          _builder.append("#ifdef ERROR_INJECTION");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("// Error injection harness");
+          _builder.newLine();
+          _builder.append("\t\t");
+          final Function1<String, String> _function_2 = (String i) -> {
+            StringConcatenation _builder_1 = new StringConcatenation();
+            _builder_1.append("int ");
+            _builder_1.append(i);
+            _builder_1.append("_INJ");
+            return _builder_1.toString();
+          };
+          String _join_2 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_2), ";\n");
+          _builder.append(_join_2, "\t\t");
+          _builder.append(";");
+          _builder.newLineIfNotEmpty();
+          _builder.append("\t\t");
+          _builder.append("int BIT;");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("void inject_");
+          String _name = this.system.getName();
+          _builder.append(_name, "\t\t");
+          _builder.append("(float *val) {");
+          _builder.newLineIfNotEmpty();
+          _builder.append("\t\t");
+          _builder.append("\t");
+          _builder.append("int *bits;");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("\t");
+          _builder.append("bits = (int*)val;");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("\t");
+          _builder.append("*bits ^= 1 << BIT;");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("}");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.append("#endif");
+          _builder.newLine();
+          _builder.append("\t\t");
+          _builder.newLine();
+        }
+      }
+      _builder.append("\t\t");
       CharSequence _signature = this.signature(this.system);
-      _builder.append(_signature, "\t");
+      _builder.append(_signature, "\t\t");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      _builder.append("\t\t");
       _builder.append("{");
       _builder.newLine();
-      _builder.append("\t  ");
+      {
+        if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
+          _builder.append("#ifdef ERROR_INJECTION");
+          _builder.newLine();
+          _builder.append("// Error injection configuration");
+          _builder.newLine();
+          final Function1<String, String> _function_3 = (String i) -> {
+            StringConcatenation _builder_1 = new StringConcatenation();
+            _builder_1.append(i);
+            _builder_1.append("_INJ = getenv(\"");
+            _builder_1.append(i);
+            _builder_1.append("_INJ\") != NULL ? atoi(getenv(\"");
+            _builder_1.append(i);
+            _builder_1.append("_INJ\")) : (int)(rand() % ");
+            String _xifexpression = null;
+            boolean _equals = Objects.equal(i, "t");
+            if (_equals) {
+              _xifexpression = "T";
+            } else {
+              _xifexpression = "N";
+            }
+            _builder_1.append(_xifexpression);
+            _builder_1.append(")");
+            return _builder_1.toString();
+          };
+          String _join_3 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_3), ";\n");
+          _builder.append(_join_3);
+          _builder.append(";");
+          _builder.newLineIfNotEmpty();
+          _builder.append("BIT = getenv(\"BIT\") != NULL ? atoi(getenv(\"BIT\")) : (int)(rand() % ");
+          int _xifexpression = (int) 0;
+          boolean _equals = Objects.equal(this.dataType, BaseDataType.FLOAT);
+          if (_equals) {
+            _xifexpression = 32;
+          } else {
+            _xifexpression = 64;
+          }
+          _builder.append(_xifexpression);
+          _builder.append(");");
+          _builder.newLineIfNotEmpty();
+          _builder.append("#endif");
+          _builder.newLine();
+        }
+      }
+      _builder.append("\t\t\t\t");
+      _builder.newLine();
+      _builder.append("\t\t\t");
       String _localMemoryAllocation = this.localMemoryAllocation();
-      _builder.append(_localMemoryAllocation, "\t  ");
+      _builder.append(_localMemoryAllocation, "\t\t\t");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       String _defStmtMacros = this.defStmtMacros();
-      _builder.append(_defStmtMacros, "\t  ");
+      _builder.append(_defStmtMacros, "\t\t\t");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("// Timers");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("double execution_time;");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("initialize_timer();");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("start_timer();");
       _builder.newLine();
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       String _stmtLoops = this.stmtLoops();
-      _builder.append(_stmtLoops, "\t  ");
+      _builder.append(_stmtLoops, "\t\t\t");
       _builder.newLineIfNotEmpty();
+      _builder.append("\t");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("stop_timer();");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       _builder.append("execution_time = elapsed_time();");
       _builder.newLine();
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
       String _undefStmtMacros = this.undefStmtMacros();
-      _builder.append(_undefStmtMacros, "\t  ");
+      _builder.append(_undefStmtMacros, "\t\t\t");
       _builder.newLineIfNotEmpty();
       _builder.newLine();
-      _builder.append("\t  ");
-      String _printResultLoops = this.printResultLoops("I");
-      _builder.append(_printResultLoops, "\t  ");
-      _builder.newLineIfNotEmpty();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
+      _builder.append("#ifdef ERROR_INJECTION");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t\t");
+      _builder.append("struct INJ inj = { ");
+      final Function1<String, String> _function_4 = (String i) -> {
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _builder_1.append(i);
+        _builder_1.append("_INJ");
+        return _builder_1.toString();
+      };
+      String _join_4 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_4), ", ");
+      _builder.append(_join_4, "\t\t\t");
+      _builder.append(" };");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t\t\t");
+      _builder.append("struct Result result = { 0, 0, 0, 0, 0, -1.0, -1.0, -1.0, BIT, inj };");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      String _countErrors = this.countErrors();
+      _builder.append(_countErrors, "\t\t\t");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t\t\t");
+      _builder.append("#else");
+      _builder.newLine();
+      _builder.append("\t\t\t");
+      _builder.append("struct Result result;");
+      _builder.newLine();
+      _builder.append("\t\t\t");
       _builder.append("printf(\"");
-      String _name = this.system.getName();
-      _builder.append(_name, "\t  ");
+      String _name_1 = this.system.getName();
+      _builder.append(_name_1, "\t\t\t");
       _builder.append(": %lf sec\\n\", execution_time);");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      _builder.append("\t\t\t");
+      _builder.append("#endif");
       _builder.newLine();
-      _builder.append("\t  ");
+      _builder.append("\t\t");
+      _builder.newLine();
+      _builder.append("\t\t\t");
       String _localMemoryFree = this.localMemoryFree();
-      _builder.append(_localMemoryFree, "\t  ");
+      _builder.append(_localMemoryFree, "\t\t\t");
       _builder.newLineIfNotEmpty();
-      _builder.append("\t");
+      {
+        boolean _notEquals = (!Objects.equal(this.version, Version.BASELINE));
+        if (_notEquals) {
+          _builder.append("\t\t\t");
+          _builder.append("return result;");
+          _builder.newLine();
+        }
+      }
+      _builder.append("\t\t");
       _builder.append("}");
       _builder.newLine();
       final String code = _builder.toString();
@@ -353,7 +572,7 @@ public class SystemCodeGen {
         String[] _split = AShow.print(this.system).split("\n");
         for(final String line : _split) {
           _builder.append(" ");
-          _builder.append("*   ");
+          _builder.append("*\t ");
           _builder.append(line, " ");
           _builder.newLineIfNotEmpty();
         }
@@ -368,7 +587,7 @@ public class SystemCodeGen {
         String[] _split_1 = this.memoryMap.toString().split("\n");
         for(final String line_1 : _split_1) {
           _builder.append(" ");
-          _builder.append("*   ");
+          _builder.append("*\t ");
           _builder.append(line_1, " ");
           _builder.newLineIfNotEmpty();
         }
@@ -539,7 +758,8 @@ public class SystemCodeGen {
       final Function1<StandardEquation, String> _function = (StandardEquation it) -> {
         String _xblockexpression_1 = null;
         {
-          final String indexNamesStr = IterableExtensions.join(it.getExpr().getContextDomain().getIndexNames(), ",");
+          final List<String> indexNames = it.getExpr().getContextDomain().getIndexNames();
+          final String indexNamesStr = IterableExtensions.join(indexNames, ",");
           String _name = it.getVariable().getName();
           final String name = ("S" + _name);
           Equation _containerEquation = AlphaUtil.getContainerEquation(it.getExpr());
@@ -569,14 +789,82 @@ public class SystemCodeGen {
           _builder_1.append(" ");
           _builder_1.append(rhs);
           final String stmtStr = _builder_1.toString();
-          StringConcatenation _builder_2 = new StringConcatenation();
-          _builder_2.append("#define ");
-          _builder_2.append(name);
-          _builder_2.append("(");
-          _builder_2.append(defIndexNamesStr);
-          _builder_2.append(") ");
-          _builder_2.append(stmtStr);
-          _xblockexpression_1 = _builder_2.toString();
+          String _xifexpression = null;
+          Variable _variable = it.getVariable();
+          boolean _equals = Objects.equal(_variable, this.stencilVar);
+          if (_equals) {
+            String _xblockexpression_2 = null;
+            {
+              StringConcatenation _builder_2 = new StringConcatenation();
+              _builder_2.append("if (");
+              final Function1<String, String> _function_1 = (String i) -> {
+                StringConcatenation _builder_3 = new StringConcatenation();
+                _builder_3.append("(");
+                _builder_3.append(i);
+                _builder_3.append("==");
+                _builder_3.append(i);
+                _builder_3.append("_INJ)");
+                return _builder_3.toString();
+              };
+              String _join = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_1), " && ");
+              _builder_2.append(_join);
+              _builder_2.append(") inject_");
+              String _name_2 = this.system.getName();
+              _builder_2.append(_name_2);
+              _builder_2.append("(&");
+              _builder_2.append(lhs);
+              _builder_2.append(")");
+              final String injExpr = _builder_2.toString();
+              StringConcatenation _builder_3 = new StringConcatenation();
+              _builder_3.append("#define ");
+              _builder_3.append(name);
+              _builder_3.append("_hook(");
+              _builder_3.append(defIndexNamesStr);
+              _builder_3.append(") ");
+              _builder_3.append(stmtStr);
+              _builder_3.newLineIfNotEmpty();
+              _builder_3.append("#ifdef ERROR_INJECTION");
+              _builder_3.newLine();
+              _builder_3.append("#define ");
+              _builder_3.append(name);
+              _builder_3.append("(");
+              _builder_3.append(defIndexNamesStr);
+              _builder_3.append(") do { ");
+              _builder_3.append(name);
+              _builder_3.append("_hook(");
+              _builder_3.append(defIndexNamesStr);
+              _builder_3.append("); ");
+              _builder_3.append(injExpr);
+              _builder_3.append("; } while(0)");
+              _builder_3.newLineIfNotEmpty();
+              _builder_3.append("#else");
+              _builder_3.newLine();
+              _builder_3.append("#define ");
+              _builder_3.append(name);
+              _builder_3.append("(");
+              _builder_3.append(defIndexNamesStr);
+              _builder_3.append(") ");
+              _builder_3.append(name);
+              _builder_3.append("_hook(");
+              _builder_3.append(defIndexNamesStr);
+              _builder_3.append(")");
+              _builder_3.newLineIfNotEmpty();
+              _builder_3.append("#endif");
+              _builder_3.newLine();
+              _xblockexpression_2 = _builder_3.toString();
+            }
+            _xifexpression = _xblockexpression_2;
+          } else {
+            StringConcatenation _builder_2 = new StringConcatenation();
+            _builder_2.append("#define ");
+            _builder_2.append(name);
+            _builder_2.append("(");
+            _builder_2.append(defIndexNamesStr);
+            _builder_2.append(") ");
+            _builder_2.append(stmtStr);
+            _xifexpression = _builder_2.toString();
+          }
+          _xblockexpression_1 = _xifexpression;
         }
         return _xblockexpression_1;
       };
@@ -584,6 +872,573 @@ public class SystemCodeGen {
       _xblockexpression = IterableExtensions.join(macros, "\n");
     }
     return _xblockexpression;
+  }
+
+  public String countErrors() {
+    String _xblockexpression = null;
+    {
+      final String name = "I";
+      final Function1<Variable, Boolean> _function = (Variable v) -> {
+        String _name = v.getName();
+        return Boolean.valueOf(Objects.equal(_name, name));
+      };
+      final Variable variable = IterableExtensions.<Variable>findFirst(this.system.getLocals(), _function);
+      if ((variable == null)) {
+        return "";
+      }
+      final ISLUnionSet domain = variable.getDomain().setTupleName((this.stmtPrefix + name)).toUnionSet();
+      final List<String> indexNames = domain.getSets().get(0).getIndexNames();
+      final String idxStr = IterableExtensions.join(indexNames, ",");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append(this.stmtPrefix);
+      _builder.append(name);
+      _builder.append("[");
+      _builder.append(idxStr);
+      _builder.append("]");
+      final String SVar = _builder.toString();
+      String _join = IterableExtensions.join(domain.copy().params().getParamNames(), ",");
+      String _plus = ("[" + _join);
+      final String paramStr = (_plus + "]");
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("domain: \"");
+      String _string = domain.toString();
+      _builder_1.append(_string);
+      _builder_1.append("\"");
+      _builder_1.newLineIfNotEmpty();
+      _builder_1.append("child:");
+      _builder_1.newLine();
+      _builder_1.append("  ");
+      _builder_1.append("schedule: \"");
+      _builder_1.append(paramStr, "  ");
+      _builder_1.append("->[");
+      final Function1<String, String> _function_1 = (String i) -> {
+        StringConcatenation _builder_2 = new StringConcatenation();
+        _builder_2.append("{ ");
+        _builder_2.append(SVar);
+        _builder_2.append("->[");
+        _builder_2.append(i);
+        _builder_2.append("] }");
+        return _builder_2.toString();
+      };
+      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_1), ",");
+      _builder_1.append(_join_1, "  ");
+      _builder_1.append("]\"");
+      _builder_1.newLineIfNotEmpty();
+      _builder_1.append("  ");
+      _builder_1.newLine();
+      final ISLSchedule ISchedule = ISLUtil.toISLSchedule(_builder_1);
+      final ISLIdentifierList iterators = ISLUtil.toISLIdentifierList(((String[])Conversions.unwrapArray(indexNames, String.class)));
+      final ISLASTBuild build = ISLASTBuild.buildFromContext(ISchedule.getDomain().copy().params()).setIterators(iterators.copy());
+      final ISLASTNode node = build.generate(ISchedule.copy());
+      final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
+      StringConcatenation _builder_2 = new StringConcatenation();
+      _builder_2.append(name);
+      _builder_2.append("(");
+      _builder_2.append(idxStr);
+      _builder_2.append(")");
+      final String varAcc = _builder_2.toString();
+      String _switchResult = null;
+      final Version version = this.version;
+      if (version != null) {
+        switch (version) {
+          case ABFT_V1:
+            _switchResult = "v1";
+            break;
+          case ABFT_V2:
+            _switchResult = "v2";
+            break;
+          default:
+            break;
+        }
+      }
+      final String vStr = _switchResult;
+      final List<String> yVarIndexNames = this.stencilVar.getDomain().getIndexNames();
+      StringConcatenation _builder_3 = new StringConcatenation();
+      _builder_3.append("// Count checksum difference above THRESHOLD");
+      _builder_3.newLine();
+      _builder_3.newLine();
+      _builder_3.append("// Returns 1 if signal was raised at (tt,ti,...) else 0");
+      _builder_3.newLine();
+      CharSequence _checkCoordinateMacro = this.checkCoordinateMacro(this.buildChecksumContainer());
+      _builder_3.append(_checkCoordinateMacro);
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      _builder_3.append("const char* verbose = getenv(\"VERBOSE\");");
+      _builder_3.newLine();
+      _builder_3.newLine();
+      _builder_3.append("#define print_");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.append("(");
+      _builder_3.append(idxStr);
+      _builder_3.append(") printf(\"");
+      _builder_3.append(vStr);
+      _builder_3.append("_");
+      _builder_3.append(name);
+      _builder_3.append("(");
+      final Function1<String, String> _function_2 = (String it) -> {
+        return "%d";
+      };
+      String _join_2 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), ",");
+      _builder_3.append(_join_2);
+      _builder_3.append(") = %E\\n\",");
+      _builder_3.append(idxStr);
+      _builder_3.append(", ");
+      _builder_3.append(varAcc);
+      _builder_3.append(")");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.append("#define ");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.append("(");
+      _builder_3.append(idxStr);
+      _builder_3.append(") do { if (verbose != NULL && fabs(");
+      _builder_3.append(varAcc);
+      _builder_3.append(")>=threshold) print_");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.append("(");
+      _builder_3.append(idxStr);
+      _builder_3.append("); if (containsInjectionCoordinate(");
+      _builder_3.append(idxStr);
+      _builder_3.append(") > 0) { if (fabs(");
+      _builder_3.append(varAcc);
+      _builder_3.append(")>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(");
+      _builder_3.append(varAcc);
+      _builder_3.append(")>=threshold) {result.FP++;} else {result.TN++;} } } while(0)");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      CharSequence _print = ProgramPrinter.print(this.dataType);
+      _builder_3.append(_print);
+      _builder_3.append(" threshold = 0;");
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.append("const char* env_threshold = getenv(\"THRESHOLD\");");
+      _builder_3.newLine();
+      _builder_3.append("if (env_threshold != NULL) {");
+      _builder_3.newLine();
+      _builder_3.append("\t");
+      _builder_3.append("threshold = atof(env_threshold);");
+      _builder_3.newLine();
+      _builder_3.append("}");
+      _builder_3.newLine();
+      String _code = codegenVisitor.toCode();
+      _builder_3.append(_code);
+      _builder_3.newLineIfNotEmpty();
+      _builder_3.newLine();
+      _builder_3.append("{");
+      _builder_3.newLine();
+      _builder_3.append("\t");
+      _builder_3.append("long N = result.FP + result.TN;");
+      _builder_3.newLine();
+      _builder_3.append("\t");
+      _builder_3.append("long P = result.FN + result.TP;");
+      _builder_3.newLine();
+      _builder_3.append("\t");
+      _builder_3.append("if (P != 0 && N != 0) {");
+      _builder_3.newLine();
+      _builder_3.append("\t\t");
+      _builder_3.append("result.TPR = 100 * ((float)result.TP) / P;");
+      _builder_3.newLine();
+      _builder_3.append("\t\t");
+      _builder_3.append("result.FPR = 100 * ((float)result.FP) / N;");
+      _builder_3.newLine();
+      _builder_3.append("\t\t");
+      _builder_3.append("result.FNR = 100 * ((float)result.FN) / P;");
+      _builder_3.newLine();
+      _builder_3.append("\t\t");
+      _builder_3.append("result.valid = 1;");
+      _builder_3.newLine();
+      _builder_3.append("\t");
+      _builder_3.append("}");
+      _builder_3.newLine();
+      _builder_3.append("}");
+      _builder_3.newLine();
+      _builder_3.append("#undef ");
+      _builder_3.append(this.stmtPrefix);
+      _builder_3.append(name);
+      _builder_3.newLineIfNotEmpty();
+      final String code = _builder_3.toString();
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  public CharSequence checkCoordinateMacro(final ISLSet container) {
+    CharSequence _xblockexpression = null;
+    {
+      final List<String> names = this.stencilVar.getDomain().getIndexNames();
+      final Function1<String, String> _function = (String n) -> {
+        return ("t" + n);
+      };
+      final List<String> txs = ListExtensions.<String, String>map(names, _function);
+      final Function1<String, String> _function_1 = (String n) -> {
+        return (n + "_INJ");
+      };
+      final List<String> xInjs = ListExtensions.<String, String>map(names, _function_1);
+      final String txsStr = IterableExtensions.join(txs, ",");
+      final String xInjsStr = IterableExtensions.join(xInjs, ",");
+      final String paramStr = IterableExtensions.join(container.getParamNames(), ",");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("[");
+      _builder.append(paramStr);
+      _builder.append(",");
+      _builder.append(txsStr);
+      _builder.append(",");
+      _builder.append(xInjsStr);
+      _builder.append("]->{[");
+      _builder.append(txsStr);
+      _builder.append(",");
+      _builder.append(xInjsStr);
+      _builder.append("]}");
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("[");
+      _builder_1.append(paramStr);
+      _builder_1.append(",");
+      _builder_1.append(txsStr);
+      _builder_1.append(",");
+      _builder_1.append(xInjsStr);
+      _builder_1.append("]->{[");
+      _builder_1.append(txsStr);
+      _builder_1.append(",");
+      _builder_1.append(xInjsStr);
+      _builder_1.append("]->[");
+      _builder_1.append(txsStr);
+      _builder_1.append("]}");
+      ISLSet coords = container.copy().intersect(ISLUtil.toISLSet(_builder.toString())).removeRedundancies().coalesce().apply(ISLUtil.toISLMap(_builder_1.toString())).projectOut(ISLDimType.isl_dim_param, 0, container.dim(ISLDimType.isl_dim_param));
+      coords = AlphaUtil.renameIndices(coords, IterableExtensions.<String>toList(txs));
+      final ParenthesizedExpr expr = PolynomialConverter.convert(BarvinokBindings.card(coords.copy()));
+      StringConcatenation _builder_2 = new StringConcatenation();
+      _builder_2.append("#define containsInjectionCoordinate(");
+      _builder_2.append(txsStr);
+      _builder_2.append(") ");
+      CharSequence _printExpr = ProgramPrinter.printExpr(expr);
+      _builder_2.append(_printExpr);
+      _xblockexpression = _builder_2;
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * This function is used to identify the list of checksum pairs that surround the injection site
+   * Used to identify whether or not a raised signal is a TP/FP/TN/FN
+   */
+  public ISLSet buildChecksumContainer() {
+    ISLSet _xblockexpression = null;
+    {
+      if (((!Objects.equal(this.version, Version.ABFT_V1)) && (!Objects.equal(this.version, Version.ABFT_V2)))) {
+        return null;
+      }
+      final Function1<Variable, Boolean> _function = (Variable it) -> {
+        String _name = it.getName();
+        return Boolean.valueOf(Objects.equal(_name, "C1"));
+      };
+      final Variable cVar = IterableExtensions.<Variable>findFirst(this.system.getLocals(), _function);
+      int _size = cVar.getDomain().getIndexNames().size();
+      final int nbSpatialDims = (_size - 1);
+      ISLSet _xifexpression = null;
+      boolean _equals = Objects.equal(this.version, Version.ABFT_V1);
+      if (_equals) {
+        final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation it) -> {
+          Variable _variable = it.getVariable();
+          return Boolean.valueOf(Objects.equal(_variable, cVar));
+        };
+        AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function_1).getExpr();
+        _xifexpression = ((ReduceExpression) _expr).getBody().getContextDomain();
+      } else {
+        ISLSet _xblockexpression_1 = null;
+        {
+          final Function1<StandardEquation, Boolean> _function_2 = (StandardEquation it) -> {
+            return Boolean.valueOf(it.getVariable().getName().startsWith("C2_"));
+          };
+          final Iterable<StandardEquation> c2nrs = IterableExtensions.<StandardEquation>filter(this.systemBody.getStandardEquations(), _function_2);
+          int _size_1 = IterableExtensions.size(c2nrs);
+          int _minus = (_size_1 - 1);
+          AlphaExpression _expr_1 = (((StandardEquation[])Conversions.unwrapArray(c2nrs, StandardEquation.class))[_minus]).getExpr();
+          _xblockexpression_1 = ((ReduceExpression) _expr_1).getBody().getContextDomain().copy().projectOut(ISLDimType.isl_dim_out, (1 + nbSpatialDims), (nbSpatialDims + 1));
+        }
+        _xifexpression = _xblockexpression_1;
+      }
+      final ISLSet face = _xifexpression;
+      final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(this.system);
+      final Integer radius = convolutionKernel.getKey();
+      final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
+      int _size_1 = this.stencilVar.getDomain().getIndexNames().size();
+      final int spatialDims = (_size_1 - 1);
+      ISLSet _switchResult = null;
+      final Version version = this.version;
+      if (version != null) {
+        switch (version) {
+          case ABFT_V1:
+            _switchResult = this.buildV1Container(face, ABFT.buildParamStr(cVar), (radius).intValue(), spatialDims);
+            break;
+          case ABFT_V2:
+            _switchResult = this.buildV2Container(face, ABFT.buildParamStr(cVar), (radius).intValue(), spatialDims);
+            break;
+          default:
+            break;
+        }
+      }
+      _xblockexpression = _switchResult;
+    }
+    return _xblockexpression;
+  }
+
+  public ISLSet buildV1Container(final ISLSet face, final String paramStr, final int radius, final int spatialDims) {
+    try {
+      ISLSet _xblockexpression = null;
+      {
+        final Function1<Integer, String> _function = (Integer i) -> {
+          return Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("i", "j", "k")).get((i).intValue());
+        };
+        final List<String> xs = IterableExtensions.<String>toList(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, spatialDims, true), _function));
+        final Function1<String, String> _function_1 = (String x) -> {
+          return ("t" + x);
+        };
+        final List<String> txs = IterableExtensions.<String>toList(ListExtensions.<String, String>map(xs, _function_1));
+        final String xsStr = IterableExtensions.join(xs, ",");
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("tt,");
+        String _join = IterableExtensions.join(txs, ",");
+        _builder.append(_join);
+        final String txsStr = _builder.toString();
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _builder_1.append(txsStr);
+        _builder_1.append(",t,");
+        _builder_1.append(xsStr);
+        final String inStr = _builder_1.toString();
+        final int TT = this.tileSizes[0];
+        final Function1<ArrayList<Integer>, String> _function_2 = (ArrayList<Integer> ijks) -> {
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append("c[");
+          _builder_2.append(inStr);
+          _builder_2.append("]->c[");
+          _builder_2.append(txsStr);
+          _builder_2.append(",t-1,");
+          final Function1<Pair<String, Integer>, String> _function_3 = (Pair<String, Integer> it) -> {
+            String _xblockexpression_1 = null;
+            {
+              final String x = it.getKey();
+              final Integer coeff = it.getValue();
+              String _xifexpression = null;
+              if (((coeff).intValue() > 0)) {
+                StringConcatenation _builder_3 = new StringConcatenation();
+                _builder_3.append(x);
+                _builder_3.append("+");
+                _builder_3.append(radius);
+                _xifexpression = _builder_3.toString();
+              } else {
+                StringConcatenation _builder_4 = new StringConcatenation();
+                _builder_4.append(x);
+                _builder_4.append("-");
+                _builder_4.append(radius);
+                _xifexpression = _builder_4.toString();
+              }
+              _xblockexpression_1 = _xifexpression;
+            }
+            return _xblockexpression_1;
+          };
+          String _join_1 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(CommonExtensions.<String, Integer>zipWith(xs, ijks), _function_3), ",");
+          _builder_2.append(_join_1);
+          _builder_2.append("]");
+          return _builder_2.toString();
+        };
+        final Iterable<String> maps = IterableExtensions.<ArrayList<Integer>, String>map(CommonExtensions.<Integer>permutations(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf((-1)))), spatialDims), _function_2);
+        final JNIPtrBoolean isExact = new JNIPtrBoolean();
+        StringConcatenation _builder_2 = new StringConcatenation();
+        _builder_2.append(paramStr);
+        _builder_2.append("->{");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        _builder_2.append("[");
+        _builder_2.append(txsStr, "\t");
+        _builder_2.append(",");
+        _builder_2.append(xsStr, "\t");
+        _builder_2.append("]->c[");
+        _builder_2.append(txsStr, "\t");
+        _builder_2.append(",");
+        _builder_2.append(TT, "\t");
+        _builder_2.append("tt,");
+        _builder_2.append(xsStr, "\t");
+        _builder_2.append("];");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        _builder_2.append("c[");
+        _builder_2.append(inStr, "\t");
+        _builder_2.append("]->c[");
+        _builder_2.append(inStr, "\t");
+        _builder_2.append("];");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        String _join_1 = IterableExtensions.join(maps, ";\n");
+        _builder_2.append(_join_1, "\t");
+        _builder_2.append(";");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("}");
+        _builder_2.newLine();
+        final String closureStr = _builder_2.toString();
+        final ISLUnionMap closure = ISLUtil.toISLUnionMap(closureStr).transitiveClosure(isExact);
+        if ((!isExact.value)) {
+          throw new Exception("Transitive closure should be exact, something went wrong");
+        }
+        StringConcatenation _builder_3 = new StringConcatenation();
+        _builder_3.append(paramStr);
+        _builder_3.append("->{ c[");
+        _builder_3.append(inStr);
+        _builder_3.append("] : ");
+        _builder_3.append(TT);
+        _builder_3.append("tt-");
+        _builder_3.append(TT);
+        _builder_3.append("<=t<=");
+        _builder_3.append(TT);
+        _builder_3.append("tt}");
+        final ISLUnionSet range = ISLUtil.toISLUnionSet(_builder_3);
+        final ISLUnionMap map = closure.copy().intersectRange(range);
+        final ISLUnionSet ret = face.copy().toUnionSet().apply(map.copy());
+        int _size = ret.getSets().size();
+        boolean _greaterThan = (_size > 1);
+        if (_greaterThan) {
+          throw new Exception("Issue applying transitive closure");
+        }
+        Iterable<String> _plus = Iterables.<String>concat(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("tt")), txs);
+        Iterable<String> _plus_1 = Iterables.<String>concat(_plus, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("t")));
+        final List<String> names = IterableExtensions.<String>toList(Iterables.<String>concat(_plus_1, xs));
+        final ISLSet container = AlphaUtil.renameIndices(ret.getSetAt(0).resetTupleID().coalesce(), names);
+        _xblockexpression = container;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public ISLSet buildV2Container(final ISLSet face, final String paramStr, final int radius, final int spatialDims) {
+    try {
+      ISLSet _xblockexpression = null;
+      {
+        final Function1<Integer, String> _function = (Integer i) -> {
+          return Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("i", "j", "k")).get((i).intValue());
+        };
+        final List<String> xs = IterableExtensions.<String>toList(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, spatialDims, true), _function));
+        final Function1<String, String> _function_1 = (String x) -> {
+          return ("t" + x);
+        };
+        final List<String> txs = IterableExtensions.<String>toList(ListExtensions.<String, String>map(xs, _function_1));
+        final String xsStr = IterableExtensions.join(xs, ",");
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("tt,");
+        String _join = IterableExtensions.join(txs, ",");
+        _builder.append(_join);
+        final String txsStr = _builder.toString();
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _builder_1.append(txsStr);
+        _builder_1.append(",t,");
+        _builder_1.append(xsStr);
+        final String inStr = _builder_1.toString();
+        final int TT = this.tileSizes[0];
+        final Function1<ArrayList<Integer>, String> _function_2 = (ArrayList<Integer> ijks) -> {
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append("c[");
+          _builder_2.append(inStr);
+          _builder_2.append("]->c[");
+          _builder_2.append(txsStr);
+          _builder_2.append(",t+1,");
+          final Function1<Pair<String, Integer>, String> _function_3 = (Pair<String, Integer> it) -> {
+            String _xblockexpression_1 = null;
+            {
+              final String x = it.getKey();
+              final Integer coeff = it.getValue();
+              String _xifexpression = null;
+              if (((coeff).intValue() > 0)) {
+                StringConcatenation _builder_3 = new StringConcatenation();
+                _builder_3.append(x);
+                _builder_3.append("+");
+                _builder_3.append(radius);
+                _xifexpression = _builder_3.toString();
+              } else {
+                StringConcatenation _builder_4 = new StringConcatenation();
+                _builder_4.append(x);
+                _builder_4.append("-");
+                _builder_4.append(radius);
+                _xifexpression = _builder_4.toString();
+              }
+              _xblockexpression_1 = _xifexpression;
+            }
+            return _xblockexpression_1;
+          };
+          String _join_1 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(CommonExtensions.<String, Integer>zipWith(xs, ijks), _function_3), ",");
+          _builder_2.append(_join_1);
+          _builder_2.append("]");
+          return _builder_2.toString();
+        };
+        final Iterable<String> maps = IterableExtensions.<ArrayList<Integer>, String>map(CommonExtensions.<Integer>permutations(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf((-1)))), spatialDims), _function_2);
+        final JNIPtrBoolean isExact = new JNIPtrBoolean();
+        StringConcatenation _builder_2 = new StringConcatenation();
+        _builder_2.append(paramStr);
+        _builder_2.append("->{");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        _builder_2.append("[");
+        _builder_2.append(txsStr, "\t");
+        _builder_2.append(",");
+        _builder_2.append(xsStr, "\t");
+        _builder_2.append("]->c[");
+        _builder_2.append(txsStr, "\t");
+        _builder_2.append(",");
+        _builder_2.append(TT, "\t");
+        _builder_2.append("tt-");
+        _builder_2.append(TT, "\t");
+        _builder_2.append(",");
+        _builder_2.append(xsStr, "\t");
+        _builder_2.append("];");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        _builder_2.append("c[");
+        _builder_2.append(inStr, "\t");
+        _builder_2.append("]->c[");
+        _builder_2.append(inStr, "\t");
+        _builder_2.append("];");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("\t");
+        String _join_1 = IterableExtensions.join(maps, ";\n");
+        _builder_2.append(_join_1, "\t");
+        _builder_2.append(";");
+        _builder_2.newLineIfNotEmpty();
+        _builder_2.append("}");
+        _builder_2.newLine();
+        final String closureStr = _builder_2.toString();
+        final ISLUnionMap closure = ISLUtil.toISLUnionMap(closureStr).transitiveClosure(isExact);
+        if ((!isExact.value)) {
+          throw new Exception("Transitive closure should be exact, something went wrong");
+        }
+        StringConcatenation _builder_3 = new StringConcatenation();
+        _builder_3.append(paramStr);
+        _builder_3.append("->{ c[");
+        _builder_3.append(inStr);
+        _builder_3.append("] : ");
+        _builder_3.append(TT);
+        _builder_3.append("tt-");
+        _builder_3.append(TT);
+        _builder_3.append("<=t<=");
+        _builder_3.append(TT);
+        _builder_3.append("tt}");
+        final ISLUnionSet range = ISLUtil.toISLUnionSet(_builder_3);
+        final ISLUnionMap map = closure.copy().intersectRange(range);
+        final ISLUnionSet ret = face.copy().toUnionSet().apply(map.copy());
+        int _size = ret.getSets().size();
+        boolean _greaterThan = (_size > 1);
+        if (_greaterThan) {
+          throw new Exception("Issue applying transitive closure");
+        }
+        Iterable<String> _plus = Iterables.<String>concat(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("tt")), txs);
+        Iterable<String> _plus_1 = Iterables.<String>concat(_plus, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("t")));
+        final List<String> names = IterableExtensions.<String>toList(Iterables.<String>concat(_plus_1, xs));
+        final ISLSet container = AlphaUtil.renameIndices(ret.getSetAt(0).resetTupleID().coalesce(), names);
+        _xblockexpression = container;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   public String printResultLoops(final String name) {
@@ -687,7 +1542,7 @@ public class SystemCodeGen {
       _builder_3.newLine();
       _builder_3.append("if (env_threshold != NULL) {");
       _builder_3.newLine();
-      _builder_3.append("  ");
+      _builder_3.append("\t");
       _builder_3.append("threshold = atof(env_threshold);");
       _builder_3.newLine();
       _builder_3.append("}");
@@ -740,6 +1595,10 @@ public class SystemCodeGen {
   }
 
   public CharSequence signature(final AlphaSystem system) {
+    return this.signature(system, this.version);
+  }
+
+  public CharSequence signature(final AlphaSystem system, final Version _version) {
     CharSequence _xblockexpression = null;
     {
       final Function1<String, String> _function = (String p) -> {
@@ -753,8 +1612,23 @@ public class SystemCodeGen {
         return ("float *" + _name);
       };
       final String ioArgs = IterableExtensions.join(IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function_1), ", ");
+      String _switchResult = null;
+      if (_version != null) {
+        switch (_version) {
+          case BASELINE:
+            _switchResult = "void";
+            break;
+          default:
+            _switchResult = "struct Result";
+            break;
+        }
+      } else {
+        _switchResult = "struct Result";
+      }
+      final String returnType = _switchResult;
       StringConcatenation _builder = new StringConcatenation();
-      _builder.append("void ");
+      _builder.append(returnType);
+      _builder.append(" ");
       String _name = system.getName();
       _builder.append(_name);
       _builder.append("(");
@@ -941,5 +1815,25 @@ public class SystemCodeGen {
   @Pure
   public String getStmtPrefix() {
     return this.stmtPrefix;
+  }
+
+  @Pure
+  public Variable getStencilVar() {
+    return this.stencilVar;
+  }
+
+  @Pure
+  public Version getVersion() {
+    return this.version;
+  }
+
+  @Pure
+  public int[] getTileSizes() {
+    return this.tileSizes;
+  }
+
+  @Pure
+  public BaseDataType getDataType() {
+    return this.dataType;
   }
 }

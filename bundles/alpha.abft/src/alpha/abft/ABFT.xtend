@@ -744,7 +744,7 @@ class ABFT {
 	 * Returns the pair (convolution radius)->(map of the convolution kernel)
 	 */
 	def static identify_convolution(AlphaSystem system) {
-		switch (system.name) {
+		switch (system.name.split('_').get(0)) {
 			case 'star1d1r' : 1 -> #{
 										#[-1]->0.3332,
 										#[ 0]->0.3333,

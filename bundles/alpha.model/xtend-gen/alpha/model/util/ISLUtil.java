@@ -17,6 +17,7 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.Collections;
@@ -88,6 +89,17 @@ public class ISLUtil {
    */
   public static ISLMap toISLMap(final String descriptor) {
     return ISLMap.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLUnionMap from a string
+   */
+  public static ISLUnionMap toISLUnionMap(final CharSequence descriptor) {
+    return ISLUtil.toISLUnionMap(descriptor.toString());
+  }
+
+  public static ISLUnionMap toISLUnionMap(final String descriptor) {
+    return ISLUnionMap.buildFromString(ISLContext.getInstance(), descriptor);
   }
 
   /**
