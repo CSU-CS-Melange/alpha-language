@@ -4,11 +4,11 @@ import alpha.abft.ABFT;
 import alpha.abft.codegen.util.ISLASTNodeVisitor;
 import alpha.abft.codegen.util.MemoryMap;
 import alpha.codegen.ArrayAccessExpr;
-import alpha.codegen.AssignmentStmt;
 import alpha.codegen.BaseDataType;
 import alpha.codegen.CastExpr;
 import alpha.codegen.CustomExpr;
 import alpha.codegen.DataType;
+import alpha.codegen.Expression;
 import alpha.codegen.Factory;
 import alpha.codegen.MacroStmt;
 import alpha.codegen.ParenthesizedExpr;
@@ -18,7 +18,6 @@ import alpha.codegen.alphaBase.ExprConverter;
 import alpha.codegen.demandDriven.WriteC;
 import alpha.codegen.demandDriven.WriteCTypeGenerator;
 import alpha.codegen.isl.AffineConverter;
-import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
@@ -37,11 +36,13 @@ import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
-import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
@@ -407,10 +408,13 @@ public class SystemCodeGen {
       _builder.newLine();
       {
         if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
+          _builder.append("\t\t\t");
           _builder.append("#ifdef ERROR_INJECTION");
           _builder.newLine();
+          _builder.append("\t\t\t");
           _builder.append("// Error injection configuration");
           _builder.newLine();
+          _builder.append("\t\t\t");
           final Function1<String, String> _function_3 = (String i) -> {
             StringConcatenation _builder_1 = new StringConcatenation();
             _builder_1.append(i);
@@ -431,9 +435,10 @@ public class SystemCodeGen {
             return _builder_1.toString();
           };
           String _join_3 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_3), ";\n");
-          _builder.append(_join_3);
+          _builder.append(_join_3, "\t\t\t");
           _builder.append(";");
           _builder.newLineIfNotEmpty();
+          _builder.append("\t\t\t");
           _builder.append("BIT = getenv(\"BIT\") != NULL ? atoi(getenv(\"BIT\")) : (int)(rand() % ");
           int _xifexpression = (int) 0;
           boolean _equals = Objects.equal(this.dataType, BaseDataType.FLOAT);
@@ -442,9 +447,10 @@ public class SystemCodeGen {
           } else {
             _xifexpression = 64;
           }
-          _builder.append(_xifexpression);
+          _builder.append(_xifexpression, "\t\t\t");
           _builder.append(");");
           _builder.newLineIfNotEmpty();
+          _builder.append("\t\t\t");
           _builder.append("#endif");
           _builder.newLine();
         }
@@ -657,12 +663,10 @@ public class SystemCodeGen {
         String _key = it.getKey();
         return Pair.<ISLSet, String>of(_coalesce, _key);
       };
-      final Function1<Pair<ISLSet, String>, AssignmentStmt> _function_1 = (Pair<ISLSet, String> it) -> {
-        String _value = it.getValue();
-        String _plus = ("float *" + _value);
-        return this.mallocStmt(it.getKey(), _plus);
+      final Function1<Pair<ISLSet, String>, String> _function_1 = (Pair<ISLSet, String> it) -> {
+        return this.mallocStmt(it.getKey(), it.getValue());
       };
-      final Iterable<AssignmentStmt> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, AssignmentStmt>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(this.getMemoryChunks(variables), _function), _function_1);
+      final Iterable<String> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, String>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(this.getMemoryChunks(variables), _function), _function_1);
       String _xifexpression = null;
       int _size = IterableExtensions.size(mallocStmts);
       boolean _greaterThan = (_size > 0);
@@ -670,10 +674,7 @@ public class SystemCodeGen {
         StringConcatenation _builder = new StringConcatenation();
         _builder.append("// Local memory allocation");
         _builder.newLine();
-        final Function1<AssignmentStmt, CharSequence> _function_2 = (AssignmentStmt it) -> {
-          return ProgramPrinter.printStmt(it);
-        };
-        String _join = IterableExtensions.join(IterableExtensions.<AssignmentStmt, CharSequence>map(mallocStmts, _function_2));
+        String _join = IterableExtensions.join(mallocStmts, "\n");
         _builder.append(_join);
         _builder.newLineIfNotEmpty();
         _xifexpression = _builder.toString();
@@ -721,16 +722,129 @@ public class SystemCodeGen {
     return _xblockexpression;
   }
 
-  public AssignmentStmt mallocStmt(final ISLSet domain, final String name) {
-    AssignmentStmt _xblockexpression = null;
+  public String mallocStmt(final ISLSet domainWithParams, final String name) {
+    String _xblockexpression = null;
     {
-      final ParenthesizedExpr cardinalityExpr = WriteC.getCardinalityExpr(domain);
-      final DataType dataType = Factory.dataType(BaseDataType.FLOAT, 1);
-      final CastExpr mallocCall = Factory.callocCall(dataType, cardinalityExpr);
-      final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
-      _xblockexpression = mallocAssignment;
+      final int dim = domainWithParams.getIndexNames().size();
+      final Function1<ISLBasicSet, ISLSet> _function = (ISLBasicSet it) -> {
+        return it.dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, dim).toSet();
+      };
+      final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet s1, ISLSet s2) -> {
+        return s1.union(s2);
+      };
+      final ISLSet domain = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLBasicSet, ISLSet>map(domainWithParams.getBasicSets(), _function), _function_1);
+      final List<String> indexNames = domain.getIndexNames();
+      final Function1<Integer, ISLMap> _function_2 = (Integer i) -> {
+        final Function1<Integer, Boolean> _function_3 = (Integer j) -> {
+          return Boolean.valueOf(Objects.equal(i, j));
+        };
+        final Function2<ISLMap, Integer, ISLMap> _function_4 = (ISLMap ret, Integer d) -> {
+          return ret.projectOut(ISLDimType.isl_dim_out, (d).intValue(), 1);
+        };
+        return IterableExtensions.<Integer, ISLMap>fold(IterableExtensions.<Integer>reject(new ExclusiveRange(dim, 0, false), _function_3), 
+          ISLMap.buildIdentity(domain.copy().toIdentityMap().getSpace()), _function_4);
+      };
+      final Function1<ISLMap, ISLSet> _function_3 = (ISLMap m) -> {
+        return domain.copy().apply(m);
+      };
+      final Function1<ISLSet, ISLSet> _function_4 = (ISLSet it) -> {
+        return it.coalesce();
+      };
+      final Function1<ISLSet, ParenthesizedExpr> _function_5 = (ISLSet it) -> {
+        return WriteC.getCardinalityExpr(it);
+      };
+      final Iterable<ParenthesizedExpr> dimSizes = IterableExtensions.<ISLSet, ParenthesizedExpr>map(IterableExtensions.<ISLSet, ISLSet>map(IterableExtensions.<ISLMap, ISLSet>map(IterableExtensions.<Integer, ISLMap>map(new ExclusiveRange(0, dim, true), _function_2), _function_3), _function_4), _function_5);
+      StringConcatenation _builder = new StringConcatenation();
+      String _print = ProgramPrinter.print(Factory.dataType(this.dataType, dim));
+      _builder.append(_print);
+      _builder.append(" ");
+      _builder.append(name);
+      CharSequence _printExpr = ProgramPrinter.printExpr(Factory.assignmentStmt(_builder.toString(), 
+        Factory.callocCall(Factory.dataType(this.dataType, dim), ((Expression[])Conversions.unwrapArray(dimSizes, Expression.class))[0])));
+      final String mallocAssignment = (_printExpr + ";\n");
+      int _indirectionLevel = this.indirectionLevel(domain);
+      int _minus = (_indirectionLevel - 1);
+      final Function2<String, Pair<Integer, String>, String> _function_6 = (String ret, Pair<Integer, String> p) -> {
+        String _xblockexpression_1 = null;
+        {
+          final Integer i = p.getKey();
+          final String indexName = p.getValue();
+          final ParenthesizedExpr expr = ((ParenthesizedExpr[])Conversions.unwrapArray(dimSizes, ParenthesizedExpr.class))[(i).intValue()];
+          final DataType dataType = Factory.dataType(this.dataType, ((dim - (i).intValue()) - 1));
+          final CastExpr mallocCall = Factory.callocCall(dataType, ((Expression[])Conversions.unwrapArray(dimSizes, Expression.class))[((i).intValue() + 1)]);
+          final Function1<Integer, String> _function_7 = (Integer it) -> {
+            return "\t";
+          };
+          final String indentation = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, (i).intValue(), true), _function_7));
+          StringConcatenation _builder_1 = new StringConcatenation();
+          _builder_1.append(name);
+          _builder_1.append("[");
+          final Function1<Integer, String> _function_8 = (Integer j) -> {
+            return indexNames.get((j).intValue());
+          };
+          String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, ((i).intValue() + 1), true), _function_8), "][");
+          _builder_1.append(_join);
+          _builder_1.append("]");
+          final String writeAcc = _builder_1.toString();
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append(ret);
+          _builder_2.newLineIfNotEmpty();
+          _builder_2.append(indentation);
+          _builder_2.append("for (int ");
+          _builder_2.append(indexName);
+          _builder_2.append("=0; ");
+          _builder_2.append(indexName);
+          _builder_2.append("<");
+          CharSequence _printExpr_1 = ProgramPrinter.printExpr(expr);
+          _builder_2.append(_printExpr_1);
+          _builder_2.append("; ");
+          _builder_2.append(indexName);
+          _builder_2.append("++) {");
+          _builder_2.newLineIfNotEmpty();
+          _builder_2.append(indentation);
+          _builder_2.append("\t");
+          _builder_2.append(writeAcc);
+          _builder_2.append(" = ");
+          CharSequence _printExpr_2 = ProgramPrinter.printExpr(mallocCall);
+          _builder_2.append(_printExpr_2);
+          _builder_2.append(";");
+          _xblockexpression_1 = _builder_2.toString();
+        }
+        return _xblockexpression_1;
+      };
+      String code = IterableExtensions.<Pair<Integer, String>, String>fold(CommonExtensions.<Integer, String>zipWith(new ExclusiveRange(0, _minus, true), indexNames), mallocAssignment, _function_6);
+      int _indirectionLevel_1 = this.indirectionLevel(domain);
+      int _minus_1 = (_indirectionLevel_1 - 1);
+      final Function2<String, Pair<Integer, String>, String> _function_7 = (String ret, Pair<Integer, String> p) -> {
+        String _xblockexpression_1 = null;
+        {
+          final Integer i = p.getKey();
+          final Function1<Integer, String> _function_8 = (Integer it) -> {
+            return "\t";
+          };
+          final String indentation = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, (i).intValue(), true), _function_8));
+          StringConcatenation _builder_1 = new StringConcatenation();
+          _builder_1.append(ret);
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append(indentation);
+          _builder_1.append("}");
+          _builder_1.newLineIfNotEmpty();
+          _xblockexpression_1 = _builder_1.toString();
+        }
+        return _xblockexpression_1;
+      };
+      code = IterableExtensions.<Pair<Integer, String>, String>fold(CommonExtensions.<Integer, String>zipWith(new ExclusiveRange(_minus_1, 0, false), indexNames), code, _function_7);
+      _xblockexpression = code;
     }
     return _xblockexpression;
+  }
+
+  public int indirectionLevel(final Variable variable) {
+    return this.indirectionLevel(variable.getDomain());
+  }
+
+  public int indirectionLevel(final ISLSet domain) {
+    return Integer.max(1, domain.getNbIndices());
   }
 
   public String undefStmtMacros() {
@@ -1608,8 +1722,14 @@ public class SystemCodeGen {
       EList<Variable> _inputs = system.getInputs();
       EList<Variable> _outputs = system.getOutputs();
       final Function1<Variable, String> _function_1 = (Variable v) -> {
+        int _indirectionLevel = this.indirectionLevel(v);
+        final Function1<Integer, String> _function_2 = (Integer it) -> {
+          return "*";
+        };
+        String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _indirectionLevel, true), _function_2));
+        String _plus = ("float " + _join);
         String _name = v.getName();
-        return ("float *" + _name);
+        return (_plus + _name);
       };
       final String ioArgs = IterableExtensions.join(IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function_1), ", ");
       String _switchResult = null;
@@ -1682,9 +1802,101 @@ public class SystemCodeGen {
     final String name = entry.getKey();
     final ISLSet range = entry.getValue();
     final String stmtName = ("mem_" + name);
-    final ISLPWQPolynomial rank = MemoryUtils.rank(range);
-    final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
-    final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(name, accessExpression);
+    final List<String> indexNames = range.getIndexNames();
+    final String paramStr = IterableExtensions.join(range.getParamNames(), ",");
+    final String idxStr = IterableExtensions.join(indexNames, ",");
+    final Function1<String, ISLSet> _function = (String i) -> {
+      ISLSet _xblockexpression = null;
+      {
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("[");
+        _builder.append(paramStr);
+        _builder.append("]->{[");
+        _builder.append(idxStr);
+        _builder.append("]->[");
+        _builder.append(i);
+        _builder.append("]}");
+        final ISLMap m = ISLUtil.toISLMap(_builder.toString());
+        _xblockexpression = range.copy().apply(m);
+      }
+      return _xblockexpression;
+    };
+    final Function1<ISLSet, ISLSet> _function_1 = (ISLSet it) -> {
+      return it.coalesce();
+    };
+    final Function1<ISLSet, ISLPWMultiAff> _function_2 = (ISLSet it) -> {
+      return it.lexMinAsPWMultiAff();
+    };
+    final Function1<ISLPWMultiAff, ISLPWMultiAff> _function_3 = (ISLPWMultiAff pwmaff) -> {
+      try {
+        ISLPWMultiAff _xblockexpression = null;
+        {
+          int _nbPieces = pwmaff.getNbPieces();
+          boolean _greaterThan = (_nbPieces > 1);
+          if (_greaterThan) {
+            throw new Exception("Error computing lexMin for memory allocation (pwmaff)");
+          }
+          _xblockexpression = pwmaff;
+        }
+        return _xblockexpression;
+      } catch (Throwable _e) {
+        throw Exceptions.sneakyThrow(_e);
+      }
+    };
+    final Function1<ISLPWMultiAff, ISLMultiAff> _function_4 = (ISLPWMultiAff it) -> {
+      return it.getPiece(0).getMaff();
+    };
+    final Function1<ISLMultiAff, ISLMultiAff> _function_5 = (ISLMultiAff maff) -> {
+      try {
+        ISLMultiAff _xblockexpression = null;
+        {
+          int _dim = maff.dim(ISLDimType.isl_dim_out);
+          boolean _greaterThan = (_dim > 1);
+          if (_greaterThan) {
+            throw new Exception("Error computing lexMin for memory allocation (maff)");
+          }
+          _xblockexpression = maff;
+        }
+        return _xblockexpression;
+      } catch (Throwable _e) {
+        throw Exceptions.sneakyThrow(_e);
+      }
+    };
+    final Function1<ISLMultiAff, ISLAff> _function_6 = (ISLMultiAff it) -> {
+      return it.getAff(0);
+    };
+    final Function1<ISLAff, CustomExpr> _function_7 = (ISLAff it) -> {
+      return AffineConverter.convertAff(it, true);
+    };
+    final Function1<CustomExpr, CharSequence> _function_8 = (CustomExpr it) -> {
+      return ProgramPrinter.printExpr(it);
+    };
+    final ArrayList<CharSequence> offsets = CommonExtensions.<CharSequence>toArrayList(ListExtensions.<CustomExpr, CharSequence>map(ListExtensions.<ISLAff, CustomExpr>map(ListExtensions.<ISLMultiAff, ISLAff>map(ListExtensions.<ISLMultiAff, ISLMultiAff>map(ListExtensions.<ISLPWMultiAff, ISLMultiAff>map(ListExtensions.<ISLPWMultiAff, ISLPWMultiAff>map(ListExtensions.<ISLSet, ISLPWMultiAff>map(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<String, ISLSet>map(indexNames, _function), _function_1), _function_2), _function_3), _function_4), _function_5), _function_6), _function_7), _function_8));
+    final Function1<Pair<String, CharSequence>, String> _function_9 = (Pair<String, CharSequence> it) -> {
+      String _xblockexpression = null;
+      {
+        final String idx = it.getKey();
+        final CharSequence offset = it.getValue();
+        String _xifexpression = null;
+        boolean _notEquals = (!Objects.equal(offset, "(0)"));
+        if (_notEquals) {
+          StringConcatenation _builder = new StringConcatenation();
+          _builder.append("(");
+          _builder.append(idx);
+          _builder.append(")-");
+          _builder.append(offset);
+          _xifexpression = _builder.toString();
+        } else {
+          StringConcatenation _builder_1 = new StringConcatenation();
+          _builder_1.append(idx);
+          _xifexpression = _builder_1.toString();
+        }
+        _xblockexpression = _xifexpression;
+      }
+      return _xblockexpression;
+    };
+    final ArrayList<String> indexExprs = CommonExtensions.<String>toArrayList(ListExtensions.<Pair<String, CharSequence>, String>map(CommonExtensions.<String, CharSequence>zipWith(indexNames, offsets), _function_9));
+    final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(name, ((String[])Conversions.unwrapArray(indexExprs, String.class)));
     final MacroStmt macroStmt = Factory.macroStmt(stmtName, ((String[])Conversions.unwrapArray(range.getIndexNames(), String.class)), macroReplacement);
     StringConcatenation _builder = new StringConcatenation();
     CharSequence _printStmt = ProgramPrinter.printStmt(macroStmt);

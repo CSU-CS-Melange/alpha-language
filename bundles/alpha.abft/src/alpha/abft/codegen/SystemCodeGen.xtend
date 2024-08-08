@@ -31,9 +31,11 @@ import static extension alpha.codegen.ProgramPrinter.print
 import static extension alpha.codegen.ProgramPrinter.printExpr
 import static extension alpha.codegen.ProgramPrinter.printStmt
 import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
+import static extension alpha.codegen.isl.AffineConverter.convertAff
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import static extension alpha.model.util.CommonExtensions.permutations
+import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
@@ -43,8 +45,10 @@ import static extension alpha.model.util.ISLUtil.toISLSet
 import static extension alpha.model.util.ISLUtil.toISLUnionMap
 import static extension alpha.model.util.ISLUtil.toISLUnionSet
 import static extension alpha.codegen.isl.PolynomialConverter.convert
+import static extension fr.irisa.cairn.jnimap.isl.ISLMap.buildIdentity
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
+import alpha.codegen.alphaBase.TypeGeneratorBase
 
 enum Version {
 		BASELINE,
@@ -215,7 +219,7 @@ class SystemCodeGen {
 			«ENDIF»
 			«system.signature»
 			{
-			  «IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
+				«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
 				#ifdef ERROR_INJECTION
 				// Error injection configuration
 «««			  «stencilVar.domain.indexNames.map[i |
@@ -224,10 +228,10 @@ class SystemCodeGen {
 «««			  if (getenv("BIT")==NULL) printf("BIT is not set\n");
 				«stencilVar.domain.indexNames.map[i |
 		  	  '''«i»_INJ = getenv("«i»_INJ") != NULL ? atoi(getenv("«i»_INJ")) : (int)(rand() % «if (i == 't') 'T' else 'N'»)'''].join(';\n')
-		  	  »;
+		  	  	»;
 				BIT = getenv("BIT") != NULL ? atoi(getenv("BIT")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
 				#endif
-		  	  «ENDIF»
+				«ENDIF»
 					
 				«localMemoryAllocation»
 
@@ -309,12 +313,13 @@ class SystemCodeGen {
 		 */
 		val mallocStmts = variables.getMemoryChunks
 			.map[value.map[memoryMap.getRange(name).copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
-			.map[mallocStmt(key, 'float *' + value)]
+			.map[mallocStmt(key, value)]
 		
 		val code = if (mallocStmts.size > 0) '''
 			// Local memory allocation
-			«mallocStmts.map[printStmt].join»
+			«mallocStmts.join('\n')»
 		''' else ''''''
+		
 		code
 	}
 	
@@ -334,13 +339,60 @@ class SystemCodeGen {
 		chunkVariables.entrySet.filter[value.filter[v | variables.contains(v)].size > 0]
 	}
 	
-	def mallocStmt(ISLSet domain, String name) {
+	def mallocStmt(ISLSet domainWithParams, String name) {
 		// Call "malloc" to allocate memory and assign it to the variable.
-		val cardinalityExpr = domain.cardinalityExpr
-		val dataType = Factory.dataType(BaseDataType.FLOAT, 1)
-		val mallocCall = Factory.callocCall(dataType, cardinalityExpr)
-		val mallocAssignment = Factory.assignmentStmt(name, mallocCall)
-		mallocAssignment
+		// Just use the bounding box
+		
+		val dim = domainWithParams.indexNames.size
+		val domain = domainWithParams.basicSets
+			.map[dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, dim).toSet]
+			.reduce[s1, s2 | s1.union(s2)]
+		
+		val indexNames = domain.indexNames;
+		
+		val dimSizes = (0..<dim).map[i | (dim>..0).reject[j | i==j].fold(
+				domain.copy.toIdentityMap.space.buildIdentity,
+				[ret, d | ret.projectOut(ISLDimType.isl_dim_out, d, 1)])]
+			.map[m | domain.copy.apply(m)]
+			.map[coalesce]
+			.map[cardinalityExpr]
+		
+		val mallocAssignment = Factory.assignmentStmt(
+			'''«Factory.dataType(dataType, dim).print» «name»''', 
+			Factory.callocCall(Factory.dataType(dataType, dim), dimSizes.get(0))
+		).printExpr + ';\n'
+		
+		var code = (0..<domain.indirectionLevel-1).zipWith(indexNames).fold(mallocAssignment, [ret, p |
+				val i = p.key
+				val indexName = p.value
+				val expr = dimSizes.get(i)
+				val dataType = Factory.dataType(dataType, dim - i - 1)
+				val mallocCall = Factory.callocCall(dataType, dimSizes.get(i+1))
+				val indentation = (0..<i).map['	'].join
+				val writeAcc = '''«name»[«(0..<i+1).map[j | indexNames.get(j)].join('][')»]'''
+				'''
+					«ret»
+					«indentation»for (int «indexName»=0; «indexName»<«expr.printExpr»; «indexName»++) {
+					«indentation»	«writeAcc» = «mallocCall.printExpr»;'''
+				])
+		
+		code = (domain.indirectionLevel-1>..0).zipWith(indexNames).fold(code, [ret, p |
+			val i = p.key
+			val indentation = (0..<i).map['	'].join
+			'''
+				«ret»
+				«indentation»}
+			'''
+		])
+		
+		code
+	}
+	
+	def indirectionLevel(Variable variable) {
+		variable.domain.indirectionLevel
+	}
+	def indirectionLevel(ISLSet domain) {
+		Integer.max(1, domain.nbIndices)
 	}
 	
 	def undefStmtMacros() {
@@ -697,7 +749,7 @@ class SystemCodeGen {
 			.map[p | 'long ' + p]
 			.join(', ')
 		val ioArgs = (system.inputs + system.outputs)
-			.map[v | 'float *' + v.name]
+			.map[v | 'float ' + (0..<v.indirectionLevel).map['*'].join + v.name]
 			.join(', ')
 		val returnType = switch(_version) {
 			case Version.BASELINE : 'void'
@@ -726,9 +778,42 @@ class SystemCodeGen {
 		val range = entry.value
 		val stmtName = 'mem_' + name
 		
-		val rank = MemoryUtils.rank(range)
-		val accessExpression = PolynomialConverter.convert(rank)
-		val macroReplacement = Factory.arrayAccessExpr(name, accessExpression)
+		val indexNames = range.indexNames;
+		
+		val paramStr = range.paramNames.join(',')
+		val idxStr = indexNames.join(',')
+		
+		val offsets = indexNames.map[i | 
+			val m = '''[«paramStr»]->{[«idxStr»]->[«i»]}'''.toString.toISLMap
+			range.copy.apply(m)]
+			.map[coalesce]
+			.map[lexMinAsPWMultiAff]
+			.map[pwmaff | 
+				if (pwmaff.nbPieces > 1)
+					throw new Exception('Error computing lexMin for memory allocation (pwmaff)')
+				pwmaff
+			]
+			.map[getPiece(0).maff]
+			.map[maff | 
+				if (maff.dim(ISLDimType.isl_dim_out) > 1)
+					throw new Exception('Error computing lexMin for memory allocation (maff)')
+				maff
+			]
+			.map[getAff(0)]
+			.map[convertAff(true)]
+			.map[printExpr]
+			.toArrayList
+		
+		val indexExprs = indexNames.zipWith(offsets).map[
+			val idx = key
+			val offset = value
+			if (offset != '(0)')
+				'''(«idx»)-«offset»'''
+			else
+				'''«idx»'''
+		].toArrayList
+		
+		val macroReplacement = Factory.arrayAccessExpr(name, indexExprs)
 		val macroStmt = Factory.macroStmt(stmtName, range.indexNames, macroReplacement)
 		return '''«macroStmt.printStmt»'''
 	}
