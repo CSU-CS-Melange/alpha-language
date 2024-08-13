@@ -7,6 +7,7 @@ import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild
 
 import static extension alpha.abft.ABFT.buildParamStr
+import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
 
@@ -43,7 +44,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 		#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 		#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.t=0, .i=0, .j=0, .k=0}, .result=0.0f, .noise=0.0f}
+		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f}
 		#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f}
 
 		// External system declarations
@@ -52,10 +53,10 @@ class WrapperCodeGen extends SystemCodeGen {
 		«v2System.signature»;
 		
 		struct INJ {
-			int t;
-			int i;
-			int j;
-			int k;
+			int tt;
+			int ti;
+			int tj;
+			int tk;
 		};
 		
 		struct Result {
@@ -108,16 +109,23 @@ class WrapperCodeGen extends SystemCodeGen {
 			'''long «P» = atol(argv[«i+1»])'''
 		]
 		
-		val sDims = stencilVar.domain.indexNames.size
+		val indexNames = stencilVar.domain.indexNames
+		val sDims = indexNames.size
 		val indexNameStr = (1..<sDims).map['%*d'].join(',')
-		val injStr = (1..<sDims).map[i | 'sBox, r.inj.' + stencilVar.domain.indexNames.get(i)].join(', ')
+		val injStr = (1..<sDims).map[i | 'sBox, r.inj.t' + stencilVar.domain.indexNames.get(i)].join(', ')
 		
 		val indexNameHeaderStr = (1..<sDims).map['%*s'].join(',')
 		val injHeaderStr = (1..<sDims).map[i | '''sBox, "inj.«stencilVar.domain.indexNames.get(i)»"'''].join(', ')
 		val injSummaryStr = (1..<sDims).map[i | '''sBox, "-"'''].join(', ')
 		
 		val TT = tileSizes.get(0)
-		val TS = (1..<tileSizes.size).map[i | tileSizes.get(i)].max
+		val TXs = (1..<tileSizes.size).map[i | tileSizes.get(i)]
+		
+		// random number in [2,T/<TT>]
+		val tInjectionSite = #['''(rand() % ((T/«TT»)-2) + 2)''']
+		// random number in [1,N/<TX>]
+		val sInjectionSite = TXs.map[TX | '''(rand() % ((N/«TX»)-2) + 1)''']
+		val injectionSite = tInjectionSite + sInjectionSite
 		
 		val code = '''
 		#ifdef «ERROR_INJECTION»
@@ -145,7 +153,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				return;
 			}
 			int detected = r.TP > 0 ? 1 : 0;
-		    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s", version, 4, r.bit, tBox, r.inj.t, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);
+		    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s", version, 4, r.bit, tBox, r.inj.tt, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);
 		    fflush(stdout);
 		}
 		
@@ -221,20 +229,20 @@ class WrapperCodeGen extends SystemCodeGen {
 			
 			log_flag = (getenv("LOG") == NULL) ? 1 : 0;
 			
-			#define export_injs() do { «stencilVar.domain.indexNames.map[i |'''{ int ival = (int)(rand() % («if (i == 't') '''T-(2*«TT»)''' else '''N-(2*«TS»)'''») + «if (i == 't') TT else TS»); sprintf(val, "%d", ival); «i»_INJ = ival; setenv("«i»_INJ", val, 1); }'''].join(' ')»; } while(0)
+«««			#define export_injs2() do { «stencilVar.domain.indexNames.map[i |'''{ int ival = (int)(rand() % («if (i == 't') '''T-(2*«TT»)''' else '''N-(2*«TS»)'''») + «if (i == 't') TT else TS»); sprintf(val, "%d", ival); «i»_INJ = ival; setenv("«i»_INJ", val, 1); }'''].join(' ')»; } while(0)
+			#define export_injs() do { «indexNames.zipWith(injectionSite).map['''{ int ival = «value»; sprintf(val, "%d", ival); setenv("t«key»_INJ", val, 1); }'''].join(' ')» } while(0)
 			
 			R = (getenv("NUM_RUNS") != NULL) ? atoi(getenv("NUM_RUNS")) : 100;
 			runBox = (int)log10(R) + 1;
 
 			// if THRESHOLD not explicitly set, do short profiling to estimate the
 			// noise due to floating point round off errors
-			
 			const char* threshold = getenv("THRESHOLD");
 			float threshold_v1, threshold_v2;
 			if (threshold == NULL) {
 				struct Result result;
 				long input_T = T;
-				T = «#[100, 4*TT].max»;
+				T = «#[20, 4*TT].max»;
 				
 				result = «v1System.call»;
 				printf("floating point noise: %E\n", result.noise);
@@ -255,6 +263,9 @@ class WrapperCodeGen extends SystemCodeGen {
 				}
 				printf(" threshold_v2 set to: %E\n", threshold_v2);
 				T = input_T;
+			} else {
+				threshold_v1 = atoi(getenv("THRESHOLD"));
+				threshold_v2 = threshold_v1;
 			}
 
 			printHeader();

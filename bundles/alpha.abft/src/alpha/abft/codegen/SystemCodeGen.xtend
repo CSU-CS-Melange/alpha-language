@@ -49,6 +49,7 @@ import static extension fr.irisa.cairn.jnimap.isl.ISLMap.buildIdentity
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import alpha.codegen.alphaBase.TypeGeneratorBase
+import alpha.model.BinaryExpression
 
 enum Version {
 		BASELINE,
@@ -175,7 +176,7 @@ class SystemCodeGen {
 	#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 	#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 	#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-	#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.t=0, .i=0, .j=0, .k=0}, .result=0.0f, .noise=0.0f }
+	#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f }
 	
 	void initialize_timer();
 	void reset_timer();
@@ -184,10 +185,10 @@ class SystemCodeGen {
 	double elapsed_time();
 	
 	struct INJ {
-		int t;
-		int i;
-		int j;
-		int k;
+		int tt;
+		int ti;
+		int tj;
+		int tk;
 	};
 
 	struct Result {
@@ -215,7 +216,7 @@ class SystemCodeGen {
 	#ifdef ERROR_INJECTION
 	// Error injection harness
 	«stencilVar.domain.indexNames.map[i | 
-		'''int «i»_INJ'''].join(';\n')
+		'''int t«i»_INJ'''].join(';\n')
 	»;
 	int BIT;
 	
@@ -233,7 +234,7 @@ class SystemCodeGen {
 		#ifdef ERROR_INJECTION
 		// Error injection configuration
 		«stencilVar.domain.indexNames.map[i |
-  	  '''«i»_INJ = getenv("«i»_INJ") != NULL ? atoi(getenv("«i»_INJ")) : -1'''].join(';\n')
+  	  '''t«i»_INJ = getenv("t«i»_INJ") != NULL ? atoi(getenv("t«i»_INJ")) : -1'''].join(';\n')
   	  	»;
 		BIT = getenv("bit") != NULL ? atoi(getenv("bit")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
 		#endif
@@ -475,6 +476,18 @@ class SystemCodeGen {
 	
 	def defStmtMacros() {
 		
+		// error injection site access
+		val TT = tileSizes.get(0)
+		val spatialIndexNames = (1..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)]
+		val spatialTileSizes = (1..<tileSizes.size).map[i | tileSizes.get(i)]
+		val spatialContext = spatialIndexNames.zipWith(spatialTileSizes)
+		
+		val nbSpatialDims = stencilVar.domain.indexNames.size - 1
+		val injectionName = if (version == Version.ABFT_V1) {
+			'C2' 
+		} else {
+			'C2_NR' + (0..<nbSpatialDims).map[3].reduce[v1,v2|v1*v2]
+		}
 		val macros = system.systemBodies.get(0).standardEquations.map[
 			val indexNames = expr.contextDomain.indexNames
 			val indexNamesStr = indexNames.join(',')
@@ -497,15 +510,21 @@ class SystemCodeGen {
 			 * Add injection code for stencil variable stmt
 			 */
 			if (variable == stencilVar) {
-				val injExpr = '''if («indexNames.map[i | '''(«i»==«i»_INJ)'''].join(' && ')») inject_«system.name»(&«lhs»)'''
+				val injectionSVals = if (version == Version.ABFT_V1) {
+					spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
+				} else {
+					spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2-TT»'''].join(' && ')
+				}
+				
+//				var injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») { printf("        Y(«indexNames.map['%d'].join(',')»)\n", «indexNames.join(',')»); printf("before: %E\n", «lhs»); inject_«system.name»(&«lhs»); printf(" after: %E\n", «lhs»); } '''
+				val injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») inject_«system.name»(&«lhs»)'''
 				'''
 					#define «name»_hook(«defIndexNamesStr») «stmtStr»
 					#ifdef ERROR_INJECTION
 					#define «name»(«defIndexNamesStr») do { «name»_hook(«defIndexNamesStr»); «injExpr»; } while(0)
 					#else
 					#define «name»(«defIndexNamesStr») «name»_hook(«defIndexNamesStr»)
-					#endif
-				'''
+					#endif'''
 			} else {
 				'''#define «name»(«defIndexNamesStr») «stmtStr»'''
 			}
@@ -550,6 +569,8 @@ class SystemCodeGen {
 			case Version.ABFT_V2 : 'v2'
 		}
 		
+		val containsInjectionConditions = indexNames.map[n | '''«n»==«n»_INJ'''].join(' && ')
+		
 		val code = '''
 			#if defined «TIMING»
 			struct Result result = new_result();
@@ -557,21 +578,18 @@ class SystemCodeGen {
 			
 			#elif defined «ERROR_INJECTION»
 			// Count checksum difference above THRESHOLD
-			struct INJ inj = { «stencilVar.domain.indexNames.map[i |'''«i»_INJ'''].join(', ')» };
+			struct INJ inj = { «stencilVar.domain.indexNames.map[i |'''t«i»_INJ'''].join(', ')» };
 			struct Result result = new_result();
 			result.bit = BIT;
 			result.inj = inj;
 			result.noise = -1;
 			
-			// Returns 1 if signal was raised at (tt,ti,...) else 0
-			«checkCoordinateMacro(buildChecksumContainer)»
-			
 			const char* verbose = getenv("VERBOSE");
 			
-			#define print_«stmtPrefix»«name»(«idxStr») printf("«vStr»_«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», «varAcc»)
+			#define print_«stmtPrefix»«name»(«idxStr») printf("«vStr»_«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», fabs(«varAcc»))
 			#define acc_noise(«idxStr») result.noise = max(result.noise, fabs(«varAcc»))
-			//#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if (containsInjectionCoordinate(«idxStr») > 0) { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
-			#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if (fabs(«varAcc»)>=threshold) result.TP++; } while(0)
+			#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if («containsInjectionConditions») { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
+«««			//#define «stmtPrefix»«name»(«idxStr») do { print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if («containsInjectionConditions») { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
 			
 			«dataType.print» threshold = 0;
 			const char* env_threshold = getenv("THRESHOLD");
@@ -633,132 +651,6 @@ class SystemCodeGen {
 		
 		'''#define containsInjectionCoordinate(«txsStr») «expr.printExpr»'''
 		
-	}
-	
-	/**
-	 * This function is used to identify the list of checksum pairs that surround the injection site
-	 * Used to identify whether or not a raised signal is a TP/FP/TN/FN
-	 */
-	def buildChecksumContainer() {
-		if (version != Version.ABFT_V1 && version != Version.ABFT_V2)
-			return null;
-		val cVar = system.locals.findFirst[name == 'C1']
-		
-		val nbSpatialDims = cVar.domain.indexNames.size - 1
-		
-		val face = if (version == Version.ABFT_V1) {
-			(systemBody.standardEquations.findFirst[variable == cVar].expr as ReduceExpression).body.contextDomain	
-		} else {
-			val c2nrs = systemBody.standardEquations.filter[variable.name.startsWith('C2_')]
-			(c2nrs.get(c2nrs.size - 1).expr as ReduceExpression).body.contextDomain.copy
-				.projectOut(ISLDimType.isl_dim_out, 1+nbSpatialDims, nbSpatialDims + 1)
-		}
-		
-		val convolutionKernel = system.identify_convolution
-		val radius = convolutionKernel.key
-		val kernel = convolutionKernel.value
-		
-		val spatialDims = stencilVar.domain.indexNames.size - 1
-		
-		switch(version) {
-			case Version.ABFT_V1 : face.buildV1Container(cVar.buildParamStr, radius, spatialDims)
-			case Version.ABFT_V2 : face.buildV2Container(cVar.buildParamStr, radius, spatialDims)
-		}
-		
-	}
-	
-	def ISLSet buildV1Container(ISLSet face, String paramStr, int radius, int spatialDims) {
-		val xs = (0..<spatialDims).map[i | #['i','j','k'].get(i)].toList
-		val txs = xs.map[x | 't' + x].toList
-		
-		val xsStr = xs.join(',')
-		val txsStr = '''tt,«txs.join(',')»'''
-		val inStr = '''«txsStr»,t,«xsStr»'''
-		
-		val TT = tileSizes.get(0)
-		
-		val maps = #[1,-1].permutations(spatialDims).map[ijks | 
-			'''c[«inStr»]->c[«txsStr»,t-1,«xs.zipWith(ijks).map[
-				val x = key
-				val coeff = value
-				if (coeff > 0)
-					'''«x»+«radius»'''
-				else
-					'''«x»-«radius»'''
-			].join(',')»]'''
-		]
-		
-		val isExact = new JNIPtrBoolean
-		val closureStr = '''
-			«paramStr»->{
-				[«txsStr»,«xsStr»]->c[«txsStr»,«TT»tt,«xsStr»];
-				c[«inStr»]->c[«inStr»];
-				«maps.join(';\n')»;
-			}
-		'''
-		val closure = closureStr.toISLUnionMap.transitiveClosure(isExact)
-		
-		if (!isExact.value)
-			throw new Exception('Transitive closure should be exact, something went wrong')
-		 
-		val range = '''«paramStr»->{ c[«inStr»] : «TT»tt-«TT»<=t<=«TT»tt}'''.toISLUnionSet
-		val map = closure.copy.intersectRange(range)
-		
-		val ret = face.copy.toUnionSet.apply(map.copy)
-		if (ret.sets.size > 1)
-			throw new Exception('Issue applying transitive closure')
-		
-		val names = (#['tt'] + txs + #['t'] + xs).toList
-		val container = AlphaUtil.renameIndices(ret.getSetAt(0).resetTupleID.coalesce, names)
-		
-		container
-	}
-	
-	def ISLSet buildV2Container(ISLSet face, String paramStr, int radius, int spatialDims) {
-		val xs = (0..<spatialDims).map[i | #['i','j','k'].get(i)].toList
-		val txs = xs.map[x | 't' + x].toList
-		
-		val xsStr = xs.join(',')
-		val txsStr = '''tt,«txs.join(',')»'''
-		val inStr = '''«txsStr»,t,«xsStr»'''
-		
-		val TT = tileSizes.get(0)
-		
-		val maps = #[1,-1].permutations(spatialDims).map[ijks | 
-			'''c[«inStr»]->c[«txsStr»,t+1,«xs.zipWith(ijks).map[
-				val x = key
-				val coeff = value
-				if (coeff > 0)
-					'''«x»+«radius»'''
-				else
-					'''«x»-«radius»'''
-			].join(',')»]'''
-		]
-		
-		val isExact = new JNIPtrBoolean
-		val closureStr = '''
-			«paramStr»->{
-				[«txsStr»,«xsStr»]->c[«txsStr»,«TT»tt-«TT»,«xsStr»];
-				c[«inStr»]->c[«inStr»];
-				«maps.join(';\n')»;
-			}
-		'''
-		val closure = closureStr.toISLUnionMap.transitiveClosure(isExact)
-		
-		if (!isExact.value)
-			throw new Exception('Transitive closure should be exact, something went wrong')
-		 
-		val range = '''«paramStr»->{ c[«inStr»] : «TT»tt-«TT»<=t<=«TT»tt}'''.toISLUnionSet
-		val map = closure.copy.intersectRange(range)
-		
-		val ret = face.copy.toUnionSet.apply(map.copy)
-		if (ret.sets.size > 1)
-			throw new Exception('Issue applying transitive closure')
-		
-		val names = (#['tt'] + txs + #['t'] + xs).toList
-		val container = AlphaUtil.renameIndices(ret.getSetAt(0).resetTupleID.coalesce, names)
-		
-		container
 	}
 	
 	////////////////////////////////////////////////////
