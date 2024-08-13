@@ -59,6 +59,10 @@ enum Version {
 
 class SystemCodeGen {
 	
+	public static String ERROR_INJECTION = 'ERROR_INJECTION'
+	public static String TIMING = 'TIMING'
+	public static String NOISE = 'NOISE'
+	
 	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val AlphaSystem system
 	
@@ -156,113 +160,107 @@ class SystemCodeGen {
 	
 	protected def generate() {
 		
-		val code = '''
-			«aboutComments»
-			#include<stdio.h>
-			#include<stdlib.h>
-			#include<math.h>
-			#include<time.h>
-			
-			#define max(x, y)   ((x)>(y) ? (x) : (y))
-			#define min(x, y)   ((x)>(y) ? (y) : (x))
-			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
-			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
-			#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-			
-			void initialize_timer();
-			void reset_timer();
-			void start_timer();
-			void stop_timer();
-			double elapsed_time();
-			
-			struct INJ {
-				int t;
-				int i;
-				int j;
-				int k;
-			};
-	
-			struct Result {
-				int valid;
-				long TP;
-				long FP;
-				long TN;
-				long FN;
-				float TPR;
-				float FPR;
-				float FNR;
-				int bit;
-				struct INJ inj;
-			};
-			
-			// Memory mapped targets
-			«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
-			
-			// Memory access functions
-			«system.variables.map[memoryMacro].join('\n')»
-			
-			«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
-			#ifdef ERROR_INJECTION
-			// Error injection harness
-			«stencilVar.domain.indexNames.map[i | 
-				'''int «i»_INJ'''].join(';\n')
-			»;
-			int BIT;
-			
-			void inject_«system.name»(float *val) {
-				int *bits;
-				bits = (int*)val;
-				*bits ^= 1 << BIT;
-			}
-			#endif
-			
-			«ENDIF»
-			«system.signature»
-			{
-				«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
-				#ifdef ERROR_INJECTION
-				// Error injection configuration
-«««			  «stencilVar.domain.indexNames.map[i |
-«««  		  	  '''if (getenv("«i»_INJ") == NULL) printf("«i»_INJ is not set\n")'''].join(';\n')
-«««  		  	  »;
-«««			  if (getenv("BIT")==NULL) printf("BIT is not set\n");
-				«stencilVar.domain.indexNames.map[i |
-		  	  '''«i»_INJ = getenv("«i»_INJ") != NULL ? atoi(getenv("«i»_INJ")) : (int)(rand() % «if (i == 't') 'T' else 'N'»)'''].join(';\n')
-		  	  	»;
-				BIT = getenv("BIT") != NULL ? atoi(getenv("BIT")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
-				#endif
-				«ENDIF»
-					
-				«localMemoryAllocation»
-
-				«defStmtMacros»
-
-				// Timers
-				double execution_time;
-				initialize_timer();
-				start_timer();
-
-				«stmtLoops»
+		val TT = tileSizes.get(0)
+		val TS = (1..<tileSizes.size).map[i | tileSizes.get(i)].max
 		
-				stop_timer();
-				execution_time = elapsed_time();
+		val code = '''
+	«aboutComments»
+	#include<stdio.h>
+	#include<stdlib.h>
+	#include<math.h>
+	#include<time.h>
+	
+	#define max(x, y)   ((x)>(y) ? (x) : (y))
+	#define min(x, y)   ((x)>(y) ? (y) : (x))
+	#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
+	#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
+	#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
+	#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.t=0, .i=0, .j=0, .k=0}, .result=0.0f, .noise=0.0f }
+	
+	void initialize_timer();
+	void reset_timer();
+	void start_timer();
+	void stop_timer();
+	double elapsed_time();
+	
+	struct INJ {
+		int t;
+		int i;
+		int j;
+		int k;
+	};
 
-				«undefStmtMacros»
-
-				#ifdef ERROR_INJECTION
-				struct INJ inj = { «stencilVar.domain.indexNames.map[i |'''«i»_INJ'''].join(', ')» };
-				struct Result result = { 0, 0, 0, 0, 0, -1.0, -1.0, -1.0, BIT, inj };
-				«countErrors»
-				#else
-				struct Result result;
-				printf("«system.name»: %lf sec\n", execution_time);
-				#endif
+	struct Result {
+		int valid;
+		long TP;
+		long FP;
+		long TN;
+		long FN;
+		float TPR;
+		float FPR;
+		float FNR;
+		int bit;
+		struct INJ inj;
+		double result;
+		double noise;
+	};
+	
+	// Memory mapped targets
+	«memoryMap.uniqueTargets.map[memoryTargetMacro].join('\n')»
+	
+	// Memory access functions
+	«system.variables.map[memoryMacro].join('\n')»
+	
+	«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
+	#ifdef ERROR_INJECTION
+	// Error injection harness
+	«stencilVar.domain.indexNames.map[i | 
+		'''int «i»_INJ'''].join(';\n')
+	»;
+	int BIT;
+	
+	void inject_«system.name»(float *val) {
+		int *bits;
+		bits = (int*)val;
+		*bits ^= 1 << BIT;
+	}
+	#endif
+	
+	«ENDIF»
+	«system.signature»
+	{
+		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
+		#ifdef ERROR_INJECTION
+		// Error injection configuration
+		«stencilVar.domain.indexNames.map[i |
+  	  '''«i»_INJ = getenv("«i»_INJ") != NULL ? atoi(getenv("«i»_INJ")) : -1'''].join(';\n')
+  	  	»;
+		BIT = getenv("bit") != NULL ? atoi(getenv("bit")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
+		#endif
+		«ENDIF»
 			
-				«localMemoryFree»
-				«IF version != Version.BASELINE»
-				return result;
-				«ENDIF»
-			}
+		«localMemoryAllocation»
+
+		«defStmtMacros»
+
+		// Timers
+		double execution_time;
+		initialize_timer();
+		start_timer();
+
+		«stmtLoops»
+
+		stop_timer();
+		execution_time = elapsed_time();
+
+		«undefStmtMacros»
+
+		«prepareResult»
+	
+		«localMemoryFree»
+		
+		return result;
+	}
 		'''
 		code	
 	}
@@ -297,9 +295,76 @@ class SystemCodeGen {
 	}
 	
 	def memoryFree(Variable[] variables) {
-		variables.getMemoryChunks.map[key].map[chunkName | 
-			'''free(«chunkName»);'''
-		].join('\n')
+		
+		val freeStmts = variables.getMemoryChunks
+			.map[value.map[memoryMap.getRange(name).copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
+			.map[memoryFree(key, value)]
+		
+		val code = if (freeStmts.size > 0) '''
+			// Free local memory allocation
+			«freeStmts.join('\n')»
+		''' else ''''''
+		
+		code
+	}
+	
+	def memoryFree(ISLSet domainWithParams, String name) {
+		
+		val dim = domainWithParams.indexNames.size
+		val domain = domainWithParams.basicSets
+			.map[dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, dim).toSet]
+			.reduce[s1, s2 | s1.union(s2)]
+		
+		val indexNames = domain.indexNames;
+		
+		val dimSizes = (0..<dim).map[i | (dim>..0).reject[j | i==j].fold(
+				domain.copy.toIdentityMap.space.buildIdentity,
+				[ret, d | ret.projectOut(ISLDimType.isl_dim_out, d, 1)])]
+			.map[m | domain.copy.apply(m)]
+			.map[coalesce]
+			.map[cardinalityExpr]
+		
+		var code = (0..<domain.indirectionLevel-1).zipWith(indexNames).fold('''''', [ret, p |
+				val i = p.key
+				val indexName = p.value
+				val expr = dimSizes.get(i)
+//				val dataType = Factory.dataType(dataType, dim - i - 1)
+				val indentation = (0..<i).map['	'].join
+//				val writeAcc = '''«name»[«(0..<i+1).map[j | indexNames.get(j)].join('][')»]'''
+				'''
+					«ret»
+					«indentation»for (int «indexName»=0; «indexName»<«expr.printExpr»; «indexName»++) {'''
+				])
+		{
+			val indentation = (0..<domain.indirectionLevel-1).map['	'].join
+			val writeAcc =  if (indexNames.size > 1) {
+				'''«name»[«(0..<domain.indirectionLevel-1).map[j | indexNames.get(j)].join('][')»]'''
+			} else {
+				name
+			}
+			code = '''
+				«code»
+				«indentation» free(«writeAcc»);
+			'''
+		}
+		code = (domain.indirectionLevel-1>..0).zipWith(indexNames).fold(code, [ret, p |
+			val i = p.key
+			val writeAcc = if (i == 0) {
+				name
+			} else {
+				'''«name»[«(0..<i).map[j | indexNames.get(j)].join('][')»]'''
+			}
+			val indentation = (0..<i).map['	'].join
+			'''
+				«ret»
+				«indentation»}
+				«indentation»free(«writeAcc»);
+			'''
+		])
+		
+		code
+		
+		
 	}
 	
 	def localMemoryAllocation() {
@@ -449,11 +514,14 @@ class SystemCodeGen {
 		macros.join('\n')
 	}
 	
-	def countErrors() {
+	def prepareResult() {
 		val name = 'I'
 		val variable = system.locals.findFirst[v | v.name == name] 
 		if (variable === null)
-			return '';
+			return '''
+				struct Result result = new_result(); 
+				result.result = execution_time;
+			''';
 			
 		val domain = variable.domain.setTupleName(stmtPrefix + name).toUnionSet
 		val indexNames = domain.sets.get(0).indexNames
@@ -482,10 +550,18 @@ class SystemCodeGen {
 			case Version.ABFT_V2 : 'v2'
 		}
 		
-		val yVarIndexNames = stencilVar.domain.indexNames
-		
 		val code = '''
+			#if defined «TIMING»
+			struct Result result = new_result();
+			result.result = execution_time;
+			
+			#elif defined «ERROR_INJECTION»
 			// Count checksum difference above THRESHOLD
+			struct INJ inj = { «stencilVar.domain.indexNames.map[i |'''«i»_INJ'''].join(', ')» };
+			struct Result result = new_result();
+			result.bit = BIT;
+			result.inj = inj;
+			result.noise = -1;
 			
 			// Returns 1 if signal was raised at (tt,ti,...) else 0
 			«checkCoordinateMacro(buildChecksumContainer)»
@@ -493,13 +569,16 @@ class SystemCodeGen {
 			const char* verbose = getenv("VERBOSE");
 			
 			#define print_«stmtPrefix»«name»(«idxStr») printf("«vStr»_«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», «varAcc»)
-			#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); if (containsInjectionCoordinate(«idxStr») > 0) { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
+			#define acc_noise(«idxStr») result.noise = max(result.noise, fabs(«varAcc»))
+			//#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if (containsInjectionCoordinate(«idxStr») > 0) { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
+			#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if (fabs(«varAcc»)>=threshold) result.TP++; } while(0)
 			
 			«dataType.print» threshold = 0;
 			const char* env_threshold = getenv("THRESHOLD");
 			if (env_threshold != NULL) {
 				threshold = atof(env_threshold);
 			}
+			
 			«codegenVisitor.toCode»
 
 			{
@@ -509,13 +588,11 @@ class SystemCodeGen {
 					result.TPR = 100 * ((float)result.TP) / P;
 					result.FPR = 100 * ((float)result.FP) / N;
 					result.FNR = 100 * ((float)result.FN) / P;
-					result.valid = 1;
 				}
 			}
-«««			if (verbose != NULL) {
-«««				printf("«vStr»,%d,«yVarIndexNames.map['%d'].join(',')»,%ld,%ld,%ld,%ld\n", BIT, «yVarIndexNames.map[i | i + '_INJ'].join(', ')», result.TP, result.FP, result.TN, result.FN);
-«««			}
 			#undef «stmtPrefix»«name»
+			
+			#endif
 		'''
 		code
 	}
@@ -526,6 +603,18 @@ class SystemCodeGen {
 	////////////////////////////////////////////////////
 	
 	def checkCoordinateMacro(ISLSet container) {
+		val names = stencilVar.domain.indexNames
+		val txs = names.map[n | 't' + n]
+		val xInjs = names.map[n | n + '_INJ']
+		
+		val txsStr = txs.join(',')
+		
+		'''#define containsInjectionCoordinate(«txsStr») 0'''
+		
+	}
+	
+	/* This operation becomes very expensive as the dimensionality and size of TT increase */
+	def checkCoordinateMacro_old(ISLSet container) {
 		val names = stencilVar.domain.indexNames
 		val txs = names.map[n | 't' + n]
 		val xInjs = names.map[n | n + '_INJ']
@@ -751,10 +840,8 @@ class SystemCodeGen {
 		val ioArgs = (system.inputs + system.outputs)
 			.map[v | 'float ' + (0..<v.indirectionLevel).map['*'].join + v.name]
 			.join(', ')
-		val returnType = switch(_version) {
-			case Version.BASELINE : 'void'
-			default : 'struct Result'
-		}
+		val returnType = 'struct Result'
+		
 		'''«returnType» «system.name»(«paramArgs», «ioArgs»)'''
 	}
 	

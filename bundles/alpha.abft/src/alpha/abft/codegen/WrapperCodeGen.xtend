@@ -12,6 +12,8 @@ import static extension alpha.model.util.ISLUtil.toISLSchedule
 
 class WrapperCodeGen extends SystemCodeGen {
 	
+	
+	
 	val AlphaSystem v1System
 	val AlphaSystem v2System
 	
@@ -41,19 +43,21 @@ class WrapperCodeGen extends SystemCodeGen {
 		#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 		#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 		#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
+		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.t=0, .i=0, .j=0, .k=0}, .result=0.0f, .noise=0.0f}
+		#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f}
 
 		// External system declarations
 		«system.signature(Version.BASELINE)»;
 		«v1System.signature»;
 		«v2System.signature»;
-
+		
 		struct INJ {
 			int t;
 			int i;
 			int j;
 			int k;
 		};
-
+		
 		struct Result {
 			int valid;
 			long TP;
@@ -65,6 +69,8 @@ class WrapperCodeGen extends SystemCodeGen {
 			float FNR;
 			int bit;
 			struct INJ inj;
+			double result;
+			double noise;
 		};
 		
 		struct ResultsSummary {
@@ -78,6 +84,8 @@ class WrapperCodeGen extends SystemCodeGen {
 			int bit;
 			long nb_detected;
 			long nb_results;
+			double result;
+			double noise;
 		};
 
 		// Memory mapped targets
@@ -87,7 +95,6 @@ class WrapperCodeGen extends SystemCodeGen {
 		«system.variables.reject[isLocal].map[memoryMacro].join('\n')»
 		
 		«system.mainFunction»
-		
 	'''
 	
 	
@@ -109,154 +116,202 @@ class WrapperCodeGen extends SystemCodeGen {
 		val injHeaderStr = (1..<sDims).map[i | '''sBox, "inj.«stencilVar.domain.indexNames.get(i)»"'''].join(', ')
 		val injSummaryStr = (1..<sDims).map[i | '''sBox, "-"'''].join(', ')
 		
+		val TT = tileSizes.get(0)
+		val TS = (1..<tileSizes.size).map[i | tileSizes.get(i)].max
+		
 		val code = '''
-			static int tBox;
-			static int sBox;
-			static int rBox;
-			static int runBox;
-			static char eol[2];
-			static int run;
-			static int R;
-			
-«««			static struct ResultsSummary v1_avg = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0 };
-«««			static struct ResultsSummary v2_avg = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0 };
+		#ifdef «ERROR_INJECTION»
+		static int tBox;
+		static int sBox;
+		static int rBox;
+		static int runBox;
+		static char eol[2];
+		static int run;
+		static int R;
+		static int log_flag;
+
+		void printHeader() {
+			int S = 300;
+			char header_str[S];
+			sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s", 4, "bit", tBox, "inj.t", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 8, "FPR (%)");
+			char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
+			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
+			fprintf(stdout, "%s\n", header_str);
+			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
+		}
 		
-			void printHeader() {
-				int S = 300;
-				char header_str[S];
-				sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s", 4, "bit", tBox, "inj.t", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 8, "FPR (%)");
-				fprintf(stderr, "%s\n", header_str);
-				char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
-				fprintf(stderr, "%.*s\n", (int)strlen(header_str), header_bar);
+		void print(int version, struct Result r) {
+			if (!log_flag) {
+				return;
 			}
+			int detected = r.TP > 0 ? 1 : 0;
+		    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s", version, 4, r.bit, tBox, r.inj.t, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);
+		    fflush(stdout);
+		}
 		
-			void print(int version, struct Result r) {
-				if (!r.valid) {
-					
-					return;
-				}
-				int detected = r.TP > 0 ? 1 : 0;
-			    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s", version, 4, r.bit, tBox, r.inj.t, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);
-			    fflush(stdout);
+		void accumulate_result(struct ResultsSummary *acc, struct Result r) {
+			acc->TP += r.TP;
+			acc->FP += r.FP;
+			acc->TN += r.TN;
+			acc->FN += r.FN;
+			acc->TPR += r.TPR;
+			acc->FPR += r.FPR;
+			acc->FNR += r.FNR;
+			acc->bit = r.bit;
+			if (r.TP > 0) {
+				acc->nb_detected++;
+			}
+			acc->nb_results++;
+		}
+		
+		void print_summary(int version, struct ResultsSummary *s) {
+			s->TP = s->TP / s->nb_results;
+			s->FP = s->FP / s->nb_results;
+			s->TN = s->TN / s->nb_results;
+			s->FN = s->FN / s->nb_results;
+			s->TPR = s->TPR / s->nb_results;
+			s->FPR = s->FPR / s->nb_results;
+			s->FNR = s->FNR / s->nb_results;
+			float detected_rate =100 * s->nb_detected / s->nb_results;
+			
+			printf("v%d,%*d : (%*s,«indexNameHeaderStr») : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f (%*d/%d runs)\n", version, 4, s->bit, tBox, "-", «injSummaryStr», rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, detected_rate, 8, s->FPR, runBox, run, R);
+		}
+		#endif
+		
+		int main(int argc, char **argv) 
+		{
+			if (argc < «paramNames.size + 1») {
+				printf("usage: %s «paramNames.join(' ')»\n", argv[0]);
+				return 1;
 			}
 			
-			void accumulate_result(struct ResultsSummary *acc, struct Result r) {
-				if (!r.valid)
-					return;
-				acc->TP += r.TP;
-				acc->FP += r.FP;
-				acc->TN += r.TN;
-				acc->FN += r.FN;
-				acc->TPR += r.TPR;
-				acc->FPR += r.FPR;
-				acc->FNR += r.FNR;
-				acc->bit = r.bit;
-				if (r.TP > 0) {
-					acc->nb_detected++;
-				}
-				acc->nb_results++;
+			// Parse parameter sizes
+			«paramInits.join(';\n')»;
+			
+			«localMemoryAllocation»
+			
+			#ifdef «NOISE»
+			srand(time(NULL));
+			#else
+			srand(0);
+			#endif
+			
+			«system.inputs.map[inputInitialization].join('\n')»
+			«system.outputs.map[inputInitialization].join('\n')»
+			
+			#if defined «TIMING»
+			
+			struct Result r0 = «system.call»;
+			struct Result r1 = «v1System.call»;
+			struct Result r2 = «v2System.call»;
+			
+			printf("v0:%0.4f\n", r0.result);
+			printf("v1:%0.4f\n", r1.result);
+			printf("v2:%0.4f\n", r2.result);
+			
+			#elif defined «ERROR_INJECTION»
+			tBox = max((int)log10(T) + 1, 6);
+			sBox = max((int)log10(N) + 1, 6);
+			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(i)»)'''].join('*')») + 4;
+			if (getenv("VERBOSE") != NULL) {
+				strcpy(eol, "\n");
+			} else {
+				strcpy(eol, "\r");
 			}
 			
-			void print_summary(int version, struct ResultsSummary *s) {
-				s->TP = s->TP / s->nb_results;
-				s->FP = s->FP / s->nb_results;
-				s->TN = s->TN / s->nb_results;
-				s->FN = s->FN / s->nb_results;
-				s->TPR = s->TPR / s->nb_results;
-				s->FPR = s->FPR / s->nb_results;
-				s->FNR = s->FNR / s->nb_results;
-				
-				printf("v%d,%*d : (%*s,«indexNameHeaderStr») : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f (%*d/%d runs)\n", version, 4, s->bit, tBox, "-", «injSummaryStr», rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, s->TPR, 8, s->FPR, runBox, run, R);
-			}
+			log_flag = (getenv("LOG") == NULL) ? 1 : 0;
 			
-			int main(int argc, char **argv) 
-			{
-				if (argc < «paramNames.size + 1») {
-					printf("usage: %s «paramNames.join(' ')»\n", argv[0]);
-					return 1;
+			#define export_injs() do { «stencilVar.domain.indexNames.map[i |'''{ int ival = (int)(rand() % («if (i == 't') '''T-(2*«TT»)''' else '''N-(2*«TS»)'''») + «if (i == 't') TT else TS»); sprintf(val, "%d", ival); «i»_INJ = ival; setenv("«i»_INJ", val, 1); }'''].join(' ')»; } while(0)
+			
+			R = (getenv("NUM_RUNS") != NULL) ? atoi(getenv("NUM_RUNS")) : 100;
+			runBox = (int)log10(R) + 1;
+
+			// if THRESHOLD not explicitly set, do short profiling to estimate the
+			// noise due to floating point round off errors
+			
+			const char* threshold = getenv("THRESHOLD");
+			float threshold_v1, threshold_v2;
+			if (threshold == NULL) {
+				struct Result result;
+				long input_T = T;
+				T = «#[100, 4*TT].max»;
+				
+				result = «v1System.call»;
+				printf("floating point noise: %E\n", result.noise);
+				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
+				for (int i=9; i>=0; i--) {
+					threshold_v1 = thresholds[i];
+					if (threshold_v1 > fabs(result.noise))
+						break;
 				}
+				printf(" threshold_v1 set to: %E\n", threshold_v1);
 				
-				// Parse parameter sizes
-				«paramInits.join(';\n')»;
-				
-				tBox = max((int)log10(T) + 1, 6);
-				sBox = max((int)log10(N) + 1, 6);
-				rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(i)»)'''].join('*')») + 4;
-				
-				if (getenv("SUMMARY") != NULL) {
-					strcpy(eol, "\r");
-				} else {
-					strcpy(eol, "\n");
+				result = «v2System.call»;
+				printf("floating point noise: %E\n", result.noise);
+				for (int i=9; i>=0; i--) {
+					threshold_v2 = thresholds[i];
+					if (threshold_v2 > fabs(result.noise))
+						break;
 				}
-				
-«««				float threshold = atof(argv[«paramNames.size»]);
-				«localMemoryAllocation»
-				
-				srand(0);
-				
-				«system.inputs.map[inputInitialization].join('\n')»
-				«system.outputs.map[inputInitialization].join('\n')»
-				
-				#define export_injs() do { «stencilVar.domain.indexNames.map[i |'''{ int ival = (int)(rand() % «if (i == 't') 'T' else 'N'»); sprintf(val, "%d", ival); «i»_INJ = ival; setenv("«i»_INJ", val, 1); }'''].join(' ')»; } while(0)
-				
-				R = (getenv("NUM_RUNS") != NULL) ? atoi(getenv("NUM_RUNS")) : 5;
-				runBox = (int)log10(R) + 1;
-				
-				#ifndef ERROR_INJECTION
-				// Baseline
-				if (getenv("NO_RUN_BASELINE") == NULL) {
-				  «system.call»;
-				}				
-				«v1System.call»;
-				«v2System.call»;
-				#else
-				
-				printHeader();
-				
-				«stencilVar.domain.indexNames.map[i |'''int «i»_INJ'''].join('; \n')»;
-				
-				const char* verbose = getenv("VERBOSE");
-				
-				// ABFTv1
-				for (int bit=31; bit>4; bit--) {
-«««				//if (getenv("BIT") !=NULL && atoi(getenv("BIT")) != bit) continue;
-				  char val[50];
-				  sprintf(val, "%d", bit); 
-				  setenv("BIT", val, 1);
-				  struct ResultsSummary v_avg = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0 };
-				  for (run=0; run<R; run++) {
-				  	srand(run);
-				  	«system.inputs.map[inputInitialization].join('\n')»
-				    export_injs();
-				    struct Result v = «v1System.call»;
-				    accumulate_result(&v_avg, v);
-				    print(1, v);
-				  }
-				  if (getenv("SUMMARY") != NULL)
-				  	print_summary(1, &v_avg);
-				}
-				// ABFTv2
-				for (int bit=31; bit>4; bit--) {
-«««				  if (getenv("BIT") !=NULL && atoi(getenv("BIT")) != bit) continue;
-				  char val[50];
-				  sprintf(val, "%d", bit); 
-				  setenv("BIT", val, 1);
-				  struct ResultsSummary v_avg = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0 };
-				  for (run=0; run<R; run++) {
-				  	srand(run);
-				  	«system.inputs.map[inputInitialization].join('\n')»
-				    export_injs();
-				    struct Result v = «v2System.call»;
-				    accumulate_result(&v_avg, v);
-				    print(2, v);
-				  }
-				  if (getenv("SUMMARY") != NULL)
-				  	print_summary(2, &v_avg);
-				}
-				
-				#endif
-				return 0;
+				printf(" threshold_v2 set to: %E\n", threshold_v2);
+				T = input_T;
 			}
+
+			printHeader();
+			
+			«stencilVar.domain.indexNames.map[i |'''int «i»_INJ'''].join('; \n')»;
+			
+			const char* verbose = getenv("VERBOSE");
+			const char* single_bit = getenv("BIT");
+			
+			// ABFTv1
+			char val[50];
+			sprintf(val, "%E", threshold_v1); 
+			setenv("THRESHOLD", val, 1);
+			for (int bit=31; bit>=8; bit--) {
+				if (single_bit != NULL && atoi(single_bit) != bit)
+					continue;
+				char val[50];
+				sprintf(val, "%d", bit); 
+				setenv("bit", val, 1);
+				
+				struct ResultsSummary v_avg = new_result_summary();
+				
+				for (run=0; run<R; run++) {
+					«system.inputs.map[inputInitialization].join('\n')»
+					export_injs();
+					struct Result v = «v1System.call»;
+					accumulate_result(&v_avg, v);
+					print(1, v);
+				}
+«««				if (getenv("SUMMARY") != NULL)
+				print_summary(1, &v_avg);
+			}
+
+			// ABFTv2
+			sprintf(val, "%E", threshold_v2); 
+			setenv("THRESHOLD", val, 1);
+			for (int bit=31; bit>=8; bit--) {
+				if (single_bit != NULL && atoi(single_bit) != bit)
+					continue;
+				char val[50];
+				sprintf(val, "%d", bit); 
+				setenv("bit", val, 1);
+				struct ResultsSummary v_avg = new_result_summary();
+				for (run=0; run<R; run++) {
+					«system.inputs.map[inputInitialization].join('\n')»
+					export_injs();
+					struct Result v = «v2System.call»;
+					accumulate_result(&v_avg, v);
+					print(2, v);
+				}
+«««				if (getenv("SUMMARY") != NULL)
+				print_summary(2, &v_avg);
+			}
+			#endif
+		
+			return 0;
+		}
 		'''
 		code
 	}
