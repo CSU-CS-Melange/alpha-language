@@ -128,7 +128,7 @@ class SystemCodeGen {
 		this.version = version
 		this.tileSizes = tileSizes
 		
-//		println(scheduleStr)
+		println(scheduleStr)
 		
 		this.schedule = scheduleStr.toISLSchedule
 		
@@ -513,7 +513,7 @@ class SystemCodeGen {
 				val injectionSVals = if (version == Version.ABFT_V1) {
 					spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
 				} else {
-					spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2-TT»'''].join(' && ')
+					spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2»'''].join(' && ')
 				}
 				
 //				var injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») { printf("        Y(«indexNames.map['%d'].join(',')»)\n", «indexNames.join(',')»); printf("before: %E\n", «lhs»); inject_«system.name»(&«lhs»); printf(" after: %E\n", «lhs»); } '''
@@ -723,7 +723,7 @@ class SystemCodeGen {
 	}
 	
 	def signature(AlphaSystem system) {
-		signature(system, version)
+		system?.signature(version)
 	}
 	def signature(AlphaSystem system, Version _version) {
 		val paramArgs = system.parameterDomain.paramNames

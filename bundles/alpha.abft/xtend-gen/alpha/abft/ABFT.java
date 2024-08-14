@@ -28,7 +28,6 @@ import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
-import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
@@ -66,68 +65,8 @@ public class ABFT {
     ABFT.insertChecksumV2(systemName, tileSizes);
   }
 
-  public static void assertAssumptions(final AlphaSystem system, final int[] tileSizes) {
-    try {
-      int _size = system.getSystemBodies().size();
-      boolean _greaterThan = (_size > 1);
-      if (_greaterThan) {
-        throw new Exception("Only systems with a single body are currently handled");
-      }
-      int _size_1 = system.getInputs().size();
-      boolean _greaterThan_1 = (_size_1 > 1);
-      if (_greaterThan_1) {
-        throw new Exception("Only systems with a single input variable are currently handled");
-      }
-      int _size_2 = system.getOutputs().size();
-      boolean _greaterThan_2 = (_size_2 > 1);
-      if (_greaterThan_2) {
-        throw new Exception("Only systems with a single output variable are currently handled");
-      }
-      String _string = system.getParameterDomain().getParamNames().toString();
-      boolean _notEquals = (!Objects.equal(_string, "[T, N]"));
-      if (_notEquals) {
-        throw new Exception("System parameters must be \"[T, N]\"");
-      }
-      final Variable outputVar = system.getOutputs().get(0);
-      final int nbDims = outputVar.getDomain().dim(ISLDimType.isl_dim_out);
-      int _size_3 = ((List<Integer>)Conversions.doWrapArray(tileSizes)).size();
-      boolean _notEquals_1 = (nbDims != _size_3);
-      if (_notEquals_1) {
-        StringConcatenation _builder = new StringConcatenation();
-        _builder.append(nbDims);
-        _builder.append(" dim");
-        String _xifexpression = null;
-        if ((nbDims > 1)) {
-          _xifexpression = "s";
-        }
-        _builder.append(_xifexpression);
-        final String ndStr = _builder.toString();
-        StringConcatenation _builder_1 = new StringConcatenation();
-        int _size_4 = ((List<Integer>)Conversions.doWrapArray(tileSizes)).size();
-        _builder_1.append(_size_4);
-        _builder_1.append(" size");
-        String _xifexpression_1 = null;
-        if ((nbDims > 1)) {
-          _xifexpression_1 = "s were";
-        } else {
-          _xifexpression_1 = "was";
-        }
-        _builder_1.append(_xifexpression_1);
-        final String ntsStr = _builder_1.toString();
-        StringConcatenation _builder_2 = new StringConcatenation();
-        _builder_2.append("Output variable ");
-        String _name = outputVar.getName();
-        _builder_2.append(_name);
-        _builder_2.append(" has ");
-        _builder_2.append(ndStr);
-        _builder_2.append(" but ");
-        _builder_2.append(ntsStr);
-        _builder_2.append(" specified.alpha");
-        throw new Exception(_builder_2.toString());
-      }
-    } catch (Throwable _e) {
-      throw Exceptions.sneakyThrow(_e);
-    }
+  public static Object assertAssumptions(final AlphaSystem system, final int[] tileSizes) {
+    return null;
   }
 
   public static void insertChecksumV1(final String systemName, final int[] tileSizes) {
@@ -1265,7 +1204,7 @@ public class ABFT {
           final Integer TSub = it.getKey();
           final String ts = it.getValue();
           StringConcatenation _builder_2 = new StringConcatenation();
-          _builder_2.append("0<");
+          _builder_2.append("1<");
           _builder_2.append(TSlb);
           _builder_2.append(ts);
           _builder_2.append(" and ");
@@ -1339,7 +1278,7 @@ public class ABFT {
         case "star3d1r":
           Pair<List<Integer>, Double> _mappedTo_8 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf(0))), Double.valueOf(0.2500));
           Pair<List<Integer>, Double> _mappedTo_9 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf((-1)), Integer.valueOf(0), Integer.valueOf(0))), Double.valueOf(0.1248));
-          Pair<List<Integer>, Double> _mappedTo_10 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(0), Integer.valueOf(0))), Double.valueOf(0.1247));
+          Pair<List<Integer>, Double> _mappedTo_10 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(1), Integer.valueOf(0), Integer.valueOf(0))), Double.valueOf(0.1249));
           Pair<List<Integer>, Double> _mappedTo_11 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf((-1)), Integer.valueOf(0))), Double.valueOf(0.1250));
           Pair<List<Integer>, Double> _mappedTo_12 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf(1), Integer.valueOf(0))), Double.valueOf(0.1250));
           Pair<List<Integer>, Double> _mappedTo_13 = Pair.<List<Integer>, Double>of(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(0), Integer.valueOf(0), Integer.valueOf((-1)))), Double.valueOf(0.1251));

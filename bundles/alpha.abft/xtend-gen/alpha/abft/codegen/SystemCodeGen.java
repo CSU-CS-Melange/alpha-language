@@ -64,6 +64,7 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -156,6 +157,7 @@ public class SystemCodeGen {
       this.stencilVar = system.getOutputs().get(0);
       this.version = version;
       this.tileSizes = tileSizes;
+      InputOutput.<String>println(this.scheduleStr);
       this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
       StandardizeNames.apply(system);
     } catch (Throwable _e) {
@@ -1074,8 +1076,7 @@ public class SystemCodeGen {
                   _builder_2.append("_INJ+");
                   Integer _value_1 = it_1.getValue();
                   int _divide = ((_value_1).intValue() / 2);
-                  int _minus_1 = (_divide - TT);
-                  _builder_2.append(_minus_1);
+                  _builder_2.append(_divide);
                   return _builder_2.toString();
                 };
                 _xifexpression_2 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(spatialContext, _function_6), " && ");
@@ -1621,7 +1622,11 @@ public class SystemCodeGen {
   }
 
   public CharSequence signature(final AlphaSystem system) {
-    return this.signature(system, this.version);
+    CharSequence _signature = null;
+    if (system!=null) {
+      _signature=this.signature(system, this.version);
+    }
+    return _signature;
   }
 
   public CharSequence signature(final AlphaSystem system, final Version _version) {

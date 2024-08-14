@@ -198,24 +198,24 @@ class WrapperCodeGen extends SystemCodeGen {
 			
 			«localMemoryAllocation»
 			
-			#ifdef «NOISE»
 			srand(time(NULL));
-			#else
-			srand(0);
-			#endif
 			
 			«system.inputs.map[inputInitialization].join('\n')»
-			«system.outputs.map[inputInitialization].join('\n')»
+«««			«system.outputs.map[inputInitialization].join('\n')»
 			
 			#if defined «TIMING»
 			
 			struct Result r0 = «system.call»;
-			struct Result r1 = «v1System.call»;
-			struct Result r2 = «v2System.call»;
-			
 			printf("v0:%0.4f\n", r0.result);
+			«IF v1System !==null»
+			struct Result r1 = «v1System.call»;
 			printf("v1:%0.4f\n", r1.result);
+			«ENDIF»
+			«IF v2System !==null»
+			struct Result r2 = «v2System.call»;
 			printf("v2:%0.4f\n", r2.result);
+			«ENDIF»
+			
 			
 			#elif defined «ERROR_INJECTION»
 			tBox = max((int)log10(T) + 1, 6);
@@ -238,7 +238,8 @@ class WrapperCodeGen extends SystemCodeGen {
 			// if THRESHOLD not explicitly set, do short profiling to estimate the
 			// noise due to floating point round off errors
 			const char* threshold = getenv("THRESHOLD");
-			float threshold_v1, threshold_v2;
+			«IF v1System !==null»
+			float threshold_v1;
 			if (threshold == NULL) {
 				struct Result result;
 				long input_T = T;
@@ -253,9 +254,21 @@ class WrapperCodeGen extends SystemCodeGen {
 						break;
 				}
 				printf(" threshold_v1 set to: %E\n", threshold_v1);
+				T = input_T;
+			} else {
+				threshold_v1 = atoi(getenv("THRESHOLD"));
+			}
+			«ENDIF»
+			«IF v2System !==null»
+			float threshold_v2;
+			if (threshold == NULL) {
+				struct Result result;
+				long input_T = T;
+				T = «#[20, 4*TT].max»;
 				
 				result = «v2System.call»;
 				printf("floating point noise: %E\n", result.noise);
+				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
 				for (int i=9; i>=0; i--) {
 					threshold_v2 = thresholds[i];
 					if (threshold_v2 > fabs(result.noise))
@@ -264,19 +277,18 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf(" threshold_v2 set to: %E\n", threshold_v2);
 				T = input_T;
 			} else {
-				threshold_v1 = atoi(getenv("THRESHOLD"));
-				threshold_v2 = threshold_v1;
+				threshold_v2 = atoi(getenv("THRESHOLD"));
 			}
-
+			«ENDIF»
 			printHeader();
 			
 			«stencilVar.domain.indexNames.map[i |'''int «i»_INJ'''].join('; \n')»;
 			
 			const char* verbose = getenv("VERBOSE");
 			const char* single_bit = getenv("BIT");
-			
-			// ABFTv1
 			char val[50];
+			«IF v1System !==null»
+			// ABFTv1
 			sprintf(val, "%E", threshold_v1); 
 			setenv("THRESHOLD", val, 1);
 			for (int bit=31; bit>=8; bit--) {
@@ -298,7 +310,8 @@ class WrapperCodeGen extends SystemCodeGen {
 «««				if (getenv("SUMMARY") != NULL)
 				print_summary(1, &v_avg);
 			}
-
+			«ENDIF»
+			«IF v2System !==null»
 			// ABFTv2
 			sprintf(val, "%E", threshold_v2); 
 			setenv("THRESHOLD", val, 1);
@@ -319,6 +332,7 @@ class WrapperCodeGen extends SystemCodeGen {
 «««				if (getenv("SUMMARY") != NULL)
 				print_summary(2, &v_avg);
 			}
+			«ENDIF»
 			#endif
 		
 			return 0;
@@ -352,7 +366,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		
 		val code = '''
 			// «variable.name» initialization
-			#define «stmtName»(«indexNameStr») «variable.name»(«indexNameStr») = rand() % 100 + 1
+			#define «stmtName»(«indexNameStr») «variable.name»(«indexNameStr») = rand()
 			«codegenVisitor.toCode»
 			#undef «stmtName»
 		'''
@@ -360,7 +374,7 @@ class WrapperCodeGen extends SystemCodeGen {
 	}
 	
 	def call(AlphaSystem system) {
-		system.call(#[])
+		system?.call(#[])
 	}
 	
 	def call(AlphaSystem system, String[] extraArgs) {

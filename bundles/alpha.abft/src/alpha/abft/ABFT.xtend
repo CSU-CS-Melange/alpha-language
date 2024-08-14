@@ -51,26 +51,26 @@ class ABFT {
 	}
 	
 	def static assertAssumptions(AlphaSystem system, int[] tileSizes) {
-		/*
-		 * Simplifying assumptions for benchmarking, to do this truly generally, some
-		 * of the logic below would need to be tweaked
-		 */
-		if (system.systemBodies.size > 1)
-			throw new Exception('Only systems with a single body are currently handled')
-		if (system.inputs.size > 1)
-			throw new Exception('Only systems with a single input variable are currently handled')
-		if (system.outputs.size > 1)
-			throw new Exception('Only systems with a single output variable are currently handled')
-		if (system.parameterDomain.paramNames.toString != '[T, N]')
-			throw new Exception('System parameters must be "[T, N]"')
-		
-		val outputVar = system.outputs.get(0)
-		val nbDims = outputVar.domain.dim(ISLDimType.isl_dim_out)
-		if (nbDims != tileSizes.size) {
-			val ndStr = '''«nbDims» dim«if (nbDims > 1) 's'»'''
-			val ntsStr = '''«tileSizes.size» size«if (nbDims > 1) 's were' else 'was'»'''
-			throw new Exception('''Output variable «outputVar.name» has «ndStr» but «ntsStr» specified.alpha''')
-		}
+//		/*
+//		 * Simplifying assumptions for benchmarking, to do this truly generally, some
+//		 * of the logic below would need to be tweaked
+//		 */
+//		if (system.systemBodies.size > 1)
+//			throw new Exception('Only systems with a single body are currently handled')
+//		if (system.inputs.size > 1)
+//			throw new Exception('Only systems with a single input variable are currently handled')
+//		if (system.outputs.size > 1)
+//			throw new Exception('Only systems with a single output variable are currently handled')
+//		if (system.parameterDomain.paramNames.toString != '[T, N]')
+//			throw new Exception('System parameters must be "[T, N]"')
+//		
+//		val outputVar = system.outputs.get(0)
+//		val nbDims = outputVar.domain.dim(ISLDimType.isl_dim_out)
+//		if (nbDims != tileSizes.size) {
+//			val ndStr = '''«nbDims» dim«if (nbDims > 1) 's'»'''
+//			val ntsStr = '''«tileSizes.size» size«if (nbDims > 1) 's were' else 'was'»'''
+//			throw new Exception('''Output variable «outputVar.name» has «ndStr» but «ntsStr» specified.alpha''')
+//		}
 	}
 	
 	def static insertChecksumV1(String systemName, int[] tileSizes) {
@@ -723,7 +723,7 @@ class ABFT {
 			val TSlb = if (forV2) key - 2*radius*TT else key
 			val TSub = key
 			val ts = value
-			'''0<«TSlb»«ts» and «TSlb»«ts»+«TSub»<N'''
+			'''1<«TSlb»«ts» and «TSlb»«ts»+«TSub»<N'''
 		].join(' and ')
 		
 		val setStr = '''«variable.buildParamStr»->{«indexStr» : «timeConstraints» and «spaceConstraints»}'''.toString
@@ -760,7 +760,7 @@ class ABFT {
 			case 'star3d1r' : 1 -> #{
 										#[ 0, 0, 0]->0.2500,
 										#[-1, 0, 0]->0.1248,
-										#[ 1, 0, 0]->0.1247,
+										#[ 1, 0, 0]->0.1249,
 										#[ 0,-1, 0]->0.1250,
 										#[ 0, 1, 0]->0.1250,
 										#[ 0, 0,-1]->0.1251,
