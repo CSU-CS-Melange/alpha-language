@@ -1,4 +1,4 @@
-affine star2d1r [T,N]->{: N>=50 and T>=10}
+affine star2d1r [T,N]->{: N>=20 and T>=10}
   inputs
     X : {[i,j] : 0<=i,j<=N}
   outputs

@@ -2,9 +2,14 @@ package alpha.abft.codegen;
 
 import alpha.abft.ABFT;
 import alpha.abft.codegen.util.MemoryMap;
+import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
+import alpha.model.CaseExpression;
+import alpha.model.StandardEquation;
 import alpha.model.Variable;
+import com.google.common.base.Objects;
 import java.util.List;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
@@ -33,34 +38,55 @@ public class BenchmarkInstance {
       BenchmarkInstance.baselineMemoryMap(system), _function_1);
   }
 
-  public static CharSequence baselineSchedule() {
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("domain: \"domain\'\"");
-    _builder.newLine();
-    _builder.append("child:");
-    _builder.newLine();
-    _builder.append("  ");
-    _builder.append("sequence:");
-    _builder.newLine();
-    _builder.append("  ");
-    _builder.append("- filter: \"{ Y\' }\"");
-    _builder.newLine();
-    _builder.append("    ");
-    _builder.append("child:");
-    _builder.newLine();
-    _builder.append("      ");
-    _builder.append("schedule: \"params\'->[\\");
-    _builder.newLine();
-    _builder.append("      \t");
-    _builder.append("{ Y\'->[t] } \\");
-    _builder.newLine();
-    _builder.append("      ");
-    _builder.append("]\"");
-    _builder.newLine();
-    return _builder;
+  public static CharSequence baselineSchedule(final AlphaSystem system) {
+    CharSequence _xblockexpression = null;
+    {
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "Y"));
+      };
+      AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(system.getSystemBodies().get(0).getStandardEquations(), _function).getExpr();
+      final EList<AlphaExpression> yCaseBranches = ((CaseExpression) _expr).getExprs();
+      int _size = yCaseBranches.size();
+      final Function1<Integer, String> _function_1 = (Integer i) -> {
+        return (("Y_cb" + i) + "\'");
+      };
+      final Iterable<String> yStmts = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function_1);
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("domain: \"domain\'\"");
+      _builder.newLine();
+      _builder.append("child:");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("sequence:");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ ");
+      String _join = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join, "  ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
+      _builder.append("    ");
+      _builder.append("child:");
+      _builder.newLine();
+      _builder.append("      ");
+      _builder.append("schedule: \"params\'->[\\");
+      _builder.newLine();
+      _builder.append("      \t");
+      _builder.append("{ ");
+      String _join_1 = IterableExtensions.join(yStmts, "->[t]; ");
+      _builder.append(_join_1, "      \t");
+      _builder.append("->[t] } \\");
+      _builder.newLineIfNotEmpty();
+      _builder.append("      ");
+      _builder.append("]\"");
+      _builder.newLine();
+      _xblockexpression = _builder;
+    }
+    return _xblockexpression;
   }
 
-  public static CharSequence v1Schedule(final int[] tileSizes) {
+  public static CharSequence v1Schedule(final AlphaSystem system, final int[] tileSizes) {
     CharSequence _xblockexpression = null;
     {
       final int TT = tileSizes[0];
@@ -69,6 +95,17 @@ public class BenchmarkInstance {
         return Integer.valueOf(tileSizes[(i).intValue()]);
       };
       final List<Integer> TSs = IterableExtensions.<Integer>toList(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(1, _size, true), _function));
+      final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "Y"));
+      };
+      AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(system.getSystemBodies().get(0).getStandardEquations(), _function_1).getExpr();
+      final EList<AlphaExpression> yCaseBranches = ((CaseExpression) _expr).getExprs();
+      int _size_1 = yCaseBranches.size();
+      final Function1<Integer, String> _function_2 = (Integer i) -> {
+        return (("Y_cb" + i) + "\'");
+      };
+      final Iterable<String> yStmts = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size_1, true), _function_2);
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("domain: \"domain\'\"");
       _builder.newLine();
@@ -96,8 +133,11 @@ public class BenchmarkInstance {
       _builder.append("]\"");
       _builder.newLine();
       _builder.append("  ");
-      _builder.append("- filter: \"{ I\'; C1\'; C2\'; Y\' }\"");
-      _builder.newLine();
+      _builder.append("- filter: \"{ I\'; C1\'; C2\'; ");
+      String _join = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join, "  ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
       _builder.append("    ");
       _builder.append("child:");
       _builder.newLine();
@@ -105,7 +145,14 @@ public class BenchmarkInstance {
       _builder.append("schedule: \"params\'->[\\");
       _builder.newLine();
       _builder.append("      \t");
-      _builder.append("{ C1\'->[tt]; C2\'->[tt-1]; I\'->[tt]; Y\'->[t/");
+      _builder.append("{ C1\'->[tt]; C2\'->[tt-1]; I\'->[tt]; ");
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("->[t/");
+      _builder_1.append(TT);
+      _builder_1.append("]; ");
+      String _join_1 = IterableExtensions.join(yStmts, _builder_1);
+      _builder.append(_join_1, "      \t");
+      _builder.append("->[t/");
       _builder.append(TT, "      \t");
       _builder.append("] }, \\");
       _builder.newLineIfNotEmpty();
@@ -118,7 +165,12 @@ public class BenchmarkInstance {
       _builder.append(TT, "      \t");
       _builder.append("]; I\'->[");
       _builder.append(TT, "      \t");
-      _builder.append("tt]; Y\'->[t] } \\");
+      _builder.append("tt]; ");
+      StringConcatenation _builder_2 = new StringConcatenation();
+      _builder_2.append("->[t]; ");
+      String _join_2 = IterableExtensions.join(yStmts, _builder_2);
+      _builder.append(_join_2, "      \t");
+      _builder.append("->[t] } \\");
       _builder.newLineIfNotEmpty();
       _builder.append("      ");
       _builder.append("]\"");
@@ -130,8 +182,11 @@ public class BenchmarkInstance {
       _builder.append("sequence:");
       _builder.newLine();
       _builder.append("        ");
-      _builder.append("- filter: \"{ Y\' }\"");
-      _builder.newLine();
+      _builder.append("- filter: \"{ ");
+      String _join_3 = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join_3, "        ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
       _builder.append("        ");
       _builder.append("- filter: \"{ C1\'; C2\' }\"");
       _builder.newLine();
@@ -154,6 +209,28 @@ public class BenchmarkInstance {
         return (_name + "\'");
       };
       final Iterable<String> c2nrs = IterableExtensions.<Variable, String>map(IterableExtensions.<Variable>filter(system.getLocals(), _function), _function_1);
+      final Function1<StandardEquation, Boolean> _function_2 = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "Y"));
+      };
+      AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(system.getSystemBodies().get(0).getStandardEquations(), _function_2).getExpr();
+      final EList<AlphaExpression> yCaseBranches = ((CaseExpression) _expr).getExprs();
+      int _size = yCaseBranches.size();
+      final Function1<Integer, String> _function_3 = (Integer i) -> {
+        return (("Y_cb" + i) + "\'");
+      };
+      final Iterable<String> yStmts = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function_3);
+      final Function1<StandardEquation, Boolean> _function_4 = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "C2"));
+      };
+      AlphaExpression _expr_1 = IterableExtensions.<StandardEquation>findFirst(system.getSystemBodies().get(0).getStandardEquations(), _function_4).getExpr();
+      final EList<AlphaExpression> c2CaseBranches = ((CaseExpression) _expr_1).getExprs();
+      int _size_1 = c2CaseBranches.size();
+      final Function1<Integer, String> _function_5 = (Integer i) -> {
+        return (("C2_cb" + i) + "\'");
+      };
+      final Iterable<String> c2cbes = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size_1, true), _function_5);
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("domain: \"domain\'\"");
       _builder.newLine();
@@ -190,19 +267,23 @@ public class BenchmarkInstance {
       _builder.append("- filter: \"{ \\");
       _builder.newLine();
       _builder.append("      ");
-      _builder.append("Y\'; \\");
-      _builder.newLine();
-      _builder.append("      ");
-      _builder.append("C1\'; \\");
-      _builder.newLine();
-      _builder.append("      ");
-      String _join = IterableExtensions.join(c2nrs, "; \\\n");
+      String _join = IterableExtensions.join(yStmts, "; \\\n");
       _builder.append(_join, "      ");
       _builder.append("; \\");
       _builder.newLineIfNotEmpty();
       _builder.append("      ");
-      _builder.append("C2\'; \\");
+      _builder.append("C1\'; \\");
       _builder.newLine();
+      _builder.append("      ");
+      String _join_1 = IterableExtensions.join(c2nrs, "; \\\n");
+      _builder.append(_join_1, "      ");
+      _builder.append("; \\");
+      _builder.newLineIfNotEmpty();
+      _builder.append("      ");
+      String _join_2 = IterableExtensions.join(c2cbes, "; \\\n");
+      _builder.append(_join_2, "      ");
+      _builder.append("; \\");
+      _builder.newLineIfNotEmpty();
       _builder.append("      ");
       _builder.append("I_NR\'; \\");
       _builder.newLine();
@@ -222,20 +303,30 @@ public class BenchmarkInstance {
       _builder.append("{ \\");
       _builder.newLine();
       _builder.append("          ");
-      _builder.append("Y\'->[t]; \\");
-      _builder.newLine();
+      String _join_3 = IterableExtensions.join(yStmts, "->[t]; \\\n");
+      _builder.append(_join_3, "          ");
+      _builder.append("->[t]; \\");
+      _builder.newLineIfNotEmpty();
       _builder.append("          ");
       _builder.append("C1\'->[");
       _builder.append(TT, "          ");
       _builder.append("tt]; \\");
       _builder.newLineIfNotEmpty();
       _builder.append("          ");
-      _builder.append("C2\'->[");
-      _builder.append(TT, "          ");
-      _builder.append("tt]; \\");
+      final Function1<String, String> _function_6 = (String c2cbe) -> {
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _builder_1.append(c2cbe);
+        _builder_1.append("->[");
+        _builder_1.append(TT);
+        _builder_1.append("tt]");
+        return _builder_1.toString();
+      };
+      String _join_4 = IterableExtensions.join(IterableExtensions.<String, String>map(c2cbes, _function_6), "; \\\n");
+      _builder.append(_join_4, "          ");
+      _builder.append("; \\");
       _builder.newLineIfNotEmpty();
       _builder.append("          ");
-      final Function1<String, String> _function_2 = (String c2nr) -> {
+      final Function1<String, String> _function_7 = (String c2nr) -> {
         StringConcatenation _builder_1 = new StringConcatenation();
         _builder_1.append(c2nr);
         _builder_1.append("->[");
@@ -243,8 +334,8 @@ public class BenchmarkInstance {
         _builder_1.append("tt-w]");
         return _builder_1.toString();
       };
-      String _join_1 = IterableExtensions.join(IterableExtensions.<String, String>map(c2nrs, _function_2), "; \\\n");
-      _builder.append(_join_1, "          ");
+      String _join_5 = IterableExtensions.join(IterableExtensions.<String, String>map(c2nrs, _function_7), "; \\\n");
+      _builder.append(_join_5, "          ");
       _builder.append("; \\");
       _builder.newLineIfNotEmpty();
       _builder.append("          ");
@@ -270,17 +361,23 @@ public class BenchmarkInstance {
       _builder.append("sequence:");
       _builder.newLine();
       _builder.append("        ");
-      _builder.append("- filter: \"{ Y\' }\"");
-      _builder.newLine();
-      _builder.append("        ");
-      _builder.append("- filter: \"{ C1\'; ");
-      String _join_2 = IterableExtensions.join(c2nrs, "; ");
-      _builder.append(_join_2, "        ");
+      _builder.append("- filter: \"{ ");
+      String _join_6 = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join_6, "        ");
       _builder.append(" }\"");
       _builder.newLineIfNotEmpty();
       _builder.append("        ");
-      _builder.append("- filter: \"{ C2\' }\"");
-      _builder.newLine();
+      _builder.append("- filter: \"{ C1\'; ");
+      String _join_7 = IterableExtensions.join(c2nrs, "; ");
+      _builder.append(_join_7, "        ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
+      _builder.append("        ");
+      _builder.append("- filter: \"{ ");
+      String _join_8 = IterableExtensions.join(c2cbes, "; ");
+      _builder.append(_join_8, "        ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
       _builder.append("        ");
       _builder.append("- filter: \"{ I_NR\' }\"");
       _builder.newLine();

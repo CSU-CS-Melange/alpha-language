@@ -2,11 +2,17 @@ package alpha.abft.codegen
 
 import alpha.abft.codegen.util.ISLASTNodeVisitor
 import alpha.abft.codegen.util.MemoryMap
+import alpha.codegen.Factory
+import alpha.codegen.isl.ConditionalConverter
 import alpha.model.AlphaSystem
 import alpha.model.Variable
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.abft.ABFT.buildParamStr
+import static extension alpha.codegen.ProgramPrinter.print
+import static extension alpha.codegen.ProgramPrinter.printExpr
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
@@ -37,7 +43,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		#include<stdlib.h>
 		#include<math.h>
 		#include<string.h>
-		#include<sys/time.h>
+		#include<time.h>
 		
 		#define max(x, y)   ((x)>(y) ? (x) : (y))
 		#define min(x, y)   ((x)>(y) ? (y) : (x))
@@ -49,8 +55,13 @@ class WrapperCodeGen extends SystemCodeGen {
 
 		// External system declarations
 		«system.signature(Version.BASELINE)»;
+		#if defined «REPORT_COMPLEXITY_ONLY»
+		«v1System.sigantureParamsAsFloats»;
+		«v2System.sigantureParamsAsFloats»;
+		#else
 		«v1System.signature»;
 		«v2System.signature»;
+		#endif
 		
 		struct INJ {
 			int tt;
@@ -108,6 +119,10 @@ class WrapperCodeGen extends SystemCodeGen {
 			val i = paramNames.indexOf(P)
 			'''long «P» = atol(argv[«i+1»])'''
 		]
+		val paramAsFloatsInits = paramNames.map[P |
+			val i = paramNames.indexOf(P)
+			'''float «P» = atof(argv[«i+1»])'''
+		]
 		
 		val indexNames = stencilVar.domain.indexNames
 		val sDims = indexNames.size
@@ -145,6 +160,14 @@ class WrapperCodeGen extends SystemCodeGen {
 			char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
 			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
 			fprintf(stdout, "%s\n", header_str);
+			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
+		}
+		
+		void printHeaderBar() {
+			int S = 300;
+			char header_str[S];
+			sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s", 4, "bit", tBox, "inj.t", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 8, "FPR (%)");
+			char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
 			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
 		}
 		
@@ -194,28 +217,46 @@ class WrapperCodeGen extends SystemCodeGen {
 			}
 			
 			// Parse parameter sizes
+			#if defined «REPORT_COMPLEXITY_ONLY»
+			«paramAsFloatsInits.join(';\n')»;
+			#else
 			«paramInits.join(';\n')»;
+			#endif
 			
+			// Check parameter values
+			«checkParamValues»
+			
+			#if defined «REPORT_COMPLEXITY_ONLY»
+			«variableDeclarations»
+			
+			#else
 			«localMemoryAllocation»
 			
 			srand(time(NULL));
 			
 			«system.inputs.map[inputInitialization].join('\n')»
-«««			«system.outputs.map[inputInitialization].join('\n')»
+			#endif
 			
 			#if defined «TIMING»
 			
 			struct Result r0 = «system.call»;
-			printf("v0:%0.4f\n", r0.result);
+			printf("v0 time: %0.4f sec\n", r0.result);
 			«IF v1System !==null»
 			struct Result r1 = «v1System.call»;
-			printf("v1:%0.4f\n", r1.result);
+			printf("v1 time: %0.4f sec\n", r1.result);
 			«ENDIF»
 			«IF v2System !==null»
 			struct Result r2 = «v2System.call»;
-			printf("v2:%0.4f\n", r2.result);
+			printf("v2 time: %0.4f sec\n", r2.result);
 			«ENDIF»
 			
+			#elif defined «REPORT_COMPLEXITY_ONLY»
+			«IF v1System !==null»
+			«v1System.call»;
+			«ENDIF»
+			«IF v2System !==null»
+			«v2System.call»;
+			«ENDIF»
 			
 			#elif defined «ERROR_INJECTION»
 			tBox = max((int)log10(T) + 1, 6);
@@ -312,6 +353,9 @@ class WrapperCodeGen extends SystemCodeGen {
 			}
 			«ENDIF»
 			«IF v2System !==null»
+			«IF v1System !==null»
+			printHeaderBar();
+			«ENDIF»
 			// ABFTv2
 			sprintf(val, "%E", threshold_v2); 
 			setenv("THRESHOLD", val, 1);
@@ -339,6 +383,22 @@ class WrapperCodeGen extends SystemCodeGen {
 		}
 		'''
 		code
+	}
+	
+	def checkParamValues() {
+		val nbParams = system.parameterDomain.dim(ISLDimType.isl_dim_param)
+		val domain = system.parameterDomain.copy
+			.moveDims(ISLDimType.isl_dim_out, 0, ISLDimType.isl_dim_param, 0, nbParams)
+		val universe = ISLSet.buildUniverse(domain.space.copy)
+		
+		val illegalParamValues = universe.subtract(domain.copy)
+		
+		'''
+			if («ConditionalConverter.convert(illegalParamValues).printExpr») {
+				printf("Illegal parameter values, must be in «domain»\n");
+				return 1;
+			}
+		'''
 	}
 	
 	def inputInitialization(Variable variable) {
@@ -385,6 +445,15 @@ class WrapperCodeGen extends SystemCodeGen {
 	
 	override localMemoryAllocation() {
 		(system.inputs + system.outputs).memoryAllocation
+	}
+	
+	def variableDeclarations() {
+		'''«(system.inputs + system.outputs).map[variableDeclaration].join(';\n')»;'''
+	}
+	
+	def variableDeclaration(Variable variable) {
+		val dim = variable.domain.dim(ISLDimType.isl_dim_out)
+		'''«Factory.dataType(dataType, dim).print» «variable.name»'''
 	}
 	
 }

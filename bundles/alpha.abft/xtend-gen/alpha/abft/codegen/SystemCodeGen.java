@@ -21,6 +21,7 @@ import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.PolynomialConverter;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
+import alpha.model.CaseExpression;
 import alpha.model.Equation;
 import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
@@ -43,11 +44,13 @@ import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,7 +67,6 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -76,7 +78,7 @@ public class SystemCodeGen {
 
   public static String TIMING = "TIMING";
 
-  public static String NOISE = "NOISE";
+  public static String REPORT_COMPLEXITY_ONLY = "REPORT_COMPLEXITY_ONLY";
 
   @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final AlphaSystem system;
@@ -141,28 +143,114 @@ public class SystemCodeGen {
       ExprConverter _exprConverter = new ExprConverter(typeGenerator, nameChecker);
       this.exprConverter = _exprConverter;
       this.stmtPrefix = "S";
-      final Function1<StandardEquation, Pair<String, ISLSet>> _function = (StandardEquation it) -> {
-        String _name = it.getVariable().getName();
-        ISLSet _stmtDomain = SystemCodeGen.getStmtDomain(it.getVariable(), it.getExpr());
-        return Pair.<String, ISLSet>of(_name, _stmtDomain);
-      };
-      final Function1<Pair<String, ISLSet>, ISLUnionSet> _function_1 = (Pair<String, ISLSet> it) -> {
-        return it.getValue().setTupleName(it.getKey()).copy().toUnionSet();
-      };
-      final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_2 = (ISLUnionSet ret, ISLUnionSet d) -> {
-        return ret.union(d);
-      };
-      this.scheduleDomain = IterableExtensions.<ISLUnionSet, ISLUnionSet>fold(ListExtensions.<Pair<String, ISLSet>, ISLUnionSet>map(ListExtensions.<StandardEquation, Pair<String, ISLSet>>map(this.systemBody.getStandardEquations(), _function), _function_1), ISLUtil.toEmptyUnionSet(this.systemBody.getParameterDomain().getSpace()), _function_2);
-      this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
       this.stencilVar = system.getOutputs().get(0);
       this.version = version;
       this.tileSizes = tileSizes;
-      InputOutput.<String>println(this.scheduleStr);
+      this.scheduleDomain = this.buildScheduleDomain();
+      this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
       this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
       StandardizeNames.apply(system);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
+  }
+
+  public ISLUnionSet buildScheduleDomain() {
+    ISLUnionSet _xblockexpression = null;
+    {
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+        Variable _variable = it.getVariable();
+        return Boolean.valueOf(Objects.equal(_variable, this.stencilVar));
+      };
+      AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function).getExpr();
+      final EList<AlphaExpression> yCBEs = ((CaseExpression) _expr).getExprs();
+      int _size = yCBEs.size();
+      final Function1<Integer, Pair<Integer, AlphaExpression>> _function_1 = (Integer i) -> {
+        AlphaExpression _get = yCBEs.get((i).intValue());
+        return Pair.<Integer, AlphaExpression>of(i, _get);
+      };
+      final Function2<ISLUnionSet, Pair<Integer, AlphaExpression>, ISLUnionSet> _function_2 = (ISLUnionSet ret, Pair<Integer, AlphaExpression> p) -> {
+        ISLUnionSet _xblockexpression_1 = null;
+        {
+          final Integer i = p.getKey();
+          final AlphaExpression expr = p.getValue();
+          ISLSet _copy = expr.getContextDomain().copy();
+          String _name = this.stencilVar.getName();
+          String _plus = (_name + "_cb");
+          String _plus_1 = (_plus + i);
+          _xblockexpression_1 = ret.union(_copy.setTupleName(_plus_1).toUnionSet());
+        }
+        return _xblockexpression_1;
+      };
+      final ISLUnionSet yDomain = IterableExtensions.<Pair<Integer, AlphaExpression>, ISLUnionSet>fold(IterableExtensions.<Integer, Pair<Integer, AlphaExpression>>map(new ExclusiveRange(0, _size, true), _function_1), 
+        ISLUnionSet.buildEmpty(this.stencilVar.getDomain().getSpace()), _function_2);
+      ISLUnionSet _xifexpression = null;
+      boolean _equals = Objects.equal(this.version, Version.ABFT_V2);
+      if (_equals) {
+        ISLUnionSet _xblockexpression_1 = null;
+        {
+          final Function1<StandardEquation, Boolean> _function_3 = (StandardEquation it) -> {
+            String _name = it.getVariable().getName();
+            return Boolean.valueOf(Objects.equal(_name, "C2"));
+          };
+          final StandardEquation c2Eq = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function_3);
+          AlphaExpression _expr_1 = c2Eq.getExpr();
+          final EList<AlphaExpression> c2CBEs = ((CaseExpression) _expr_1).getExprs();
+          int _size_1 = c2CBEs.size();
+          final Function1<Integer, Pair<Integer, AlphaExpression>> _function_4 = (Integer i) -> {
+            AlphaExpression _get = c2CBEs.get((i).intValue());
+            return Pair.<Integer, AlphaExpression>of(i, _get);
+          };
+          final Function2<ISLUnionSet, Pair<Integer, AlphaExpression>, ISLUnionSet> _function_5 = (ISLUnionSet ret, Pair<Integer, AlphaExpression> p) -> {
+            ISLUnionSet _xblockexpression_2 = null;
+            {
+              final Integer i = p.getKey();
+              final AlphaExpression expr = p.getValue();
+              _xblockexpression_2 = ret.union(expr.getContextDomain().copy().setTupleName(("C2_cb" + i)).toUnionSet());
+            }
+            return _xblockexpression_2;
+          };
+          _xblockexpression_1 = IterableExtensions.<Pair<Integer, AlphaExpression>, ISLUnionSet>fold(IterableExtensions.<Integer, Pair<Integer, AlphaExpression>>map(new ExclusiveRange(0, _size_1, true), _function_4), 
+            ISLUnionSet.buildEmpty(c2Eq.getVariable().getDomain().getSpace()), _function_5);
+        }
+        _xifexpression = _xblockexpression_1;
+      } else {
+        ISLUnionSet _xifexpression_1 = null;
+        if ((Objects.equal(this.version, Version.BASELINE) || Objects.equal(this.version, Version.WRAPPER))) {
+          _xifexpression_1 = ISLUnionSet.buildEmpty(this.stencilVar.getDomain().getSpace());
+        } else {
+          ISLUnionSet _xblockexpression_2 = null;
+          {
+            final Function1<StandardEquation, Boolean> _function_3 = (StandardEquation it) -> {
+              String _name = it.getVariable().getName();
+              return Boolean.valueOf(Objects.equal(_name, "C2"));
+            };
+            final StandardEquation c2Eq = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function_3);
+            _xblockexpression_2 = SystemCodeGen.getStmtDomain(c2Eq.getVariable(), c2Eq.getExpr()).setTupleName("C2").toUnionSet();
+          }
+          _xifexpression_1 = _xblockexpression_2;
+        }
+        _xifexpression = _xifexpression_1;
+      }
+      final ISLUnionSet c2Domain = _xifexpression;
+      final Function1<StandardEquation, Boolean> _function_3 = (StandardEquation it) -> {
+        return Boolean.valueOf((Objects.equal(it.getVariable(), this.stencilVar) || Objects.equal(it.getVariable().getName(), "C2")));
+      };
+      final Function1<StandardEquation, Pair<String, ISLSet>> _function_4 = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        ISLSet _stmtDomain = SystemCodeGen.getStmtDomain(it.getVariable(), it.getExpr());
+        return Pair.<String, ISLSet>of(_name, _stmtDomain);
+      };
+      final Function1<Pair<String, ISLSet>, ISLUnionSet> _function_5 = (Pair<String, ISLSet> it) -> {
+        return it.getValue().setTupleName(it.getKey()).copy().toUnionSet();
+      };
+      final Function2<ISLUnionSet, ISLUnionSet, ISLUnionSet> _function_6 = (ISLUnionSet ret, ISLUnionSet d) -> {
+        return ret.union(d);
+      };
+      final ISLUnionSet domain = IterableExtensions.<ISLUnionSet, ISLUnionSet>fold(IterableExtensions.<Pair<String, ISLSet>, ISLUnionSet>map(IterableExtensions.<StandardEquation, Pair<String, ISLSet>>map(IterableExtensions.<StandardEquation>reject(this.systemBody.getStandardEquations(), _function_3), _function_4), _function_5), ISLUtil.toEmptyUnionSet(this.systemBody.getParameterDomain().getSpace()), _function_6);
+      _xblockexpression = domain.union(yDomain).union(c2Domain);
+    }
+    return _xblockexpression;
   }
 
   public static String defaultSchedule(final AlphaSystem system) {
@@ -377,15 +465,36 @@ public class SystemCodeGen {
           _builder.newLine();
         }
       }
+      _builder.append("#if defined ");
+      _builder.append(SystemCodeGen.REPORT_COMPLEXITY_ONLY);
+      _builder.newLineIfNotEmpty();
+      CharSequence _sigantureParamsAsFloats = this.sigantureParamsAsFloats(this.system);
+      _builder.append(_sigantureParamsAsFloats);
+      _builder.newLineIfNotEmpty();
+      _builder.append("#else");
+      _builder.newLine();
       CharSequence _signature = this.signature(this.system);
       _builder.append(_signature);
       _builder.newLineIfNotEmpty();
+      _builder.append("#endif");
+      _builder.newLine();
       _builder.append("{");
+      _builder.newLine();
+      _builder.append("\t");
+      _builder.append("#if defined ");
+      _builder.append(SystemCodeGen.REPORT_COMPLEXITY_ONLY, "\t");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t");
+      CharSequence _computeComplexity = this.computeComplexity();
+      _builder.append(_computeComplexity, "\t");
+      _builder.newLineIfNotEmpty();
+      _builder.append("\t");
+      _builder.append("#else");
       _builder.newLine();
       {
         if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
           _builder.append("\t");
-          _builder.append("#ifdef ERROR_INJECTION");
+          _builder.append("#if defined ERROR_INJECTION");
           _builder.newLine();
           _builder.append("\t");
           _builder.append("// Error injection configuration");
@@ -479,6 +588,9 @@ public class SystemCodeGen {
       _builder.append("\t");
       _builder.append("return result;");
       _builder.newLine();
+      _builder.append("\t");
+      _builder.append("#endif");
+      _builder.newLine();
       _builder.append("}");
       _builder.newLine();
       final String code = _builder.toString();
@@ -554,6 +666,112 @@ public class SystemCodeGen {
       _xblockexpression = code;
     }
     return _xblockexpression;
+  }
+
+  public CharSequence computeComplexity() {
+    CharSequence _xblockexpression = null;
+    {
+      final ISLPWQPolynomial stencilVarPoints = this.computeComplexity(this.stencilVar);
+      boolean _equals = Objects.equal(this.version, Version.BASELINE);
+      if (_equals) {
+        return "";
+      }
+      final Function1<StandardEquation, ISLPWQPolynomial> _function = (StandardEquation it) -> {
+        return this.computeComplexity(it.getVariable());
+      };
+      final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_1 = (ISLPWQPolynomial p1, ISLPWQPolynomial p2) -> {
+        return p1.add(p2);
+      };
+      final ISLPWQPolynomial checksumPoints = IterableExtensions.<ISLPWQPolynomial>reduce(ListExtensions.<StandardEquation, ISLPWQPolynomial>map(this.systemBody.getStandardEquations(), _function), _function_1);
+      String _switchResult = null;
+      final Version version = this.version;
+      if (version != null) {
+        switch (version) {
+          case ABFT_V1:
+            _switchResult = "v1 ";
+            break;
+          case ABFT_V2:
+            _switchResult = "v2 ";
+            break;
+          default:
+            _switchResult = "";
+            break;
+        }
+      } else {
+        _switchResult = "";
+      }
+      final String versionStr = _switchResult;
+      final String stencilVarCard = ProgramPrinter.printExpr(PolynomialConverter.convert(stencilVarPoints)).toString().replaceAll("([-]*[0-9][0-9]*)", "((double)$1)");
+      final String checksumsCard = ProgramPrinter.printExpr(PolynomialConverter.convert(checksumPoints)).toString().replaceAll("([-]*[0-9][0-9]*)", "((double)$1)");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("#undef ceild");
+      _builder.newLine();
+      _builder.append("#undef floord");
+      _builder.newLine();
+      _builder.append("#define ceild(n,d)  (double)ceil(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define floord(n,d) (double)floor(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.newLine();
+      _builder.append("double ");
+      String _name = this.stencilVar.getName();
+      _builder.append(_name);
+      _builder.append("_card = ");
+      _builder.append(stencilVarCard);
+      _builder.append(";");
+      _builder.newLineIfNotEmpty();
+      _builder.append("double total_card = ");
+      _builder.append(checksumsCard);
+      _builder.append(";");
+      _builder.newLineIfNotEmpty();
+      _builder.append("double expected_overhead = total_card / ");
+      String _name_1 = this.stencilVar.getName();
+      _builder.append(_name_1);
+      _builder.append("_card;");
+      _builder.newLineIfNotEmpty();
+      _builder.append("printf(\"");
+      _builder.append(versionStr);
+      _builder.append("(");
+      String _name_2 = this.stencilVar.getName();
+      _builder.append(_name_2);
+      _builder.append(",C,overhead): %0.0lf,%0.0lf,%0.2lf\\n\", ");
+      String _name_3 = this.stencilVar.getName();
+      _builder.append(_name_3);
+      _builder.append("_card, total_card, expected_overhead);");
+      _builder.newLineIfNotEmpty();
+      _builder.newLine();
+      _builder.append("#undef ceild");
+      _builder.newLine();
+      _builder.append("#undef floord");
+      _builder.newLine();
+      _builder.append("#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _builder.append("#define floord(n,d) (int)floor(((double)(n))/((double)(d)))");
+      _builder.newLine();
+      _xblockexpression = _builder;
+    }
+    return _xblockexpression;
+  }
+
+  public ISLPWQPolynomial computeComplexity(final Variable variable) {
+    ISLPWQPolynomial _xblockexpression = null;
+    {
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation e) -> {
+        Variable _variable = e.getVariable();
+        return Boolean.valueOf(Objects.equal(_variable, variable));
+      };
+      final StandardEquation eq = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function);
+      _xblockexpression = this.computeComplexity(variable, eq.getExpr());
+    }
+    return _xblockexpression;
+  }
+
+  protected ISLPWQPolynomial _computeComplexity(final Variable variable, final ReduceExpression re) {
+    return this.computeComplexity(variable, re.getBody());
+  }
+
+  protected ISLPWQPolynomial _computeComplexity(final Variable variable, final AlphaExpression ae) {
+    return BarvinokBindings.card(ae.getContextDomain());
   }
 
   public String localMemoryFree() {
@@ -1001,8 +1219,222 @@ public class SystemCodeGen {
         _xifexpression = ("C2_NR" + _reduce);
       }
       final String injectionName = _xifexpression;
-      final Function1<StandardEquation, String> _function_4 = (StandardEquation it) -> {
-        String _xblockexpression_1 = null;
+      final EList<StandardEquation> stdEqs = this.system.getSystemBodies().get(0).getStandardEquations();
+      Iterable<String> _xblockexpression_1 = null;
+      {
+        final Function1<StandardEquation, Boolean> _function_4 = (StandardEquation it) -> {
+          Variable _variable = it.getVariable();
+          return Boolean.valueOf(Objects.equal(_variable, this.stencilVar));
+        };
+        AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(stdEqs, _function_4).getExpr();
+        final EList<AlphaExpression> yCBEs = ((CaseExpression) _expr).getExprs();
+        int _size_3 = yCBEs.size();
+        final Function1<Integer, String> _function_5 = (Integer i) -> {
+          String _xblockexpression_2 = null;
+          {
+            final AlphaExpression expr = yCBEs.get((i).intValue());
+            final List<String> indexNames = expr.getContextDomain().getIndexNames();
+            final String indexNamesStr = IterableExtensions.join(indexNames, ",");
+            String _name = this.stencilVar.getName();
+            String _plus = ("S" + _name);
+            String _plus_1 = (_plus + "_cb");
+            final String name = (_plus_1 + i);
+            Equation _containerEquation = AlphaUtil.getContainerEquation(expr);
+            final StandardEquation eq = ((StandardEquation) _containerEquation);
+            final CharSequence rhs = this.printStmtExpr(expr);
+            StringConcatenation _builder = new StringConcatenation();
+            String _name_1 = eq.getVariable().getName();
+            _builder.append(_name_1);
+            _builder.append("(");
+            _builder.append(indexNamesStr);
+            _builder.append(")");
+            final String lhs = _builder.toString();
+            String defIndexNamesStr = indexNamesStr;
+            String op = "=";
+            StringConcatenation _builder_1 = new StringConcatenation();
+            _builder_1.append(lhs);
+            _builder_1.append(" ");
+            _builder_1.append(op);
+            _builder_1.append(" ");
+            _builder_1.append(rhs);
+            final String stmtStr = _builder_1.toString();
+            String _xifexpression_1 = null;
+            if (((i).intValue() == 2)) {
+              String _xblockexpression_3 = null;
+              {
+                String _xifexpression_2 = null;
+                boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V1);
+                if (_equals_1) {
+                  final Function1<Pair<String, Integer>, String> _function_6 = (Pair<String, Integer> it) -> {
+                    StringConcatenation _builder_2 = new StringConcatenation();
+                    String _key = it.getKey();
+                    _builder_2.append(_key);
+                    _builder_2.append("==");
+                    Integer _value = it.getValue();
+                    _builder_2.append(_value);
+                    _builder_2.append("*t");
+                    String _key_1 = it.getKey();
+                    _builder_2.append(_key_1);
+                    _builder_2.append("_INJ+");
+                    Integer _value_1 = it.getValue();
+                    int _divide = ((_value_1).intValue() / 2);
+                    _builder_2.append(_divide);
+                    return _builder_2.toString();
+                  };
+                  _xifexpression_2 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(spatialContext, _function_6), " && ");
+                } else {
+                  final Function1<Pair<String, Integer>, String> _function_7 = (Pair<String, Integer> it) -> {
+                    StringConcatenation _builder_2 = new StringConcatenation();
+                    String _key = it.getKey();
+                    _builder_2.append(_key);
+                    _builder_2.append("==");
+                    Integer _value = it.getValue();
+                    int _minus = ((_value).intValue() - (2 * TT));
+                    _builder_2.append(_minus);
+                    _builder_2.append("*t");
+                    String _key_1 = it.getKey();
+                    _builder_2.append(_key_1);
+                    _builder_2.append("_INJ+");
+                    Integer _value_1 = it.getValue();
+                    int _divide = ((_value_1).intValue() / 2);
+                    _builder_2.append(_divide);
+                    return _builder_2.toString();
+                  };
+                  _xifexpression_2 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(spatialContext, _function_7), " && ");
+                }
+                final String injectionSVals = _xifexpression_2;
+                StringConcatenation _builder_2 = new StringConcatenation();
+                _builder_2.append("if (t==");
+                _builder_2.append(TT);
+                _builder_2.append("*(tt_INJ-1)+1 && ");
+                _builder_2.append(injectionSVals);
+                _builder_2.append(") inject_");
+                String _name_2 = this.system.getName();
+                _builder_2.append(_name_2);
+                _builder_2.append("(&");
+                _builder_2.append(lhs);
+                _builder_2.append(")");
+                final String injExpr = _builder_2.toString();
+                StringConcatenation _builder_3 = new StringConcatenation();
+                _builder_3.append("#define ");
+                _builder_3.append(name);
+                _builder_3.append("_hook(");
+                _builder_3.append(defIndexNamesStr);
+                _builder_3.append(") ");
+                _builder_3.append(stmtStr);
+                _builder_3.newLineIfNotEmpty();
+                _builder_3.append("#ifdef ERROR_INJECTION");
+                _builder_3.newLine();
+                _builder_3.append("#define ");
+                _builder_3.append(name);
+                _builder_3.append("(");
+                _builder_3.append(defIndexNamesStr);
+                _builder_3.append(") do { ");
+                _builder_3.append(name);
+                _builder_3.append("_hook(");
+                _builder_3.append(defIndexNamesStr);
+                _builder_3.append("); ");
+                _builder_3.append(injExpr);
+                _builder_3.append("; } while(0)");
+                _builder_3.newLineIfNotEmpty();
+                _builder_3.append("#else");
+                _builder_3.newLine();
+                _builder_3.append("#define ");
+                _builder_3.append(name);
+                _builder_3.append("(");
+                _builder_3.append(defIndexNamesStr);
+                _builder_3.append(") ");
+                _builder_3.append(name);
+                _builder_3.append("_hook(");
+                _builder_3.append(defIndexNamesStr);
+                _builder_3.append(")");
+                _builder_3.newLineIfNotEmpty();
+                _builder_3.append("#endif");
+                _xblockexpression_3 = _builder_3.toString();
+              }
+              _xifexpression_1 = _xblockexpression_3;
+            } else {
+              StringConcatenation _builder_2 = new StringConcatenation();
+              _builder_2.append("#define ");
+              _builder_2.append(name);
+              _builder_2.append("(");
+              _builder_2.append(defIndexNamesStr);
+              _builder_2.append(") ");
+              _builder_2.append(stmtStr);
+              _xifexpression_1 = _builder_2.toString();
+            }
+            _xblockexpression_2 = _xifexpression_1;
+          }
+          return _xblockexpression_2;
+        };
+        _xblockexpression_1 = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size_3, true), _function_5);
+      }
+      final Iterable<String> stencilVarMacros = _xblockexpression_1;
+      Iterable<String> _xifexpression_1 = null;
+      boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V2);
+      if (_equals_1) {
+        Iterable<String> _xblockexpression_2 = null;
+        {
+          final Function1<StandardEquation, Boolean> _function_4 = (StandardEquation it) -> {
+            String _name = it.getVariable().getName();
+            return Boolean.valueOf(Objects.equal(_name, "C2"));
+          };
+          AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(stdEqs, _function_4).getExpr();
+          final EList<AlphaExpression> c2CBEs = ((CaseExpression) _expr).getExprs();
+          int _size_3 = c2CBEs.size();
+          final Function1<Integer, String> _function_5 = (Integer i) -> {
+            String _xblockexpression_3 = null;
+            {
+              final AlphaExpression expr = c2CBEs.get((i).intValue());
+              final List<String> indexNames = expr.getContextDomain().getIndexNames();
+              final String indexNamesStr = IterableExtensions.join(indexNames, ",");
+              final String name = (("S" + "C2_cb") + i);
+              Equation _containerEquation = AlphaUtil.getContainerEquation(expr);
+              final StandardEquation eq = ((StandardEquation) _containerEquation);
+              final CharSequence rhs = this.printStmtExpr(expr);
+              StringConcatenation _builder = new StringConcatenation();
+              String _name = eq.getVariable().getName();
+              _builder.append(_name);
+              _builder.append("(");
+              _builder.append(indexNamesStr);
+              _builder.append(")");
+              final String lhs = _builder.toString();
+              String defIndexNamesStr = indexNamesStr;
+              String op = "=";
+              StringConcatenation _builder_1 = new StringConcatenation();
+              _builder_1.append(lhs);
+              _builder_1.append(" ");
+              _builder_1.append(op);
+              _builder_1.append(" ");
+              _builder_1.append(rhs);
+              final String stmtStr = _builder_1.toString();
+              StringConcatenation _builder_2 = new StringConcatenation();
+              _builder_2.append("#define ");
+              _builder_2.append(name);
+              _builder_2.append("(");
+              _builder_2.append(defIndexNamesStr);
+              _builder_2.append(") ");
+              _builder_2.append(stmtStr);
+              _xblockexpression_3 = _builder_2.toString();
+            }
+            return _xblockexpression_3;
+          };
+          _xblockexpression_2 = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size_3, true), _function_5);
+        }
+        _xifexpression_1 = _xblockexpression_2;
+      } else {
+        _xifexpression_1 = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList());
+      }
+      final Iterable<String> c2cbeMacros = _xifexpression_1;
+      final Function1<StandardEquation, Boolean> _function_4 = (StandardEquation it) -> {
+        Variable _variable = it.getVariable();
+        return Boolean.valueOf(Objects.equal(_variable, this.stencilVar));
+      };
+      final Function1<StandardEquation, Boolean> _function_5 = (StandardEquation it) -> {
+        return Boolean.valueOf((Objects.equal(it.getVariable().getName(), "C2") && Objects.equal(this.version, Version.ABFT_V2)));
+      };
+      final Function1<StandardEquation, String> _function_6 = (StandardEquation it) -> {
+        String _xblockexpression_3 = null;
         {
           final List<String> indexNames = it.getExpr().getContextDomain().getIndexNames();
           final String indexNamesStr = IterableExtensions.join(indexNames, ",");
@@ -1035,119 +1467,20 @@ public class SystemCodeGen {
           _builder_1.append(" ");
           _builder_1.append(rhs);
           final String stmtStr = _builder_1.toString();
-          String _xifexpression_1 = null;
-          Variable _variable = it.getVariable();
-          boolean _equals_1 = Objects.equal(_variable, this.stencilVar);
-          if (_equals_1) {
-            String _xblockexpression_2 = null;
-            {
-              String _xifexpression_2 = null;
-              boolean _equals_2 = Objects.equal(this.version, Version.ABFT_V1);
-              if (_equals_2) {
-                final Function1<Pair<String, Integer>, String> _function_5 = (Pair<String, Integer> it_1) -> {
-                  StringConcatenation _builder_2 = new StringConcatenation();
-                  String _key = it_1.getKey();
-                  _builder_2.append(_key);
-                  _builder_2.append("==");
-                  Integer _value = it_1.getValue();
-                  _builder_2.append(_value);
-                  _builder_2.append("*t");
-                  String _key_1 = it_1.getKey();
-                  _builder_2.append(_key_1);
-                  _builder_2.append("_INJ+");
-                  Integer _value_1 = it_1.getValue();
-                  int _divide = ((_value_1).intValue() / 2);
-                  _builder_2.append(_divide);
-                  return _builder_2.toString();
-                };
-                _xifexpression_2 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(spatialContext, _function_5), " && ");
-              } else {
-                final Function1<Pair<String, Integer>, String> _function_6 = (Pair<String, Integer> it_1) -> {
-                  StringConcatenation _builder_2 = new StringConcatenation();
-                  String _key = it_1.getKey();
-                  _builder_2.append(_key);
-                  _builder_2.append("==");
-                  Integer _value = it_1.getValue();
-                  int _minus = ((_value).intValue() - (2 * TT));
-                  _builder_2.append(_minus);
-                  _builder_2.append("*t");
-                  String _key_1 = it_1.getKey();
-                  _builder_2.append(_key_1);
-                  _builder_2.append("_INJ+");
-                  Integer _value_1 = it_1.getValue();
-                  int _divide = ((_value_1).intValue() / 2);
-                  _builder_2.append(_divide);
-                  return _builder_2.toString();
-                };
-                _xifexpression_2 = IterableExtensions.join(ListExtensions.<Pair<String, Integer>, String>map(spatialContext, _function_6), " && ");
-              }
-              final String injectionSVals = _xifexpression_2;
-              StringConcatenation _builder_2 = new StringConcatenation();
-              _builder_2.append("if (t==");
-              _builder_2.append(TT);
-              _builder_2.append("*(tt_INJ-1)+1 && ");
-              _builder_2.append(injectionSVals);
-              _builder_2.append(") inject_");
-              String _name_2 = this.system.getName();
-              _builder_2.append(_name_2);
-              _builder_2.append("(&");
-              _builder_2.append(lhs);
-              _builder_2.append(")");
-              final String injExpr = _builder_2.toString();
-              StringConcatenation _builder_3 = new StringConcatenation();
-              _builder_3.append("#define ");
-              _builder_3.append(name);
-              _builder_3.append("_hook(");
-              _builder_3.append(defIndexNamesStr);
-              _builder_3.append(") ");
-              _builder_3.append(stmtStr);
-              _builder_3.newLineIfNotEmpty();
-              _builder_3.append("#ifdef ERROR_INJECTION");
-              _builder_3.newLine();
-              _builder_3.append("#define ");
-              _builder_3.append(name);
-              _builder_3.append("(");
-              _builder_3.append(defIndexNamesStr);
-              _builder_3.append(") do { ");
-              _builder_3.append(name);
-              _builder_3.append("_hook(");
-              _builder_3.append(defIndexNamesStr);
-              _builder_3.append("); ");
-              _builder_3.append(injExpr);
-              _builder_3.append("; } while(0)");
-              _builder_3.newLineIfNotEmpty();
-              _builder_3.append("#else");
-              _builder_3.newLine();
-              _builder_3.append("#define ");
-              _builder_3.append(name);
-              _builder_3.append("(");
-              _builder_3.append(defIndexNamesStr);
-              _builder_3.append(") ");
-              _builder_3.append(name);
-              _builder_3.append("_hook(");
-              _builder_3.append(defIndexNamesStr);
-              _builder_3.append(")");
-              _builder_3.newLineIfNotEmpty();
-              _builder_3.append("#endif");
-              _xblockexpression_2 = _builder_3.toString();
-            }
-            _xifexpression_1 = _xblockexpression_2;
-          } else {
-            StringConcatenation _builder_2 = new StringConcatenation();
-            _builder_2.append("#define ");
-            _builder_2.append(name);
-            _builder_2.append("(");
-            _builder_2.append(defIndexNamesStr);
-            _builder_2.append(") ");
-            _builder_2.append(stmtStr);
-            _xifexpression_1 = _builder_2.toString();
-          }
-          _xblockexpression_1 = _xifexpression_1;
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append("#define ");
+          _builder_2.append(name);
+          _builder_2.append("(");
+          _builder_2.append(defIndexNamesStr);
+          _builder_2.append(") ");
+          _builder_2.append(stmtStr);
+          _xblockexpression_3 = _builder_2.toString();
         }
-        return _xblockexpression_1;
+        return _xblockexpression_3;
       };
-      final List<String> macros = IterableExtensions.<String>sort(ListExtensions.<StandardEquation, String>map(this.system.getSystemBodies().get(0).getStandardEquations(), _function_4));
-      _xblockexpression = IterableExtensions.join(macros, "\n");
+      final Iterable<String> macros = IterableExtensions.<StandardEquation, String>map(IterableExtensions.<StandardEquation>reject(IterableExtensions.<StandardEquation>reject(stdEqs, _function_4), _function_5), _function_6);
+      Iterable<String> _plus = Iterables.<String>concat(macros, c2cbeMacros);
+      _xblockexpression = IterableExtensions.join(IterableExtensions.<String>sort(Iterables.<String>concat(_plus, stencilVarMacros)), "\n");
     }
     return _xblockexpression;
   }
@@ -1621,6 +1954,48 @@ public class SystemCodeGen {
     return _xblockexpression;
   }
 
+  public CharSequence sigantureParamsAsFloats(final AlphaSystem system) {
+    CharSequence _sigantureParamsAsFloats = null;
+    if (system!=null) {
+      _sigantureParamsAsFloats=this.sigantureParamsAsFloats(system, this.version);
+    }
+    return _sigantureParamsAsFloats;
+  }
+
+  public CharSequence sigantureParamsAsFloats(final AlphaSystem system, final Version _version) {
+    CharSequence _xblockexpression = null;
+    {
+      final Function1<String, String> _function = (String p) -> {
+        return ("double " + p);
+      };
+      final String paramArgs = IterableExtensions.join(ListExtensions.<String, String>map(system.getParameterDomain().getParamNames(), _function), ", ");
+      EList<Variable> _inputs = system.getInputs();
+      EList<Variable> _outputs = system.getOutputs();
+      final Function1<Variable, String> _function_1 = (Variable v) -> {
+        int _indirectionLevel = this.indirectionLevel(v);
+        final Function1<Integer, String> _function_2 = (Integer it) -> {
+          return "*";
+        };
+        String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _indirectionLevel, true), _function_2));
+        String _plus = ("float " + _join);
+        String _name = v.getName();
+        return (_plus + _name);
+      };
+      final String ioArgs = IterableExtensions.join(IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function_1), ", ");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("void ");
+      String _name = system.getName();
+      _builder.append(_name);
+      _builder.append("(");
+      _builder.append(paramArgs);
+      _builder.append(", ");
+      _builder.append(ioArgs);
+      _builder.append(")");
+      _xblockexpression = _builder;
+    }
+    return _xblockexpression;
+  }
+
   public CharSequence signature(final AlphaSystem system) {
     CharSequence _signature = null;
     if (system!=null) {
@@ -1869,6 +2244,17 @@ public class SystemCodeGen {
 
   protected static ISLSet _getStmtDomain(final Variable variable, final AlphaExpression ae) {
     return ae.getContextDomain().copy();
+  }
+
+  public ISLPWQPolynomial computeComplexity(final Variable variable, final AlphaExpression re) {
+    if (re instanceof ReduceExpression) {
+      return _computeComplexity(variable, (ReduceExpression)re);
+    } else if (re != null) {
+      return _computeComplexity(variable, re);
+    } else {
+      throw new IllegalArgumentException("Unhandled parameter types: " +
+        Arrays.<Object>asList(variable, re).toString());
+    }
   }
 
   public CharSequence printStmtExpr(final AlphaExpression re) {

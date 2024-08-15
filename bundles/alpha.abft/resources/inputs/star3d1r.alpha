@@ -1,4 +1,4 @@
-affine star3d1r [T,N]->{: N>=50 and T>=10}
+affine star3d1r [T,N]->{: N>=20 and T>=10}
   inputs
     X : {[i,j,k] : 0<=i,j,k<=N};
   outputs

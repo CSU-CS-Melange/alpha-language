@@ -7,7 +7,6 @@ import alpha.codegen.Factory
 import alpha.codegen.alphaBase.AlphaNameChecker
 import alpha.codegen.alphaBase.ExprConverter
 import alpha.codegen.demandDriven.WriteCTypeGenerator
-import alpha.codegen.isl.MemoryUtils
 import alpha.codegen.isl.PolynomialConverter
 import alpha.model.AlphaExpression
 import alpha.model.AlphaSystem
@@ -18,23 +17,24 @@ import alpha.model.Variable
 import alpha.model.transformation.StandardizeNames
 import alpha.model.util.AShow
 import alpha.model.util.AlphaUtil
+import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean
 import org.eclipse.xtend.lib.annotations.Accessors
 
 import static extension alpha.abft.ABFT.buildParamStr
-import static extension alpha.abft.ABFT.identify_convolution
 import static extension alpha.codegen.ProgramPrinter.print
 import static extension alpha.codegen.ProgramPrinter.printExpr
 import static extension alpha.codegen.ProgramPrinter.printStmt
 import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
 import static extension alpha.codegen.isl.AffineConverter.convertAff
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
+import static extension alpha.codegen.isl.PolynomialConverter.convert
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
-import static extension alpha.model.util.CommonExtensions.permutations
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
@@ -42,14 +42,8 @@ import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLMap
 import static extension alpha.model.util.ISLUtil.toISLSchedule
 import static extension alpha.model.util.ISLUtil.toISLSet
-import static extension alpha.model.util.ISLUtil.toISLUnionMap
-import static extension alpha.model.util.ISLUtil.toISLUnionSet
-import static extension alpha.codegen.isl.PolynomialConverter.convert
 import static extension fr.irisa.cairn.jnimap.isl.ISLMap.buildIdentity
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
-import alpha.codegen.alphaBase.TypeGeneratorBase
-import alpha.model.BinaryExpression
+import alpha.model.CaseExpression
 
 enum Version {
 		BASELINE,
@@ -62,7 +56,7 @@ class SystemCodeGen {
 	
 	public static String ERROR_INJECTION = 'ERROR_INJECTION'
 	public static String TIMING = 'TIMING'
-	public static String NOISE = 'NOISE'
+	public static String REPORT_COMPLEXITY_ONLY = 'REPORT_COMPLEXITY_ONLY'
 	
 	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val AlphaSystem system
@@ -118,21 +112,60 @@ class SystemCodeGen {
 		this.exprConverter = new ExprConverter(typeGenerator, nameChecker)
 		this.stmtPrefix = 'S'
 		
-		this.scheduleDomain = systemBody.standardEquations
-		.map[variable.name -> variable.getStmtDomain(expr)]
-		.map[value.setTupleName(key).copy.toUnionSet]
-		.fold(systemBody.parameterDomain.space.toEmptyUnionSet, [ret, d | ret.union(d)])
-		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
-		
 		this.stencilVar = system.outputs.get(0)
 		this.version = version
 		this.tileSizes = tileSizes
 		
-		println(scheduleStr)
+		this.scheduleDomain = buildScheduleDomain
+		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
+		
+//		println(scheduleStr)
 		
 		this.schedule = scheduleStr.toISLSchedule
 		
 		StandardizeNames.apply(system)
+	}
+	
+	def buildScheduleDomain() {
+		// case expression for Y needs to be split into several statements
+		// case expression for C2 in v2 also needs to be split
+		val yCBEs = (systemBody.standardEquations.findFirst[variable == stencilVar].expr as CaseExpression).exprs
+		val yDomain = (0..<yCBEs.size).map[i | i->yCBEs.get(i)].fold(
+			ISLUnionSet.buildEmpty(stencilVar.domain.space),
+			[ret, p | 
+				val i = p.key
+				val expr = p.value
+				ret.union(expr.contextDomain.copy.setTupleName(stencilVar.name + '_cb' + i).toUnionSet)
+			]
+		)
+		
+		val c2Domain = if (version == Version.ABFT_V2) {
+			val c2Eq = systemBody.standardEquations.findFirst[variable.name == 'C2']
+			val c2CBEs = (c2Eq.expr as CaseExpression).exprs;
+			(0..<c2CBEs.size).map[i | i->c2CBEs.get(i)].fold(
+				ISLUnionSet.buildEmpty(c2Eq.variable.domain.space),
+				[ret, p | 
+					val i = p.key
+					val expr = p.value
+					ret.union(expr.contextDomain.copy.setTupleName('C2_cb' + i).toUnionSet)
+				]
+			)
+		} else if (version == Version.BASELINE || version == Version.WRAPPER) {
+			ISLUnionSet.buildEmpty(stencilVar.domain.space)
+		} else {
+			val c2Eq = systemBody.standardEquations
+				.findFirst[variable.name == 'C2']
+			c2Eq.variable.getStmtDomain(c2Eq.expr)
+				.setTupleName('C2').toUnionSet
+		}
+		
+		val domain = systemBody.standardEquations
+			.reject[variable == stencilVar || variable.name == 'C2']
+			.map[variable.name -> variable.getStmtDomain(expr)]
+			.map[value.setTupleName(key).copy.toUnionSet]
+			.fold(systemBody.parameterDomain.space.toEmptyUnionSet, [ret, d | ret.union(d)])
+		
+		domain.union(yDomain).union(c2Domain)
 	}
 	
 	def static String defaultSchedule(AlphaSystem system) {
@@ -228,10 +261,17 @@ class SystemCodeGen {
 	#endif
 	
 	«ENDIF»
+	#if defined «REPORT_COMPLEXITY_ONLY»
+	«system.sigantureParamsAsFloats»
+	#else
 	«system.signature»
+	#endif
 	{
+		#if defined «REPORT_COMPLEXITY_ONLY»
+		«computeComplexity»
+		#else
 		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
-		#ifdef ERROR_INJECTION
+		#if defined ERROR_INJECTION
 		// Error injection configuration
 		«stencilVar.domain.indexNames.map[i |
   	  '''t«i»_INJ = getenv("t«i»_INJ") != NULL ? atoi(getenv("t«i»_INJ")) : -1'''].join(';\n')
@@ -261,6 +301,7 @@ class SystemCodeGen {
 		«localMemoryFree»
 		
 		return result;
+		#endif
 	}
 		'''
 		code	
@@ -285,10 +326,65 @@ class SystemCodeGen {
 			 «FOR i : 1..<scheduleLines.size»
 			 *   «scheduleLines.get(i)»
  			 «ENDFOR»
+«««			 *
+«««			 * Has complexity
+«««			 «FOR line : computeComplexity.toString.split('\n')»
+«««			 *   «line»
+««« 			 «ENDFOR»
 			 *
 			 */
 		'''
 		code
+	}
+	
+	def computeComplexity() {
+		
+		val stencilVarPoints = stencilVar.computeComplexity
+		if (version == Version.BASELINE) {
+			return '' 
+		}
+		
+		val checksumPoints = systemBody.standardEquations
+			.map[variable.computeComplexity]
+			.reduce[p1,p2 | p1.add(p2)]
+		val versionStr = switch (version) {
+			case Version.ABFT_V1: 'v1 '
+			case Version.ABFT_V2: 'v2 '
+			default: ''
+		}
+		
+		val stencilVarCard = PolynomialConverter.convert(stencilVarPoints).printExpr.toString
+			.replaceAll('([-]*[0-9][0-9]*)', '((double)$1)')
+		val checksumsCard = PolynomialConverter.convert(checksumPoints).printExpr.toString
+			.replaceAll('([-]*[0-9][0-9]*)', '((double)$1)')
+		
+		'''
+			#undef ceild
+			#undef floord
+			#define ceild(n,d)  (double)ceil(((double)(n))/((double)(d)))
+			#define floord(n,d) (double)floor(((double)(n))/((double)(d)))
+			
+			double «stencilVar.name»_card = «stencilVarCard»;
+			double total_card = «checksumsCard»;
+			double expected_overhead = total_card / «stencilVar.name»_card;
+			printf("«versionStr»(«stencilVar.name»,C,overhead): %0.0lf,%0.0lf,%0.2lf\n", «stencilVar.name»_card, total_card, expected_overhead);
+			
+			#undef ceild
+			#undef floord
+			#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
+			#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
+		'''
+	}
+	
+	def ISLPWQPolynomial computeComplexity(Variable variable) {
+		val eq = systemBody.standardEquations.findFirst[e | e.variable == variable]
+		computeComplexity(variable, eq.expr)
+	}
+	def dispatch ISLPWQPolynomial computeComplexity(Variable variable, ReduceExpression re) {
+		computeComplexity(variable, re.body)
+	}
+	def dispatch ISLPWQPolynomial computeComplexity(Variable variable, AlphaExpression ae) {
+		BarvinokBindings.card(ae.contextDomain)
 	}
 	
 	def localMemoryFree() {
@@ -488,7 +584,68 @@ class SystemCodeGen {
 		} else {
 			'C2_NR' + (0..<nbSpatialDims).map[3].reduce[v1,v2|v1*v2]
 		}
-		val macros = system.systemBodies.get(0).standardEquations.map[
+		val stdEqs = system.systemBodies.get(0).standardEquations
+		val stencilVarMacros = {
+			val yCBEs = (stdEqs.findFirst[variable == stencilVar].expr as CaseExpression).exprs;
+			(0..<yCBEs.size).map[i |
+				val expr = yCBEs.get(i)
+				val indexNames = expr.contextDomain.indexNames
+				val indexNamesStr = indexNames.join(',')
+				val name = 'S' + stencilVar.name + '_cb' + i
+				val eq = expr.getContainerEquation as StandardEquation
+				
+				val rhs = expr.printStmtExpr
+				val lhs = '''«eq.variable.name»(«indexNamesStr»)'''
+				var defIndexNamesStr = indexNamesStr
+				var op = '='
+				val stmtStr = '''«lhs» «op» «rhs»''' 
+				
+				if (i==2) {										
+					val injectionSVals = if (version == Version.ABFT_V1) {
+						spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
+					} else {
+						spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2»'''].join(' && ')
+					}
+					
+	//				var injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») { printf("        Y(«indexNames.map['%d'].join(',')»)\n", «indexNames.join(',')»); printf("before: %E\n", «lhs»); inject_«system.name»(&«lhs»); printf(" after: %E\n", «lhs»); } '''
+					val injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») inject_«system.name»(&«lhs»)'''
+					'''
+						#define «name»_hook(«defIndexNamesStr») «stmtStr»
+						#ifdef ERROR_INJECTION
+						#define «name»(«defIndexNamesStr») do { «name»_hook(«defIndexNamesStr»); «injExpr»; } while(0)
+						#else
+						#define «name»(«defIndexNamesStr») «name»_hook(«defIndexNamesStr»)
+						#endif'''
+				} else {
+					'''#define «name»(«defIndexNamesStr») «stmtStr»'''
+				}
+				
+				
+			]
+		}
+		
+		val c2cbeMacros = if (version == Version.ABFT_V2) {
+			val c2CBEs = (stdEqs.findFirst[variable.name == 'C2'].expr as CaseExpression).exprs;
+			(0..<c2CBEs.size).map[i |
+				val expr = c2CBEs.get(i)
+				val indexNames = expr.contextDomain.indexNames
+				val indexNamesStr = indexNames.join(',')
+				val name = 'S' + 'C2_cb' + i
+				val eq = expr.getContainerEquation as StandardEquation
+				
+				val rhs = expr.printStmtExpr
+				val lhs = '''«eq.variable.name»(«indexNamesStr»)'''
+				var defIndexNamesStr = indexNamesStr
+				var op = '='
+				val stmtStr = '''«lhs» «op» «rhs»''' 
+				
+				'''#define «name»(«defIndexNamesStr») «stmtStr»'''
+			]
+		} else {
+			#[]
+		}
+		
+		val macros = stdEqs.reject[variable == stencilVar].reject[variable.name == 'C2' && version == Version.ABFT_V2].map[
 			val indexNames = expr.contextDomain.indexNames
 			val indexNamesStr = indexNames.join(',')
 			val name = 'S' + variable.name
@@ -506,31 +663,11 @@ class SystemCodeGen {
 				op = '+='				
 			}
 			val stmtStr = '''«lhs» «op» «rhs»''' 
-			/*
-			 * Add injection code for stencil variable stmt
-			 */
-			if (variable == stencilVar) {
-				val injectionSVals = if (version == Version.ABFT_V1) {
-					spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
-				} else {
-					spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2»'''].join(' && ')
-				}
-				
-//				var injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») { printf("        Y(«indexNames.map['%d'].join(',')»)\n", «indexNames.join(',')»); printf("before: %E\n", «lhs»); inject_«system.name»(&«lhs»); printf(" after: %E\n", «lhs»); } '''
-				val injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») inject_«system.name»(&«lhs»)'''
-				'''
-					#define «name»_hook(«defIndexNamesStr») «stmtStr»
-					#ifdef ERROR_INJECTION
-					#define «name»(«defIndexNamesStr») do { «name»_hook(«defIndexNamesStr»); «injExpr»; } while(0)
-					#else
-					#define «name»(«defIndexNamesStr») «name»_hook(«defIndexNamesStr»)
-					#endif'''
-			} else {
-				'''#define «name»(«defIndexNamesStr») «stmtStr»'''
-			}
-		].sort
+			
+			'''#define «name»(«defIndexNamesStr») «stmtStr»'''
+		]
 		
-		macros.join('\n')
+		(macros + c2cbeMacros + stencilVarMacros).sort.join('\n')
 	}
 	
 	def prepareResult() {
@@ -722,6 +859,19 @@ class SystemCodeGen {
 		code
 	}
 	
+	def sigantureParamsAsFloats(AlphaSystem system) {
+		system?.sigantureParamsAsFloats(version)
+	}
+	def sigantureParamsAsFloats(AlphaSystem system, Version _version) {
+		val paramArgs = system.parameterDomain.paramNames
+				.map[p | 'double ' + p]
+				.join(', ')
+		val ioArgs = (system.inputs + system.outputs)
+				.map[v | 'float ' + (0..<v.indirectionLevel).map['*'].join + v.name]
+				.join(', ')
+			
+			'''void «system.name»(«paramArgs», «ioArgs»)'''
+	}
 	def signature(AlphaSystem system) {
 		system?.signature(version)
 	}
