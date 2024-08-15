@@ -49,7 +49,7 @@ class ScheduledExprConverter extends ExprConverter {
 	protected var reductionTargetNumber = 0
 	
 	protected var MemoryMapper mapper
-	
+		
 	/**
 	 * A counter for the number of reductions that have been created.
 	 * This is used for determining the names of functions and macros which will be emitted.
@@ -57,7 +57,9 @@ class ScheduledExprConverter extends ExprConverter {
 	protected var nextReductionId = 0
 	
 	/** Constructs a new converter for expressions. */
-	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, ProgramBuilder program, Scheduler scheduler, MemoryMapper mapper) {
+	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, 
+		ProgramBuilder program, Scheduler scheduler, MemoryMapper mapper
+	) {
 		super(typeGenerator, nameChecker)
 		this.program = program
 		this.typeGenerator = typeGenerator
@@ -69,7 +71,7 @@ class ScheduledExprConverter extends ExprConverter {
 	def setTarget(String reductionTarget) { 
 		if(this.reductionTarget != reductionTarget) {
 			reductionTargetNumber = 0
-		}
+		} 
 		this.reductionTarget = reductionTarget
 	}
 	/**
@@ -86,30 +88,6 @@ class ScheduledExprConverter extends ExprConverter {
 		val callArguments = #[expr.contextDomain.paramNames, expr.contextDomain.indexNames].flatten
 		return Factory.callExpr(reduceFunction.name, callArguments)
 	}
-	
-	/**
-	 * Translates a variable expression into a variable access.
-	 * Note: variable expressions inside dependence expressions are handled
-	 * by the dependence expression converter, not here.
-	 * If this is reached, then the variable is implicitly being accessed by the identity function.
-	*/
-	override dispatch Expression convertExpr(VariableExpression expr) {
-		// Emit a call to this variable's indexing function/macro
-		// using the indices themselves as the arguments (i.e., the identity function).
-		val name = nameChecker.getVariableReadName(expr.variable)
-		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mapper.getMemoryMap(expr.variable)))
-		return Factory.callExpr(name, indexExprs)
-	}
-	
-	/** If the child is a variable, read the value indexed by the dependence function. */
-	override dispatch convertDependence(DependenceExpression parent, VariableExpression child) {
-		// We read the variable by calling a function of the variable's "read name"
-		// with the indexing expression indicated by the dependence.
-		val name = nameChecker.getVariableReadName(child.variable)
-		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mapper.getMemoryMap(child.variable)).pullback(parent.function))
-		return Factory.callExpr(name, indexExprs)
-	}
-	
 	
 	/** Creates the function which evaluates the reduction at a specific output point. */
 	def protected createReduceFunction(ProgramBuilder program, ReduceExpression expr, String variableName) {
@@ -130,7 +108,6 @@ class ScheduledExprConverter extends ExprConverter {
 		// The return type is the value type of the variable that the reduce expression writes to.
 		val function = program.startFunction(true, false, typeGenerator.alphaValueType, reduceFunctionName)
 
-		//println("Variable: " + this.reductionTarget)		
 		// Create the "reduction variable", which is what the reduction will accumulate into.
 		// This needs to be initialized to the correct value for the reduction operator.
 		val initializeStmt = Factory.assignmentStmt(reduceVarName, AlphaBaseHelpers.getReductionInitialValue(typeGenerator.alphaValueBaseType, expr.operator))
@@ -144,23 +121,25 @@ class ScheduledExprConverter extends ExprConverter {
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
 		val reduceBodyName = variableName + "_reduce" + reductionTargetNumber + "_body"
-		val reduceResultName = variableName + "_reduce" + reductionTargetNumber + "_result"
+		println("Reduction: " + reduceBodyName)
+		
+		this.reductionTargetNumber++
 		
 		
 		// Use isl to determine what points need to be reduced and how they get reduced.
-		var loopDomain = expr.createReduceLoopDomain
-		loopDomain = loopDomain.setTupleName(reduceBodyName)
-		
-		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity
-		
-		println("scheduleMap: " + scheduleMap.copy)
-		println("Domain: " + loopDomain.copy)
-		
+		var generatedDomain = expr.createReduceLoopDomain
+		println("Generated Domain: " + generatedDomain)
+		generatedDomain = generatedDomain.setTupleName(reduceBodyName)		
+		var loopDomain = scheduler.getScheduleDomain(reduceBodyName) ?: generatedDomain.copy
+		loopDomain = loopDomain.setTupleName(reduceBodyName)		
+		loopDomain = loopDomain.intersect(generatedDomain)
+		println("Loop Domain: " + loopDomain)
+
+		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity		
+		println("Schedule Map: " + scheduleMap)
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
 			scheduleMap.copy.intersectDomain(loopDomain.copy).copy)
-
-		//val islAST = LoopGenerator.generateLoops(accumulateMacro.name, loopDomain)
 		
 		// The size parameters for the loop domain need to be added as function parameters.
 		function.addParameter(loopDomain.copy.paramNames.map[toParameter])

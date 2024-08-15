@@ -20,6 +20,7 @@ class ManualScheduler implements Scheduler {
 		val schedule = toISLSchedule(scheduleString)
 		println("BLAH: " + schedule)
 		this.maps = schedule.map
+		this.maps.maps.forEach[x | println("Sched: " + x)]
 		this.domains = schedule.domain
 	}
 	

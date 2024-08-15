@@ -9,4 +9,8 @@ class IdentityMemoryMapper implements MemoryMapper {
 		variable.domain.copy.identity
 	}
 	
+	override getDestination(Variable variable) {
+		variable.name
+	}
+	
 }

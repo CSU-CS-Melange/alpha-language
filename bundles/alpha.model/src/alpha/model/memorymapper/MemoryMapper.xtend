@@ -5,4 +5,5 @@ import alpha.model.Variable
 
 interface MemoryMapper {
 	def ISLMap getMemoryMap(Variable variable)
+	def String getDestination(Variable variable)
 }

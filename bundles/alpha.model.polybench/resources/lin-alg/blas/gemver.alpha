@@ -24,6 +24,6 @@ affine gemver [N] -> {: N > 0}
 		w, x: {[i]: 0 <= i < N};
 	let
 		Aout[i,j] = Ain[i,j] + u1[i] * v1[j] + u2[i] * v2[j];
-		x[i] = beta * reduce(+, [j], Aout[i, j] * y[j]) + z[i];
-		w[i] = alpha * reduce(+, [j], Aout[i, j] * x[j]);
+		x[i] = beta[] * reduce(+, [j], Aout[i, j] * y[j]) + z[i];
+		w[i] = alpha[] * reduce(+, [j], Aout[i, j] * x[j]);
 .

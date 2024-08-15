@@ -20,6 +20,7 @@ import alpha.codegen.alphaBase.AlphaNameChecker;
 import alpha.codegen.alphaBase.CodeGeneratorBase;
 import alpha.codegen.isl.ASTConversionResult;
 import alpha.codegen.isl.ASTConverter;
+import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
@@ -38,6 +39,7 @@ import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
+import fr.irisa.cairn.jnimap.isl.IISLSingleSpaceMapMethods;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
@@ -142,15 +144,29 @@ public class ScheduledC extends CodeGeneratorBase {
   @Override
   public void declareMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
+    final String memoryName = ("mem_" + name);
     ISLMap memoryMap = this.mapper.getMemoryMap(variable);
+    String _elvis = null;
+    String _destination = this.mapper.getDestination(variable);
+    if (_destination != null) {
+      _elvis = _destination;
+    } else {
+      String _variableStorageName = this.nameChecker.getVariableStorageName(variable);
+      _elvis = _variableStorageName;
+    }
+    String storageName = _elvis;
     ISLSet domain = variable.getDomain().copy();
     final List<String> names = domain.getIndexNames();
-    domain = domain.apply(memoryMap.copy()).<ISLSet>renameIndices(names);
+    final ISLMap mappedDomain = memoryMap.copy().intersectDomain(domain.copy()).<IISLSingleSpaceMapMethods>renameInputs(names).<ISLMap>setTupleName(ISLDimType.isl_dim_in, memoryName);
     final ISLPWQPolynomial rank = MemoryUtils.rank(domain);
     final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
-    final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(name, accessExpression);
-    final MacroStmt macroStmt = Factory.macroStmt(name, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), macroReplacement);
+    final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression);
+    final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), macroReplacement);
+    final ArrayList<CustomExpr> indexExprs = AffineConverter.convertMultiAff(ISLUtil.toMultiAff(mappedDomain));
+    final CallExpr statement = Factory.callExpr(memoryName, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
+    final MacroStmt mappedMacroStatement = Factory.macroStmt(name, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), statement);
     this.program.addMemoryMacro(macroStmt);
+    this.program.addMemoryMacro(mappedMacroStatement);
   }
 
   @Override
@@ -194,7 +210,15 @@ public class ScheduledC extends CodeGeneratorBase {
 
   @Override
   public void allocateVariable(final Variable variable) {
-    final String name = this.nameChecker.getVariableStorageName(variable);
+    String _elvis = null;
+    String _destination = this.mapper.getDestination(variable);
+    if (_destination != null) {
+      _elvis = _destination;
+    } else {
+      String _variableStorageName = this.nameChecker.getVariableStorageName(variable);
+      _elvis = _variableStorageName;
+    }
+    final String name = _elvis;
     final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
     this.allocatedVariables.add(name);
     final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(variable.getDomain().apply(this.mapper.getMemoryMap(variable)));
@@ -253,10 +277,6 @@ public class ScheduledC extends CodeGeneratorBase {
           }
         }
       }
-      final Consumer<ISLMap> _function = (ISLMap x) -> {
-        InputOutput.<String>println(("ASDF: " + x));
-      };
-      scheduleMaps.getMaps().forEach(_function);
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
       ISLUnionMap namedScheduleMaps = null;
       List<ISLMap> _maps_1 = scheduleMaps.getMaps();
@@ -273,11 +293,11 @@ public class ScheduledC extends CodeGeneratorBase {
                 this.nextStatementId = (_nextStatementId + 1);
               }
             } while(this.nameChecker.isGlobalOrKeyword(macroName));
-            final Function1<Variable, Boolean> _function_1 = (Variable x) -> {
+            final Function1<Variable, Boolean> _function = (Variable x) -> {
               String _name = x.getName();
               return Boolean.valueOf(Objects.equal(_name, name));
             };
-            final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function_1));
+            final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function));
             final MacroStmt macro = Factory.macroStmt(macroName, ((String[])Conversions.unwrapArray(variable_1.getDomain().getIndexNames(), String.class)), this.variableStatements.get(name));
             this.entryPoint.addStatement(macro);
             newMap = newMap.<ISLMap>setInputTupleName(macroName);
@@ -292,16 +312,16 @@ public class ScheduledC extends CodeGeneratorBase {
         }
       }
       InputOutput.<String>println("Schedule Maps");
-      final Consumer<ISLMap> _function_1 = (ISLMap map_2) -> {
+      final Consumer<ISLMap> _function = (ISLMap map_2) -> {
         InputOutput.<ISLMap>println(map_2);
       };
-      this.scheduler.getMaps().getMaps().forEach(_function_1);
+      this.scheduler.getMaps().getMaps().forEach(_function);
       final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
       final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function_2 = (String it) -> {
+      final Function1<String, VariableDecl> _function_1 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_2));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_1));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;

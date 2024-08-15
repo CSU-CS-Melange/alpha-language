@@ -7,6 +7,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
+import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -26,6 +27,10 @@ public class ManualScheduler implements Scheduler {
     final ISLSchedule schedule = ISLUtil.toISLSchedule(scheduleString);
     InputOutput.<String>println(("BLAH: " + schedule));
     this.maps = schedule.getMap();
+    final Consumer<ISLMap> _function = (ISLMap x) -> {
+      InputOutput.<String>println(("Sched: " + x));
+    };
+    this.maps.getMaps().forEach(_function);
     this.domains = schedule.getDomain();
   }
 

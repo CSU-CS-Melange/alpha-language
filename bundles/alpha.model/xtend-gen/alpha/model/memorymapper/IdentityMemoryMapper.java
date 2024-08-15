@@ -9,4 +9,9 @@ public class IdentityMemoryMapper implements MemoryMapper {
   public ISLMap getMemoryMap(final Variable variable) {
     return variable.getDomain().copy().identity();
   }
+
+  @Override
+  public String getDestination(final Variable variable) {
+    return variable.getName();
+  }
 }

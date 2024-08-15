@@ -19,7 +19,6 @@ import alpha.codegen.alphaBase.AlphaNameChecker;
 import alpha.codegen.alphaBase.ExprConverter;
 import alpha.codegen.isl.ASTConversionResult;
 import alpha.codegen.isl.ASTConverter;
-import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.model.AlphaExpression;
 import alpha.model.AutoRestrictExpression;
@@ -37,7 +36,6 @@ import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.memorymapper.MemoryMapper;
 import alpha.model.scheduler.Scheduler;
-import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
@@ -48,7 +46,6 @@ import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -144,29 +141,6 @@ public class ScheduledExprConverter extends ExprConverter {
   }
 
   /**
-   * Translates a variable expression into a variable access.
-   * Note: variable expressions inside dependence expressions are handled
-   * by the dependence expression converter, not here.
-   * If this is reached, then the variable is implicitly being accessed by the identity function.
-   */
-  @Override
-  protected Expression _convertExpr(final VariableExpression expr) {
-    final String name = this.nameChecker.getVariableReadName(expr.getVariable());
-    final ArrayList<CustomExpr> indexExprs = AffineConverter.convertMultiAff(ISLUtil.toMultiAff(this.mapper.getMemoryMap(expr.getVariable())));
-    return Factory.callExpr(name, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
-  }
-
-  /**
-   * If the child is a variable, read the value indexed by the dependence function.
-   */
-  @Override
-  protected Expression _convertDependence(final DependenceExpression parent, final VariableExpression child) {
-    final String name = this.nameChecker.getVariableReadName(child.getVariable());
-    final ArrayList<CustomExpr> indexExprs = AffineConverter.convertMultiAff(ISLUtil.toMultiAff(this.mapper.getMemoryMap(child.getVariable())).pullback(parent.getFunction()));
-    return Factory.callExpr(name, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
-  }
-
-  /**
    * Creates the function which evaluates the reduction at a specific output point.
    */
   protected Function createReduceFunction(final ProgramBuilder program, final ReduceExpression expr, final String variableName) {
@@ -189,24 +163,33 @@ public class ScheduledExprConverter extends ExprConverter {
     final MacroStmt accumulateMacro = this.createAccumulationMacro(accumulateMacroName, expr, reducePointMacro);
     function.addStatement(reducePointMacro, accumulateMacro);
     final String reduceBodyName = (((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber)) + "_body");
-    final String reduceResultName = (((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber)) + "_result");
-    ISLSet loopDomain = this.createReduceLoopDomain(expr);
+    InputOutput.<String>println(("Reduction: " + reduceBodyName));
+    this.reductionTargetNumber++;
+    ISLSet generatedDomain = this.createReduceLoopDomain(expr);
+    InputOutput.<String>println(("Generated Domain: " + generatedDomain));
+    generatedDomain = generatedDomain.setTupleName(reduceBodyName);
+    ISLSet _elvis = null;
+    ISLSet _scheduleDomain = this.scheduler.getScheduleDomain(reduceBodyName);
+    if (_scheduleDomain != null) {
+      _elvis = _scheduleDomain;
+    } else {
+      ISLSet _copy = generatedDomain.copy();
+      _elvis = _copy;
+    }
+    ISLSet loopDomain = _elvis;
     loopDomain = loopDomain.setTupleName(reduceBodyName);
-    ISLMap _elvis = null;
+    loopDomain = loopDomain.intersect(generatedDomain);
+    InputOutput.<String>println(("Loop Domain: " + loopDomain));
+    ISLMap _elvis_1 = null;
     ISLMap _scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
     if (_scheduleMap != null) {
-      _elvis = _scheduleMap;
+      _elvis_1 = _scheduleMap;
     } else {
       ISLMap _identity = loopDomain.copy().identity();
-      _elvis = _identity;
+      _elvis_1 = _identity;
     }
-    ISLMap scheduleMap = _elvis;
-    ISLMap _copy = scheduleMap.copy();
-    String _plus = ("scheduleMap: " + _copy);
-    InputOutput.<String>println(_plus);
-    ISLSet _copy_1 = loopDomain.copy();
-    String _plus_1 = ("Domain: " + _copy_1);
-    InputOutput.<String>println(_plus_1);
+    ISLMap scheduleMap = _elvis_1;
+    InputOutput.<String>println(("Schedule Map: " + scheduleMap));
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
       scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());
@@ -316,7 +299,6 @@ public class ScheduledExprConverter extends ExprConverter {
     return Factory.macroStmt(macroName, ((String[])Conversions.unwrapArray(expr.getBody().getContextDomain().getIndexNames(), String.class)), accumulateStmt);
   }
 
-  @Override
   public Expression convertExpr(final AlphaExpression expr) {
     if (expr instanceof ReduceExpression) {
       return _convertExpr((ReduceExpression)expr);
@@ -349,20 +331,6 @@ public class ScheduledExprConverter extends ExprConverter {
     } else {
       throw new IllegalArgumentException("Unhandled parameter types: " +
         Arrays.<Object>asList(expr).toString());
-    }
-  }
-
-  @Override
-  public Expression convertDependence(final DependenceExpression parent, final AlphaExpression child) {
-    if (child instanceof ConstantExpression) {
-      return _convertDependence(parent, (ConstantExpression)child);
-    } else if (child instanceof VariableExpression) {
-      return _convertDependence(parent, (VariableExpression)child);
-    } else if (child != null) {
-      return _convertDependence(parent, child);
-    } else {
-      throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(parent, child).toString());
     }
   }
 }

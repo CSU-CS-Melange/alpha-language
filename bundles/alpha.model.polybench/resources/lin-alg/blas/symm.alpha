@@ -14,7 +14,7 @@ affine symm [N, M] -> {: N, M > 0}
 		Cout: {[i,j]: 0 <= i < M && 0 <= j < N};
 	let
 		Cout[i,j] = case {
-						{: i <= j} : alpha * reduce(+, [k], {: i <= k}: A[i, k] * B[k, j]) + beta * C[i, j];
-						{: j < i}  : alpha * reduce(+, [k], {: k < i} : A[k, i] * B[k, j]) + beta * C[i, j];
+						{: i <= j} : alpha[] * reduce(+, [k], {: i <= k}: A[i, k] * B[k, j]) + beta[] * C[i, j];
+						{: j < i}  : alpha[] * reduce(+, [k], {: k < i} : A[k, i] * B[k, j]) + beta[] * C[i, j];
 					};	
 .

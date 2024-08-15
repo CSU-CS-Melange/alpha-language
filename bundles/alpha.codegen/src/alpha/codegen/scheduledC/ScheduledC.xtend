@@ -34,6 +34,7 @@ import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import alpha.codegen.isl.AffineConverter
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -110,20 +111,33 @@ class ScheduledC extends CodeGeneratorBase {
 	
 	
 	override declareMemoryMacro(Variable variable) {
+		// Creat the basic memory macro
 		val name = nameChecker.getVariableStorageName(variable)
+		val memoryName = "mem_" + name
 		var ISLMap memoryMap = mapper.getMemoryMap(variable)
+		var storageName = mapper.getDestination(variable) ?: nameChecker.getVariableStorageName(variable)
 		var ISLSet domain = variable.domain.copy
 		val names = domain.indexNames
 		
-		domain = domain
-			.apply(memoryMap.copy)
-			.renameIndices(names)
+		val ISLMap mappedDomain = memoryMap
+			.copy
+			.intersectDomain(domain.copy)
+			.renameInputs(names)
+			.setTupleName(ISLDimType.isl_dim_in, memoryName)
 
+		//Build Basic memory map
 		val rank = MemoryUtils.rank(domain)
 		val accessExpression = PolynomialConverter.convert(rank)
-		val macroReplacement = Factory.arrayAccessExpr(name, accessExpression)
-		val macroStmt = Factory.macroStmt(name, domain.indexNames, macroReplacement)
+		val macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression)
+		val macroStmt = Factory.macroStmt(memoryName, domain.indexNames, macroReplacement)
+		
+		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mappedDomain))
+		val statement = Factory.callExpr(memoryName, indexExprs)
+		val mappedMacroStatement = Factory.macroStmt(name, domain.indexNames, statement)
+		
+		
 		program.addMemoryMacro(macroStmt)
+		program.addMemoryMacro(mappedMacroStatement)
 	}
 	
 	override declareFlagMemoryMacro(Variable variable) {
@@ -168,7 +182,7 @@ class ScheduledC extends CodeGeneratorBase {
 	override allocateVariable(Variable variable) {
 		// Note: only local variables will be allocated, so we don't
 		// need to worry about compatibility with old AlphaZ system.
-		val name = nameChecker.getVariableStorageName(variable)
+		val name = this.mapper.getDestination(variable) ?: nameChecker.getVariableStorageName(variable)
 		val dataType = typeGenerator.getAlphaVariableType(variable)
 		
 		allocatedVariables.add(name)
@@ -226,8 +240,6 @@ class ScheduledC extends CodeGeneratorBase {
 				}
 			}
 		}
-		scheduleMaps.maps.forEach[x | println("ASDF: " + x)]
-
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		var ISLUnionMap namedScheduleMaps
 		for(map : scheduleMaps.maps) {
