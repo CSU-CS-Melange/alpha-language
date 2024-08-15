@@ -25,9 +25,9 @@ affine syr2k [N, M] -> {: N, M > 0}
 	outputs
 		Cout: {[i,j]: 0 <= j <= i < N};
 	let
-		Cout[i,j] = alpha * reduce(+, [k], A[i,k] * B[j,k])
-				  + alpha * reduce(+, [k], B[i,k] * A[j,k]) 
-				  + beta *Cin[i,j];
+		Cout[i,j] = alpha[] * reduce(+, [k], A[i,k] * B[j,k])
+				  + alpha[] * reduce(+, [k], B[i,k] * A[j,k]) 
+				  + beta[] *Cin[i,j];
 .
 
 

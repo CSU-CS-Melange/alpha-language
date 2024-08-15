@@ -13,5 +13,5 @@ affine trmm [N] -> {: N > 0}
 	outputs
 		Bout: {[i, j]: 0 <= i, j < N};
 	let
-		Bout[i, j] = alpha * reduce(+, [k], {: k <= i} : A[i, k] * Bin[k, j]);
+		Bout[i, j] = alpha[] * reduce(+, [k], {: k <= i} : A[i, k] * Bin[k, j]);
 .
