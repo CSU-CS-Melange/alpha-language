@@ -55,7 +55,6 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
@@ -163,10 +162,8 @@ public class ScheduledExprConverter extends ExprConverter {
     final MacroStmt accumulateMacro = this.createAccumulationMacro(accumulateMacroName, expr, reducePointMacro);
     function.addStatement(reducePointMacro, accumulateMacro);
     final String reduceBodyName = (((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber)) + "_body");
-    InputOutput.<String>println(("Reduction: " + reduceBodyName));
     this.reductionTargetNumber++;
     ISLSet generatedDomain = this.createReduceLoopDomain(expr);
-    InputOutput.<String>println(("Generated Domain: " + generatedDomain));
     generatedDomain = generatedDomain.setTupleName(reduceBodyName);
     ISLSet _elvis = null;
     ISLSet _scheduleDomain = this.scheduler.getScheduleDomain(reduceBodyName);
@@ -179,7 +176,6 @@ public class ScheduledExprConverter extends ExprConverter {
     ISLSet loopDomain = _elvis;
     loopDomain = loopDomain.setTupleName(reduceBodyName);
     loopDomain = loopDomain.intersect(generatedDomain);
-    InputOutput.<String>println(("Loop Domain: " + loopDomain));
     ISLMap _elvis_1 = null;
     ISLMap _scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
     if (_scheduleMap != null) {
@@ -189,7 +185,6 @@ public class ScheduledExprConverter extends ExprConverter {
       _elvis_1 = _identity;
     }
     ISLMap scheduleMap = _elvis_1;
-    InputOutput.<String>println(("Schedule Map: " + scheduleMap));
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
       scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());

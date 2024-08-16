@@ -96,7 +96,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
 		//Dependence from result to body
 		val ISLMultiAff resToBody = reduceExpression.projection.copy
-		println("result to body: " + resToBody.copy.toMap.reverse)
+		
 		prdg.addEdge(new PRDGEdge(prdg.getNode(reductionName), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
 
 		//Inside the reduction, dependence is from the body

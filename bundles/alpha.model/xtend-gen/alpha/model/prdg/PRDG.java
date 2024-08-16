@@ -9,7 +9,6 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -120,14 +119,6 @@ public class PRDG {
             throw new RuntimeException("Problem while intersecting domain");
           }
           if ((edge.getSource().isReductionNode() && edge.getDest().isReductionNode())) {
-            PRDGNode _source = edge.getSource();
-            String _plus = ("Source: " + _source);
-            String _plus_1 = (_plus + " Dest: ");
-            PRDGNode _dest = edge.getDest();
-            String _plus_2 = (_plus_1 + _dest);
-            String _plus_3 = (_plus_2 + " Map: ");
-            String _plus_4 = (_plus_3 + map2);
-            InputOutput.<String>println(_plus_4);
             map2 = map2.reverse();
           }
           map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
@@ -135,11 +126,6 @@ public class PRDG {
           this.islPRDG = this.islPRDG.union(map2.copy().toUnionMap());
         }
       }
-      InputOutput.<String>println("ISL PRDG: ");
-      final Consumer<ISLMap> _function = (ISLMap map) -> {
-        InputOutput.<ISLMap>println(map);
-      };
-      this.islPRDG.getMaps().forEach(_function);
       _xblockexpression = this.islPRDG;
     }
     return _xblockexpression;

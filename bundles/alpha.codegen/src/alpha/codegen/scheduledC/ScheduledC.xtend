@@ -265,8 +265,6 @@ class ScheduledC extends CodeGeneratorBase {
 			}
 
 		}
-		println("Schedule Maps")
-		this.scheduler.maps.maps.forEach[map | println(map)]
 		val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
 				
 		val loopResult = ASTConverter.convert(islAST)

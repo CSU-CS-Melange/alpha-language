@@ -86,7 +86,6 @@ class PRDG {
 			}
 			
 			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
-				println("Source: " + edge.source + " Dest: " + edge.dest + " Map: " + map2)
 				map2 = map2.reverse
 
 			}	
@@ -95,9 +94,7 @@ class PRDG {
 					
 			this.islPRDG = islPRDG.union(map2.copy.toUnionMap)
 		}		
-		println("ISL PRDG: ")
 		
-		this.islPRDG.maps.forEach[ map | println(map)]
 		this.islPRDG
 	}
 	

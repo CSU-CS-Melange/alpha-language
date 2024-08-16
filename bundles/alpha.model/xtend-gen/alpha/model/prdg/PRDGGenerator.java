@@ -9,14 +9,12 @@ import alpha.model.VariableExpression;
 import alpha.model.transformation.Normalize;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.AlphaUtil;
-import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.List;
 import java.util.Stack;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
@@ -153,9 +151,6 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     PRDGNode _pRDGNode_1 = new PRDGNode(bodyName, _copy_1, true);
     _nodes_1.add(_pRDGNode_1);
     final ISLMultiAff resToBody = reduceExpression.getProjection().copy();
-    ISLMap _reverse = resToBody.copy().toMap().reverse();
-    String _plus_4 = ("result to body: " + _reverse);
-    InputOutput.<String>println(_plus_4);
     PRDGNode _node_1 = this.prdg.getNode(reductionName);
     PRDGNode _node_2 = this.prdg.getNode(bodyName);
     ISLSet _copy_2 = reduceExpression.getBody().getContextDomain().copy();

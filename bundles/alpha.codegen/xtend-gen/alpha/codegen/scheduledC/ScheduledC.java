@@ -58,7 +58,6 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -311,17 +310,12 @@ public class ScheduledC extends CodeGeneratorBase {
           }
         }
       }
-      InputOutput.<String>println("Schedule Maps");
-      final Consumer<ISLMap> _function = (ISLMap map_2) -> {
-        InputOutput.<ISLMap>println(map_2);
-      };
-      this.scheduler.getMaps().getMaps().forEach(_function);
       final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
       final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function_1 = (String it) -> {
+      final Function1<String, VariableDecl> _function = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_1));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;

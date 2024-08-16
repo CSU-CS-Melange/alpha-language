@@ -121,22 +121,20 @@ class ScheduledExprConverter extends ExprConverter {
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
 		val reduceBodyName = variableName + "_reduce" + reductionTargetNumber + "_body"
-		println("Reduction: " + reduceBodyName)
-		
+				
 		this.reductionTargetNumber++
 		
 		
 		// Use isl to determine what points need to be reduced and how they get reduced.
 		var generatedDomain = expr.createReduceLoopDomain
-		println("Generated Domain: " + generatedDomain)
+		
 		generatedDomain = generatedDomain.setTupleName(reduceBodyName)		
 		var loopDomain = scheduler.getScheduleDomain(reduceBodyName) ?: generatedDomain.copy
 		loopDomain = loopDomain.setTupleName(reduceBodyName)		
 		loopDomain = loopDomain.intersect(generatedDomain)
-		println("Loop Domain: " + loopDomain)
-
+		
 		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity		
-		println("Schedule Map: " + scheduleMap)
+		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
 			scheduleMap.copy.intersectDomain(loopDomain.copy).copy)
