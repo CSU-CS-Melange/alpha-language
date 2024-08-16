@@ -111,7 +111,8 @@ class ScheduledC extends CodeGeneratorBase {
 	
 	
 	override declareMemoryMacro(Variable variable) {
-		// Creat the basic memory macro
+		// Create the basic memory macro
+		// This macro will map from a point to the correct array access
 		val name = nameChecker.getVariableStorageName(variable)
 		val memoryName = "mem_" + name
 		var ISLMap memoryMap = mapper.getMemoryMap(variable)
@@ -125,12 +126,14 @@ class ScheduledC extends CodeGeneratorBase {
 			.renameInputs(names)
 			.setTupleName(ISLDimType.isl_dim_in, memoryName)
 
-		//Build Basic memory map
+		
 		val rank = MemoryUtils.rank(domain)
 		val accessExpression = PolynomialConverter.convert(rank)
 		val macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression)
 		val macroStmt = Factory.macroStmt(memoryName, domain.indexNames, macroReplacement)
 		
+		// The mapped macro statement applies any memory map and then
+		// calls the appropriate mem_ macro
 		val indexExprs = AffineConverter.convertMultiAff(toMultiAff(mappedDomain))
 		val statement = Factory.callExpr(memoryName, indexExprs)
 		val mappedMacroStatement = Factory.macroStmt(name, domain.indexNames, statement)
@@ -162,6 +165,9 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		exprConverter.target = ""
 		
+		// If we want to inline the code fully then we won't add a new function
+		// Instead we will store the variable assignment generated using the expression converter
+		// To be used later when generating code in the evaluateAllPoints function
 		evalBuilder.addStatement(computeAndStore)
 		if(!inlineCode) {
 			program.addFunction(evalBuilder.instance)
@@ -221,12 +227,7 @@ class ScheduledC extends CodeGeneratorBase {
 	
 	/** Evaluates all the points within an output variable. */
 	def protected evaluateAllPoints(List<Variable> variables) {
-
-
-		// We will have ISL create a loop nest that visits all points in their lexicographic order.
-		// Any loop variables used need to also be declared.
-		
-		//val scheduleMaps = convertToUnionMap(scheduler.schedule.map.copy.maps.filter[ map | !map.getDimNames(ISLDimType.isl_dim_in).head.contains("result")].toList)
+		// We first get all the maps for all the variables from the schedule
 		var ISLUnionMap scheduleMaps
 		for(map : scheduler.maps.maps) {
 			for(variable : variables) {
@@ -240,7 +241,11 @@ class ScheduledC extends CodeGeneratorBase {
 				}
 			}
 		}
+		// Then we get the domains for all the variables in the schedule
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
+		
+		// This next loop goes through and makes sure that the indices and input names
+		// are correct in ISL, so the isl codegenerator calls the correct code
 		var ISLUnionMap namedScheduleMaps
 		for(map : scheduleMaps.maps) {
 			val name = map.copy.inputTupleName
@@ -265,6 +270,8 @@ class ScheduledC extends CodeGeneratorBase {
 			}
 
 		}
+		
+		//Generate all the loops for variables
 		val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
 				
 		val loopResult = ASTConverter.convert(islAST)

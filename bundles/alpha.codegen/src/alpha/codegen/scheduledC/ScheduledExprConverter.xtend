@@ -128,11 +128,14 @@ class ScheduledExprConverter extends ExprConverter {
 		// Use isl to determine what points need to be reduced and how they get reduced.
 		var generatedDomain = expr.createReduceLoopDomain
 		
+		// Then we intersect the generated domain with the scheduled domain
+		// This ensures the reduction function/code only iterates through the reduction indices
 		generatedDomain = generatedDomain.setTupleName(reduceBodyName)		
 		var loopDomain = scheduler.getScheduleDomain(reduceBodyName) ?: generatedDomain.copy
 		loopDomain = loopDomain.setTupleName(reduceBodyName)		
 		loopDomain = loopDomain.intersect(generatedDomain)
 		
+		// We also take the map from the scheduler as well
 		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity		
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
