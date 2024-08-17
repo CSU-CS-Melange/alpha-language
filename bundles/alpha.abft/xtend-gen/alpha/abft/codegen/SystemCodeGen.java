@@ -971,6 +971,10 @@ public class SystemCodeGen {
   }
 
   public String memoryAllocation(final Variable[] variables) {
+    return this.memoryAllocation(variables, "");
+  }
+
+  public String memoryAllocation(final Variable[] variables, final String suffix) {
     String _xblockexpression = null;
     {
       final Function1<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>> _function = (Map.Entry<String, LinkedList<Variable>> it) -> {
@@ -985,7 +989,9 @@ public class SystemCodeGen {
         return Pair.<ISLSet, String>of(_coalesce, _key);
       };
       final Function1<Pair<ISLSet, String>, String> _function_1 = (Pair<ISLSet, String> it) -> {
-        return this.mallocStmt(it.getKey(), it.getValue());
+        String _value = it.getValue();
+        String _plus = (_value + suffix);
+        return this.mallocStmt(it.getKey(), _plus);
       };
       final Iterable<String> mallocStmts = IterableExtensions.<Pair<ISLSet, String>, String>map(IterableExtensions.<Map.Entry<String, LinkedList<Variable>>, Pair<ISLSet, String>>map(this.getMemoryChunks(variables), _function), _function_1);
       String _xifexpression = null;
@@ -1801,126 +1807,6 @@ public class SystemCodeGen {
     return _xblockexpression;
   }
 
-  public String printResultLoops(final String name) {
-    String _xblockexpression = null;
-    {
-      final Function1<Variable, Boolean> _function = (Variable v) -> {
-        String _name = v.getName();
-        return Boolean.valueOf(Objects.equal(_name, name));
-      };
-      final Variable variable = IterableExtensions.<Variable>findFirst(this.system.getLocals(), _function);
-      if ((variable == null)) {
-        return "";
-      }
-      final ISLUnionSet domain = variable.getDomain().setTupleName((this.stmtPrefix + name)).toUnionSet();
-      final List<String> indexNames = domain.getSets().get(0).getIndexNames();
-      final String idxStr = IterableExtensions.join(indexNames, ",");
-      StringConcatenation _builder = new StringConcatenation();
-      _builder.append(this.stmtPrefix);
-      _builder.append(name);
-      _builder.append("[");
-      _builder.append(idxStr);
-      _builder.append("]");
-      final String SVar = _builder.toString();
-      String _join = IterableExtensions.join(domain.copy().params().getParamNames(), ",");
-      String _plus = ("[" + _join);
-      final String paramStr = (_plus + "]");
-      StringConcatenation _builder_1 = new StringConcatenation();
-      _builder_1.append("domain: \"");
-      String _string = domain.toString();
-      _builder_1.append(_string);
-      _builder_1.append("\"");
-      _builder_1.newLineIfNotEmpty();
-      _builder_1.append("child:");
-      _builder_1.newLine();
-      _builder_1.append("  ");
-      _builder_1.append("schedule: \"");
-      _builder_1.append(paramStr, "  ");
-      _builder_1.append("->[");
-      final Function1<String, String> _function_1 = (String i) -> {
-        StringConcatenation _builder_2 = new StringConcatenation();
-        _builder_2.append("{ ");
-        _builder_2.append(SVar);
-        _builder_2.append("->[");
-        _builder_2.append(i);
-        _builder_2.append("] }");
-        return _builder_2.toString();
-      };
-      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_1), ",");
-      _builder_1.append(_join_1, "  ");
-      _builder_1.append("]\"");
-      _builder_1.newLineIfNotEmpty();
-      _builder_1.append("  ");
-      _builder_1.newLine();
-      final ISLSchedule ISchedule = ISLUtil.toISLSchedule(_builder_1);
-      final ISLIdentifierList iterators = ISLUtil.toISLIdentifierList(((String[])Conversions.unwrapArray(indexNames, String.class)));
-      final ISLASTBuild build = ISLASTBuild.buildFromContext(ISchedule.getDomain().copy().params()).setIterators(iterators.copy());
-      final ISLASTNode node = build.generate(ISchedule.copy());
-      final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
-      StringConcatenation _builder_2 = new StringConcatenation();
-      _builder_2.append(name);
-      _builder_2.append("(");
-      _builder_2.append(idxStr);
-      _builder_2.append(")");
-      final String varAcc = _builder_2.toString();
-      StringConcatenation _builder_3 = new StringConcatenation();
-      _builder_3.append("// Print ");
-      _builder_3.append(name);
-      _builder_3.append(" values");
-      _builder_3.newLineIfNotEmpty();
-      _builder_3.newLine();
-      _builder_3.append("#define ");
-      _builder_3.append(this.stmtPrefix);
-      _builder_3.append(name);
-      _builder_3.append("(");
-      _builder_3.append(idxStr);
-      _builder_3.append(") if (fabs(");
-      _builder_3.append(varAcc);
-      _builder_3.append(")>=threshold) printf(\"");
-      String _name = this.system.getName();
-      _builder_3.append(_name);
-      _builder_3.append(".");
-      _builder_3.append(name);
-      _builder_3.append("(");
-      final Function1<String, String> _function_2 = (String it) -> {
-        return "%d";
-      };
-      String _join_2 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), ",");
-      _builder_3.append(_join_2);
-      _builder_3.append(") = %E\\n\",");
-      _builder_3.append(idxStr);
-      _builder_3.append(", ");
-      _builder_3.append(varAcc);
-      _builder_3.append(")");
-      _builder_3.newLineIfNotEmpty();
-      _builder_3.newLine();
-      CharSequence _print = ProgramPrinter.print(this.dataType);
-      _builder_3.append(_print);
-      _builder_3.append(" threshold = 0;");
-      _builder_3.newLineIfNotEmpty();
-      _builder_3.append("const char* env_threshold = getenv(\"THRESHOLD\");");
-      _builder_3.newLine();
-      _builder_3.append("if (env_threshold != NULL) {");
-      _builder_3.newLine();
-      _builder_3.append("\t");
-      _builder_3.append("threshold = atof(env_threshold);");
-      _builder_3.newLine();
-      _builder_3.append("}");
-      _builder_3.newLine();
-      String _code = codegenVisitor.toCode();
-      _builder_3.append(_code);
-      _builder_3.newLineIfNotEmpty();
-      _builder_3.newLine();
-      _builder_3.append("#undef ");
-      _builder_3.append(this.stmtPrefix);
-      _builder_3.append(name);
-      _builder_3.newLineIfNotEmpty();
-      final String code = _builder_3.toString();
-      _xblockexpression = code;
-    }
-    return _xblockexpression;
-  }
-
   public String stmtLoops() {
     String _xblockexpression = null;
     {
@@ -2041,12 +1927,18 @@ public class SystemCodeGen {
   }
 
   public CharSequence memoryMacro(final Variable variable) {
+    return this.memoryMacro(variable, "");
+  }
+
+  public CharSequence memoryMacro(final Variable variable, final String suffix) {
     try {
       CharSequence _xblockexpression = null;
       {
-        final String stmtName = variable.getName();
-        String _name = this.memoryMap.getName(variable.getName());
-        final String mappedName = ("mem_" + _name);
+        String _name = variable.getName();
+        final String stmtName = (_name + suffix);
+        String _name_1 = this.memoryMap.getName(variable.getName());
+        String _plus = ("mem_" + _name_1);
+        final String mappedName = (_plus + suffix);
         final ISLPWMultiAff pwmaff = this.memoryMap.getMap(variable).toPWMultiAff();
         int _nbPieces = pwmaff.getNbPieces();
         boolean _notEquals = (_nbPieces != 1);

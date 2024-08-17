@@ -8,6 +8,7 @@ import alpha.codegen.ProgramPrinter;
 import alpha.codegen.isl.ConditionalConverter;
 import alpha.model.AlphaSystem;
 import alpha.model.Variable;
+import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
 import com.google.common.collect.Iterables;
@@ -17,6 +18,7 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.emf.common.util.EList;
@@ -31,6 +33,8 @@ import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class WrapperCodeGen extends SystemCodeGen {
+  private static String goldSuffix = "_GOLD";
+
   private final AlphaSystem v1System;
 
   private final AlphaSystem v2System;
@@ -85,7 +89,7 @@ public class WrapperCodeGen extends SystemCodeGen {
     _builder.newLine();
     _builder.append("#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f}");
     _builder.newLine();
-    _builder.append("#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f}");
+    _builder.append("#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f, .max_error=0.0f}");
     _builder.newLine();
     _builder.newLine();
     _builder.append("// External system declarations");
@@ -214,6 +218,9 @@ public class WrapperCodeGen extends SystemCodeGen {
     _builder.append("\t");
     _builder.append("double noise;");
     _builder.newLine();
+    _builder.append("\t");
+    _builder.append("double max_error;");
+    _builder.newLine();
     _builder.append("};");
     _builder.newLine();
     _builder.newLine();
@@ -233,18 +240,46 @@ public class WrapperCodeGen extends SystemCodeGen {
     String _join = IterableExtensions.join(IterableExtensions.<Pair<String, ISLSet>, String>map(IterableExtensions.<Variable, Pair<String, ISLSet>>map(IterableExtensions.<Variable>reject(this.getSystem().getVariables(), _function), _function_1), _function_2), "\n");
     _builder.append(_join);
     _builder.newLineIfNotEmpty();
+    _builder.append("#if defined ");
+    _builder.append(SystemCodeGen.ERROR_INJECTION);
+    _builder.newLineIfNotEmpty();
+    final Function1<Variable, Pair<String, ISLSet>> _function_3 = (Variable it) -> {
+      String _name_1 = this.getMemoryMap().getName(it.getName());
+      String _plus = (_name_1 + WrapperCodeGen.goldSuffix);
+      ISLSet _domain = it.getDomain();
+      return Pair.<String, ISLSet>of(_plus, _domain);
+    };
+    final Function1<Pair<String, ISLSet>, String> _function_4 = (Pair<String, ISLSet> it) -> {
+      return this.memoryTargetMacro(it);
+    };
+    String _join_1 = IterableExtensions.join(ListExtensions.<Pair<String, ISLSet>, String>map(ListExtensions.<Variable, Pair<String, ISLSet>>map(this.getSystem().getOutputs(), _function_3), _function_4), "\n");
+    _builder.append(_join_1);
+    _builder.newLineIfNotEmpty();
+    _builder.append("#endif");
+    _builder.newLine();
     _builder.newLine();
     _builder.append("// Memory access functions");
     _builder.newLine();
-    final Function1<Variable, Boolean> _function_3 = (Variable it) -> {
+    final Function1<Variable, Boolean> _function_5 = (Variable it) -> {
       return it.isLocal();
     };
-    final Function1<Variable, CharSequence> _function_4 = (Variable it) -> {
+    final Function1<Variable, CharSequence> _function_6 = (Variable it) -> {
       return this.memoryMacro(it);
     };
-    String _join_1 = IterableExtensions.join(IterableExtensions.<Variable, CharSequence>map(IterableExtensions.<Variable>reject(this.getSystem().getVariables(), _function_3), _function_4), "\n");
-    _builder.append(_join_1);
+    String _join_2 = IterableExtensions.join(IterableExtensions.<Variable, CharSequence>map(IterableExtensions.<Variable>reject(this.getSystem().getVariables(), _function_5), _function_6), "\n");
+    _builder.append(_join_2);
     _builder.newLineIfNotEmpty();
+    _builder.append("#if defined ");
+    _builder.append(SystemCodeGen.ERROR_INJECTION);
+    _builder.newLineIfNotEmpty();
+    final Function1<Variable, CharSequence> _function_7 = (Variable it) -> {
+      return this.memoryMacro(it, WrapperCodeGen.goldSuffix);
+    };
+    String _join_3 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(this.getSystem().getOutputs(), _function_7), "\n");
+    _builder.append(_join_3);
+    _builder.newLineIfNotEmpty();
+    _builder.append("#endif");
+    _builder.newLine();
     _builder.newLine();
     String _mainFunction = this.mainFunction(this.getSystem());
     _builder.append(_mainFunction);
@@ -303,7 +338,7 @@ public class WrapperCodeGen extends SystemCodeGen {
       final String indexNameHeaderStr = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(1, sDims, true), _function_4), ",");
       final Function1<Integer, String> _function_5 = (Integer i) -> {
         StringConcatenation _builder = new StringConcatenation();
-        _builder.append("sBox, \"inj.");
+        _builder.append("sBox, \"inj.t");
         String _get = this.getStencilVar().getDomain().getIndexNames().get((i).intValue());
         _builder.append(_get);
         _builder.append("\"");
@@ -336,6 +371,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       };
       final Iterable<String> sInjectionSite = IterableExtensions.<Integer, String>map(TXs, _function_8);
       final Iterable<String> injectionSite = Iterables.<String>concat(tInjectionSite, sInjectionSite);
+      final String thresholdVarV1 = "threshold_v1";
+      final String thresholdVarV2 = "threshold_v2";
       StringConcatenation _builder_1 = new StringConcatenation();
       _builder_1.append("#ifdef ");
       _builder_1.append(SystemCodeGen.ERROR_INJECTION);
@@ -368,9 +405,9 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("\t");
       _builder_1.append("sprintf(header_str, \"   %*s : (%*s,");
       _builder_1.append(indexNameHeaderStr, "\t");
-      _builder_1.append(") : (%*s,%*s,%*s,%*s) : %*s, %*s\", 4, \"bit\", tBox, \"inj.t\", ");
+      _builder_1.append(") : (%*s,%*s,%*s,%*s) : %*s, %*s, %*s, %*s\", 4, \"bit\", tBox, \"inj.tt\", ");
       _builder_1.append(injHeaderStr, "\t");
-      _builder_1.append(", rBox, \"TP\", rBox, \"FP\", rBox, \"TN\", rBox, \"FN\", 12, \"Detected (%)\", 8, \"FPR (%)\");");
+      _builder_1.append(", rBox, \"TP\", rBox, \"FP\", rBox, \"TN\", rBox, \"FN\", 12, \"Detected (%)\", 7, \"FPR (%)\", 14, \"Max rel. error\", 2 * runBox + 1, \"Runs\");");
       _builder_1.newLineIfNotEmpty();
       _builder_1.append("\t");
       _builder_1.append("char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = \'-\';");
@@ -387,31 +424,7 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("}");
       _builder_1.newLine();
       _builder_1.newLine();
-      _builder_1.append("void printHeaderBar() {");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("int S = 300;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("char header_str[S];");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("sprintf(header_str, \"   %*s : (%*s,");
-      _builder_1.append(indexNameHeaderStr, "\t");
-      _builder_1.append(") : (%*s,%*s,%*s,%*s) : %*s, %*s\", 4, \"bit\", tBox, \"inj.t\", ");
-      _builder_1.append(injHeaderStr, "\t");
-      _builder_1.append(", rBox, \"TP\", rBox, \"FP\", rBox, \"TN\", rBox, \"FN\", 12, \"Detected (%)\", 8, \"FPR (%)\");");
-      _builder_1.newLineIfNotEmpty();
-      _builder_1.append("\t");
-      _builder_1.append("char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = \'-\';");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("fprintf(stdout, \"%.*s\\n\", (int)strlen(header_str), header_bar);");
-      _builder_1.newLine();
-      _builder_1.append("}");
-      _builder_1.newLine();
-      _builder_1.newLine();
-      _builder_1.append("void print(int version, struct Result r) {");
+      _builder_1.append("void print(int version, struct Result r, double max_error) {");
       _builder_1.newLine();
       _builder_1.append("\t");
       _builder_1.append("if (!log_flag) {");
@@ -428,13 +441,51 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("    ");
       _builder_1.append("printf(\"v%d,%*d : (%*d,");
       _builder_1.append(indexNameStr, "    ");
-      _builder_1.append(") : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s\", version, 4, r.bit, tBox, r.inj.tt, ");
+      _builder_1.append(") : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f, %*E, %*d/%d%s\", version, 4, r.bit, tBox, r.inj.tt, ");
       _builder_1.append(injStr, "    ");
-      _builder_1.append(", rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);");
+      _builder_1.append(", rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 7, r.FPR, 14, max_error, runBox, run, R, eol);");
       _builder_1.newLineIfNotEmpty();
       _builder_1.append("    ");
       _builder_1.append("fflush(stdout);");
       _builder_1.newLine();
+      _builder_1.append("}");
+      _builder_1.newLine();
+      _builder_1.newLine();
+      _builder_1.append("void print_summary(int version, struct ResultsSummary *s) {");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->TP = s->TP / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->FP = s->FP / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->TN = s->TN / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->FN = s->FN / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->TPR = s->TPR / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->FPR = s->FPR / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("s->FNR = s->FNR / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("float detected_rate =100 * s->nb_detected / s->nb_results;");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      _builder_1.append("printf(\"v%d,%*d : (%*s,");
+      _builder_1.append(indexNameHeaderStr, "\t");
+      _builder_1.append(") : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f, %*E, %*d/%d\\n\", version, 4, s->bit, tBox, \"-\", ");
+      _builder_1.append(injSummaryStr, "\t");
+      _builder_1.append(", rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, detected_rate, 7, s->FPR, 14, s->max_error, runBox, run, R);");
+      _builder_1.newLineIfNotEmpty();
       _builder_1.append("}");
       _builder_1.newLine();
       _builder_1.newLine();
@@ -476,44 +527,6 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("\t");
       _builder_1.append("acc->nb_results++;");
       _builder_1.newLine();
-      _builder_1.append("}");
-      _builder_1.newLine();
-      _builder_1.newLine();
-      _builder_1.append("void print_summary(int version, struct ResultsSummary *s) {");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->TP = s->TP / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->FP = s->FP / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->TN = s->TN / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->FN = s->FN / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->TPR = s->TPR / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->FPR = s->FPR / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("s->FNR = s->FNR / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("float detected_rate =100 * s->nb_detected / s->nb_results;");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.newLine();
-      _builder_1.append("\t");
-      _builder_1.append("printf(\"v%d,%*d : (%*s,");
-      _builder_1.append(indexNameHeaderStr, "\t");
-      _builder_1.append(") : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f (%*d/%d runs)\\n\", version, 4, s->bit, tBox, \"-\", ");
-      _builder_1.append(injSummaryStr, "\t");
-      _builder_1.append(", rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, detected_rate, 8, s->FPR, runBox, run, R);");
-      _builder_1.newLineIfNotEmpty();
       _builder_1.append("}");
       _builder_1.newLine();
       _builder_1.append("#endif");
@@ -686,10 +699,10 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append(SystemCodeGen.ERROR_INJECTION, "\t");
       _builder_1.newLineIfNotEmpty();
       _builder_1.append("\t");
-      _builder_1.append("tBox = max((int)log10(T) + 1, 6);");
+      _builder_1.append("tBox = max((int)log10(T) + 1, 7);");
       _builder_1.newLine();
       _builder_1.append("\t");
-      _builder_1.append("sBox = max((int)log10(N) + 1, 6);");
+      _builder_1.append("sBox = max((int)log10(N) + 1, 7);");
       _builder_1.newLine();
       _builder_1.append("\t");
       _builder_1.append("rBox = (int)log10(2*(T/(float)");
@@ -768,8 +781,10 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v1System != null)) {
           _builder_1.append("\t");
-          _builder_1.append("float threshold_v1;");
-          _builder_1.newLine();
+          _builder_1.append("float ");
+          _builder_1.append(thresholdVarV1, "\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("if (threshold == NULL) {");
           _builder_1.newLine();
@@ -812,12 +827,15 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("threshold_v1 = thresholds[i];");
-          _builder_1.newLine();
+          _builder_1.append(thresholdVarV1, "\t\t\t");
+          _builder_1.append(" = thresholds[i];");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("if (threshold_v1 > fabs(result.noise))");
-          _builder_1.newLine();
+          _builder_1.append("if (");
+          _builder_1.append(thresholdVarV1, "\t\t\t");
+          _builder_1.append(" > fabs(result.noise))");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t\t\t");
           _builder_1.append("break;");
@@ -828,8 +846,12 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
-          _builder_1.append("printf(\" threshold_v1 set to: %E\\n\", threshold_v1);");
-          _builder_1.newLine();
+          _builder_1.append("printf(\" ");
+          _builder_1.append(thresholdVarV1, "\t\t");
+          _builder_1.append(" set to: %E\\n\", ");
+          _builder_1.append(thresholdVarV1, "\t\t");
+          _builder_1.append(");");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t");
           _builder_1.append("T = input_T;");
@@ -839,8 +861,9 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
-          _builder_1.append("threshold_v1 = atoi(getenv(\"THRESHOLD\"));");
-          _builder_1.newLine();
+          _builder_1.append(thresholdVarV1, "\t\t");
+          _builder_1.append(" = atoi(getenv(\"THRESHOLD\"));");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("}");
           _builder_1.newLine();
@@ -849,8 +872,10 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v2System != null)) {
           _builder_1.append("\t");
-          _builder_1.append("float threshold_v2;");
-          _builder_1.newLine();
+          _builder_1.append("float ");
+          _builder_1.append(thresholdVarV2, "\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("if (threshold == NULL) {");
           _builder_1.newLine();
@@ -893,12 +918,15 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("threshold_v2 = thresholds[i];");
-          _builder_1.newLine();
+          _builder_1.append(thresholdVarV2, "\t\t\t");
+          _builder_1.append(" = thresholds[i];");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("if (threshold_v2 > fabs(result.noise))");
-          _builder_1.newLine();
+          _builder_1.append("if (");
+          _builder_1.append(thresholdVarV2, "\t\t\t");
+          _builder_1.append(" > fabs(result.noise))");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t\t\t");
           _builder_1.append("break;");
@@ -909,8 +937,12 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
-          _builder_1.append("printf(\" threshold_v2 set to: %E\\n\", threshold_v2);");
-          _builder_1.newLine();
+          _builder_1.append("printf(\" ");
+          _builder_1.append(thresholdVarV2, "\t\t");
+          _builder_1.append(" set to: %E\\n\", ");
+          _builder_1.append(thresholdVarV2, "\t\t");
+          _builder_1.append(");");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("\t");
           _builder_1.append("T = input_T;");
@@ -920,8 +952,9 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
-          _builder_1.append("threshold_v2 = atoi(getenv(\"THRESHOLD\"));");
-          _builder_1.newLine();
+          _builder_1.append(thresholdVarV2, "\t\t");
+          _builder_1.append(" = atoi(getenv(\"THRESHOLD\"));");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("}");
           _builder_1.newLine();
@@ -947,6 +980,16 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("\t");
       _builder_1.newLine();
       _builder_1.append("\t");
+      _builder_1.append("// Get GOLD result, run the input program");
+      _builder_1.newLine();
+      _builder_1.append("\t");
+      CharSequence _call_7 = this.call(system, WrapperCodeGen.goldSuffix);
+      _builder_1.append(_call_7, "\t");
+      _builder_1.append(";");
+      _builder_1.newLineIfNotEmpty();
+      _builder_1.append("\t");
+      _builder_1.newLine();
+      _builder_1.append("\t");
       _builder_1.append("const char* verbose = getenv(\"VERBOSE\");");
       _builder_1.newLine();
       _builder_1.append("\t");
@@ -961,8 +1004,10 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("// ABFTv1");
           _builder_1.newLine();
           _builder_1.append("\t");
-          _builder_1.append("sprintf(val, \"%E\", threshold_v1); ");
-          _builder_1.newLine();
+          _builder_1.append("sprintf(val, \"%E\", ");
+          _builder_1.append(thresholdVarV1, "\t");
+          _builder_1.append("); ");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("setenv(\"THRESHOLD\", val, 1);");
           _builder_1.newLine();
@@ -1005,30 +1050,41 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          final Function1<Variable, String> _function_13 = (Variable it) -> {
-            return this.inputInitialization(it);
-          };
-          String _join_7 = IterableExtensions.join(ListExtensions.<Variable, String>map(system.getInputs(), _function_13), "\n");
-          _builder_1.append(_join_7, "\t\t\t");
-          _builder_1.newLineIfNotEmpty();
-          _builder_1.append("\t");
-          _builder_1.append("\t\t");
           _builder_1.append("export_injs();");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("struct Result v = ");
-          CharSequence _call_7 = this.call(this.v1System);
-          _builder_1.append(_call_7, "\t\t\t");
+          CharSequence _call_8 = this.call(this.v1System);
+          _builder_1.append(_call_8, "\t\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("// Compare output with GOLD");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          String _compareWithGold = this.compareWithGold(thresholdVarV1);
+          _builder_1.append(_compareWithGold, "\t\t\t");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("v_avg.max_error = max(v_avg.max_error, max_error);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("accumulate_result(&v_avg, v);");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("print(1, v);");
+          _builder_1.append("print(1, v, max_error);");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
@@ -1048,7 +1104,7 @@ public class WrapperCodeGen extends SystemCodeGen {
           {
             if ((this.v1System != null)) {
               _builder_1.append("\t");
-              _builder_1.append("printHeaderBar();");
+              _builder_1.append("printHeader();");
               _builder_1.newLine();
             }
           }
@@ -1056,8 +1112,10 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("// ABFTv2");
           _builder_1.newLine();
           _builder_1.append("\t");
-          _builder_1.append("sprintf(val, \"%E\", threshold_v2); ");
-          _builder_1.newLine();
+          _builder_1.append("sprintf(val, \"%E\", ");
+          _builder_1.append(thresholdVarV2, "\t");
+          _builder_1.append("); ");
+          _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
           _builder_1.append("setenv(\"THRESHOLD\", val, 1);");
           _builder_1.newLine();
@@ -1094,30 +1152,41 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          final Function1<Variable, String> _function_14 = (Variable it) -> {
-            return this.inputInitialization(it);
-          };
-          String _join_8 = IterableExtensions.join(ListExtensions.<Variable, String>map(system.getInputs(), _function_14), "\n");
-          _builder_1.append(_join_8, "\t\t\t");
-          _builder_1.newLineIfNotEmpty();
-          _builder_1.append("\t");
-          _builder_1.append("\t\t");
           _builder_1.append("export_injs();");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("struct Result v = ");
-          CharSequence _call_8 = this.call(this.v2System);
-          _builder_1.append(_call_8, "\t\t\t");
+          CharSequence _call_9 = this.call(this.v2System);
+          _builder_1.append(_call_9, "\t\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("// Compare output with GOLD");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          String _compareWithGold_1 = this.compareWithGold(thresholdVarV2);
+          _builder_1.append(_compareWithGold_1, "\t\t\t");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("v_avg.max_error = max(v_avg.max_error, max_error);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("accumulate_result(&v_avg, v);");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t\t");
-          _builder_1.append("print(2, v);");
+          _builder_1.append("print(2, v, max_error);");
           _builder_1.newLine();
           _builder_1.append("\t");
           _builder_1.append("\t");
@@ -1142,6 +1211,112 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("}");
       _builder_1.newLine();
       final String code = _builder_1.toString();
+      _xblockexpression = code;
+    }
+    return _xblockexpression;
+  }
+
+  public String compareWithGold(final String thresholdVar) {
+    final Function1<Variable, String> _function = (Variable v) -> {
+      return this.compareWithGold(v, thresholdVar);
+    };
+    return IterableExtensions.join(ListExtensions.<Variable, String>map(this.getSystem().getOutputs(), _function), "\n");
+  }
+
+  public String compareWithGold(final Variable variable, final String thresholdVar) {
+    String _xblockexpression = null;
+    {
+      final String name = variable.getName();
+      final List<String> indexNames = variable.getDomain().getIndexNames();
+      final String idxStr = IterableExtensions.join(indexNames, ",");
+      String _join = IterableExtensions.join(variable.getDomain().copy().params().getParamNames(), ",");
+      String _plus = ("[" + _join);
+      final String paramStr = (_plus + "]");
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append(paramStr);
+      _builder.append("->{[");
+      _builder.append(idxStr);
+      _builder.append("] : t=T}");
+      ISLSet _intersect = variable.getDomain().copy().intersect(ISLUtil.toISLSet(_builder.toString()));
+      String _stmtPrefix = this.getStmtPrefix();
+      String _plus_1 = (_stmtPrefix + name);
+      final ISLUnionSet domain = _intersect.setTupleName(_plus_1).toUnionSet();
+      StringConcatenation _builder_1 = new StringConcatenation();
+      String _stmtPrefix_1 = this.getStmtPrefix();
+      _builder_1.append(_stmtPrefix_1);
+      _builder_1.append(name);
+      _builder_1.append("[");
+      _builder_1.append(idxStr);
+      _builder_1.append("]");
+      final String SVar = _builder_1.toString();
+      StringConcatenation _builder_2 = new StringConcatenation();
+      _builder_2.append("domain: \"");
+      String _string = domain.toString();
+      _builder_2.append(_string);
+      _builder_2.append("\"");
+      _builder_2.newLineIfNotEmpty();
+      _builder_2.append("child:");
+      _builder_2.newLine();
+      _builder_2.append("  ");
+      _builder_2.append("schedule: \"");
+      _builder_2.append(paramStr, "  ");
+      _builder_2.append("->[");
+      final Function1<String, String> _function = (String i) -> {
+        StringConcatenation _builder_3 = new StringConcatenation();
+        _builder_3.append("{ ");
+        _builder_3.append(SVar);
+        _builder_3.append("->[");
+        _builder_3.append(i);
+        _builder_3.append("] }");
+        return _builder_3.toString();
+      };
+      String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function), ",");
+      _builder_2.append(_join_1, "  ");
+      _builder_2.append("]\"");
+      _builder_2.newLineIfNotEmpty();
+      _builder_2.append("  ");
+      _builder_2.newLine();
+      final ISLSchedule ISchedule = ISLUtil.toISLSchedule(_builder_2);
+      final ISLIdentifierList iterators = ISLUtil.toISLIdentifierList(((String[])Conversions.unwrapArray(indexNames, String.class)));
+      final ISLASTBuild build = ISLASTBuild.buildFromContext(ISchedule.getDomain().copy().params()).setIterators(iterators.copy());
+      final ISLASTNode node = build.generate(ISchedule.copy());
+      final ISLASTNodeVisitor codegenVisitor = new ISLASTNodeVisitor().genC(node);
+      StringConcatenation _builder_3 = new StringConcatenation();
+      _builder_3.append(name);
+      _builder_3.append("(");
+      _builder_3.append(idxStr);
+      _builder_3.append(")");
+      final String varAcc = _builder_3.toString();
+      StringConcatenation _builder_4 = new StringConcatenation();
+      _builder_4.append((name + WrapperCodeGen.goldSuffix));
+      _builder_4.append("(");
+      _builder_4.append(idxStr);
+      _builder_4.append(")");
+      final String goldVarAcc = _builder_4.toString();
+      StringConcatenation _builder_5 = new StringConcatenation();
+      _builder_5.append("double max_error = 0.0f;");
+      _builder_5.newLine();
+      _builder_5.append("#define ");
+      String _stmtPrefix_2 = this.getStmtPrefix();
+      _builder_5.append(_stmtPrefix_2);
+      _builder_5.append(name);
+      _builder_5.append("(");
+      _builder_5.append(idxStr);
+      _builder_5.append(") max_error = max(max_error, fabs((");
+      _builder_5.append(varAcc);
+      _builder_5.append(" / ");
+      _builder_5.append(goldVarAcc);
+      _builder_5.append(") - 1))");
+      _builder_5.newLineIfNotEmpty();
+      String _code = codegenVisitor.toCode();
+      _builder_5.append(_code);
+      _builder_5.newLineIfNotEmpty();
+      _builder_5.append("#undef ");
+      String _stmtPrefix_3 = this.getStmtPrefix();
+      _builder_5.append(_stmtPrefix_3);
+      _builder_5.append(name);
+      _builder_5.newLineIfNotEmpty();
+      final String code = _builder_5.toString();
       _xblockexpression = code;
     }
     return _xblockexpression;
@@ -1253,27 +1428,39 @@ public class WrapperCodeGen extends SystemCodeGen {
   public CharSequence call(final AlphaSystem system) {
     CharSequence _call = null;
     if (system!=null) {
-      _call=this.call(system, new String[] {});
+      _call=this.call(system, "");
     }
     return _call;
   }
 
-  public CharSequence call(final AlphaSystem system, final String[] extraArgs) {
+  public CharSequence call(final AlphaSystem system, final String suffix) {
     CharSequence _xblockexpression = null;
     {
       final List<String> paramArgs = system.getParameterDomain().getParamNames();
+      final Function1<Variable, Variable> _function = (Variable it) -> {
+        return AlphaUtil.<Variable>copyAE(it);
+      };
+      final Function1<Variable, Variable> _function_1 = (Variable it) -> {
+        Variable _xblockexpression_1 = null;
+        {
+          String _name = it.getName();
+          String _plus = (_name + suffix);
+          it.setName(_plus);
+          _xblockexpression_1 = it;
+        }
+        return _xblockexpression_1;
+      };
+      final List<Variable> outputs = ListExtensions.<Variable, Variable>map(ListExtensions.<Variable, Variable>map(system.getOutputs(), _function), _function_1);
       EList<Variable> _inputs = system.getInputs();
-      EList<Variable> _outputs = system.getOutputs();
-      final Function1<Variable, String> _function = (Variable it) -> {
+      final Function1<Variable, String> _function_2 = (Variable it) -> {
         return it.getName();
       };
-      final Iterable<String> ioArgs = IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, _outputs), _function);
+      final Iterable<String> ioArgs = IterableExtensions.<Variable, String>map(Iterables.<Variable>concat(_inputs, outputs), _function_2);
       StringConcatenation _builder = new StringConcatenation();
       String _name = system.getName();
       _builder.append(_name);
       _builder.append("(");
-      Iterable<String> _plus = Iterables.<String>concat(paramArgs, ioArgs);
-      String _join = IterableExtensions.join(Iterables.<String>concat(_plus, ((Iterable<? extends String>)Conversions.doWrapArray(extraArgs))), ", ");
+      String _join = IterableExtensions.join(Iterables.<String>concat(paramArgs, ioArgs), ", ");
       _builder.append(_join);
       _builder.append(")");
       _xblockexpression = _builder;
@@ -1283,9 +1470,16 @@ public class WrapperCodeGen extends SystemCodeGen {
 
   @Override
   public String localMemoryAllocation() {
+    StringConcatenation _builder = new StringConcatenation();
     EList<Variable> _inputs = this.getSystem().getInputs();
     EList<Variable> _outputs = this.getSystem().getOutputs();
-    return this.memoryAllocation(((Variable[])Conversions.unwrapArray(Iterables.<Variable>concat(_inputs, _outputs), Variable.class)));
+    String _memoryAllocation = this.memoryAllocation(((Variable[])Conversions.unwrapArray(Iterables.<Variable>concat(_inputs, _outputs), Variable.class)));
+    _builder.append(_memoryAllocation);
+    _builder.newLineIfNotEmpty();
+    String _memoryAllocation_1 = this.memoryAllocation(((Variable[])Conversions.unwrapArray(this.getSystem().getOutputs(), Variable.class)), WrapperCodeGen.goldSuffix);
+    _builder.append(_memoryAllocation_1);
+    _builder.newLineIfNotEmpty();
+    return _builder.toString();
   }
 
   public CharSequence variableDeclarations() {

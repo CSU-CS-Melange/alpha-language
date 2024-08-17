@@ -13,13 +13,15 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import static extension alpha.abft.ABFT.buildParamStr
 import static extension alpha.codegen.ProgramPrinter.print
 import static extension alpha.codegen.ProgramPrinter.printExpr
+import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toISLIdentifierList
 import static extension alpha.model.util.ISLUtil.toISLSchedule
+import static extension alpha.model.util.ISLUtil.toISLSet
 
 class WrapperCodeGen extends SystemCodeGen {
 	
-	
+	static String goldSuffix = '_GOLD'
 	
 	val AlphaSystem v1System
 	val AlphaSystem v2System
@@ -53,7 +55,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 		#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
 		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f}
-		#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f}
+		#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f, .max_error=0.0f}
 
 		// External system declarations
 		«system.signature(Version.BASELINE)»;
@@ -100,13 +102,20 @@ class WrapperCodeGen extends SystemCodeGen {
 			long nb_results;
 			double result;
 			double noise;
+			double max_error;
 		};
 
 		// Memory mapped targets
 		«system.variables.reject[isLocal].map[memoryMap.getName(name) -> domain].map[memoryTargetMacro].join('\n')»
+		#if defined «ERROR_INJECTION»
+		«system.outputs.map[memoryMap.getName(name) + goldSuffix -> domain].map[memoryTargetMacro].join('\n')»
+		#endif
 		
 		// Memory access functions
 		«system.variables.reject[isLocal].map[memoryMacro].join('\n')»
+		#if defined «ERROR_INJECTION»
+		«system.outputs.map[memoryMacro(goldSuffix)].join('\n')»
+		#endif
 		
 		«system.mainFunction»
 	'''
@@ -132,7 +141,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		val injStr = (1..<sDims).map[i | 'sBox, r.inj.t' + stencilVar.domain.indexNames.get(i)].join(', ')
 		
 		val indexNameHeaderStr = (1..<sDims).map['%*s'].join(',')
-		val injHeaderStr = (1..<sDims).map[i | '''sBox, "inj.«stencilVar.domain.indexNames.get(i)»"'''].join(', ')
+		val injHeaderStr = (1..<sDims).map[i | '''sBox, "inj.t«stencilVar.domain.indexNames.get(i)»"'''].join(', ')
 		val injSummaryStr = (1..<sDims).map[i | '''sBox, "-"'''].join(', ')
 		
 		val TT = tileSizes.get(0)
@@ -143,6 +152,9 @@ class WrapperCodeGen extends SystemCodeGen {
 		// random number in [1,N/<TX>]
 		val sInjectionSite = TXs.map[TX | '''(rand() % ((N/«TX»)-2) + 1)''']
 		val injectionSite = tInjectionSite + sInjectionSite
+		
+		val thresholdVarV1 = 'threshold_v1'
+		val thresholdVarV2 = 'threshold_v2'
 		
 		val code = '''
 		#ifdef «ERROR_INJECTION»
@@ -158,28 +170,33 @@ class WrapperCodeGen extends SystemCodeGen {
 		void printHeader() {
 			int S = 300;
 			char header_str[S];
-			sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s", 4, "bit", tBox, "inj.t", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 8, "FPR (%)");
+			sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s, %*s, %*s", 4, "bit", tBox, "inj.tt", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 7, "FPR (%)", 14, "Max rel. error", 2 * runBox + 1, "Runs");
 			char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
 			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
 			fprintf(stdout, "%s\n", header_str);
 			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
 		}
 		
-		void printHeaderBar() {
-			int S = 300;
-			char header_str[S];
-			sprintf(header_str, "   %*s : (%*s,«indexNameHeaderStr») : (%*s,%*s,%*s,%*s) : %*s, %*s", 4, "bit", tBox, "inj.t", «injHeaderStr», rBox, "TP", rBox, "FP", rBox, "TN", rBox, "FN", 12, "Detected (%)", 8, "FPR (%)");
-			char header_bar[S]; for (int i=0; i<S; i++) header_bar[i] = '-';
-			fprintf(stdout, "%.*s\n", (int)strlen(header_str), header_bar);
-		}
-		
-		void print(int version, struct Result r) {
+		void print(int version, struct Result r, double max_error) {
 			if (!log_flag) {
 				return;
 			}
 			int detected = r.TP > 0 ? 1 : 0;
-		    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f (%*d/%d runs)%s", version, 4, r.bit, tBox, r.inj.tt, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 8, r.FPR, runBox, run, R, eol);
+		    printf("v%d,%*d : (%*d,«indexNameStr») : (%*ld,%*ld,%*ld,%*ld) : %*d, %*.2f, %*E, %*d/%d%s", version, 4, r.bit, tBox, r.inj.tt, «injStr», rBox, r.TP, rBox, r.FP, rBox, r.TN, rBox, r.FN, 12, detected, 7, r.FPR, 14, max_error, runBox, run, R, eol);
 		    fflush(stdout);
+		}
+		
+		void print_summary(int version, struct ResultsSummary *s) {
+			s->TP = s->TP / s->nb_results;
+			s->FP = s->FP / s->nb_results;
+			s->TN = s->TN / s->nb_results;
+			s->FN = s->FN / s->nb_results;
+			s->TPR = s->TPR / s->nb_results;
+			s->FPR = s->FPR / s->nb_results;
+			s->FNR = s->FNR / s->nb_results;
+			float detected_rate =100 * s->nb_detected / s->nb_results;
+			
+			printf("v%d,%*d : (%*s,«indexNameHeaderStr») : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f, %*E, %*d/%d\n", version, 4, s->bit, tBox, "-", «injSummaryStr», rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, detected_rate, 7, s->FPR, 14, s->max_error, runBox, run, R);
 		}
 		
 		void accumulate_result(struct ResultsSummary *acc, struct Result r) {
@@ -195,19 +212,6 @@ class WrapperCodeGen extends SystemCodeGen {
 				acc->nb_detected++;
 			}
 			acc->nb_results++;
-		}
-		
-		void print_summary(int version, struct ResultsSummary *s) {
-			s->TP = s->TP / s->nb_results;
-			s->FP = s->FP / s->nb_results;
-			s->TN = s->TN / s->nb_results;
-			s->FN = s->FN / s->nb_results;
-			s->TPR = s->TPR / s->nb_results;
-			s->FPR = s->FPR / s->nb_results;
-			s->FNR = s->FNR / s->nb_results;
-			float detected_rate =100 * s->nb_detected / s->nb_results;
-			
-			printf("v%d,%*d : (%*s,«indexNameHeaderStr») : (%*.2f,%*.2f,%*.2f,%*.2f) : %*.2f, %*.2f (%*d/%d runs)\n", version, 4, s->bit, tBox, "-", «injSummaryStr», rBox, s->TP, rBox, s->FP, rBox, s->TN, rBox, s->FN, 12, detected_rate, 8, s->FPR, runBox, run, R);
 		}
 		#endif
 		
@@ -261,8 +265,8 @@ class WrapperCodeGen extends SystemCodeGen {
 			«ENDIF»
 			
 			#elif defined «ERROR_INJECTION»
-			tBox = max((int)log10(T) + 1, 6);
-			sBox = max((int)log10(N) + 1, 6);
+			tBox = max((int)log10(T) + 1, 7);
+			sBox = max((int)log10(N) + 1, 7);
 			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(i)»)'''].join('*')») + 4;
 			if (getenv("VERBOSE") != NULL) {
 				strcpy(eol, "\n");
@@ -282,7 +286,7 @@ class WrapperCodeGen extends SystemCodeGen {
 			// noise due to floating point round off errors
 			const char* threshold = getenv("THRESHOLD");
 			«IF v1System !==null»
-			float threshold_v1;
+			float «thresholdVarV1»;
 			if (threshold == NULL) {
 				struct Result result;
 				long input_T = T;
@@ -292,18 +296,18 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf("floating point noise: %E\n", result.noise);
 				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
 				for (int i=9; i>=0; i--) {
-					threshold_v1 = thresholds[i];
-					if (threshold_v1 > fabs(result.noise))
+					«thresholdVarV1» = thresholds[i];
+					if («thresholdVarV1» > fabs(result.noise))
 						break;
 				}
-				printf(" threshold_v1 set to: %E\n", threshold_v1);
+				printf(" «thresholdVarV1» set to: %E\n", «thresholdVarV1»);
 				T = input_T;
 			} else {
-				threshold_v1 = atoi(getenv("THRESHOLD"));
+				«thresholdVarV1» = atoi(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			«IF v2System !==null»
-			float threshold_v2;
+			float «thresholdVarV2»;
 			if (threshold == NULL) {
 				struct Result result;
 				long input_T = T;
@@ -313,26 +317,29 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf("floating point noise: %E\n", result.noise);
 				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
 				for (int i=9; i>=0; i--) {
-					threshold_v2 = thresholds[i];
-					if (threshold_v2 > fabs(result.noise))
+					«thresholdVarV2» = thresholds[i];
+					if («thresholdVarV2» > fabs(result.noise))
 						break;
 				}
-				printf(" threshold_v2 set to: %E\n", threshold_v2);
+				printf(" «thresholdVarV2» set to: %E\n", «thresholdVarV2»);
 				T = input_T;
 			} else {
-				threshold_v2 = atoi(getenv("THRESHOLD"));
+				«thresholdVarV2» = atoi(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			printHeader();
 			
 			«stencilVar.domain.indexNames.map[i |'''int «i»_INJ'''].join('; \n')»;
 			
+			// Get GOLD result, run the input program
+			«system.call(goldSuffix)»;
+			
 			const char* verbose = getenv("VERBOSE");
 			const char* single_bit = getenv("BIT");
 			char val[50];
 			«IF v1System !==null»
 			// ABFTv1
-			sprintf(val, "%E", threshold_v1); 
+			sprintf(val, "%E", «thresholdVarV1»); 
 			setenv("THRESHOLD", val, 1);
 			for (int bit=31; bit>=8; bit--) {
 				if (single_bit != NULL && atoi(single_bit) != bit)
@@ -344,11 +351,16 @@ class WrapperCodeGen extends SystemCodeGen {
 				struct ResultsSummary v_avg = new_result_summary();
 				
 				for (run=0; run<R; run++) {
-					«system.inputs.map[inputInitialization].join('\n')»
+«««					«system.inputs.map[inputInitialization].join('\n')»
 					export_injs();
 					struct Result v = «v1System.call»;
+					
+					// Compare output with GOLD
+					«compareWithGold(thresholdVarV1)»
+					v_avg.max_error = max(v_avg.max_error, max_error);
+					
 					accumulate_result(&v_avg, v);
-					print(1, v);
+					print(1, v, max_error);
 				}
 «««				if (getenv("SUMMARY") != NULL)
 				print_summary(1, &v_avg);
@@ -356,10 +368,10 @@ class WrapperCodeGen extends SystemCodeGen {
 			«ENDIF»
 			«IF v2System !==null»
 			«IF v1System !==null»
-			printHeaderBar();
+			printHeader();
 			«ENDIF»
 			// ABFTv2
-			sprintf(val, "%E", threshold_v2); 
+			sprintf(val, "%E", «thresholdVarV2»); 
 			setenv("THRESHOLD", val, 1);
 			for (int bit=31; bit>=8; bit--) {
 				if (single_bit != NULL && atoi(single_bit) != bit)
@@ -369,11 +381,16 @@ class WrapperCodeGen extends SystemCodeGen {
 				setenv("bit", val, 1);
 				struct ResultsSummary v_avg = new_result_summary();
 				for (run=0; run<R; run++) {
-					«system.inputs.map[inputInitialization].join('\n')»
+«««					«system.inputs.map[inputInitialization].join('\n')»
 					export_injs();
 					struct Result v = «v2System.call»;
+					
+					// Compare output with GOLD
+					«compareWithGold(thresholdVarV2)»
+					v_avg.max_error = max(v_avg.max_error, max_error);
+					
 					accumulate_result(&v_avg, v);
-					print(2, v);
+					print(2, v, max_error);
 				}
 «««				if (getenv("SUMMARY") != NULL)
 				print_summary(2, &v_avg);
@@ -383,6 +400,47 @@ class WrapperCodeGen extends SystemCodeGen {
 		
 			return 0;
 		}
+		'''
+		code
+	}
+	
+	def compareWithGold(String thresholdVar) {
+		system.outputs.map[v | v.compareWithGold(thresholdVar)].join('\n')	
+	}
+	
+	def compareWithGold(Variable variable, String thresholdVar) {
+		val name = variable.name
+		val indexNames = variable.domain.indexNames
+		val idxStr = indexNames.join(',')
+		val paramStr = '[' + variable.domain.copy.params.paramNames.join(',') + ']'
+		val domain = variable.domain.copy
+			.intersect('''«paramStr»->{[«idxStr»] : t=T}'''.toString.toISLSet)
+			.setTupleName(stmtPrefix + name).toUnionSet
+		val SVar = '''«stmtPrefix»«name»[«idxStr»]'''
+		val ISchedule = '''
+			domain: "«domain.toString»"
+			child:
+			  schedule: "«paramStr»->[«indexNames.map[i | '''{ «SVar»->[«i»] }'''].join(',')»]"
+			  
+		'''.toISLSchedule
+		
+		val iterators = indexNames.toISLIdentifierList
+		val build = ISLASTBuild.buildFromContext(ISchedule.domain.copy.params)
+						.setIterators(iterators.copy)
+		
+		val node = build.generate(ISchedule.copy)
+		
+		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
+		
+		val varAcc = '''«name»(«idxStr»)'''
+		val goldVarAcc = '''«name + goldSuffix»(«idxStr»)'''
+		
+		val code = '''
+«««			#define «stmtPrefix»«name»(«idxStr») do { float delta = fabs((«varAcc»/«goldVarAcc»)-1); if (delta>=«thresholdVar») printf("Y(«indexNames.map['%d'].join(',')») difference with GOLD is %E\n", «indexNames.join(', ')», delta); } while(0)
+			double max_error = 0.0f;
+			#define «stmtPrefix»«name»(«idxStr») max_error = max(max_error, fabs((«varAcc» / «goldVarAcc») - 1))
+			«codegenVisitor.toCode»
+			#undef «stmtPrefix»«name»
 		'''
 		code
 	}
@@ -436,17 +494,22 @@ class WrapperCodeGen extends SystemCodeGen {
 	}
 	
 	def call(AlphaSystem system) {
-		system?.call(#[])
+		system?.call('')
 	}
 	
-	def call(AlphaSystem system, String[] extraArgs) {
+	def call(AlphaSystem system, String suffix) {
 		val paramArgs = system.parameterDomain.paramNames
-		val ioArgs = (system.inputs + system.outputs).map[name]
-		'''«system.name»(«(paramArgs + ioArgs + extraArgs).join(', ')»)'''
+		val outputs = system.outputs.map[copyAE].map[name = name + suffix; it]
+		val ioArgs = (system.inputs + outputs).map[name]
+		'''«system.name»(«(paramArgs + ioArgs).join(', ')»)'''
 	}
 	
 	override localMemoryAllocation() {
-		(system.inputs + system.outputs).memoryAllocation
+		'''
+			«(system.inputs + system.outputs).memoryAllocation»
+			«system.outputs.memoryAllocation(goldSuffix)»
+		'''
+		
 	}
 	
 	def variableDeclarations() {

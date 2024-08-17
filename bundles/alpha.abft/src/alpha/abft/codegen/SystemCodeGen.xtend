@@ -469,13 +469,16 @@ class SystemCodeGen {
 	}
 	
 	def memoryAllocation(Variable[] variables) {
+		variables.memoryAllocation('')
+	}
+	def memoryAllocation(Variable[] variables, String suffix) {
 		/*
 		 * construct the domain (union of all variable domains) for each
 		 * mapped name
 		 */
 		val mallocStmts = variables.getMemoryChunks
 			.map[value.map[memoryMap.getRange(name).copy].reduce[v1,v2 | v1.union(v2)].coalesce -> key]
-			.map[mallocStmt(key, value)]
+			.map[mallocStmt(key, value + suffix)]
 		
 		val code = if (mallocStmts.size > 0) '''
 			// Local memory allocation
@@ -794,52 +797,6 @@ class SystemCodeGen {
 	// HARD CODING experimental set up          (end) //
 	////////////////////////////////////////////////////
 	
-	
-	
-	def printResultLoops(String name) {
-		val variable = system.locals.findFirst[v | v.name == name] 
-		if (variable === null)
-			return '';
-			
-		val domain = variable.domain.setTupleName(stmtPrefix + name).toUnionSet
-		val indexNames = domain.sets.get(0).indexNames
-		val idxStr = indexNames.join(',')
-		val SVar = '''«stmtPrefix»«name»[«idxStr»]'''
-		val paramStr = '[' + domain.copy.params.paramNames.join(',') + ']'
-		val ISchedule = '''
-			domain: "«domain.toString»"
-			child:
-			  schedule: "«paramStr»->[«indexNames.map[i | '''{ «SVar»->[«i»] }'''].join(',')»]"
-			  
-		'''.toISLSchedule
-		
-		val iterators = indexNames.toISLIdentifierList
-		val build = ISLASTBuild.buildFromContext(ISchedule.domain.copy.params)
-						.setIterators(iterators.copy)
-		
-		val node = build.generate(ISchedule.copy)
-		
-		val codegenVisitor = new ISLASTNodeVisitor().genC(node)
-		
-		val varAcc = '''«name»(«idxStr»)'''
-		
-		val code = '''
-			// Print «name» values
-			
-			#define «stmtPrefix»«name»(«idxStr») if (fabs(«varAcc»)>=threshold) printf("«system.name».«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», «varAcc»)
-			
-			«dataType.print» threshold = 0;
-			const char* env_threshold = getenv("THRESHOLD");
-			if (env_threshold != NULL) {
-				threshold = atof(env_threshold);
-			}
-			«codegenVisitor.toCode»
-			
-			#undef «stmtPrefix»«name»
-		'''
-		code
-	}
-	
 	def stmtLoops() {
 		val build = ISLASTBuild.buildFromContext(scheduleDomain.copy.params)
 		
@@ -888,8 +845,11 @@ class SystemCodeGen {
 	}
 	
 	def memoryMacro(Variable variable) {
-		val stmtName = variable.name
-		val mappedName = 'mem_' + memoryMap.getName(variable.name)
+		variable.memoryMacro('')
+	}
+	def memoryMacro(Variable variable, String suffix) {
+		val stmtName = variable.name + suffix
+		val mappedName = 'mem_' + memoryMap.getName(variable.name) + suffix
 		
 		val pwmaff = memoryMap.getMap(variable).toPWMultiAff
 		if (pwmaff.nbPieces != 1)
