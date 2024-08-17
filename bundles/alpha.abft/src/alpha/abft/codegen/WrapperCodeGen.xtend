@@ -23,16 +23,18 @@ class WrapperCodeGen extends SystemCodeGen {
 	
 	val AlphaSystem v1System
 	val AlphaSystem v2System
+	val int[] v2TileSizes
 	
-	def static generateWrapper(AlphaSystem baselineSystem, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] tileSizes) {
-		val generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, tileSizes)
+	def static generateWrapper(AlphaSystem baselineSystem, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
+		val generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, v1TileSizes, v2TileSizes)
 		generator.generate
 	}
 	
-	new(AlphaSystem system, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] tileSizes) {
-		super(system, memoryMap, version, tileSizes)
+	new(AlphaSystem system, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
+		super(system, memoryMap, version, v1TileSizes)
 		this.v1System = v1System
 		this.v2System = v2System
+		this.v2TileSizes = v2TileSizes
 	}
 	
 	

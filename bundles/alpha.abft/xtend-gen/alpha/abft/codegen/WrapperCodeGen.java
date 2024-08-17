@@ -35,19 +35,22 @@ public class WrapperCodeGen extends SystemCodeGen {
 
   private final AlphaSystem v2System;
 
-  public static String generateWrapper(final AlphaSystem baselineSystem, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
+  private final int[] v2TileSizes;
+
+  public static String generateWrapper(final AlphaSystem baselineSystem, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
     String _xblockexpression = null;
     {
-      final WrapperCodeGen generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, tileSizes);
+      final WrapperCodeGen generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, v1TileSizes, v2TileSizes);
       _xblockexpression = generator.generate();
     }
     return _xblockexpression;
   }
 
-  public WrapperCodeGen(final AlphaSystem system, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] tileSizes) {
-    super(system, memoryMap, version, tileSizes);
+  public WrapperCodeGen(final AlphaSystem system, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
+    super(system, memoryMap, version, v1TileSizes);
     this.v1System = v1System;
     this.v2System = v2System;
+    this.v2TileSizes = v2TileSizes;
   }
 
   @Override

@@ -135,11 +135,11 @@ public class ABFT {
     {
       final SystemBody systemBody = system.getSystemBodies().get(0);
       final Variable outputVar = system.getOutputs().get(0);
-      ABFT.assertAssumptions(system, tileSizes);
       final Pair<Integer, Map<List<Integer>, Double>> convolutionKernel = ABFT.identify_convolution(system);
       final Integer radius = convolutionKernel.getKey();
       final Map<List<Integer>, Double> kernel = convolutionKernel.getValue();
       final int TT = tileSizes[0];
+      ABFT.assertAssumptions(system, tileSizes);
       final Consumer<Integer> _function = (Integer TS) -> {
         try {
           if ((((2 * (radius).intValue()) * TT) >= (TS).intValue())) {
@@ -182,7 +182,14 @@ public class ABFT {
       ABFT.addV2C2Equation(systemBody, C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, (radius).intValue());
       ABFT.addIEquation(systemBody, IVar, C1Var, C2Var, WVar, true);
       if (renameSystem) {
-        ABFT.rename(system, tileSizes, "v2");
+        int _size = ((List<Integer>)Conversions.doWrapArray(tileSizes)).size();
+        final Function1<Integer, Integer> _function_1 = (Integer i) -> {
+          int _get = tileSizes[(i).intValue()];
+          return Integer.valueOf((_get - ((2 * TT) * (radius).intValue())));
+        };
+        final Iterable<Integer> TSs = IterableExtensions.<Integer, Integer>map(new ExclusiveRange(1, _size, true), _function_1);
+        final Iterable<Integer> _tileSizes = Iterables.<Integer>concat(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(TT))), TSs);
+        ABFT.rename(system, ((int[])Conversions.unwrapArray(_tileSizes, int.class)), "v2");
       }
       Normalize.apply(system);
       NormalizeReduction.apply(system);

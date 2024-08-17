@@ -157,8 +157,6 @@ class ABFT {
 		val systemBody = system.systemBodies.get(0)
 		val outputVar = system.outputs.get(0)
 		
-		system.assertAssumptions(tileSizes)
-		
 		/*
 		 * Pattern match on convolutions
 		 */
@@ -166,11 +164,12 @@ class ABFT {
 		val radius = convolutionKernel.key
 		val kernel = convolutionKernel.value
 		
+		val TT = tileSizes.get(0)
+		system.assertAssumptions(tileSizes)
 		/*
 		 * Assert that tile sizes are valid given the radius, in other words
 		 * the domains are hyper-trapezoidal and not hyper-triangular
 		 */
-		val TT = tileSizes.get(0)
 		tileSizes.spatialSizes.forEach[TS | 
 			if (2 * radius * TT >= TS) {
 				val max_tt = (TS / 2 / radius).intValue				
@@ -218,7 +217,11 @@ class ABFT {
 		systemBody.addIEquation(IVar, C1Var, C2Var, WVar, true)
 		
 		if (renameSystem) {
-			system.rename(tileSizes, 'v2')
+			val TSs = (1..<tileSizes.size).map[i |
+				tileSizes.get(i) - 2 * TT * radius
+			]
+			val _tileSizes = #[TT] + TSs 
+			system.rename(_tileSizes, 'v2')
 		}
 		
 		Normalize.apply(system)
