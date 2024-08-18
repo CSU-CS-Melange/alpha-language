@@ -38,6 +38,10 @@ public class BenchmarkInstance {
       BenchmarkInstance.baselineMemoryMap(system), _function_1);
   }
 
+  public static MemoryMap v3MemoryMap(final AlphaSystem system) {
+    return new MemoryMap(system);
+  }
+
   public static CharSequence baselineSchedule(final AlphaSystem system) {
     CharSequence _xblockexpression = null;
     {
@@ -382,6 +386,73 @@ public class BenchmarkInstance {
       _builder.append("- filter: \"{ I_NR\' }\"");
       _builder.newLine();
       _builder.append("        ");
+      _builder.append("- filter: \"{ I\' }\"");
+      _builder.newLine();
+      _xblockexpression = _builder;
+    }
+    return _xblockexpression;
+  }
+
+  public static CharSequence v3Schedule(final AlphaSystem system, final int[] tileSizes) {
+    CharSequence _xblockexpression = null;
+    {
+      final int H = tileSizes[0];
+      final int L = tileSizes[1];
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "Y"));
+      };
+      AlphaExpression _expr = IterableExtensions.<StandardEquation>findFirst(system.getSystemBodies().get(0).getStandardEquations(), _function).getExpr();
+      final EList<AlphaExpression> yCaseBranches = ((CaseExpression) _expr).getExprs();
+      int _size = yCaseBranches.size();
+      final Function1<Integer, String> _function_1 = (Integer i) -> {
+        return (("Y_cb" + i) + "\'");
+      };
+      final Iterable<String> yStmts = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function_1);
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("domain: \"domain\'\"");
+      _builder.newLine();
+      _builder.append("child:");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("sequence:");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ W\' }\"");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ WExt\' }\"");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ Wi\' }\"");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ ");
+      String _join = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join, "  ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
+      _builder.append("    ");
+      _builder.append("child:");
+      _builder.newLine();
+      _builder.append("      ");
+      _builder.append("schedule: \"params\'->[\\");
+      _builder.newLine();
+      _builder.append("        ");
+      _builder.append("{ ");
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("->[t]; ");
+      String _join_1 = IterableExtensions.join(yStmts, _builder_1);
+      _builder.append(_join_1, "        ");
+      _builder.append("->[t] } \\");
+      _builder.newLineIfNotEmpty();
+      _builder.append("      ");
+      _builder.append("]\"");
+      _builder.newLine();
+      _builder.append("  ");
+      _builder.append("- filter: \"{ C1\'; C2\' }\"");
+      _builder.newLine();
+      _builder.append("  ");
       _builder.append("- filter: \"{ I\' }\"");
       _builder.newLine();
       _xblockexpression = _builder;

@@ -1,6 +1,6 @@
 package alpha.abft.analysis;
 
-import alpha.ablt.util.ConvolutionKernel;
+import alpha.abft.util.ConvolutionKernel;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaExpressionVisitable;
 import alpha.model.AlphaVisitable;

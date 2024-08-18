@@ -1,6 +1,6 @@
 package alpha.abft.analysis
 
-import alpha.ablt.util.ConvolutionKernel
+import alpha.abft.util.ConvolutionKernel
 import alpha.model.AlphaExpression
 import alpha.model.AlphaExpressionVisitable
 import alpha.model.AlphaVisitable
@@ -9,7 +9,6 @@ import alpha.model.DependenceExpression
 import alpha.model.IntegerExpression
 import alpha.model.RealExpression
 import alpha.model.VariableExpression
-import alpha.model.util.AShow
 import alpha.model.util.AbstractAlphaCompleteVisitor
 import java.util.List
 

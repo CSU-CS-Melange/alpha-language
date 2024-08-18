@@ -29,6 +29,9 @@ class BenchmarkInstance {
 		)
 	}
 	
+	def static MemoryMap v3MemoryMap(AlphaSystem system) {
+		new MemoryMap(system)
+	}
 	
 	
 	//////////////////////////////////////////////////////////////
@@ -148,6 +151,30 @@ class BenchmarkInstance {
 		        - filter: "{ «c2cbes.join('; ')» }"
 		        - filter: "{ I_NR' }"
 		        - filter: "{ I' }"
+		'''
+	}
+
+	def static v3Schedule(AlphaSystem system, int[] tileSizes) {
+		val H = tileSizes.get(0)
+		val L = tileSizes.get(1)
+		
+		val yCaseBranches = (system.systemBodies.get(0).standardEquations.findFirst[variable.name == 'Y'].expr as CaseExpression).exprs
+		val yStmts = (0..<yCaseBranches.size).map[i | "Y_cb" + i + "'"]
+		
+		'''
+			domain: "domain'"
+			child:
+			  sequence:
+			  - filter: "{ W' }"
+			  - filter: "{ WExt' }"
+			  - filter: "{ Wi' }"
+			  - filter: "{ «yStmts.join('; ')» }"
+			    child:
+			      schedule: "params'->[\
+			        { «yStmts.join('''->[t]; ''')»->[t] } \
+			      ]"
+			  - filter: "{ C1'; C2' }"
+			  - filter: "{ I' }"
 		'''
 	}
 

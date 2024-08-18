@@ -425,7 +425,7 @@ public class SystemCodeGen {
       _builder.newLineIfNotEmpty();
       _builder.newLine();
       {
-        if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
+        if (((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2)) || Objects.equal(this.version, Version.ABFT_V3))) {
           _builder.append("#ifdef ERROR_INJECTION");
           _builder.newLine();
           _builder.append("// Error injection harness");
@@ -492,7 +492,7 @@ public class SystemCodeGen {
       _builder.append("#else");
       _builder.newLine();
       {
-        if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2))) {
+        if (((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V2)) || Objects.equal(this.version, Version.ABFT_V3))) {
           _builder.append("\t");
           _builder.append("#if defined ERROR_INJECTION");
           _builder.newLine();
@@ -692,6 +692,9 @@ public class SystemCodeGen {
             break;
           case ABFT_V2:
             _switchResult = "v2 ";
+            break;
+          case ABFT_V3:
+            _switchResult = "v3 ";
             break;
           default:
             _switchResult = "";
@@ -1211,8 +1214,7 @@ public class SystemCodeGen {
       int _size_2 = this.stencilVar.getDomain().getIndexNames().size();
       final int nbSpatialDims = (_size_2 - 1);
       String _xifexpression = null;
-      boolean _equals = Objects.equal(this.version, Version.ABFT_V1);
-      if (_equals) {
+      if ((Objects.equal(this.version, Version.ABFT_V1) || Objects.equal(this.version, Version.ABFT_V3))) {
         _xifexpression = "C2";
       } else {
         final Function1<Integer, Integer> _function_2 = (Integer it) -> {
@@ -1269,8 +1271,8 @@ public class SystemCodeGen {
               String _xblockexpression_3 = null;
               {
                 String _xifexpression_2 = null;
-                boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V1);
-                if (_equals_1) {
+                boolean _equals = Objects.equal(this.version, Version.ABFT_V1);
+                if (_equals) {
                   final Function1<Pair<String, Integer>, String> _function_6 = (Pair<String, Integer> it) -> {
                     StringConcatenation _builder_2 = new StringConcatenation();
                     String _key = it.getKey();
@@ -1377,8 +1379,8 @@ public class SystemCodeGen {
       }
       final Iterable<String> stencilVarMacros = _xblockexpression_1;
       Iterable<String> _xifexpression_1 = null;
-      boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V2);
-      if (_equals_1) {
+      boolean _equals = Objects.equal(this.version, Version.ABFT_V2);
+      if (_equals) {
         Iterable<String> _xblockexpression_2 = null;
         {
           final Function1<StandardEquation, Boolean> _function_4 = (StandardEquation it) -> {
@@ -1568,6 +1570,9 @@ public class SystemCodeGen {
             break;
           case ABFT_V2:
             _switchResult = "v2";
+            break;
+          case ABFT_V3:
+            _switchResult = "v3";
             break;
           default:
             break;

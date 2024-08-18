@@ -25,17 +25,19 @@ class WrapperCodeGen extends SystemCodeGen {
 	
 	val AlphaSystem v1System
 	val AlphaSystem v2System
+	val AlphaSystem v3System
 	val int[] v2TileSizes
 	
-	def static generateWrapper(AlphaSystem baselineSystem, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
-		val generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, v1TileSizes, v2TileSizes)
+	def static generateWrapper(AlphaSystem baselineSystem, AlphaSystem v1System, AlphaSystem v2System, AlphaSystem v3System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
+		val generator = new WrapperCodeGen(baselineSystem, v1System, v2System, v3System, memoryMap, version, v1TileSizes, v2TileSizes)
 		generator.generate
 	}
 	
-	new(AlphaSystem system, AlphaSystem v1System, AlphaSystem v2System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
+	new(AlphaSystem system, AlphaSystem v1System, AlphaSystem v2System, AlphaSystem v3System, MemoryMap memoryMap, Version version, int[] v1TileSizes, int[] v2TileSizes) {
 		super(system, memoryMap, version, v1TileSizes)
 		this.v1System = v1System
 		this.v2System = v2System
+		this.v3System = v3System
 		this.v2TileSizes = v2TileSizes
 	}
 	
@@ -62,9 +64,11 @@ class WrapperCodeGen extends SystemCodeGen {
 		#if defined «REPORT_COMPLEXITY_ONLY»
 		«v1System.sigantureParamsAsFloats»;
 		«v2System.sigantureParamsAsFloats»;
+		«v3System.sigantureParamsAsFloats»;
 		#else
 		«v1System.signature»;
 		«v2System.signature»;
+		«v3System.signature»;
 		#endif
 		
 		struct INJ {
@@ -155,6 +159,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		
 		val thresholdVarV1 = 'threshold_v1'
 		val thresholdVarV2 = 'threshold_v2'
+		val thresholdVarV3 = 'threshold_v3'
 		
 		val code = '''
 		#ifdef «ERROR_INJECTION»
@@ -255,6 +260,10 @@ class WrapperCodeGen extends SystemCodeGen {
 			struct Result r2 = «v2System.call»;
 			printf("v2 time: %0.4f sec\n", r2.result);
 			«ENDIF»
+			«IF v3System !==null»
+			struct Result r3 = «v3System.call»;
+			printf("v3 time: %0.4f sec\n", r3.result);
+			«ENDIF»
 			
 			#elif defined «REPORT_COMPLEXITY_ONLY»
 			«IF v1System !==null»
@@ -263,11 +272,14 @@ class WrapperCodeGen extends SystemCodeGen {
 			«IF v2System !==null»
 			«v2System.call»;
 			«ENDIF»
+			«IF v3System !==null»
+			«v3System.call»;
+			«ENDIF»
 			
 			#elif defined «ERROR_INJECTION»
 			tBox = max((int)log10(T) + 1, 7);
 			sBox = max((int)log10(N) + 1, 7);
-			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(i)»)'''].join('*')») + 4;
+			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(1)»)'''].join('*')») + 4;
 			if (getenv("VERBOSE") != NULL) {
 				strcpy(eol, "\n");
 			} else {
@@ -325,6 +337,27 @@ class WrapperCodeGen extends SystemCodeGen {
 				T = input_T;
 			} else {
 				«thresholdVarV2» = atoi(getenv("THRESHOLD"));
+			}
+			«ENDIF»
+			«IF v3System !==null»
+			float «thresholdVarV3»;
+			if (threshold == NULL) {
+				struct Result result;
+				long input_T = T;
+				T = «#[20, 4*TT].max»;
+				
+				result = «v3System.call»;
+				printf("floating point noise: %E\n", result.noise);
+				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
+				for (int i=9; i>=0; i--) {
+					«thresholdVarV3» = thresholds[i];
+					if («thresholdVarV3» > fabs(result.noise))
+						break;
+				}
+				printf(" «thresholdVarV3» set to: %E\n", «thresholdVarV3»);
+				T = input_T;
+			} else {
+				«thresholdVarV3» = atoi(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			printHeader();
@@ -396,6 +429,38 @@ class WrapperCodeGen extends SystemCodeGen {
 				print_summary(2, &v_avg);
 			}
 			«ENDIF»
+
+			«IF v2System !== null»
+			«IF v1System !== null && v2System !== null»
+			printHeader();
+			«ENDIF»
+			// ABFTv3
+			sprintf(val, "%E", «thresholdVarV3»); 
+			setenv("THRESHOLD", val, 1);
+			for (int bit=31; bit>=8; bit--) {
+				if (single_bit != NULL && atoi(single_bit) != bit)
+					continue;
+				char val[50];
+				sprintf(val, "%d", bit); 
+				setenv("bit", val, 1);
+				struct ResultsSummary v_avg = new_result_summary();
+				for (run=0; run<R; run++) {
+«««					«system.inputs.map[inputInitialization].join('\n')»
+					export_injs();
+					struct Result v = «v3System.call»;
+					
+					// Compare output with GOLD
+					«compareWithGold(thresholdVarV3)»
+					v_avg.max_error = max(v_avg.max_error, max_error);
+					
+					accumulate_result(&v_avg, v);
+					print(3, v, max_error);
+				}
+«««				if (getenv("SUMMARY") != NULL)
+				print_summary(3, &v_avg);
+			}
+			«ENDIF»
+
 			#endif
 		
 			return 0;

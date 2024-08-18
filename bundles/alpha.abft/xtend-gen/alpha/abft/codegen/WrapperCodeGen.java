@@ -39,21 +39,24 @@ public class WrapperCodeGen extends SystemCodeGen {
 
   private final AlphaSystem v2System;
 
+  private final AlphaSystem v3System;
+
   private final int[] v2TileSizes;
 
-  public static String generateWrapper(final AlphaSystem baselineSystem, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
+  public static String generateWrapper(final AlphaSystem baselineSystem, final AlphaSystem v1System, final AlphaSystem v2System, final AlphaSystem v3System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
     String _xblockexpression = null;
     {
-      final WrapperCodeGen generator = new WrapperCodeGen(baselineSystem, v1System, v2System, memoryMap, version, v1TileSizes, v2TileSizes);
+      final WrapperCodeGen generator = new WrapperCodeGen(baselineSystem, v1System, v2System, v3System, memoryMap, version, v1TileSizes, v2TileSizes);
       _xblockexpression = generator.generate();
     }
     return _xblockexpression;
   }
 
-  public WrapperCodeGen(final AlphaSystem system, final AlphaSystem v1System, final AlphaSystem v2System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
+  public WrapperCodeGen(final AlphaSystem system, final AlphaSystem v1System, final AlphaSystem v2System, final AlphaSystem v3System, final MemoryMap memoryMap, final Version version, final int[] v1TileSizes, final int[] v2TileSizes) {
     super(system, memoryMap, version, v1TileSizes);
     this.v1System = v1System;
     this.v2System = v2System;
+    this.v3System = v3System;
     this.v2TileSizes = v2TileSizes;
   }
 
@@ -109,6 +112,10 @@ public class WrapperCodeGen extends SystemCodeGen {
     _builder.append(_sigantureParamsAsFloats_1);
     _builder.append(";");
     _builder.newLineIfNotEmpty();
+    CharSequence _sigantureParamsAsFloats_2 = this.sigantureParamsAsFloats(this.v3System);
+    _builder.append(_sigantureParamsAsFloats_2);
+    _builder.append(";");
+    _builder.newLineIfNotEmpty();
     _builder.append("#else");
     _builder.newLine();
     CharSequence _signature_1 = this.signature(this.v1System);
@@ -117,6 +124,10 @@ public class WrapperCodeGen extends SystemCodeGen {
     _builder.newLineIfNotEmpty();
     CharSequence _signature_2 = this.signature(this.v2System);
     _builder.append(_signature_2);
+    _builder.append(";");
+    _builder.newLineIfNotEmpty();
+    CharSequence _signature_3 = this.signature(this.v3System);
+    _builder.append(_signature_3);
     _builder.append(";");
     _builder.newLineIfNotEmpty();
     _builder.append("#endif");
@@ -373,6 +384,7 @@ public class WrapperCodeGen extends SystemCodeGen {
       final Iterable<String> injectionSite = Iterables.<String>concat(tInjectionSite, sInjectionSite);
       final String thresholdVarV1 = "threshold_v1";
       final String thresholdVarV2 = "threshold_v2";
+      final String thresholdVarV3 = "threshold_v3";
       StringConcatenation _builder_1 = new StringConcatenation();
       _builder_1.append("#ifdef ");
       _builder_1.append(SystemCodeGen.ERROR_INJECTION);
@@ -668,6 +680,19 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
         }
       }
+      {
+        if ((this.v3System != null)) {
+          _builder_1.append("\t");
+          _builder_1.append("struct Result r3 = ");
+          CharSequence _call_3 = this.call(this.v3System);
+          _builder_1.append(_call_3, "\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("printf(\"v3 time: %0.4f sec\\n\", r3.result);");
+          _builder_1.newLine();
+        }
+      }
       _builder_1.append("\t");
       _builder_1.newLine();
       _builder_1.append("\t");
@@ -677,8 +702,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v1System != null)) {
           _builder_1.append("\t");
-          CharSequence _call_3 = this.call(this.v1System);
-          _builder_1.append(_call_3, "\t");
+          CharSequence _call_4 = this.call(this.v1System);
+          _builder_1.append(_call_4, "\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
         }
@@ -686,8 +711,17 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v2System != null)) {
           _builder_1.append("\t");
-          CharSequence _call_4 = this.call(this.v2System);
-          _builder_1.append(_call_4, "\t");
+          CharSequence _call_5 = this.call(this.v2System);
+          _builder_1.append(_call_5, "\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+        }
+      }
+      {
+        if ((this.v3System != null)) {
+          _builder_1.append("\t");
+          CharSequence _call_6 = this.call(this.v3System);
+          _builder_1.append(_call_6, "\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
         }
@@ -712,7 +746,7 @@ public class WrapperCodeGen extends SystemCodeGen {
       final Function1<Integer, String> _function_10 = (Integer i) -> {
         StringConcatenation _builder_2 = new StringConcatenation();
         _builder_2.append("(N/(float)");
-        int _get_1 = this.getTileSizes()[(i).intValue()];
+        int _get_1 = this.getTileSizes()[1];
         _builder_2.append(_get_1);
         _builder_2.append(")");
         return _builder_2.toString();
@@ -809,8 +843,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("\t");
           _builder_1.append("\t");
           _builder_1.append("result = ");
-          CharSequence _call_5 = this.call(this.v1System);
-          _builder_1.append(_call_5, "\t\t");
+          CharSequence _call_7 = this.call(this.v1System);
+          _builder_1.append(_call_7, "\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
@@ -900,8 +934,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("\t");
           _builder_1.append("\t");
           _builder_1.append("result = ");
-          CharSequence _call_6 = this.call(this.v2System);
-          _builder_1.append(_call_6, "\t\t");
+          CharSequence _call_8 = this.call(this.v2System);
+          _builder_1.append(_call_8, "\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
@@ -960,6 +994,97 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
         }
       }
+      {
+        if ((this.v3System != null)) {
+          _builder_1.append("\t");
+          _builder_1.append("float ");
+          _builder_1.append(thresholdVarV3, "\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("if (threshold == NULL) {");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("struct Result result;");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("long input_T = T;");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("T = ");
+          Integer _max_2 = IterableExtensions.<Integer>max(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(Integer.valueOf(20), Integer.valueOf((4 * TT)))));
+          _builder_1.append(_max_2, "\t\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("result = ");
+          CharSequence _call_9 = this.call(this.v3System);
+          _builder_1.append(_call_9, "\t\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("printf(\"floating point noise: %E\\n\", result.noise);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("for (int i=9; i>=0; i--) {");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append(thresholdVarV3, "\t\t\t");
+          _builder_1.append(" = thresholds[i];");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("if (");
+          _builder_1.append(thresholdVarV3, "\t\t\t");
+          _builder_1.append(" > fabs(result.noise))");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t\t");
+          _builder_1.append("break;");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("}");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("printf(\" ");
+          _builder_1.append(thresholdVarV3, "\t\t");
+          _builder_1.append(" set to: %E\\n\", ");
+          _builder_1.append(thresholdVarV3, "\t\t");
+          _builder_1.append(");");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("T = input_T;");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("} else {");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append(thresholdVarV3, "\t\t");
+          _builder_1.append(" = atoi(getenv(\"THRESHOLD\"));");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("}");
+          _builder_1.newLine();
+        }
+      }
       _builder_1.append("\t");
       _builder_1.append("printHeader();");
       _builder_1.newLine();
@@ -983,8 +1108,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append("// Get GOLD result, run the input program");
       _builder_1.newLine();
       _builder_1.append("\t");
-      CharSequence _call_7 = this.call(system, WrapperCodeGen.goldSuffix);
-      _builder_1.append(_call_7, "\t");
+      CharSequence _call_10 = this.call(system, WrapperCodeGen.goldSuffix);
+      _builder_1.append(_call_10, "\t");
       _builder_1.append(";");
       _builder_1.newLineIfNotEmpty();
       _builder_1.append("\t");
@@ -1055,8 +1180,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("struct Result v = ");
-          CharSequence _call_8 = this.call(this.v1System);
-          _builder_1.append(_call_8, "\t\t\t");
+          CharSequence _call_11 = this.call(this.v1System);
+          _builder_1.append(_call_11, "\t\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
@@ -1157,8 +1282,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append("\t");
           _builder_1.append("\t\t");
           _builder_1.append("struct Result v = ");
-          CharSequence _call_9 = this.call(this.v2System);
-          _builder_1.append(_call_9, "\t\t\t");
+          CharSequence _call_12 = this.call(this.v2System);
+          _builder_1.append(_call_12, "\t\t\t");
           _builder_1.append(";");
           _builder_1.newLineIfNotEmpty();
           _builder_1.append("\t");
@@ -1201,6 +1326,110 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.newLine();
         }
       }
+      _builder_1.newLine();
+      {
+        if ((this.v2System != null)) {
+          {
+            if (((this.v1System != null) && (this.v2System != null))) {
+              _builder_1.append("\t");
+              _builder_1.append("printHeader();");
+              _builder_1.newLine();
+            }
+          }
+          _builder_1.append("\t");
+          _builder_1.append("// ABFTv3");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("sprintf(val, \"%E\", ");
+          _builder_1.append(thresholdVarV3, "\t");
+          _builder_1.append("); ");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("setenv(\"THRESHOLD\", val, 1);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("for (int bit=31; bit>=8; bit--) {");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("if (single_bit != NULL && atoi(single_bit) != bit)");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("continue;");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("char val[50];");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("sprintf(val, \"%d\", bit); ");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("setenv(\"bit\", val, 1);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("struct ResultsSummary v_avg = new_result_summary();");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("for (run=0; run<R; run++) {");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("export_injs();");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("struct Result v = ");
+          CharSequence _call_13 = this.call(this.v3System);
+          _builder_1.append(_call_13, "\t\t\t");
+          _builder_1.append(";");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("// Compare output with GOLD");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          String _compareWithGold_2 = this.compareWithGold(thresholdVarV3);
+          _builder_1.append(_compareWithGold_2, "\t\t\t");
+          _builder_1.newLineIfNotEmpty();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("v_avg.max_error = max(v_avg.max_error, max_error);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("accumulate_result(&v_avg, v);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t\t");
+          _builder_1.append("print(3, v, max_error);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("}");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("\t");
+          _builder_1.append("print_summary(3, &v_avg);");
+          _builder_1.newLine();
+          _builder_1.append("\t");
+          _builder_1.append("}");
+          _builder_1.newLine();
+        }
+      }
+      _builder_1.newLine();
       _builder_1.append("\t");
       _builder_1.append("#endif");
       _builder_1.newLine();

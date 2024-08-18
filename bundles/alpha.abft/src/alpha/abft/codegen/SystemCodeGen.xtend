@@ -10,6 +10,7 @@ import alpha.codegen.demandDriven.WriteCTypeGenerator
 import alpha.codegen.isl.PolynomialConverter
 import alpha.model.AlphaExpression
 import alpha.model.AlphaSystem
+import alpha.model.CaseExpression
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
@@ -43,12 +44,12 @@ import static extension alpha.model.util.ISLUtil.toISLMap
 import static extension alpha.model.util.ISLUtil.toISLSchedule
 import static extension alpha.model.util.ISLUtil.toISLSet
 import static extension fr.irisa.cairn.jnimap.isl.ISLMap.buildIdentity
-import alpha.model.CaseExpression
 
 enum Version {
 		BASELINE,
 		ABFT_V1,
 		ABFT_V2,
+		ABFT_V3,
 		WRAPPER
 	}
 
@@ -245,7 +246,7 @@ class SystemCodeGen {
 	// Memory access functions
 	«system.variables.map[memoryMacro].join('\n')»
 	
-	«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
+	«IF version == Version.ABFT_V1 || version == Version.ABFT_V2 || version == Version.ABFT_V3»
 	#ifdef ERROR_INJECTION
 	// Error injection harness
 	«stencilVar.domain.indexNames.map[i | 
@@ -270,7 +271,7 @@ class SystemCodeGen {
 		#if defined «REPORT_COMPLEXITY_ONLY»
 		«computeComplexity»
 		#else
-		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
+		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2 || version == Version.ABFT_V3»
 		#if defined ERROR_INJECTION
 		// Error injection configuration
 		«stencilVar.domain.indexNames.map[i |
@@ -350,6 +351,7 @@ class SystemCodeGen {
 		val versionStr = switch (version) {
 			case Version.ABFT_V1: 'v1 '
 			case Version.ABFT_V2: 'v2 '
+			case Version.ABFT_V3: 'v3 '
 			default: ''
 		}
 		
@@ -582,7 +584,7 @@ class SystemCodeGen {
 		val spatialContext = spatialIndexNames.zipWith(spatialTileSizes)
 		
 		val nbSpatialDims = stencilVar.domain.indexNames.size - 1
-		val injectionName = if (version == Version.ABFT_V1) {
+		val injectionName = if (version == Version.ABFT_V1 || version == Version.ABFT_V3) {
 			'C2' 
 		} else {
 			'C2_NR' + (0..<nbSpatialDims).map[3].reduce[v1,v2|v1*v2]
@@ -707,6 +709,7 @@ class SystemCodeGen {
 		val vStr = switch (version) { 
 			case Version.ABFT_V1 : 'v1'
 			case Version.ABFT_V2 : 'v2'
+			case Version.ABFT_V3 : 'v3'
 		}
 		
 		val containsInjectionConditions = indexNames.map[n | '''«n»==«n»_INJ'''].join(' && ')

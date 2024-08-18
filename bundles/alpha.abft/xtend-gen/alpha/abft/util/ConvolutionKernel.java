@@ -1,17 +1,23 @@
-package alpha.ablt.util;
+package alpha.abft.util;
 
 import alpha.model.AlphaExpression;
 import alpha.model.Variable;
 import alpha.model.util.AShow;
 import alpha.model.util.AffineFunctionOperations;
+import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Map;
 import java.util.Set;
+import org.eclipse.xtend.lib.annotations.AccessorType;
+import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.Pure;
 
 /**
  * This class is a simple wrapper around a multi-dimensional list to
@@ -30,6 +36,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  */
 @SuppressWarnings("all")
 public class ConvolutionKernel {
+  @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private Map<ISLMultiAff, Float> kernel;
 
   private Set<Variable> variables;
@@ -80,8 +87,44 @@ public class ConvolutionKernel {
     return _xblockexpression;
   }
 
+  public Long radius() {
+    final Function1<ISLMultiAff, Iterable<Long>> _function = (ISLMultiAff it) -> {
+      int _size = it.getAffs().size();
+      final Function1<Integer, ISLAff> _function_1 = (Integer i) -> {
+        return it.getAffs().get((i).intValue());
+      };
+      final Function1<ISLAff, Long> _function_2 = (ISLAff it_1) -> {
+        return Long.valueOf(it_1.getConstant());
+      };
+      return IterableExtensions.<ISLAff, Long>map(IterableExtensions.<Integer, ISLAff>map(new ExclusiveRange(1, _size, true), _function_1), _function_2);
+    };
+    final Function1<Long, Long> _function_1 = (Long it) -> {
+      return Long.valueOf(Math.abs((it).longValue()));
+    };
+    return IterableExtensions.<Long>max(IterableExtensions.<Long, Long>map(Iterables.<Long>concat(IterableExtensions.<ISLMultiAff, Iterable<Long>>map(this.kernel.keySet(), _function)), _function_1));
+  }
+
+  public Long timeDepth() {
+    final Function1<ISLMultiAff, Long> _function = (ISLMultiAff it) -> {
+      return Long.valueOf(it.getAffs().get(0).getConstant());
+    };
+    final Function1<Long, Long> _function_1 = (Long it) -> {
+      return Long.valueOf(Math.abs((it).longValue()));
+    };
+    return IterableExtensions.<Long>max(IterableExtensions.<Long, Long>map(IterableExtensions.<ISLMultiAff, Long>map(this.kernel.keySet(), _function), _function_1));
+  }
+
   @Override
   public String toString() {
     return AShow.print(this.expr);
+  }
+
+  @Pure
+  public Map<ISLMultiAff, Float> getKernel() {
+    return this.kernel;
+  }
+
+  protected void setKernel(final Map<ISLMultiAff, Float> kernel) {
+    this.kernel = kernel;
   }
 }

@@ -8,5 +8,7 @@ public enum Version {
 
   ABFT_V2,
 
+  ABFT_V3,
+
   WRAPPER;
 }
