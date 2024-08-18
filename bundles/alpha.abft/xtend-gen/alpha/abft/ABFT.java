@@ -241,7 +241,7 @@ public class ABFT {
       ABFT.addKernelWEquation(systemBody, WExtVar, weightsDomain);
       ABFT.addWiEquationV3(systemBody, WiVar, WExtVar, WVar, spaceTileDim);
       ABFT.addCEquationV3(systemBody, CVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L);
-      ABFT.addCEquationV3(systemBody, CiVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L);
+      ABFT.addC2EquationV3(systemBody, CiVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L);
       ABFT.addIEquation(systemBody, IVar, CVar, CiVar, WVar, false);
       if (renameSystem) {
         ABFT.rename(system, new int[] { H, L }, "v3");
@@ -249,6 +249,17 @@ public class ABFT {
       Normalize.apply(system);
       NormalizeReduction.apply(system);
       _xblockexpression = system;
+    }
+    return _xblockexpression;
+  }
+
+  public static List<AlphaIssue> addC2EquationV3(final SystemBody systemBody, final Variable CVar, final Variable stencilVar, final Variable WVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim, final int H, final int L) {
+    List<AlphaIssue> _xblockexpression = null;
+    {
+      final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, AlphaUserFactory.createZeroExpression(CVar.getDomain().getSpace()));
+      EList<Equation> _equations = systemBody.getEquations();
+      _equations.add(equ);
+      _xblockexpression = AlphaInternalStateConstructor.recomputeContextDomain(equ);
     }
     return _xblockexpression;
   }

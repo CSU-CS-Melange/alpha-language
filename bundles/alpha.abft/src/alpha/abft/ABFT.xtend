@@ -263,7 +263,7 @@ class ABFT {
 		systemBody.addKernelWEquation(WExtVar, weightsDomain)
 		systemBody.addWiEquationV3(WiVar, WExtVar, WVar, spaceTileDim)
 		systemBody.addCEquationV3(CVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
-		systemBody.addCEquationV3(CiVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
+		systemBody.addC2EquationV3(CiVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
 //		systemBody.addV2C2Equation(C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, radius)
 		systemBody.addIEquation(IVar, CVar, CiVar, WVar, false)
 		
@@ -275,6 +275,12 @@ class ABFT {
 		NormalizeReduction.apply(system)
 		
 		system
+	}
+	
+	def static addC2EquationV3(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
+		val equ = createStandardEquation(CVar, createZeroExpression(CVar.domain.space))
+		systemBody.equations += equ
+		AlphaInternalStateConstructor.recomputeContextDomain(equ)
 	}
 	
 	def static addCEquationV3(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {

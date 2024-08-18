@@ -120,7 +120,7 @@ class SystemCodeGen {
 		this.scheduleDomain = buildScheduleDomain
 		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
 		
-//		println(scheduleStr)
+		println(scheduleStr)
 		
 		this.schedule = scheduleStr.toISLSchedule
 		
@@ -198,6 +198,8 @@ class SystemCodeGen {
 		val TT = tileSizes.get(0)
 		val TS = (1..<tileSizes.size).map[i | tileSizes.get(i)].max
 		
+		val notV3 = version != Version.ABFT_V3
+		
 		val code = '''
 	«aboutComments»
 	#include<stdio.h>
@@ -210,7 +212,8 @@ class SystemCodeGen {
 	#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 	#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 	#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-	#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f }
+	
+	#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.«if (notV3) 't'»t=0, .«if (notV3) 't'»i=0, .«if (notV3) 't'»j=0, .«if (notV3) 't'»k=0}, .result=0.0f, .noise=0.0f }
 	
 	void initialize_timer();
 	void reset_timer();
@@ -218,11 +221,12 @@ class SystemCodeGen {
 	void stop_timer();
 	double elapsed_time();
 	
+	
 	struct INJ {
-		int tt;
-		int ti;
-		int tj;
-		int tk;
+		int «if (notV3) 't'»t;
+		int «if (notV3) 't'»i;
+		int «if (notV3) 't'»j;
+		int «if (notV3) 't'»k;
 	};
 
 	struct Result {
@@ -250,7 +254,7 @@ class SystemCodeGen {
 	#ifdef ERROR_INJECTION
 	// Error injection harness
 	«stencilVar.domain.indexNames.map[i | 
-		'''int t«i»_INJ'''].join(';\n')
+		'''int «if (notV3) 't'»«i»_INJ'''].join(';\n')
 	»;
 	int BIT;
 	
@@ -271,11 +275,19 @@ class SystemCodeGen {
 		#if defined «REPORT_COMPLEXITY_ONLY»
 		«computeComplexity»
 		#else
-		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2 || version == Version.ABFT_V3»
+		«IF version == Version.ABFT_V1 || version == Version.ABFT_V2»
 		#if defined ERROR_INJECTION
 		// Error injection configuration
 		«stencilVar.domain.indexNames.map[i |
-  	  '''t«i»_INJ = getenv("t«i»_INJ") != NULL ? atoi(getenv("t«i»_INJ")) : -1'''].join(';\n')
+  	  '''«if (notV3) 't'»«i»_INJ = getenv("«if (notV3) 't'»«i»_INJ") != NULL ? atoi(getenv("«if (notV3) 't'»«i»_INJ")) : -1'''].join(';\n')
+  	  	»;
+		BIT = getenv("bit") != NULL ? atoi(getenv("bit")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
+		#endif
+		«ELSEIF (version == Version.ABFT_V3)»
+		#if defined ERROR_INJECTION
+		// Error injection configuration
+		«stencilVar.domain.indexNames.map[i |
+  	  '''«if (notV3) 't'»«i»_INJ = getenv("«if (notV3) 't'»«i»_INJ") != NULL ? atoi(getenv("«if (notV3) 't'»«i»_INJ")) : -1'''].join(';\n')
   	  	»;
 		BIT = getenv("bit") != NULL ? atoi(getenv("bit")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
 		#endif
@@ -606,14 +618,17 @@ class SystemCodeGen {
 				val stmtStr = '''«lhs» «op» «rhs»''' 
 				
 				if (i==2) {										
-					val injectionSVals = if (version == Version.ABFT_V1) {
-						spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
-					} else {
-						spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2»'''].join(' && ')
+					val injectionSVals = switch (version) {	
+						case Version.ABFT_V1 : spatialContext.map['''«key»==«value»*t«key»_INJ+«value/2»'''].join(' && ')
+						case Version.ABFT_V2 : spatialContext.map['''«key»==«value-2*TT»*t«key»_INJ+«value/2»'''].join(' && ')
+						case Version.ABFT_V3 : spatialContext.map['''«key»==«key»_INJ'''].join(' && ')
 					}
 					
-	//				var injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») { printf("        Y(«indexNames.map['%d'].join(',')»)\n", «indexNames.join(',')»); printf("before: %E\n", «lhs»); inject_«system.name»(&«lhs»); printf(" after: %E\n", «lhs»); } '''
-					val injExpr = '''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») inject_«system.name»(&«lhs»)'''
+					val injExpr = if (version == Version.ABFT_V3) {
+						'''if (t==t_INJ && «injectionSVals») inject_«system.name»(&«lhs»)'''
+					} else {						
+						'''if (t==«TT»*(tt_INJ-1)+1 && «injectionSVals») inject_«system.name»(&«lhs»)'''
+					}
 					'''
 						#define «name»_hook(«defIndexNamesStr») «stmtStr»
 						#ifdef ERROR_INJECTION
@@ -712,7 +727,21 @@ class SystemCodeGen {
 			case Version.ABFT_V3 : 'v3'
 		}
 		
-		val containsInjectionConditions = indexNames.map[n | '''«n»==«n»_INJ'''].join(' && ')
+		val containsInjectionConditions = if (version == Version.ABFT_V3) {
+			val tt = indexNames.get(0)
+			val ti = indexNames.get(1)
+			val tt_ti = '''«tt»==t_INJ/«tileSizes.get(0)» && «ti»==i_INJ/«tileSizes.get(1)»'''
+			val rest = (2..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)].join(' && ')
+			'''«tt_ti» && «rest»'''
+		} else {
+			indexNames.map[n | '''«n»==«n»_INJ'''].join(' && ')
+		}
+		
+		val injInit = if (version == Version.ABFT_V3) {
+			stencilVar.domain.indexNames.map[i |'''«i»_INJ'''].join(', ')
+		} else {
+			stencilVar.domain.indexNames.map[i |'''t«i»_INJ'''].join(', ')
+		}
 		
 		val code = '''
 			#if defined «TIMING»
@@ -721,7 +750,7 @@ class SystemCodeGen {
 			
 			#elif defined «ERROR_INJECTION»
 			// Count checksum difference above THRESHOLD
-			struct INJ inj = { «stencilVar.domain.indexNames.map[i |'''t«i»_INJ'''].join(', ')» };
+			struct INJ inj = { «injInit» };
 			struct Result result = new_result();
 			result.bit = BIT;
 			result.inj = inj;

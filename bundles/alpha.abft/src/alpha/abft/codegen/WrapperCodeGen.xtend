@@ -41,6 +41,9 @@ class WrapperCodeGen extends SystemCodeGen {
 		this.v2TileSizes = v2TileSizes
 	}
 	
+	def notV3() {
+		version != Version.ABFT_V3
+	}
 	
 	override generate() '''
 		// «system.name»-wrapper.c
@@ -56,7 +59,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		#define ceild(n,d)  (int)ceil(((double)(n))/((double)(d)))
 		#define floord(n,d) (int)floor(((double)(n))/((double)(d)))
 		#define mallocCheck(v,s,d) if ((v) == NULL) { printf("Failed to allocate memory for %s : size=%lu\n", "sizeof(d)*(s)", sizeof(d)*(s)); exit(-1); }
-		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.tt=0, .ti=0, .tj=0, .tk=0}, .result=0.0f, .noise=0.0f}
+		#define new_result() { .valid=0, .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .inj={.«if (notV3) 't'»t=0, .«if (notV3) 't'»i=0, .«if (notV3) 't'»j=0, .«if (notV3) 't'»k=0}, .result=0.0f, .noise=0.0f}
 		#define new_result_summary() { .TP=0L, .FP=0L, .TN=0L, .FN=0L, .TPR=0.0f, .FPR=0.0f, .FNR=0.0f, .bit=0, .nb_detected=0L, .nb_results=0L, .result=0.0f, .noise=0.0f, .max_error=0.0f}
 
 		// External system declarations
@@ -72,10 +75,10 @@ class WrapperCodeGen extends SystemCodeGen {
 		#endif
 		
 		struct INJ {
-			int tt;
-			int ti;
-			int tj;
-			int tk;
+			int «if (notV3) 't'»t;
+			int «if (notV3) 't'»i;
+			int «if (notV3) 't'»j;
+			int «if (notV3) 't'»k;
 		};
 		
 		struct Result {
@@ -279,7 +282,11 @@ class WrapperCodeGen extends SystemCodeGen {
 			#elif defined «ERROR_INJECTION»
 			tBox = max((int)log10(T) + 1, 7);
 			sBox = max((int)log10(N) + 1, 7);
+			«IF v3System !==null»
+			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*(N/(float)«tileSizes.get(1)»)*«(2..<sDims).map['N'].join('*')») + 4;
+			«ELSE»
 			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(1)»)'''].join('*')») + 4;
+			«ENDIF»
 			if (getenv("VERBOSE") != NULL) {
 				strcpy(eol, "\n");
 			} else {
@@ -306,10 +313,10 @@ class WrapperCodeGen extends SystemCodeGen {
 				
 				result = «v1System.call»;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
+				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
 				for (int i=9; i>=0; i--) {
 					«thresholdVarV1» = thresholds[i];
-					if («thresholdVarV1» > fabs(result.noise))
+					if («thresholdVarV1» >= fabs(result.noise))
 						break;
 				}
 				printf(" «thresholdVarV1» set to: %E\n", «thresholdVarV1»);
@@ -327,10 +334,10 @@ class WrapperCodeGen extends SystemCodeGen {
 				
 				result = «v2System.call»;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
+				float thresholds[10] = { 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
 				for (int i=9; i>=0; i--) {
 					«thresholdVarV2» = thresholds[i];
-					if («thresholdVarV2» > fabs(result.noise))
+					if («thresholdVarV2» >= fabs(result.noise))
 						break;
 				}
 				printf(" «thresholdVarV2» set to: %E\n", «thresholdVarV2»);
@@ -348,10 +355,10 @@ class WrapperCodeGen extends SystemCodeGen {
 				
 				result = «v3System.call»;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10 };
+				float thresholds[10] = { 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
 				for (int i=9; i>=0; i--) {
 					«thresholdVarV3» = thresholds[i];
-					if («thresholdVarV3» > fabs(result.noise))
+					if («thresholdVarV3» >= fabs(result.noise))
 						break;
 				}
 				printf(" «thresholdVarV3» set to: %E\n", «thresholdVarV3»);
@@ -430,7 +437,7 @@ class WrapperCodeGen extends SystemCodeGen {
 			}
 			«ENDIF»
 
-			«IF v2System !== null»
+			«IF v3System !== null»
 			«IF v1System !== null && v2System !== null»
 			printHeader();
 			«ENDIF»

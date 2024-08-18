@@ -19,8 +19,8 @@ class Makefile {
 	
 		val content = '''
 			FLAGS := -O3 -lm
-«««			all: bin/«name».time bin/«name».inj bin/«name».complexity
-			all: bin/«name».time
+			all: bin/«name».time bin/«name».inj bin/«name».complexity
+«««			all: bin/«name».time
 			
 			mkbin:
 				mkdir -p bin

@@ -39,7 +39,7 @@ public class BenchmarkInstance {
   }
 
   public static MemoryMap v3MemoryMap(final AlphaSystem system) {
-    return new MemoryMap(system);
+    return BenchmarkInstance.baselineMemoryMap(system);
   }
 
   public static CharSequence baselineSchedule(final AlphaSystem system) {
@@ -427,7 +427,7 @@ public class BenchmarkInstance {
       _builder.append("- filter: \"{ Wi\' }\"");
       _builder.newLine();
       _builder.append("  ");
-      _builder.append("- filter: \"{ ");
+      _builder.append("- filter: \"{ C1\'; C2\'; I\'; ");
       String _join = IterableExtensions.join(yStmts, "; ");
       _builder.append(_join, "  ");
       _builder.append(" }\"");
@@ -439,7 +439,13 @@ public class BenchmarkInstance {
       _builder.append("schedule: \"params\'->[\\");
       _builder.newLine();
       _builder.append("        ");
-      _builder.append("{ ");
+      _builder.append("{ C1\'->[");
+      _builder.append(H, "        ");
+      _builder.append("tt]; C2\'->[");
+      _builder.append(H, "        ");
+      _builder.append("tt]; I\'->[");
+      _builder.append(H, "        ");
+      _builder.append("tt]; ");
       StringConcatenation _builder_1 = new StringConcatenation();
       _builder_1.append("->[t]; ");
       String _join_1 = IterableExtensions.join(yStmts, _builder_1);
@@ -449,10 +455,22 @@ public class BenchmarkInstance {
       _builder.append("      ");
       _builder.append("]\"");
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("      ");
+      _builder.append("child:");
+      _builder.newLine();
+      _builder.append("        ");
+      _builder.append("sequence:");
+      _builder.newLine();
+      _builder.append("        ");
+      _builder.append("- filter: \"{ ");
+      String _join_2 = IterableExtensions.join(yStmts, "; ");
+      _builder.append(_join_2, "        ");
+      _builder.append(" }\"");
+      _builder.newLineIfNotEmpty();
+      _builder.append("        ");
       _builder.append("- filter: \"{ C1\'; C2\' }\"");
       _builder.newLine();
-      _builder.append("  ");
+      _builder.append("        ");
       _builder.append("- filter: \"{ I\' }\"");
       _builder.newLine();
       _xblockexpression = _builder;

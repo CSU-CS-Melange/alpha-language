@@ -22,7 +22,11 @@ public class Makefile {
       _builder_1.newLine();
       _builder_1.append("all: bin/");
       _builder_1.append(name);
-      _builder_1.append(".time");
+      _builder_1.append(".time bin/");
+      _builder_1.append(name);
+      _builder_1.append(".inj bin/");
+      _builder_1.append(name);
+      _builder_1.append(".complexity");
       _builder_1.newLineIfNotEmpty();
       _builder_1.newLine();
       _builder_1.append("mkbin:");

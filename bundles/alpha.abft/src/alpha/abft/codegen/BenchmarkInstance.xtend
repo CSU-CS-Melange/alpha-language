@@ -30,7 +30,7 @@ class BenchmarkInstance {
 	}
 	
 	def static MemoryMap v3MemoryMap(AlphaSystem system) {
-		new MemoryMap(system)
+		system.baselineMemoryMap
 	}
 	
 	
@@ -168,13 +168,16 @@ class BenchmarkInstance {
 			  - filter: "{ W' }"
 			  - filter: "{ WExt' }"
 			  - filter: "{ Wi' }"
-			  - filter: "{ «yStmts.join('; ')» }"
+			  - filter: "{ C1'; C2'; I'; «yStmts.join('; ')» }"
 			    child:
 			      schedule: "params'->[\
-			        { «yStmts.join('''->[t]; ''')»->[t] } \
+			        { C1'->[«H»tt]; C2'->[«H»tt]; I'->[«H»tt]; «yStmts.join('''->[t]; ''')»->[t] } \
 			      ]"
-			  - filter: "{ C1'; C2' }"
-			  - filter: "{ I' }"
+			      child:
+			        sequence:
+			        - filter: "{ «yStmts.join('; ')» }"
+			        - filter: "{ C1'; C2' }"
+			        - filter: "{ I' }"
 		'''
 	}
 
