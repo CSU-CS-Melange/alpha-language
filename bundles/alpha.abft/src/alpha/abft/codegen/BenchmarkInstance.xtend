@@ -171,7 +171,7 @@ class BenchmarkInstance {
 			  - filter: "{ C1'; C2'; I'; «yStmts.join('; ')» }"
 			    child:
 			      schedule: "params'->[\
-			        { C1'->[«H»tt]; C2'->[«H»tt]; I'->[«H»tt]; «yStmts.join('''->[t]; ''')»->[t] } \
+			        { C1'->[«H»tt]; C2'->[t]; I'->[«H»tt]; «yStmts.join('''->[t]; ''')»->[t] } \
 			      ]"
 			      child:
 			        sequence:

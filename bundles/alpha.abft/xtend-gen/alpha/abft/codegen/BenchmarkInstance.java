@@ -441,9 +441,7 @@ public class BenchmarkInstance {
       _builder.append("        ");
       _builder.append("{ C1\'->[");
       _builder.append(H, "        ");
-      _builder.append("tt]; C2\'->[");
-      _builder.append(H, "        ");
-      _builder.append("tt]; I\'->[");
+      _builder.append("tt]; C2\'->[t]; I\'->[");
       _builder.append(H, "        ");
       _builder.append("tt]; ");
       StringConcatenation _builder_1 = new StringConcatenation();
