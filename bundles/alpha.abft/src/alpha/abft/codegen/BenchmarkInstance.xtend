@@ -168,15 +168,26 @@ class BenchmarkInstance {
 			  - filter: "{ W' }"
 			  - filter: "{ WExt' }"
 			  - filter: "{ Wi' }"
-			  - filter: "{ C1'; C2'; I'; «yStmts.join('; ')» }"
+			  - filter: "{ C1'; C2'; C2_NR'; C2_NR2'; C2_NR3'; C2_NR4'; I'; «yStmts.join('; ')» }"
 			    child:
 			      schedule: "params'->[\
-			        { C1'->[«H»tt]; C2'->[t]; I'->[«H»tt]; «yStmts.join('''->[t]; ''')»->[t] } \
+			        { \
+			          C1'->[«H»tt]; \
+			          C2'->[t]; \
+			          C2_NR'->[t]; \
+			          C2_NR2'->[t]; \
+			          C2_NR3'->[t]; \
+			          C2_NR4'->[t]; \
+			          I'->[«H»tt]; \
+			          «yStmts.join('''->[t]; ''')»->[t] \
+			        } \
 			      ]"
 			      child:
 			        sequence:
 			        - filter: "{ «yStmts.join('; ')» }"
-			        - filter: "{ C1'; C2' }"
+			        - filter: "{ C1' }"
+			        - filter: "{ C2_NR'; C2_NR2'; C2_NR3'; C2_NR4' }"
+			        - filter: "{ C1' }"
 			        - filter: "{ I' }"
 		'''
 	}

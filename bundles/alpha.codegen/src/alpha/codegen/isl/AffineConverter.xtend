@@ -6,6 +6,9 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import java.util.Arrays
+import java.util.stream.Stream
+import java.util.Comparator
 
 /**
  * Converts isl affine expressions to C expressions.
@@ -18,7 +21,7 @@ class AffineConverter {
 	 * one for each output dimension.
 	 */
 	def static convertMultiAff(ISLMultiAff multiAff) {
-		multiAff.convertMultiAff(true)
+		multiAff.convertMultiAff(false)
 	}
 	def static convertMultiAff(ISLMultiAff multiAff, boolean explicitParentheses) {
 		return multiAff.affs.map[convertAff(explicitParentheses)].toArrayList
@@ -30,10 +33,15 @@ class AffineConverter {
 	}
 	def static convertAff(ISLAff aff, boolean explicitParentheses) {
 		if (explicitParentheses) {
+//			val inputNames = SortedInputNames.getInputNames(aff)
 			val literal = aff.inputNames.fold(
 				aff.toString(ISL_FORMAT.C),
-				[ret, index | ret.replace(index, '(' + index + ')')]
+				[ret, index | 
+//					println('-->' + index)
+					ret.replace(index, '(' + index + ')')
+				]
 			)
+//			println
 			return Factory.customExpr("(" + literal + ")")
 		} else {
 			return Factory.customExpr(aff.toString(ISL_FORMAT.C))

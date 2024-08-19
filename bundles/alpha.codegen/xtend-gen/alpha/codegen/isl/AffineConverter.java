@@ -24,7 +24,7 @@ public class AffineConverter {
    * one for each output dimension.
    */
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff) {
-    return AffineConverter.convertMultiAff(multiAff, true);
+    return AffineConverter.convertMultiAff(multiAff, false);
   }
 
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff, final boolean explicitParentheses) {

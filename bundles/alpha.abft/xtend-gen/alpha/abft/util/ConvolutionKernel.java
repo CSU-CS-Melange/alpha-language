@@ -80,7 +80,7 @@ public class ConvolutionKernel {
     ISLSet _xblockexpression = null;
     {
       if ((this.valid).booleanValue()) {
-        return this.expr.getContextDomain();
+        return this.expr.getContextDomain().copy();
       }
       _xblockexpression = ISLSet.buildEmpty(this.expr.getContextDomain().getSpace());
     }

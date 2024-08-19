@@ -39,6 +39,7 @@ import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.createConstantMaff
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
+import alpha.model.AlphaExpression
 
 class ABFTv3 extends ABFTv1 {
 	
@@ -101,7 +102,7 @@ class ABFTv3 extends ABFTv1 {
 		systemBody.addKernelWEquation(WExtVar, weightsDomain)
 		systemBody.addWiEquation(WiVar, WExtVar, WVar, spaceTileDim)
 		systemBody.addCEquation(CVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
-		systemBody.addC2Equation(CiVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
+		systemBody.addCiEquation(CiVar, outputVar, WVar, WiVar, convolutionKernel, spaceTileDim, H, L)
 //		systemBody.addV2C2Equation(C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, radius)
 		systemBody.addIEquation(IVar, CVar, CiVar, WVar, H)
 		
@@ -109,68 +110,216 @@ class ABFTv3 extends ABFTv1 {
 			system.rename(#[H, L], 'v3')
 		}
 		
+		system.pprint('asdf')
+		println
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
-		
+		system.pprint('asdf')
+		println
 		system
 	}
 	
-	def static addIEquation(SystemBody systemBody, Variable IVar, Variable C1Var, Variable C2Var, Variable WVar, int H) {
-		val indexNames = IVar.domain.indexNames
-		val spaceIdxStr = (1..<indexNames.size).map[i | indexNames.get(i)].join(',')
+	def static addCiEquation(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, Variable WiVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
 		
-		val paramStr = C2Var.buildParamStr
+		val ce = createCaseExpression
 		
-		val C2Maff = '''«paramStr»->{[tt,«spaceIdxStr»]->[«H»tt,«spaceIdxStr»]}'''.toString.toISLMultiAff
+		// recursive case branch
+		val boundaryDomain = createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim)
+		val CiBoundaryExpr = createCiBoundaryExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L)
+		val CiStencilReduceExpr = createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim)
+		val be = createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr)
+		val re = createRestrictExpression(boundaryDomain, be)
+
 		
-		val C2Expr = createDependenceExpression(C2Maff, createVariableExpression(C2Var))
+		// boudnary branch reduction
+		val contextIndexNames = CVar.domain.indexNames + #[stencilVar.domain.indexNames.get(spaceTileDim)]
+		val stencilVarExpr = createStencilVarExpr(stencilVar, contextIndexNames)
+		val reduceExpr = createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr)
+		val autoRe = createAutoRestrictExpression(reduceExpr)
 		
-		systemBody.addIEquation(IVar, C1Var, C2Var, WVar, C2Expr)
-	}
-	
-	def static addC2Equation(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
-		val equ = createStandardEquation(CVar, createZeroExpression(CVar.domain.space))
+		ce.exprs += re
+		ce.exprs += autoRe
+		
+		val equ = createStandardEquation(CVar, ce)
+		
 		systemBody.equations += equ
 		AlphaInternalStateConstructor.recomputeContextDomain(equ)
+		println
 	}
 	
-	def static addCEquation(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
-		val CIndexNames = CVar.domain.indexNames
-		val stencilIndexNames = stencilVar.domain.indexNames
+	def static createCiBoundaryExpr(Variable CVar, Variable WVar, Variable WiVar, Variable stencilVar, int spaceTileDim, int H, int L) {
+		/*  C[t-1,ti,j,k] * (Wi[-1,0,0,0] - W[-1,0,0,0]
+		 *  + reduce(+, [p], {:p<0} : Wi(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
+		 *  - reduce(+, [p], {:p>0} : Wi(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] - Y[t+h,10ti+p,j,k]))
+		 */
+		val indexNames = CVar.domain.indexNames
 		val paramStr = CVar.buildParamStr
+		val kernelNames = WVar.domain.getKernelNames.toList
+		
+		////////////////////////////////////////////////////////////
+		//  C[t-1,ti,j,k] * (Wi[h,0,0,0] - W[h,0,0,0]
+		////////////////////////////////////////////////////////////
+
+		val CWExpr = {
+			val CMaff = '''«paramStr»->{[«indexNames.join(',')»]->[«indexNames.map[n | if (n=='t') 't-1' else n].join(',')»]}'''.toString.toISLMultiAff
+			val CDepExpr = createDependenceExpression(CMaff, createVariableExpression(CVar))
+			
+			val WxMaff = '''«paramStr»->{[«kernelNames.join(',')»]->[«kernelNames.map[n | if (n == 'h') -1 else 0].join(',')»]}'''.toString.toISLMultiAff 
+			val WiDepExpr = createDependenceExpression(WxMaff.copy, createVariableExpression(WiVar))
+			val WDepExpr = createDependenceExpression(WxMaff.copy, createVariableExpression(WVar))
+			val WBinExpr = createBinaryExpression(BINARY_OP.SUB, WiDepExpr, WDepExpr)
+			
+			createBinaryExpression(BINARY_OP.MUL, CDepExpr, WBinExpr)
+		}
+		
+		// Everything below goes inside the reduceExpression with the bodyIndexNames
+		
+		val pqrName = kernelNames.get(spaceTileDim)
+		val bodyIndexNames = (indexNames + #['h', kernelNames.get(spaceTileDim)])
+		val bodyStr = bodyIndexNames.join(',')
+		val projection = '''«paramStr»->{[«bodyStr»]->[«indexNames.join(',')»]}'''.toString		
+		
+		////////////////////////////////////////////////////////////
+		//  Wi(h,p,0,0)
+		////////////////////////////////////////////////////////////
+		
+		val WiMaff = '''«paramStr»->{[«bodyStr»]->[«kernelNames.map[n | if (#[0,spaceTileDim].contains(kernelNames.indexOf(n))) n else 0].join(',')»]}'''.toString.toISLMultiAff
+		val WiExpr = createDependenceExpression(WiMaff, createVariableExpression(WiVar))
+		
+		////////////////////////////////////////////////////////////
+		//  Y[t+h,10ti+p,j,k]
+		////////////////////////////////////////////////////////////
+		
+		val stencilVarExpr1 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L)
+		
+		////////////////////////////////////////////////////////////
+		//  Y[t+h,10ti+9+p,j,k]
+		////////////////////////////////////////////////////////////
+		
+		val stencilVarExpr2 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, L-1)
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		//  reduce(+, [p], {:p<0} : Wi(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		val negReduceExpr = {
+			val domain = '''«paramStr»->{[«bodyIndexNames.join(',')»] : «pqrName»<0}'''.toString.toISLSet
+			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExpr1.copyAE, stencilVarExpr2.copyAE)
+			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WiExpr.copyAE, stencilVarDiffExpr)
+			val body = createRestrictExpression(domain, WYBinExpr)
+			createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
+		}
+		
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		//  reduce(+, [p], {:p>0} : Wi(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] - Y[t+h,10ti+p,j,k]))
+		/////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		val posReduceExpr = {
+			val domain = '''«paramStr»->{[«bodyIndexNames.join(',')»] : «pqrName»>0}'''.toString.toISLSet 
+			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExpr2.copyAE, stencilVarExpr1.copyAE)
+			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WiExpr.copyAE, stencilVarDiffExpr)
+			val body = createRestrictExpression(domain, WYBinExpr)
+			createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
+		}
+		
+		////////////////////////////////////////////////////////////
+		//  negReduce(...) - posReduce(...)
+		////////////////////////////////////////////////////////////
+		
+		val diffReduceExpr = createBinaryExpression(BINARY_OP.SUB, negReduceExpr, posReduceExpr)
+		
+		////////////////////////////////////////////////////////////
+		//  CWExpr + diffReduceExpr
+		////////////////////////////////////////////////////////////
+		
+		createBinaryExpression(BINARY_OP.ADD, CWExpr, diffReduceExpr)
+	}
+	
+	def static createStencilVarCiExpr(Variable stencilVar, String[] indexNames, String[] bodyIndexNames, String[] kernelNames, int spaceTileDim, int L) {
+		stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, 0)
+	}
+	def static createStencilVarCiExpr(Variable stencilVar, String[] indexNames, String[] bodyIndexNames, String[] kernelNames, int spaceTileDim, int L, int offset) {
+			val varAcc = (0..<indexNames.size).map[i |
+				val cIndexName = indexNames.get(i)
+				val pqrName = kernelNames.get(i)
+				switch (i) {
+					case 0 : '''«cIndexName»+«pqrName»'''
+					case spaceTileDim : '''«L»«cIndexName»+«if (offset != 0) offset + '+'»«pqrName»'''
+					default : cIndexName
+				}
+			].join(',')
+			val stencilVarMaff = '''«stencilVar.buildParamStr»->{[«bodyIndexNames.join(',')»]->[«varAcc»]}'''.toString.toISLMultiAff
+			createDependenceExpression(stencilVarMaff, createVariableExpression(stencilVar))			
+		}
+	
+	def static createCiStencilReduceExpr(Variable CVar, Variable WVar, Variable WiVar, int spaceTileDim) {
+		val paramStr = CVar.buildParamStr
+		val indexNames = CVar.domain.indexNames
+		val kernelNames = WVar.domain.getKernelNames.toList
+		val pqrExprs = kernelNames.map[e | if (kernelNames.indexOf(e)==spaceTileDim) -1 else e]
+		val pqrStr = pqrExprs.join(',')
 		
 		
-		val bodyIndices = CIndexNames + #[stencilIndexNames.get(spaceTileDim)]
-		val bodyIndexStr = '''[«bodyIndices.join(',')»]'''
+		/* 
+		 * if tileDim is 0		->		W[h,0,q,r] * Ci[t-h,ti-1,j+q,k+r]
+		 * if tileDim is 1		->		W[h,p,0,r] * Ci[t-h,i+p,tj-1,k+r]
+		 * if tileDim is 2		->		W[h,p,q,0] * Ci[t-h,i+p,j+q,tk-1]
+		 */
+		val domainStr = (indexNames + pqrExprs.reject[e | e == -1]).join(',')
+		val rangeStr = CVar.domain.indexNames.join(',')
+		val projection = '''«paramStr»->{[«domainStr»]->[«rangeStr»]}'''.toString
 		
-		val projection = '''«paramStr»->{«bodyIndexStr»->[«CIndexNames.join(',')»]}'''.toString.toISLMultiAff
-		// 10ti<=i<10ti+10 «»
-		val ti = CIndexNames.get(spaceTileDim)
-		val i = stencilIndexNames.get(spaceTileDim)
-		val bodyDom =  '''«paramStr»->{«bodyIndexStr» : «L»«ti»<=«i»<«L»«ti»+«L»}'''.toString.toISLSet
+		val WMaff = '''«paramStr»->{[«domainStr»]->[«pqrStr»]}'''.toString.toISLMultiAff
+		val WDepExpr = createDependenceExpression(WMaff, createVariableExpression(WVar))
 		
-		val varAcc = (#[H + CIndexNames.get(0)] + (1..<stencilIndexNames.size).map[stencilIndexNames.get(it)]).join(',')
-		val stencilVarMaff = '''«paramStr»->{«bodyIndexStr»->[«varAcc»]}'''.toString.toISLMultiAff
+		val CiAcc = indexNames.zipWith(pqrExprs).map['''«key»+(«value»)'''].join(',')
+		val CiMaff = '''«paramStr»->{[«domainStr»]->[«CiAcc»]}'''.toString.toISLMultiAff
+		val CiDepExpr = createDependenceExpression(CiMaff, createVariableExpression(CVar))
 		
-		val stencilVarDepExpr = createDependenceExpression(stencilVarMaff)
-		stencilVarDepExpr.expr = createVariableExpression(stencilVar)
+//		val zero = createZeroExpression(space)
+		val body = createBinaryExpression(BINARY_OP.ADD, WDepExpr, CiDepExpr)
 		
-		val restrictExpr = createRestrictExpression(bodyDom)
-		restrictExpr.expr = stencilVarDepExpr
+		createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
+	}
+	
+	
+	def static createCiBoundaryDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim){
+		val nbDims = CVar.domain.dim(ISLDimType.isl_dim_out)
 		
-		val reduceExpr = createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr)
+		val radius = ISLVal.buildRationalValue(ISLContext.instance, convolutionKernel.radius, 1)
+		val timeDepth = ISLVal.buildRationalValue(ISLContext.instance, convolutionKernel.timeDepth, 1)
+		val oneVal = ISLVal.buildRationalValue(ISLContext.instance, 1, 1)
+
+		val involvesTime = [ISLConstraint c | c.involvesDims(ISLDimType.isl_dim_out, 0, 1)]
+		val isLB = [ISLConstraint c, int dim | c.isLowerBound(ISLDimType.isl_dim_out, dim)]
+		val isUB = [ISLConstraint c, int dim | c.isUpperBound(ISLDimType.isl_dim_out, dim)]
+	
+		// tighten domain by radius along each dimension
+		val domain = CVar.domain.basicSets.map[
+				val timeConstraints = constraints.filter[c | involvesTime.apply(c) && isLB.apply(c, 0)].map[c |
+					val coeff = c.getCoefficientVal(ISLDimType.isl_dim_out, 0)
+					val const = c.getConstantVal
+					c.setConstant(const.sub(coeff.mul(timeDepth.copy)))
+				].toArrayList;
+				val spaceConstraints = constraints.reject[c | involvesTime.apply(c)].map[c | 
+					val const = c.getConstantVal
+					c.setConstant(const.sub(radius.copy).sub(oneVal.copy))
+				].toArrayList;
+				(timeConstraints + spaceConstraints).map[toBasicSet].reduce[b1, b2 | b1.intersect(b2)]
+					.dropConstraintsNotInvolvingDims(ISLDimType.isl_dim_out, 0, nbDims)
+					.toSet
+			]
+			.reduce[s1, s2 | s1.union(s2)]
+			.dropConstraintsInvolvingDims(ISLDimType.isl_dim_out, spaceTileDim, 1)
 		
-//		val binExpr = createBinaryExpression(BINARY_OP.MUL, createNegativeOneExpression(CVar.domain.space), reduceExpr)
 		
-		val equ = createStandardEquation(CVar, reduceExpr)
-		systemBody.equations += equ
-		AlphaInternalStateConstructor.recomputeContextDomain(equ)
+		domain
 	}
 	
 	def static addWiEquation(SystemBody systemBody, Variable WiVar, Variable WExtVar, Variable WVar, int spaceTileDim) {
 		val paramStr = WiVar.buildParamStr
 		val indexNames = WiVar.domain.indexNames
-		val pqrName = WiVar.domain.getKernelNamesV3.get(spaceTileDim)
+		val pqrName = WiVar.domain.getKernelNames.get(spaceTileDim)
 		
 		val domainStr = (indexNames + #[pqrName]).join(',')
 		val rangeStr = WiVar.domain.indexNames.join(',')
@@ -200,9 +349,89 @@ class ABFTv3 extends ABFTv1 {
 		systemBody.equations += equ
 		AlphaInternalStateConstructor.recomputeContextDomain(equ)
 	}
-	def static getKernelNamesV3(ISLSet kernelDomain) {
+	def static getKernelNames(ISLSet kernelDomain) {
 		val nbKernel = kernelDomain.dim(ISLDimType.isl_dim_out)
 		(0..<nbKernel).map[i | #['h', 'p', 'q', 'r'].get(i)] 
+	}
+	
+//	def static addCiEquation(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
+//		
+//		val ce = createCaseExpression
+//		
+//		// base branch reduction
+//		val contextIndexNames = CVar.domain.indexNames + #[stencilVar.domain.indexNames.get(spaceTileDim)]
+//		val stencilVarExpr = createStencilVarExpr(stencilVar, contextIndexNames)
+//		val reduceExpr = createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr)
+//		val boundaryDomain = createCiBoundaryDomain(convolutionKernel)
+//		val re = createRestrictExpression(boundaryDomain, reduceExpr)
+//		
+//		// recursive case branch
+//		val autoRe = createAutoRestrictExpression(createZeroExpression(convolutionKernel.domain.space))
+//		
+//		ce.exprs += re
+//		ce.exprs += autoRe
+//		
+//		val equ = createStandardEquation(CVar, ce)
+//		
+//		systemBody.equations += equ
+//		AlphaInternalStateConstructor.recomputeContextDomain(equ)
+//	}
+	
+	def static addCEquation(SystemBody systemBody, Variable CVar, Variable stencilVar, Variable WVar, ConvolutionKernel convolutionKernel, int spaceTileDim, int H, int L) {
+		val contextIndexNames = CVar.domain.indexNames + #[stencilVar.domain.indexNames.get(spaceTileDim)]
+		val stencilVarExpr = createStencilVarExpr(stencilVar, contextIndexNames, H)
+		val reduceExpr = createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr)
+		
+		val equ = createStandardEquation(CVar, reduceExpr)
+		systemBody.equations += equ
+		AlphaInternalStateConstructor.recomputeContextDomain(equ)
+	}
+	
+	def static createStencilVarExpr(Variable stencilVar, String[] contextIndexNames) {
+		val stencilIndexNames = stencilVar.domain.indexNames
+		val varAcc = (#[contextIndexNames.get(0)] + (1..<stencilIndexNames.size).map[stencilIndexNames.get(it)]).join(',')
+		val stencilVarMaff = '''«stencilVar.buildParamStr»->{[«contextIndexNames.join(',')»]->[«varAcc»]}'''.toString
+		createDependenceExpression(stencilVarMaff.toISLMultiAff, createVariableExpression(stencilVar))
+	}
+	
+	def static createStencilVarExpr(Variable stencilVar, String[] contextIndexNames, int H) {
+		val stencilIndexNames = stencilVar.domain.indexNames
+		val varAcc = (#[H + contextIndexNames.get(0)] + (1..<stencilIndexNames.size).map[stencilIndexNames.get(it)]).join(',')
+		val stencilVarMaff = '''«stencilVar.buildParamStr»->{[«contextIndexNames.join(',')»]->[«varAcc»]}'''.toString.toISLMultiAff
+		createDependenceExpression(stencilVarMaff, createVariableExpression(stencilVar))
+	}
+	
+	def static createChecksumReduceExpression(Variable CVar, Variable stencilVar, int spaceTileDim, int H, int L, AlphaExpression stencilVarExpr) {
+		val CIndexNames = CVar.domain.indexNames
+		val stencilIndexNames = stencilVar.domain.indexNames
+		val paramStr = CVar.buildParamStr
+		
+		val bodyIndices = CIndexNames + #[stencilIndexNames.get(spaceTileDim)]
+		val bodyIndexStr = '''[«bodyIndices.join(',')»]'''
+		
+		val projection = '''«paramStr»->{«bodyIndexStr»->[«CIndexNames.join(',')»]}'''.toString.toISLMultiAff
+		// 10ti<=i<10ti+10 «»
+		val ti = CIndexNames.get(spaceTileDim)
+		val i = stencilIndexNames.get(spaceTileDim)
+		val bodyDom =  '''«paramStr»->{«bodyIndexStr» : «L»«ti»<=«i»<«L»«ti»+«L»}'''.toString.toISLSet
+		
+		val restrictExpr = createRestrictExpression(bodyDom)
+		restrictExpr.expr = stencilVarExpr
+		
+		createReduceExpression(REDUCTION_OP.SUM, projection, restrictExpr)
+	}
+	
+	def static addIEquation(SystemBody systemBody, Variable IVar, Variable C1Var, Variable C2Var, Variable WVar, int H) {
+		val indexNames = IVar.domain.indexNames
+		val spaceIdxStr = (1..<indexNames.size).map[i | indexNames.get(i)].join(',')
+		
+		val paramStr = C2Var.buildParamStr
+		
+		val C2Maff = '''«paramStr»->{[tt,«spaceIdxStr»]->[«H»tt,«spaceIdxStr»]}'''.toString.toISLMultiAff
+		
+		val C2Expr = createDependenceExpression(C2Maff, createVariableExpression(C2Var))
+		
+		systemBody.addIEquation(IVar, C1Var, C2Var, WVar, C2Expr)
 	}
 	
 	def static addWeightsEquation(SystemBody systemBody, Variable variable, ConvolutionKernel convolutionKernel) {

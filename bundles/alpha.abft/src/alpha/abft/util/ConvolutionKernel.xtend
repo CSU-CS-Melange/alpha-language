@@ -58,7 +58,7 @@ class ConvolutionKernel {
 	
 	def domain() {
 		if (valid) {
-			return expr.contextDomain
+			return expr.contextDomain.copy
 		}
 		ISLSet.buildEmpty(expr.contextDomain.space)
 	}

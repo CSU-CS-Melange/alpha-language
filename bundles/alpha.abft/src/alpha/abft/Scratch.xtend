@@ -14,6 +14,7 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 
 import static extension alpha.codegen.ProgramPrinter.printExpr
 import alpha.model.transformation.reduction.NormalizeReduction
+import alpha.model.transformation.Normalize
 
 class Scratch {
 	
@@ -22,11 +23,12 @@ class Scratch {
 	def static void main(String[] args) {
 		val root = AlphaLoader.loadAlpha('resources/scratch/star3d1r.alpha')
 		val system = root.systems.get(0)
-		
-		NormalizeReduction.apply(system)
 		system.pprint('input:')
 		
-		println(system.computeComplexity)
+		Normalize.apply(system)
+		NormalizeReduction.apply(system)
+		system.pprint('input:')
+//		println(system.computeComplexity)
 	}
 	
 	def static computeComplexity(AlphaSystem system) {

@@ -11,6 +11,7 @@ import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.Variable;
+import alpha.model.transformation.Normalize;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.util.AShow;
 import com.google.common.base.Objects;
@@ -33,9 +34,10 @@ public class Scratch {
     try {
       final AlphaRoot root = AlphaLoader.loadAlpha("resources/scratch/star3d1r.alpha");
       final AlphaSystem system = root.getSystems().get(0);
+      Scratch.pprint(system, "input:");
+      Normalize.apply(system);
       NormalizeReduction.apply(system);
       Scratch.pprint(system, "input:");
-      InputOutput.<CharSequence>println(Scratch.computeComplexity(system));
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
