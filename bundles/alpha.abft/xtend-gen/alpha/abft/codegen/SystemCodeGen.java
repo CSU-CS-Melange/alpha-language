@@ -1749,27 +1749,29 @@ public class SystemCodeGen {
         {
           final String tt = indexNames.get(0);
           final String ti = indexNames.get(1);
+          final LinkedList<String> coords = CollectionLiterals.<String>newLinkedList();
           StringConcatenation _builder_4 = new StringConcatenation();
           _builder_4.append(tt);
           _builder_4.append("==t_INJ/");
           int _get = this.tileSizes[0];
           _builder_4.append(_get);
-          _builder_4.append(" && ");
-          _builder_4.append(ti);
-          _builder_4.append("==i_INJ/");
+          coords.add(_builder_4.toString());
+          StringConcatenation _builder_5 = new StringConcatenation();
+          _builder_5.append(ti);
+          _builder_5.append("==i_INJ/");
           int _get_1 = this.tileSizes[1];
-          _builder_4.append(_get_1);
-          final String tt_ti = _builder_4.toString();
+          _builder_5.append(_get_1);
+          coords.add(_builder_5.toString());
           int _size = this.stencilVar.getDomain().getIndexNames().size();
           final Function1<Integer, String> _function_2 = (Integer i) -> {
             return this.stencilVar.getDomain().getIndexNames().get((i).intValue());
           };
-          final String rest = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(2, _size, true), _function_2), " && ");
-          StringConcatenation _builder_5 = new StringConcatenation();
-          _builder_5.append(tt_ti);
-          _builder_5.append(" && ");
-          _builder_5.append(rest);
-          _xblockexpression_1 = _builder_5.toString();
+          final Iterable<String> rest = IterableExtensions.<Integer, String>map(new ExclusiveRange(2, _size, true), _function_2);
+          Iterables.<String>addAll(coords, rest);
+          StringConcatenation _builder_6 = new StringConcatenation();
+          String _join_2 = IterableExtensions.join(coords, " && ");
+          _builder_6.append(_join_2);
+          _xblockexpression_1 = _builder_6.toString();
         }
         _xifexpression = _xblockexpression_1;
       } else {

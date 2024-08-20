@@ -46,7 +46,6 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -54,7 +53,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
 @SuppressWarnings("all")
 public class ABFTv3 extends ABFTv1 {
   public static void main(final String[] args) {
-    ABFTv3.insertChecksum("star3d2t1r", new int[] { 16, 10 });
+    ABFTv3.insertChecksum("star1d1r", new int[] { 16, 10 });
   }
 
   public static void insertChecksum(final String systemName, final int[] tileSizes) {
@@ -63,6 +62,7 @@ public class ABFTv3 extends ABFTv1 {
     _builder.append(".alpha");
     final AlphaSystem system = ABFTv1.loadSystem(_builder.toString(), systemName);
     ABFTv3.insertChecksum(system, tileSizes);
+    ABFTv1.pprint(system, "ABFT augmented system:");
     ABFTv1.save(system);
   }
 
@@ -104,45 +104,46 @@ public class ABFTv3 extends ABFTv1 {
       ABFTv3.addCEquation(systemBody, CVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L);
       ABFTv3.addCiEquation(systemBody, CiVar, outputVar, WVar, WiVar, convolutionKernel, spaceTileDim, H, L);
       ABFTv3.addIEquation(systemBody, IVar, CVar, CiVar, WVar, H);
+      ABFTv1.save(system);
       if (renameSystem) {
         ABFTv1.rename(system, new int[] { H, L }, "v3");
       }
-      ABFTv1.pprint(system, "asdf");
-      InputOutput.println();
       Normalize.apply(system);
       NormalizeReduction.apply(system);
-      ABFTv1.pprint(system, "asdf");
-      InputOutput.println();
       _xblockexpression = system;
     }
     return _xblockexpression;
   }
 
-  public static void addCiEquation(final SystemBody systemBody, final Variable CVar, final Variable stencilVar, final Variable WVar, final Variable WiVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim, final int H, final int L) {
-    final CaseExpression ce = AlphaUserFactory.createCaseExpression();
-    final ISLSet boundaryDomain = ABFTv3.createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim);
-    final BinaryExpression CiBoundaryExpr = ABFTv3.createCiBoundaryExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L);
-    final ReduceExpression CiStencilReduceExpr = ABFTv3.createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim);
-    final BinaryExpression be = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr);
-    final RestrictExpression re = AlphaUserFactory.createRestrictExpression(boundaryDomain, be);
-    List<String> _indexNames = CVar.getDomain().getIndexNames();
-    String _get = stencilVar.getDomain().getIndexNames().get(spaceTileDim);
-    final Iterable<String> contextIndexNames = Iterables.<String>concat(_indexNames, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_get)));
-    final DependenceExpression stencilVarExpr = ABFTv3.createStencilVarExpr(stencilVar, ((String[])Conversions.unwrapArray(contextIndexNames, String.class)));
-    final ReduceExpression reduceExpr = ABFTv3.createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr);
-    final AutoRestrictExpression autoRe = AlphaUserFactory.createAutoRestrictExpression(reduceExpr);
-    EList<AlphaExpression> _exprs = ce.getExprs();
-    _exprs.add(re);
-    EList<AlphaExpression> _exprs_1 = ce.getExprs();
-    _exprs_1.add(autoRe);
-    final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, ce);
-    EList<Equation> _equations = systemBody.getEquations();
-    _equations.add(equ);
-    AlphaInternalStateConstructor.recomputeContextDomain(equ);
-    InputOutput.println();
+  public static List<AlphaIssue> addCiEquation(final SystemBody systemBody, final Variable CVar, final Variable stencilVar, final Variable WVar, final Variable WiVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim, final int H, final int L) {
+    List<AlphaIssue> _xblockexpression = null;
+    {
+      final CaseExpression ce = AlphaUserFactory.createCaseExpression();
+      final ISLSet centerDomain = ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim);
+      final BinaryExpression CiBoundaryExpr = ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L);
+      final ReduceExpression CiStencilReduceExpr = ABFTv3.createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim);
+      final BinaryExpression be = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr);
+      final RestrictExpression re = AlphaUserFactory.createRestrictExpression(centerDomain, be);
+      List<String> _indexNames = CVar.getDomain().getIndexNames();
+      String _get = stencilVar.getDomain().getIndexNames().get(spaceTileDim);
+      final Iterable<String> contextIndexNames = Iterables.<String>concat(_indexNames, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_get)));
+      final DependenceExpression stencilVarExpr = ABFTv3.createStencilVarExpr(stencilVar, ((String[])Conversions.unwrapArray(contextIndexNames, String.class)));
+      final ReduceExpression reduceExpr = ABFTv3.createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr);
+      final ISLSet boundaryDomain = ABFTv3.createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim);
+      final RestrictExpression re2 = AlphaUserFactory.createRestrictExpression(boundaryDomain, reduceExpr);
+      EList<AlphaExpression> _exprs = ce.getExprs();
+      _exprs.add(re);
+      EList<AlphaExpression> _exprs_1 = ce.getExprs();
+      _exprs_1.add(re2);
+      final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, ce);
+      EList<Equation> _equations = systemBody.getEquations();
+      _equations.add(equ);
+      _xblockexpression = AlphaInternalStateConstructor.recomputeContextDomain(equ);
+    }
+    return _xblockexpression;
   }
 
-  public static BinaryExpression createCiBoundaryExpr(final Variable CVar, final Variable WVar, final Variable WiVar, final Variable stencilVar, final int spaceTileDim, final int H, final int L) {
+  public static BinaryExpression createCiCenterExpr(final Variable CVar, final Variable WVar, final Variable WiVar, final Variable stencilVar, final int spaceTileDim, final int H, final int L) {
     BinaryExpression _xblockexpression = null;
     {
       final List<String> indexNames = CVar.getDomain().getIndexNames();
@@ -228,10 +229,12 @@ public class ABFTv3 extends ABFTv1 {
       String _join_1 = IterableExtensions.join(ListExtensions.<String, Object>map(kernelNames, _function), ",");
       _builder_1.append(_join_1);
       _builder_1.append("]}");
-      final ISLMultiAff WiMaff = ISLUtil.toISLMultiAff(_builder_1.toString());
-      final DependenceExpression WiExpr = AlphaUserFactory.createDependenceExpression(WiMaff, AlphaUserFactory.createVariableExpression(WiVar));
-      final DependenceExpression stencilVarExpr1 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L);
-      final DependenceExpression stencilVarExpr2 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L, (L - 1));
+      final ISLMultiAff WMaff = ISLUtil.toISLMultiAff(_builder_1.toString());
+      final DependenceExpression WExpr = AlphaUserFactory.createDependenceExpression(WMaff, AlphaUserFactory.createVariableExpression(WVar));
+      final DependenceExpression stencilVarExprL1 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L);
+      final DependenceExpression stencilVarExprL2 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L, L);
+      final DependenceExpression stencilVarExprR1 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L, (-1));
+      final DependenceExpression stencilVarExprR2 = ABFTv3.createStencilVarCiExpr(stencilVar, ((String[])Conversions.unwrapArray(indexNames, String.class)), ((String[])Conversions.unwrapArray(bodyIndexNames, String.class)), ((String[])Conversions.unwrapArray(kernelNames, String.class)), spaceTileDim, L, (L - 1));
       ReduceExpression _xblockexpression_2 = null;
       {
         StringConcatenation _builder_2 = new StringConcatenation();
@@ -243,8 +246,8 @@ public class ABFTv3 extends ABFTv1 {
         _builder_2.append(pqrName);
         _builder_2.append("<0}");
         final ISLSet domain = ISLUtil.toISLSet(_builder_2.toString());
-        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<DependenceExpression>copyAE(stencilVarExpr1), AlphaUtil.<DependenceExpression>copyAE(stencilVarExpr2));
-        final BinaryExpression WYBinExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, AlphaUtil.<DependenceExpression>copyAE(WiExpr), stencilVarDiffExpr);
+        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, stencilVarExprL1, stencilVarExprL2);
+        final BinaryExpression WYBinExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, AlphaUtil.<DependenceExpression>copyAE(WExpr), stencilVarDiffExpr);
         final RestrictExpression body = AlphaUserFactory.createRestrictExpression(domain, WYBinExpr);
         _xblockexpression_2 = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, ISLUtil.toISLMultiAff(projection), body);
       }
@@ -260,8 +263,8 @@ public class ABFTv3 extends ABFTv1 {
         _builder_2.append(pqrName);
         _builder_2.append(">0}");
         final ISLSet domain = ISLUtil.toISLSet(_builder_2.toString());
-        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<DependenceExpression>copyAE(stencilVarExpr2), AlphaUtil.<DependenceExpression>copyAE(stencilVarExpr1));
-        final BinaryExpression WYBinExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, AlphaUtil.<DependenceExpression>copyAE(WiExpr), stencilVarDiffExpr);
+        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, stencilVarExprR1, stencilVarExprR2);
+        final BinaryExpression WYBinExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, AlphaUtil.<DependenceExpression>copyAE(WExpr), stencilVarDiffExpr);
         final RestrictExpression body = AlphaUserFactory.createRestrictExpression(domain, WYBinExpr);
         _xblockexpression_3 = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, ISLUtil.toISLMultiAff(projection), body);
       }
@@ -345,7 +348,7 @@ public class ABFTv3 extends ABFTv1 {
         int _indexOf = kernelNames.indexOf(e);
         boolean _equals = (_indexOf == spaceTileDim);
         if (_equals) {
-          _xifexpression = Integer.valueOf((-1));
+          _xifexpression = Integer.valueOf(0);
         } else {
           _xifexpression = e;
         }
@@ -354,7 +357,7 @@ public class ABFTv3 extends ABFTv1 {
       final List<Object> pqrExprs = ListExtensions.<String, Object>map(kernelNames, _function);
       final String pqrStr = IterableExtensions.join(pqrExprs, ",");
       final Function1<Object, Boolean> _function_1 = (Object e) -> {
-        return Boolean.valueOf(Objects.equal(e, Integer.valueOf((-1))));
+        return Boolean.valueOf(Objects.equal(e, Integer.valueOf(0)));
       };
       Iterable<Object> _reject = IterableExtensions.<Object>reject(pqrExprs, _function_1);
       final String domainStr = IterableExtensions.join(Iterables.<Object>concat(indexNames, _reject), ",");
@@ -377,14 +380,27 @@ public class ABFTv3 extends ABFTv1 {
       final ISLMultiAff WMaff = ISLUtil.toISLMultiAff(_builder_1.toString());
       final DependenceExpression WDepExpr = AlphaUserFactory.createDependenceExpression(WMaff, AlphaUserFactory.createVariableExpression(WVar));
       final Function1<Pair<String, Object>, String> _function_2 = (Pair<String, Object> it) -> {
-        StringConcatenation _builder_2 = new StringConcatenation();
-        String _key = it.getKey();
-        _builder_2.append(_key);
-        _builder_2.append("+(");
-        Object _value = it.getValue();
-        _builder_2.append(((Object)_value));
-        _builder_2.append(")");
-        return _builder_2.toString();
+        String _xblockexpression_1 = null;
+        {
+          final String indexName = it.getKey();
+          final Object pqrExpr = ((Object)it.getValue());
+          String _xifexpression = null;
+          int _indexOf = indexNames.indexOf(indexName);
+          boolean _equals = (_indexOf == spaceTileDim);
+          if (_equals) {
+            StringConcatenation _builder_2 = new StringConcatenation();
+            _builder_2.append(indexName);
+            _xifexpression = _builder_2.toString();
+          } else {
+            StringConcatenation _builder_3 = new StringConcatenation();
+            _builder_3.append(indexName);
+            _builder_3.append("+");
+            _builder_3.append(((Object)pqrExpr));
+            _xifexpression = _builder_3.toString();
+          }
+          _xblockexpression_1 = _xifexpression;
+        }
+        return _xblockexpression_1;
       };
       final String CiAcc = IterableExtensions.join(ListExtensions.<Pair<String, Object>, String>map(CommonExtensions.<String, Object>zipWith(indexNames, pqrExprs), _function_2), ",");
       StringConcatenation _builder_2 = new StringConcatenation();
@@ -396,13 +412,19 @@ public class ABFTv3 extends ABFTv1 {
       _builder_2.append("]}");
       final ISLMultiAff CiMaff = ISLUtil.toISLMultiAff(_builder_2.toString());
       final DependenceExpression CiDepExpr = AlphaUserFactory.createDependenceExpression(CiMaff, AlphaUserFactory.createVariableExpression(CVar));
-      final BinaryExpression body = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, WDepExpr, CiDepExpr);
+      final BinaryExpression body = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, WDepExpr, CiDepExpr);
       _xblockexpression = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, ISLUtil.toISLMultiAff(projection), body);
     }
     return _xblockexpression;
   }
 
   public static ISLSet createCiBoundaryDomain(final Variable CVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("[T,N]->{[t,ti] : t<3 }");
+    return ISLUtil.toISLSet(_builder.toString());
+  }
+
+  public static ISLSet createCiCenterDomain(final Variable CVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim) {
     ISLSet _xblockexpression = null;
     {
       final int nbDims = CVar.getDomain().dim(ISLDimType.isl_dim_out);
@@ -901,8 +923,15 @@ public class ABFTv3 extends ABFTv1 {
               final Function1<ISLConstraint, ISLConstraint> _function_8 = (ISLConstraint c) -> {
                 ISLConstraint _xblockexpression_3 = null;
                 {
-                  final ISLVal coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, 0);
-                  _xblockexpression_3 = c.copy().setCoefficient(ISLDimType.isl_dim_out, 0, coeffVal.mul(tileSize.copy()));
+                  final ISLVal coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, (tileDim).intValue());
+                  final ISLConstraint tc = c.copy().setCoefficient(ISLDimType.isl_dim_out, (tileDim).intValue(), coeffVal.mul(tileSize.copy()));
+                  boolean _isUpperBound = c.isUpperBound(ISLDimType.isl_dim_out, (tileDim).intValue());
+                  boolean _not = (!_isUpperBound);
+                  if (_not) {
+                    return tc;
+                  }
+                  final ISLVal const_ = tc.getConstantVal();
+                  _xblockexpression_3 = tc.setConstant(const_.sub(tileSize.copy()));
                 }
                 return _xblockexpression_3;
               };
@@ -910,11 +939,11 @@ public class ABFTv3 extends ABFTv1 {
             }
             return _xblockexpression_2;
           };
-          final Iterable<ISLConstraint> tiledConstraints = Iterables.<ISLConstraint>concat(ListExtensions.<Pair<Integer, Integer>, Iterable<ISLConstraint>>map(((List<Pair<Integer, Integer>>)Conversions.doWrapArray(tileSizePairs)), _function_6));
+          final ArrayList<ISLConstraint> tiledConstraints = CommonExtensions.<ISLConstraint>toArrayList(Iterables.<ISLConstraint>concat(ListExtensions.<Pair<Integer, Integer>, Iterable<ISLConstraint>>map(((List<Pair<Integer, Integer>>)Conversions.doWrapArray(tileSizePairs)), _function_6)));
           final Function1<ISLConstraint, Boolean> _function_7 = (ISLConstraint c) -> {
             return involvesAny.apply(c);
           };
-          final Iterable<ISLConstraint> remainingConstraints = IterableExtensions.<ISLConstraint>reject(bs.getConstraints(), _function_7);
+          final ArrayList<ISLConstraint> remainingConstraints = CommonExtensions.<ISLConstraint>toArrayList(IterableExtensions.<ISLConstraint>reject(bs.getConstraints(), _function_7));
           final Function1<ISLConstraint, ISLBasicSet> _function_8 = (ISLConstraint it) -> {
             return it.toBasicSet();
           };
@@ -929,91 +958,6 @@ public class ABFTv3 extends ABFTv1 {
         return s1.union(s2);
       };
       final ISLSet tiledDomain = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLBasicSet, ISLSet>map(domain.getBasicSets(), _function_5), _function_6);
-      _xblockexpression = AlphaUtil.renameIndices(tiledDomain, indexNames);
-    }
-    return _xblockexpression;
-  }
-
-  public static ISLSet buildChecksumDomain(final Variable variable, final ConvolutionKernel convolutionKernel, final int H, final int L, final int spaceTileDim) {
-    ISLSet _xblockexpression = null;
-    {
-      final ISLSet domain = variable.getDomain().copy().intersect(convolutionKernel.domain().copy());
-      final ISLVal HVal = ISLVal.buildRationalValue(ISLContext.getInstance(), H, 1);
-      final ISLVal LVal = ISLVal.buildRationalValue(ISLContext.getInstance(), L, 1);
-      int _size = domain.getIndexNames().size();
-      final Function1<Integer, String> _function = (Integer i) -> {
-        String _xblockexpression_1 = null;
-        {
-          final String name = domain.getIndexNames().get((i).intValue());
-          String _xifexpression = null;
-          if ((((i).intValue() == 0) || ((i).intValue() == spaceTileDim))) {
-            _xifexpression = ("t" + name);
-          } else {
-            _xifexpression = domain.getIndexNames().get((i).intValue());
-          }
-          _xblockexpression_1 = _xifexpression;
-        }
-        return _xblockexpression_1;
-      };
-      final List<String> indexNames = IterableExtensions.<String>toList(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function));
-      final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint c) -> {
-        return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, 0, 1));
-      };
-      final Function1<ISLConstraint, Boolean> involvesTime = _function_1;
-      final Function2<ISLConstraint, Integer, Boolean> _function_2 = (ISLConstraint c, Integer i) -> {
-        return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, i, 1));
-      };
-      final Function2<ISLConstraint, Integer, Boolean> involvesSpace = _function_2;
-      final Function2<ISLConstraint, Integer, Boolean> _function_3 = (ISLConstraint c, Integer i) -> {
-        return Boolean.valueOf(((involvesTime.apply(c)).booleanValue() || (involvesSpace.apply(c, Integer.valueOf(i))).booleanValue()));
-      };
-      final Function2<ISLConstraint, Integer, Boolean> involvesEither = _function_3;
-      final Function1<ISLBasicSet, ISLSet> _function_4 = (ISLBasicSet bs) -> {
-        ISLSet _xblockexpression_1 = null;
-        {
-          final Function1<ISLConstraint, Boolean> _function_5 = (ISLConstraint c) -> {
-            return involvesTime.apply(c);
-          };
-          final Function1<ISLConstraint, ISLConstraint> _function_6 = (ISLConstraint c) -> {
-            ISLConstraint _xblockexpression_2 = null;
-            {
-              final ISLVal coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, 0);
-              _xblockexpression_2 = c.copy().setCoefficient(ISLDimType.isl_dim_out, 0, coeffVal.mul(HVal.copy()));
-            }
-            return _xblockexpression_2;
-          };
-          final Iterable<ISLConstraint> timeConstraints = IterableExtensions.<ISLConstraint, ISLConstraint>map(IterableExtensions.<ISLConstraint>filter(bs.getConstraints(), _function_5), _function_6);
-          final Function1<ISLConstraint, Boolean> _function_7 = (ISLConstraint c) -> {
-            return involvesSpace.apply(c, Integer.valueOf(spaceTileDim));
-          };
-          final Function1<ISLConstraint, ISLConstraint> _function_8 = (ISLConstraint c) -> {
-            ISLConstraint _xblockexpression_2 = null;
-            {
-              final ISLVal coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, spaceTileDim);
-              _xblockexpression_2 = c.copy().setCoefficient(ISLDimType.isl_dim_out, spaceTileDim, coeffVal.mul(HVal.copy()));
-            }
-            return _xblockexpression_2;
-          };
-          final Iterable<ISLConstraint> spaceConstraints = IterableExtensions.<ISLConstraint, ISLConstraint>map(IterableExtensions.<ISLConstraint>filter(bs.getConstraints(), _function_7), _function_8);
-          final Function1<ISLConstraint, Boolean> _function_9 = (ISLConstraint c) -> {
-            return involvesEither.apply(c, Integer.valueOf(spaceTileDim));
-          };
-          final Iterable<ISLConstraint> remainingConstraints = IterableExtensions.<ISLConstraint>reject(bs.getConstraints(), _function_9);
-          Iterable<ISLConstraint> _plus = Iterables.<ISLConstraint>concat(timeConstraints, spaceConstraints);
-          final Function1<ISLConstraint, ISLBasicSet> _function_10 = (ISLConstraint it) -> {
-            return it.toBasicSet();
-          };
-          final Function2<ISLBasicSet, ISLBasicSet, ISLBasicSet> _function_11 = (ISLBasicSet b1, ISLBasicSet b2) -> {
-            return b1.intersect(b2);
-          };
-          _xblockexpression_1 = IterableExtensions.<ISLBasicSet>reduce(IterableExtensions.<ISLConstraint, ISLBasicSet>map(Iterables.<ISLConstraint>concat(_plus, remainingConstraints), _function_10), _function_11).toSet();
-        }
-        return _xblockexpression_1;
-      };
-      final Function2<ISLSet, ISLSet, ISLSet> _function_5 = (ISLSet s1, ISLSet s2) -> {
-        return s1.union(s2);
-      };
-      final ISLSet tiledDomain = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLBasicSet, ISLSet>map(domain.getBasicSets(), _function_4), _function_5);
       _xblockexpression = AlphaUtil.renameIndices(tiledDomain, indexNames);
     }
     return _xblockexpression;

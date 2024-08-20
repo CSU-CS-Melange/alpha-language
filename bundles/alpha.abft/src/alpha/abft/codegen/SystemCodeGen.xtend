@@ -730,9 +730,12 @@ class SystemCodeGen {
 		val containsInjectionConditions = if (version == Version.ABFT_V3) {
 			val tt = indexNames.get(0)
 			val ti = indexNames.get(1)
-			val tt_ti = '''«tt»==t_INJ/«tileSizes.get(0)» && «ti»==i_INJ/«tileSizes.get(1)»'''
-			val rest = (2..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)].join(' && ')
-			'''«tt_ti» && «rest»'''
+			val coords = newLinkedList
+			coords += '''«tt»==t_INJ/«tileSizes.get(0)»'''
+			coords += '''«ti»==i_INJ/«tileSizes.get(1)»'''
+			val rest = (2..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)]
+			coords.addAll(rest)
+			'''«coords.join(' && ')»'''
 		} else {
 			indexNames.map[n | '''«n»==«n»_INJ'''].join(' && ')
 		}

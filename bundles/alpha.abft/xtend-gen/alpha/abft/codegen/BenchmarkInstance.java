@@ -39,7 +39,19 @@ public class BenchmarkInstance {
   }
 
   public static MemoryMap v3MemoryMap(final AlphaSystem system) {
-    return BenchmarkInstance.baselineMemoryMap(system);
+    MemoryMap _xblockexpression = null;
+    {
+      final Function1<Variable, Boolean> _function = (Variable it) -> {
+        return Boolean.valueOf(it.getName().startsWith("C2_NR"));
+      };
+      final Function2<MemoryMap, Variable, MemoryMap> _function_1 = (MemoryMap mm, Variable name) -> {
+        return mm.setMemoryMap(name, "C2");
+      };
+      IterableExtensions.<Variable, MemoryMap>fold(IterableExtensions.<Variable>filter(system.getLocals(), _function), 
+        BenchmarkInstance.baselineMemoryMap(system), _function_1);
+      _xblockexpression = new MemoryMap(system);
+    }
+    return _xblockexpression;
   }
 
   public static CharSequence baselineSchedule(final AlphaSystem system) {
@@ -498,7 +510,7 @@ public class BenchmarkInstance {
       _builder.append("- filter: \"{ C2_NR\'; C2_NR2\'; C2_NR3\'; C2_NR4\' }\"");
       _builder.newLine();
       _builder.append("        ");
-      _builder.append("- filter: \"{ C1\' }\"");
+      _builder.append("- filter: \"{ C2\' }\"");
       _builder.newLine();
       _builder.append("        ");
       _builder.append("- filter: \"{ I\' }\"");

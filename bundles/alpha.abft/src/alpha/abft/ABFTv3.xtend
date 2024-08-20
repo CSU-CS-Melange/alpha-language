@@ -45,13 +45,16 @@ class ABFTv3 extends ABFTv1 {
 	
 	def static void main(String[] args) {
 		
-		'star3d2t1r'.insertChecksum(#[16, 10])
+//		'star3d2t1r'.insertChecksum(#[16, 10])
+		'star1d1r'.insertChecksum(#[16, 10])
 				
 	}
 	
 	def static insertChecksum(String systemName, int[] tileSizes) {
 		val system =  loadSystem('''«systemName».alpha''', systemName)
 		system.insertChecksum(tileSizes)
+		
+		system.pprint('ABFT augmented system:')
 		
 		/* Save the augemented system */
 		system.save
@@ -79,14 +82,16 @@ class ABFTv3 extends ABFTv1 {
 		 * Construct checksum related variable domains
 		 */
 		val checksumCDomain = outputVar.buildChecksumDomain(convolutionKernel, #[0->H, spaceTileDim->L])
+//			.intersect('''[T,N]->{[1,1]}'''.toString.toISLSet)
 		val checksumCiDomain = outputVar.buildChecksumDomain(convolutionKernel, #[spaceTileDim->L])
+//			.intersect('''[T,N]->{[16,1]}'''.toString.toISLSet)
+		
 		val weightsDomain = outputVar.buildWeightsDomainV3(convolutionKernel)
 		val kernelDomain = outputVar.buildWeightsDomainV3(convolutionKernel, 2)
-//		val C2Domain = checksumDomain.buildC2DomainV3(kernelDomain, true)
 		
-//		/*
-//		 * Add checksum related variables
-//		 */
+		/*
+		 * Add checksum related variables
+		 */
 		val IVar = createVariable('I', checksumCDomain.copy)
 		val WVar = createVariable('W', weightsDomain.copy)
 		val CVar = createVariable('C1', checksumCDomain.copy)
@@ -94,28 +99,26 @@ class ABFTv3 extends ABFTv1 {
 		val WiVar = createVariable('Wi', kernelDomain.copy)
 		val CiVar = createVariable('C2', checksumCiDomain.copy)
 		system.locals.addAll(#[IVar, WVar, WExtVar, WiVar, CVar, CiVar])
-//		
-//		/*
-//		 * Add the respective equations
-//		 */
+		
+		/*
+		 * Add the respective equations
+		 */
 		systemBody.addWeightsEquation(WVar, convolutionKernel)
 		systemBody.addKernelWEquation(WExtVar, weightsDomain)
 		systemBody.addWiEquation(WiVar, WExtVar, WVar, spaceTileDim)
 		systemBody.addCEquation(CVar, outputVar, WVar, convolutionKernel, spaceTileDim, H, L)
 		systemBody.addCiEquation(CiVar, outputVar, WVar, WiVar, convolutionKernel, spaceTileDim, H, L)
-//		systemBody.addV2C2Equation(C2Var, outputVar, WVar, allWVar, combosWVar, tileSizes, radius)
 		systemBody.addIEquation(IVar, CVar, CiVar, WVar, H)
+		
+		system.save
 		
 		if (renameSystem) {
 			system.rename(#[H, L], 'v3')
 		}
 		
-		system.pprint('asdf')
-		println
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
-		system.pprint('asdf')
-		println
+		
 		system
 	}
 	
@@ -124,44 +127,49 @@ class ABFTv3 extends ABFTv1 {
 		val ce = createCaseExpression
 		
 		// recursive case branch
-		val boundaryDomain = createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim)
-		val CiBoundaryExpr = createCiBoundaryExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L)
+		val centerDomain = alpha.abft.ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim)
+		val CiBoundaryExpr = alpha.abft.ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L)
 		val CiStencilReduceExpr = createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim)
 		val be = createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr)
-		val re = createRestrictExpression(boundaryDomain, be)
+		val re = createRestrictExpression(centerDomain, be)
 
 		
 		// boudnary branch reduction
 		val contextIndexNames = CVar.domain.indexNames + #[stencilVar.domain.indexNames.get(spaceTileDim)]
 		val stencilVarExpr = createStencilVarExpr(stencilVar, contextIndexNames)
 		val reduceExpr = createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr)
-		val autoRe = createAutoRestrictExpression(reduceExpr)
+		val boundaryDomain = createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim)
+		val re2 = createRestrictExpression(boundaryDomain, reduceExpr)
 		
 		ce.exprs += re
-		ce.exprs += autoRe
+		ce.exprs += re2
 		
 		val equ = createStandardEquation(CVar, ce)
 		
 		systemBody.equations += equ
 		AlphaInternalStateConstructor.recomputeContextDomain(equ)
-		println
 	}
 	
-	def static createCiBoundaryExpr(Variable CVar, Variable WVar, Variable WiVar, Variable stencilVar, int spaceTileDim, int H, int L) {
+	def static createCiCenterExpr(Variable CVar, Variable WVar, Variable WiVar, Variable stencilVar, int spaceTileDim, int H, int L) {
 		/*  C[t-1,ti,j,k] * (Wi[-1,0,0,0] - W[-1,0,0,0]
-		 *  + reduce(+, [p], {:p<0} : Wi(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
-		 *  - reduce(+, [p], {:p>0} : Wi(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] - Y[t+h,10ti+p,j,k]))
+		 *  + reduce(+, [p], {:p<0} : W(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10+p,j,k]))
+		 *  - reduce(+, [p], {:p>0} : W(h,p,0,0) * (Y[t+h,10ti-1+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
 		 */
 		val indexNames = CVar.domain.indexNames
 		val paramStr = CVar.buildParamStr
 		val kernelNames = WVar.domain.getKernelNames.toList
 		
 		////////////////////////////////////////////////////////////
-		//  C[t-1,ti,j,k] * (Wi[h,0,0,0] - W[h,0,0,0]
+		//  C[t-1,ti-1,j,k] * (Wi[h,0,0,0] - W[h,0,0,0]
 		////////////////////////////////////////////////////////////
 
 		val CWExpr = {
-			val CMaff = '''«paramStr»->{[«indexNames.join(',')»]->[«indexNames.map[n | if (n=='t') 't-1' else n].join(',')»]}'''.toString.toISLMultiAff
+			val CMaff = '''«paramStr»->{[«indexNames.join(',')»]->[«indexNames.map[n | 
+				if (n=='t') 
+					't-1'
+				else 
+					n
+			].join(',')»]}'''.toString.toISLMultiAff
 			val CDepExpr = createDependenceExpression(CMaff, createVariableExpression(CVar))
 			
 			val WxMaff = '''«paramStr»->{[«kernelNames.join(',')»]->[«kernelNames.map[n | if (n == 'h') -1 else 0].join(',')»]}'''.toString.toISLMultiAff 
@@ -180,44 +188,47 @@ class ABFTv3 extends ABFTv1 {
 		val projection = '''«paramStr»->{[«bodyStr»]->[«indexNames.join(',')»]}'''.toString		
 		
 		////////////////////////////////////////////////////////////
-		//  Wi(h,p,0,0)
+		//  W(h,p,0,0)
 		////////////////////////////////////////////////////////////
 		
-		val WiMaff = '''«paramStr»->{[«bodyStr»]->[«kernelNames.map[n | if (#[0,spaceTileDim].contains(kernelNames.indexOf(n))) n else 0].join(',')»]}'''.toString.toISLMultiAff
-		val WiExpr = createDependenceExpression(WiMaff, createVariableExpression(WiVar))
+		val WMaff = '''«paramStr»->{[«bodyStr»]->[«kernelNames.map[n | if (#[0,spaceTileDim].contains(kernelNames.indexOf(n))) n else 0].join(',')»]}'''.toString.toISLMultiAff
+		val WExpr = createDependenceExpression(WMaff, createVariableExpression(WVar))
 		
 		////////////////////////////////////////////////////////////
 		//  Y[t+h,10ti+p,j,k]
+		//  Y[t+h,10ti+10+p,j,k]		
 		////////////////////////////////////////////////////////////
 		
-		val stencilVarExpr1 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L)
+		val stencilVarExprL1 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L)
+		val stencilVarExprL2 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, L)
 		
 		////////////////////////////////////////////////////////////
-		//  Y[t+h,10ti+9+p,j,k]
+		//  Y[t+h,10ti-1+p,j,k]
+		//  Y[t+h,10ti+10-1+p,j,k]
 		////////////////////////////////////////////////////////////
-		
-		val stencilVarExpr2 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, L-1)
+		val stencilVarExprR1 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, -1)
+		val stencilVarExprR2 = stencilVar.createStencilVarCiExpr(indexNames, bodyIndexNames, kernelNames, spaceTileDim, L, L-1)
 		
 		/////////////////////////////////////////////////////////////////////////////////////////////////
-		//  reduce(+, [p], {:p<0} : Wi(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
+		//  reduce(+, [p], {:p<0} : W(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		val negReduceExpr = {
 			val domain = '''«paramStr»->{[«bodyIndexNames.join(',')»] : «pqrName»<0}'''.toString.toISLSet
-			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExpr1.copyAE, stencilVarExpr2.copyAE)
-			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WiExpr.copyAE, stencilVarDiffExpr)
+			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExprL1, stencilVarExprL2)
+			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WExpr.copyAE, stencilVarDiffExpr)
 			val body = createRestrictExpression(domain, WYBinExpr)
 			createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
 		}
 		
 		/////////////////////////////////////////////////////////////////////////////////////////////////
-		//  reduce(+, [p], {:p>0} : Wi(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] - Y[t+h,10ti+p,j,k]))
+		//  reduce(+, [p], {:p>0} : W(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] - Y[t+h,10ti+p,j,k]))
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		val posReduceExpr = {
 			val domain = '''«paramStr»->{[«bodyIndexNames.join(',')»] : «pqrName»>0}'''.toString.toISLSet 
-			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExpr2.copyAE, stencilVarExpr1.copyAE)
-			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WiExpr.copyAE, stencilVarDiffExpr)
+			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExprR1, stencilVarExprR2)
+			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WExpr.copyAE, stencilVarDiffExpr)
 			val body = createRestrictExpression(domain, WYBinExpr)
 			createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
 		}
@@ -256,7 +267,7 @@ class ABFTv3 extends ABFTv1 {
 		val paramStr = CVar.buildParamStr
 		val indexNames = CVar.domain.indexNames
 		val kernelNames = WVar.domain.getKernelNames.toList
-		val pqrExprs = kernelNames.map[e | if (kernelNames.indexOf(e)==spaceTileDim) -1 else e]
+		val pqrExprs = kernelNames.map[e | if (kernelNames.indexOf(e)==spaceTileDim) 0 else e]
 		val pqrStr = pqrExprs.join(',')
 		
 		
@@ -265,25 +276,36 @@ class ABFTv3 extends ABFTv1 {
 		 * if tileDim is 1		->		W[h,p,0,r] * Ci[t-h,i+p,tj-1,k+r]
 		 * if tileDim is 2		->		W[h,p,q,0] * Ci[t-h,i+p,j+q,tk-1]
 		 */
-		val domainStr = (indexNames + pqrExprs.reject[e | e == -1]).join(',')
+		val domainStr = (indexNames + pqrExprs.reject[e | e == 0]).join(',')
 		val rangeStr = CVar.domain.indexNames.join(',')
 		val projection = '''«paramStr»->{[«domainStr»]->[«rangeStr»]}'''.toString
 		
 		val WMaff = '''«paramStr»->{[«domainStr»]->[«pqrStr»]}'''.toString.toISLMultiAff
 		val WDepExpr = createDependenceExpression(WMaff, createVariableExpression(WVar))
 		
-		val CiAcc = indexNames.zipWith(pqrExprs).map['''«key»+(«value»)'''].join(',')
+		val CiAcc = indexNames.zipWith(pqrExprs).map[
+			val indexName = key
+			val pqrExpr = value
+			if (indexNames.indexOf(indexName) == spaceTileDim)
+				'''«indexName»'''
+			else
+				'''«indexName»+«pqrExpr»'''
+		].join(',')
 		val CiMaff = '''«paramStr»->{[«domainStr»]->[«CiAcc»]}'''.toString.toISLMultiAff
 		val CiDepExpr = createDependenceExpression(CiMaff, createVariableExpression(CVar))
 		
 //		val zero = createZeroExpression(space)
-		val body = createBinaryExpression(BINARY_OP.ADD, WDepExpr, CiDepExpr)
+		val body = createBinaryExpression(BINARY_OP.MUL, WDepExpr, CiDepExpr)
 		
 		createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
 	}
 	
+	def static createCiBoundaryDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim) {
 	
-	def static createCiBoundaryDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim){
+		'''[T,N]->{[t,ti] : t<3 }'''.toString.toISLSet
+	}
+	
+	def static createCiCenterDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim) {
 		val nbDims = CVar.domain.dim(ISLDimType.isl_dim_out)
 		
 		val radius = ISLVal.buildRationalValue(ISLContext.instance, convolutionKernel.radius, 1)
@@ -498,7 +520,7 @@ class ABFTv3 extends ABFTv1 {
 
 	}
 	
-	def static buildChecksumDomain(Variable variable, ConvolutionKernel convolutionKernel, Pair<Integer, Integer>[] tileSizePairs) {// ,int[] tileSizes, int[] tileDims) {
+	def static buildChecksumDomain(Variable variable, ConvolutionKernel convolutionKernel, Pair<Integer, Integer>[] tileSizePairs) {
 		
 		// tileSizePairs is a list of pairs whose key is the tileDim and value is the tileSize 
 		
@@ -523,12 +545,16 @@ class ABFTv3 extends ABFTv1 {
 				val tileDim = p.key
 				val tileSize = ISLVal.buildRationalValue(ISLContext.instance, p.value, 1)
 				bs.constraints.filter[c | involvesDim.apply(c, tileDim)].map[c |
-					val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, 0)
-					c.copy.setCoefficient(ISLDimType.isl_dim_out, 0, coeffVal.mul(tileSize.copy))
+					val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, tileDim)
+					val tc = c.copy.setCoefficient(ISLDimType.isl_dim_out, tileDim, coeffVal.mul(tileSize.copy))
+					if (!c.isUpperBound(ISLDimType.isl_dim_out, tileDim))
+						return tc
+					val const = tc.getConstantVal
+					tc.setConstant(const.sub(tileSize.copy))
 				]
-			].flatten
+			].flatten.toArrayList
 			
-			val remainingConstraints = bs.constraints.reject[c | involvesAny.apply(c)]
+			val remainingConstraints = bs.constraints.reject[c | involvesAny.apply(c)].toArrayList;
 			(tiledConstraints + remainingConstraints)
 				.map[toBasicSet].reduce[b1, b2 | b1.intersect(b2)].toSet
 		].reduce[s1, s2 | s1.union(s2)]
@@ -536,42 +562,42 @@ class ABFTv3 extends ABFTv1 {
 		AlphaUtil.renameIndices(tiledDomain, indexNames)
 	}
 	
-	def static buildChecksumDomain(Variable variable, ConvolutionKernel convolutionKernel, int H, int L, int spaceTileDim) {
-		val domain = variable.domain.copy.intersect(convolutionKernel.domain.copy)
-		
-		val HVal = ISLVal.buildRationalValue(ISLContext.instance, H, 1)
-		val LVal = ISLVal.buildRationalValue(ISLContext.instance, L, 1)
-		
-		// rename the time and spaceTileDim with the prefix 't'
-		val indexNames = (0..<domain.indexNames.size).map[i | 
-			val name = domain.indexNames.get(i);
-			if (i == 0 || i == spaceTileDim) 't' + name else domain.indexNames.get(i)
-		].toList
-		
-		/* We want to effectively tile some dimensions in the domain.
-		 * This can be done by simply multiplying the coefficient all of constraints involving the
-		 * dim to-be-tiled with the desired tile size, and then treating this new dim as a tile dim. 
-		 */
-		val involvesTime = [ISLConstraint c | c.involvesDims(ISLDimType.isl_dim_out, 0, 1)]
-		val involvesSpace = [ISLConstraint c, int i | c.involvesDims(ISLDimType.isl_dim_out, i, 1)]
-		val involvesEither = [ISLConstraint c, int i | involvesTime.apply(c) || involvesSpace.apply(c, i)]
-		
-		val tiledDomain = domain.basicSets.map[bs |
-			val timeConstraints = bs.constraints.filter[c | involvesTime.apply(c)].map[c | 
-				val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, 0)
-				c.copy.setCoefficient(ISLDimType.isl_dim_out, 0, coeffVal.mul(HVal.copy))
-			]
-			val spaceConstraints = bs.constraints.filter[c | involvesSpace.apply(c, spaceTileDim)].map[c | 
-				val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, spaceTileDim)
-				c.copy.setCoefficient(ISLDimType.isl_dim_out, spaceTileDim, coeffVal.mul(HVal.copy))
-			]
-			val remainingConstraints = bs.constraints.reject[c | involvesEither.apply(c, spaceTileDim)]
-			(timeConstraints + spaceConstraints + remainingConstraints)
-				.map[toBasicSet].reduce[b1, b2 | b1.intersect(b2)].toSet
-		].reduce[s1, s2 | s1.union(s2)]
-		
-		AlphaUtil.renameIndices(tiledDomain, indexNames)
-	}
+//	def static buildChecksumDomain(Variable variable, ConvolutionKernel convolutionKernel, int H, int L, int spaceTileDim) {
+//		val domain = variable.domain.copy.intersect(convolutionKernel.domain.copy)
+//		
+//		val HVal = ISLVal.buildRationalValue(ISLContext.instance, H, 1)
+//		val LVal = ISLVal.buildRationalValue(ISLContext.instance, L, 1)
+//		
+//		// rename the time and spaceTileDim with the prefix 't'
+//		val indexNames = (0..<domain.indexNames.size).map[i | 
+//			val name = domain.indexNames.get(i);
+//			if (i == 0 || i == spaceTileDim) 't' + name else domain.indexNames.get(i)
+//		].toList
+//		
+//		/* We want to effectively tile some dimensions in the domain.
+//		 * This can be done by simply multiplying the coefficient all of constraints involving the
+//		 * dim to-be-tiled with the desired tile size, and then treating this new dim as a tile dim. 
+//		 */
+//		val involvesTime = [ISLConstraint c | c.involvesDims(ISLDimType.isl_dim_out, 0, 1)]
+//		val involvesSpace = [ISLConstraint c, int i | c.involvesDims(ISLDimType.isl_dim_out, i, 1)]
+//		val involvesEither = [ISLConstraint c, int i | involvesTime.apply(c) || involvesSpace.apply(c, i)]
+//		
+//		val tiledDomain = domain.basicSets.map[bs |
+//			val timeConstraints = bs.constraints.filter[c | involvesTime.apply(c)].map[c | 
+//				val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, 0)
+//				c.copy.setCoefficient(ISLDimType.isl_dim_out, 0, coeffVal.mul(HVal.copy))
+//			]
+//			val spaceConstraints = bs.constraints.filter[c | involvesSpace.apply(c, spaceTileDim)].map[c | 
+//				val coeffVal = c.getCoefficientVal(ISLDimType.isl_dim_out, spaceTileDim)
+//				c.copy.setCoefficient(ISLDimType.isl_dim_out, spaceTileDim, coeffVal.mul(HVal.copy))
+//			]
+//			val remainingConstraints = bs.constraints.reject[c | involvesEither.apply(c, spaceTileDim)]
+//			(timeConstraints + spaceConstraints + remainingConstraints)
+//				.map[toBasicSet].reduce[b1, b2 | b1.intersect(b2)].toSet
+//		].reduce[s1, s2 | s1.union(s2)]
+//		
+//		AlphaUtil.renameIndices(tiledDomain, indexNames)
+//	}
 	
 	
 }

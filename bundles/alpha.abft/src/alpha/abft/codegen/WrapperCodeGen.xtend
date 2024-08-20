@@ -283,7 +283,7 @@ class WrapperCodeGen extends SystemCodeGen {
 			tBox = max((int)log10(T) + 1, 7);
 			sBox = max((int)log10(N) + 1, 7);
 			«IF v3System !==null»
-			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*(N/(float)«tileSizes.get(1)»)*«(2..<sDims).map['N'].join('*')») + 4;
+			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*(N/(float)«tileSizes.get(1)»)«if (sDims>2) '*'»«(2..<sDims).map['N'].join('*')») + 4;
 			«ELSE»
 			rBox = (int)log10(2*(T/(float)«tileSizes.get(0)»)*«(1..<sDims).map[i | '''(N/(float)«tileSizes.get(1)»)'''].join('*')») + 4;
 			«ENDIF»
@@ -526,7 +526,7 @@ class WrapperCodeGen extends SystemCodeGen {
 		val illegalParamValues = universe.subtract(domain.copy)
 		
 		'''
-			if («ConditionalConverter.convert(illegalParamValues).printExpr») {
+			if ((«ConditionalConverter.convert(illegalParamValues).printExpr») || T < «4 * tileSizes.get(0)») {
 				printf("Illegal parameter values, must be in «domain»\n");
 				return 1;
 			}

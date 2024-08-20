@@ -30,7 +30,11 @@ class BenchmarkInstance {
 	}
 	
 	def static MemoryMap v3MemoryMap(AlphaSystem system) {
-		system.baselineMemoryMap
+		system.locals.filter[name.startsWith('C2_NR')].fold(
+			system.baselineMemoryMap, 
+			[mm, name |mm.setMemoryMap(name, 'C2')]
+		)
+		new MemoryMap(system)
 	}
 	
 	
@@ -187,7 +191,7 @@ class BenchmarkInstance {
 			        - filter: "{ «yStmts.join('; ')» }"
 			        - filter: "{ C1' }"
 			        - filter: "{ C2_NR'; C2_NR2'; C2_NR3'; C2_NR4' }"
-			        - filter: "{ C1' }"
+			        - filter: "{ C2' }"
 			        - filter: "{ I' }"
 		'''
 	}

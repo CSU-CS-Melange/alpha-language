@@ -809,7 +809,12 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_1.append(")*(N/(float)");
           int _get_1 = this.getTileSizes()[1];
           _builder_1.append(_get_1, "\t");
-          _builder_1.append(")*");
+          _builder_1.append(")");
+          String _xifexpression = null;
+          if ((sDims > 2)) {
+            _xifexpression = "*";
+          }
+          _builder_1.append(_xifexpression, "\t");
           final Function1<Integer, String> _function_10 = (Integer it) -> {
             return "N";
           };
@@ -1641,9 +1646,13 @@ public class WrapperCodeGen extends SystemCodeGen {
       final ISLSet universe = ISLSet.buildUniverse(domain.getSpace().copy());
       final ISLSet illegalParamValues = universe.subtract(domain.copy());
       StringConcatenation _builder = new StringConcatenation();
-      _builder.append("if (");
+      _builder.append("if ((");
       CharSequence _printExpr = ProgramPrinter.printExpr(ConditionalConverter.convert(illegalParamValues));
       _builder.append(_printExpr);
+      _builder.append(") || T < ");
+      int _get = this.getTileSizes()[0];
+      int _multiply = (4 * _get);
+      _builder.append(_multiply);
       _builder.append(") {");
       _builder.newLineIfNotEmpty();
       _builder.append("\t");
