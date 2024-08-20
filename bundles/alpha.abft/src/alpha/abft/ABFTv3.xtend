@@ -40,13 +40,14 @@ import static extension alpha.model.util.ISLUtil.createConstantMaff
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
 import alpha.model.AlphaExpression
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
 class ABFTv3 extends ABFTv1 {
 	
 	def static void main(String[] args) {
 		
-//		'star3d2t1r'.insertChecksum(#[16, 10])
-		'star1d1r'.insertChecksum(#[16, 10])
+		'star3d2t1r'.insertChecksum(#[16, 10])
+//		'star1d1r'.insertChecksum(#[16, 10])
 				
 	}
 	
@@ -116,8 +117,12 @@ class ABFTv3 extends ABFTv1 {
 			system.rename(#[H, L], 'v3')
 		}
 		
+		system.pprint('before normalize:')
+		
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
+		
+		system.pprint('after normalize:')
 		
 		system
 	}
@@ -144,10 +149,16 @@ class ABFTv3 extends ABFTv1 {
 		ce.exprs += re
 		ce.exprs += re2
 		
+		
+		
 		val equ = createStandardEquation(CVar, ce)
+//		val equ = createStandardEquation(CVar, createZeroExpression(CVar.domain.space.copy))
 		
 		systemBody.equations += equ
+		
+		println
 		AlphaInternalStateConstructor.recomputeContextDomain(equ)
+		println
 	}
 	
 	def static createCiCenterExpr(Variable CVar, Variable WVar, Variable WiVar, Variable stencilVar, int spaceTileDim, int H, int L) {
@@ -301,8 +312,41 @@ class ABFTv3 extends ABFTv1 {
 	}
 	
 	def static createCiBoundaryDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim) {
-	
-		'''[T,N]->{[t,ti] : t<3 }'''.toString.toISLSet
+//		// 1D
+//		'''[T,N]->{[t,ti] : t<3 }'''.toString.toISLSet
+		// 3D  
+//		'''[T,N]->{[t,ti,j,k] : t <= 3 or j<3 or j>N-3 or k<3 or k>N-3 }'''.toString.toISLSet
+		val universe = ISLSet.buildUniverse(CVar.domain.space.copy)
+		val centerDomainStr = CVar.createCiCenterDomain(convolutionKernel, spaceTileDim).toString
+		
+		val centerDomain = ISLSet.buildFromString(ISLContext.instance, centerDomainStr)
+		
+		val paramStr = CVar.buildParamStr
+		val indexNames = CVar.domain.indexNames
+		
+		val constraints = centerDomain.copy.basicSets.flatMap[getConstraints]
+			.map[aff]
+			.map[negate]
+			.map[aff | 
+				println(aff.toString(ISL_FORMAT.C))
+				aff
+			].toArrayList
+			.map[aff | aff.toString(ISL_FORMAT.C) + ' > 0']
+			.join(' or ')
+			
+		'''«paramStr»->{[«indexNames.join(',')»] : «constraints» }'''.toString.toISLSet
+//			.map[toInequalityConstraint]
+//			.map[toBasicSet]
+//			.map[toSet]
+//			.map[s | 
+//				println(s)
+//				s
+//			].toArrayList
+//			.reduce[s1, s2 | s1.union(s2)]
+//			.removeRedundancies
+//			.coalesce
+			
+//		universe.subtract(centerDomain)
 	}
 	
 	def static createCiCenterDomain(Variable CVar, ConvolutionKernel convolutionKernel, int spaceTileDim) {

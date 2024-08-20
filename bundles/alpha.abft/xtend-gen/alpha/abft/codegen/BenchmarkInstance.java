@@ -49,7 +49,7 @@ public class BenchmarkInstance {
       };
       IterableExtensions.<Variable, MemoryMap>fold(IterableExtensions.<Variable>filter(system.getLocals(), _function), 
         BenchmarkInstance.baselineMemoryMap(system), _function_1);
-      _xblockexpression = new MemoryMap(system);
+      _xblockexpression = BenchmarkInstance.baselineMemoryMap(system);
     }
     return _xblockexpression;
   }

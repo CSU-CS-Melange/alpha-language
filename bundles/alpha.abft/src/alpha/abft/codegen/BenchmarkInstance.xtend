@@ -34,7 +34,8 @@ class BenchmarkInstance {
 			system.baselineMemoryMap, 
 			[mm, name |mm.setMemoryMap(name, 'C2')]
 		)
-		new MemoryMap(system)
+//		new MemoryMap(system)
+		system.baselineMemoryMap
 	}
 	
 	

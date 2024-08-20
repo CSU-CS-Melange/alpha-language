@@ -1749,18 +1749,28 @@ public class SystemCodeGen {
         {
           final String tt = indexNames.get(0);
           final String ti = indexNames.get(1);
+          final int H = this.tileSizes[0];
+          final int L = this.tileSizes[1];
           final LinkedList<String> coords = CollectionLiterals.<String>newLinkedList();
           StringConcatenation _builder_4 = new StringConcatenation();
+          _builder_4.append(H);
+          _builder_4.append("*(");
           _builder_4.append(tt);
-          _builder_4.append("==t_INJ/");
-          int _get = this.tileSizes[0];
-          _builder_4.append(_get);
+          _builder_4.append("-1)<t_INJ && t_INJ<");
+          _builder_4.append(H);
+          _builder_4.append("*");
+          _builder_4.append(tt);
           coords.add(_builder_4.toString());
           StringConcatenation _builder_5 = new StringConcatenation();
+          _builder_5.append(L);
+          _builder_5.append("*");
           _builder_5.append(ti);
-          _builder_5.append("==i_INJ/");
-          int _get_1 = this.tileSizes[1];
-          _builder_5.append(_get_1);
+          _builder_5.append("<i_INJ && i_INJ<");
+          _builder_5.append(L);
+          _builder_5.append("*");
+          _builder_5.append(ti);
+          _builder_5.append("+");
+          _builder_5.append(L);
           coords.add(_builder_5.toString());
           int _size = this.stencilVar.getDomain().getIndexNames().size();
           final Function1<Integer, String> _function_2 = (Integer i) -> {

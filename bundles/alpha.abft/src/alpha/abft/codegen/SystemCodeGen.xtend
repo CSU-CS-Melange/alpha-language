@@ -730,9 +730,11 @@ class SystemCodeGen {
 		val containsInjectionConditions = if (version == Version.ABFT_V3) {
 			val tt = indexNames.get(0)
 			val ti = indexNames.get(1)
+			val H = tileSizes.get(0)
+			val L = tileSizes.get(1)
 			val coords = newLinkedList
-			coords += '''«tt»==t_INJ/«tileSizes.get(0)»'''
-			coords += '''«ti»==i_INJ/«tileSizes.get(1)»'''
+			coords += '''«H»*(«tt»-1)<t_INJ && t_INJ<«H»*«tt»'''
+			coords += '''«L»*«ti»<i_INJ && i_INJ<«L»*«ti»+«L»'''
 			val rest = (2..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)]
 			coords.addAll(rest)
 			'''«coords.join(' && ')»'''
@@ -764,7 +766,6 @@ class SystemCodeGen {
 			#define print_«stmtPrefix»«name»(«idxStr») printf("«vStr»_«name»(«indexNames.map['%d'].join(',')») = %E\n",«idxStr», fabs(«varAcc»))
 			#define acc_noise(«idxStr») result.noise = max(result.noise, fabs(«varAcc»))
 			#define «stmtPrefix»«name»(«idxStr») do { if (verbose != NULL && fabs(«varAcc»)>=threshold) print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if («containsInjectionConditions») { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
-«««			//#define «stmtPrefix»«name»(«idxStr») do { print_«stmtPrefix»«name»(«idxStr»); acc_noise(«idxStr»); if («containsInjectionConditions») { if (fabs(«varAcc»)>=threshold) {result.TP++;} else {result.FN++;} } else { if (fabs(«varAcc»)>=threshold) {result.FP++;} else {result.TN++;} } } while(0)
 			
 			«dataType.print» threshold = 0;
 			const char* env_threshold = getenv("THRESHOLD");

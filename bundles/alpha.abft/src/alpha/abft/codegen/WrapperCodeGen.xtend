@@ -159,6 +159,10 @@ class WrapperCodeGen extends SystemCodeGen {
 		// random number in [1,N/<TX>]
 		val sInjectionSite = TXs.map[TX | '''(rand() % ((N/«TX»)-2) + 1)''']
 		val injectionSite = tInjectionSite + sInjectionSite
+		// random number in [1,N-1]
+		val v3tInjectionSite = #['''(rand() % (T-2*«TT») + «TT»)''']
+		val v3sInjectionSite = TXs.map[TX | '''(rand() % (N-2*«TX») + «TX»)''']
+		val v3InjectionSite = v3tInjectionSite + v3sInjectionSite
 		
 		val thresholdVarV1 = 'threshold_v1'
 		val thresholdVarV2 = 'threshold_v2'
@@ -296,6 +300,7 @@ class WrapperCodeGen extends SystemCodeGen {
 			log_flag = (getenv("LOG") == NULL) ? 1 : 0;
 			
 «««			#define export_injs2() do { «stencilVar.domain.indexNames.map[i |'''{ int ival = (int)(rand() % («if (i == 't') '''T-(2*«TT»)''' else '''N-(2*«TS»)'''») + «if (i == 't') TT else TS»); sprintf(val, "%d", ival); «i»_INJ = ival; setenv("«i»_INJ", val, 1); }'''].join(' ')»; } while(0)
+			
 			#define export_injs() do { «indexNames.zipWith(injectionSite).map['''{ int ival = «value»; sprintf(val, "%d", ival); setenv("t«key»_INJ", val, 1); }'''].join(' ')» } while(0)
 			
 			R = (getenv("NUM_RUNS") != NULL) ? atoi(getenv("NUM_RUNS")) : 100;
@@ -322,7 +327,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf(" «thresholdVarV1» set to: %E\n", «thresholdVarV1»);
 				T = input_T;
 			} else {
-				«thresholdVarV1» = atoi(getenv("THRESHOLD"));
+				«thresholdVarV1» = atof(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			«IF v2System !==null»
@@ -343,7 +348,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf(" «thresholdVarV2» set to: %E\n", «thresholdVarV2»);
 				T = input_T;
 			} else {
-				«thresholdVarV2» = atoi(getenv("THRESHOLD"));
+				«thresholdVarV2» = atof(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			«IF v3System !==null»
@@ -364,7 +369,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				printf(" «thresholdVarV3» set to: %E\n", «thresholdVarV3»);
 				T = input_T;
 			} else {
-				«thresholdVarV3» = atoi(getenv("THRESHOLD"));
+				«thresholdVarV3» = atof(getenv("THRESHOLD"));
 			}
 			«ENDIF»
 			printHeader();
@@ -392,7 +397,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				
 				for (run=0; run<R; run++) {
 «««					«system.inputs.map[inputInitialization].join('\n')»
-					export_injs();
+					«indexNames.zipWith(injectionSite).map['''{ int ival = «value»; sprintf(val, "%d", ival); setenv("t«key»_INJ", val, 1); }'''].join(' ')»
 					struct Result v = «v1System.call»;
 					
 					// Compare output with GOLD
@@ -422,7 +427,7 @@ class WrapperCodeGen extends SystemCodeGen {
 				struct ResultsSummary v_avg = new_result_summary();
 				for (run=0; run<R; run++) {
 «««					«system.inputs.map[inputInitialization].join('\n')»
-					export_injs();
+					«indexNames.zipWith(injectionSite).map['''{ int ival = «value»; sprintf(val, "%d", ival); setenv("t«key»_INJ", val, 1); }'''].join(' ')»
 					struct Result v = «v2System.call»;
 					
 					// Compare output with GOLD
@@ -453,7 +458,10 @@ class WrapperCodeGen extends SystemCodeGen {
 				struct ResultsSummary v_avg = new_result_summary();
 				for (run=0; run<R; run++) {
 «««					«system.inputs.map[inputInitialization].join('\n')»
-					export_injs();
+					«indexNames.zipWith(v3InjectionSite).map[
+						val TS = if (key == 't') tileSizes.get(0) else tileSizes.get(1)
+						'''{ int ival=0; while (ival % «TS» == 0) {ival = «value»; sprintf(val, "%d", ival); setenv("«key»_INJ", val, 1); }}'''].join('\n')
+					»
 					struct Result v = «v3System.call»;
 					
 					// Compare output with GOLD
