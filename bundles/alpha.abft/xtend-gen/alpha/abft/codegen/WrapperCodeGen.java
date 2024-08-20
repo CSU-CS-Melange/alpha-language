@@ -1479,7 +1479,7 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("setenv(\"THRESHOLD\", val, 1);");
           _builder_2.newLine();
           _builder_2.append("\t");
-          _builder_2.append("for (int bit=31; bit>=8; bit--) {");
+          _builder_2.append("for (int bit=31; bit>=0; bit--) {");
           _builder_2.newLine();
           _builder_2.append("\t");
           _builder_2.append("\t");
@@ -1722,13 +1722,17 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder.append(_printExpr);
       _builder.append(") || T < ");
       int _get = this.getTileSizes()[0];
-      int _multiply = (4 * _get);
+      int _multiply = (3 * _get);
       _builder.append(_multiply);
       _builder.append(") {");
       _builder.newLineIfNotEmpty();
       _builder.append("\t");
       _builder.append("printf(\"Illegal parameter values, must be in ");
       _builder.append(domain, "\t");
+      _builder.append(" and T > ");
+      int _get_1 = this.getTileSizes()[0];
+      int _multiply_1 = (3 * _get_1);
+      _builder.append(_multiply_1, "\t");
       _builder.append("\\n\");");
       _builder.newLineIfNotEmpty();
       _builder.append("\t");

@@ -449,7 +449,7 @@ class WrapperCodeGen extends SystemCodeGen {
 			// ABFTv3
 			sprintf(val, "%E", «thresholdVarV3»); 
 			setenv("THRESHOLD", val, 1);
-			for (int bit=31; bit>=8; bit--) {
+			for (int bit=31; bit>=0; bit--) {
 				if (single_bit != NULL && atoi(single_bit) != bit)
 					continue;
 				char val[50];
@@ -534,8 +534,8 @@ class WrapperCodeGen extends SystemCodeGen {
 		val illegalParamValues = universe.subtract(domain.copy)
 		
 		'''
-			if ((«ConditionalConverter.convert(illegalParamValues).printExpr») || T < «4 * tileSizes.get(0)») {
-				printf("Illegal parameter values, must be in «domain»\n");
+			if ((«ConditionalConverter.convert(illegalParamValues).printExpr») || T < «3 * tileSizes.get(0)») {
+				printf("Illegal parameter values, must be in «domain» and T > «3 * tileSizes.get(0)»\n");
 				return 1;
 			}
 		'''

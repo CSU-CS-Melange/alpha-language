@@ -67,7 +67,6 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -149,7 +148,6 @@ public class SystemCodeGen {
       this.tileSizes = tileSizes;
       this.scheduleDomain = this.buildScheduleDomain();
       this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
-      InputOutput.<String>println(this.scheduleStr);
       this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
       StandardizeNames.apply(system);
     } catch (Throwable _e) {

@@ -1,7 +1,9 @@
 package alpha.abft.codegen;
 
 import alpha.abft.ABFT;
+import alpha.abft.analysis.ConvolutionDetector;
 import alpha.abft.codegen.util.MemoryMap;
+import alpha.abft.util.ConvolutionKernel;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
 import alpha.model.CaseExpression;
@@ -12,6 +14,7 @@ import java.util.List;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
@@ -20,7 +23,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 @SuppressWarnings("all")
 public class BenchmarkInstance {
   public static MemoryMap baselineMemoryMap(final AlphaSystem system) {
-    return BenchmarkInstance.yMod2MemoryMap(system);
+    return BenchmarkInstance.setModMemoryMap(system, "Y", "Y");
   }
 
   public static MemoryMap v1MemoryMap(final AlphaSystem system) {
@@ -39,19 +42,7 @@ public class BenchmarkInstance {
   }
 
   public static MemoryMap v3MemoryMap(final AlphaSystem system) {
-    MemoryMap _xblockexpression = null;
-    {
-      final Function1<Variable, Boolean> _function = (Variable it) -> {
-        return Boolean.valueOf(it.getName().startsWith("C2_NR"));
-      };
-      final Function2<MemoryMap, Variable, MemoryMap> _function_1 = (MemoryMap mm, Variable name) -> {
-        return mm.setMemoryMap(name, "C2");
-      };
-      IterableExtensions.<Variable, MemoryMap>fold(IterableExtensions.<Variable>filter(system.getLocals(), _function), 
-        BenchmarkInstance.baselineMemoryMap(system), _function_1);
-      _xblockexpression = BenchmarkInstance.baselineMemoryMap(system);
-    }
-    return _xblockexpression;
+    return BenchmarkInstance.setModMemoryMap(system, "Y").setMemoryMap("C2_NR2", "C2").setMemoryMap("C2_NR4", "C2");
   }
 
   public static CharSequence baselineSchedule(final AlphaSystem system) {
@@ -520,26 +511,62 @@ public class BenchmarkInstance {
     return _xblockexpression;
   }
 
+  public static long getStencilVarModFactor(final AlphaSystem system) {
+    long _xblockexpression = (long) 0;
+    {
+      final ConvolutionKernel convolutionKernel = ConvolutionDetector.apply(system).get(0);
+      final Long timeDepth = convolutionKernel.timeDepth();
+      _xblockexpression = ((timeDepth).longValue() + 1);
+    }
+    return _xblockexpression;
+  }
+
   /**
-   * Returns the memory map for Y%2 accessing
+   * Returns the memory map for time modulo accessing
    */
-  public static MemoryMap yMod2MemoryMap(final AlphaSystem system) {
-    final Variable outVar = system.getOutputs().get(0);
-    final List<String> indexNames = system.getOutputs().get(0).getDomain().getIndexNames();
-    int _size = indexNames.size();
-    final Function1<Integer, String> _function = (Integer i) -> {
-      return indexNames.get((i).intValue());
-    };
-    final String spatialIndexStr = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(1, _size, true), _function), ",");
-    final String paramStr = ABFT.buildParamStr(outVar);
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append(paramStr);
-    _builder.append("->{[t,");
-    _builder.append(spatialIndexStr);
-    _builder.append("]->[t mod 2,");
-    _builder.append(spatialIndexStr);
-    _builder.append("]}");
-    final String outMap = _builder.toString();
-    return new MemoryMap(system).setMemoryMap("Y", "Y", outMap, ((String[])Conversions.unwrapArray(outVar.getDomain().getIndexNames(), String.class)));
+  public static MemoryMap setModMemoryMap(final AlphaSystem system, final String variableName) {
+    return BenchmarkInstance.setModMemoryMap(system, variableName, variableName);
+  }
+
+  public static MemoryMap setModMemoryMap(final AlphaSystem system, final String variableName, final String rhsMemoryName) {
+    return BenchmarkInstance.setModMemoryMap(new MemoryMap(system), system, variableName, rhsMemoryName);
+  }
+
+  public static MemoryMap setModMemoryMap(final MemoryMap mm, final AlphaSystem system, final String variableName) {
+    return BenchmarkInstance.setModMemoryMap(mm, system, variableName, variableName);
+  }
+
+  public static MemoryMap setModMemoryMap(final MemoryMap mm, final AlphaSystem system, final String variableName, final String rhsMemoryName) {
+    try {
+      final Function1<Variable, Boolean> _function = (Variable it) -> {
+        String _name = it.getName();
+        return Boolean.valueOf(Objects.equal(_name, variableName));
+      };
+      final Variable variable = IterableExtensions.<Variable>findFirst(system.getVariables(), _function);
+      if ((variable == null)) {
+        throw new Exception((("Variable \"" + variableName) + "\" does not exist."));
+      }
+      final List<String> indexNames = variable.getDomain().getIndexNames();
+      int _size = indexNames.size();
+      final Function1<Integer, String> _function_1 = (Integer i) -> {
+        return indexNames.get((i).intValue());
+      };
+      final String spatialIndexStr = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(1, _size, true), _function_1), ",");
+      final String paramStr = ABFT.buildParamStr(variable);
+      final long modFactor = BenchmarkInstance.getStencilVarModFactor(system);
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append(paramStr);
+      _builder.append("->{[t,");
+      _builder.append(spatialIndexStr);
+      _builder.append("]->[t mod ");
+      _builder.append(modFactor);
+      _builder.append(",");
+      _builder.append(spatialIndexStr);
+      _builder.append("]}");
+      final String map = _builder.toString();
+      return mm.setMemoryMap(variable.getName(), rhsMemoryName, map, ((String[])Conversions.unwrapArray(variable.getDomain().getIndexNames(), String.class)));
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 }

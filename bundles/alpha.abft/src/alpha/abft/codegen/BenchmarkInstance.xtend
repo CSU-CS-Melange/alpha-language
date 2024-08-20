@@ -6,6 +6,8 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 
 import static extension alpha.abft.ABFT.buildParamStr
 import alpha.model.CaseExpression
+import alpha.abft.analysis.ConvolutionDetector
+import alpha.model.Variable
 
 class BenchmarkInstance {
 	
@@ -15,7 +17,7 @@ class BenchmarkInstance {
 	//////////////////////////////////////////////////////////////
 	
 	def static MemoryMap baselineMemoryMap(AlphaSystem system) {
-		system.yMod2MemoryMap
+		system.setModMemoryMap('Y', 'Y')
 	}
 	
 	def static MemoryMap v1MemoryMap(AlphaSystem system) {
@@ -30,12 +32,15 @@ class BenchmarkInstance {
 	}
 	
 	def static MemoryMap v3MemoryMap(AlphaSystem system) {
-		system.locals.filter[name.startsWith('C2_NR')].fold(
-			system.baselineMemoryMap, 
-			[mm, name |mm.setMemoryMap(name, 'C2')]
-		)
+//		system.locals.filter[name.startsWith('C2_NR')].fold(
+//			system.baselineMemoryMap, 
+//			[mm, name |mm.setMemoryMap(name, 'C2')]
+//		)
 //		new MemoryMap(system)
-		system.baselineMemoryMap
+		system.setModMemoryMap('Y')
+//			.setMemoryMap('C2_NR', 'C2')
+			.setMemoryMap('C2_NR2', 'C2')
+			.setMemoryMap('C2_NR4', 'C2')
 	}
 	
 	
@@ -202,17 +207,38 @@ class BenchmarkInstance {
 	// Misc helper functions                                    //
 	//////////////////////////////////////////////////////////////
 
-	/* Returns the memory map for Y%2 accessing */
-	def static yMod2MemoryMap(AlphaSystem system) {
-		val outVar = system.outputs.get(0)
-		val indexNames = system.outputs.get(0).domain.indexNames
+	def static getStencilVarModFactor(AlphaSystem system) {
+		val convolutionKernel = ConvolutionDetector.apply(system).get(0)
+		val timeDepth = convolutionKernel.timeDepth
+		timeDepth + 1
+	}
+
+	/* Returns the memory map for time modulo accessing */
+	def static setModMemoryMap(AlphaSystem system, String variableName) {
+		system.setModMemoryMap(variableName, variableName)
+	}
+	
+	def static setModMemoryMap(AlphaSystem system, String variableName, String rhsMemoryName) {
+		(new MemoryMap(system)).setModMemoryMap(system, variableName, rhsMemoryName)
+	}
+	
+	def static setModMemoryMap(MemoryMap mm, AlphaSystem system, String variableName) {
+		mm.setModMemoryMap(system, variableName, variableName)
+	}
+	
+	def static setModMemoryMap(MemoryMap mm, AlphaSystem system, String variableName, String rhsMemoryName) {
+		val variable = system.variables.findFirst[name == variableName]
+		if (variable === null)
+			throw new Exception('Variable "' + variableName + '" does not exist.')
+		val indexNames = variable.domain.indexNames
 		val spatialIndexStr = (1..<indexNames.size).map[i | indexNames.get(i)].join(',')
-		val paramStr = outVar.buildParamStr
+		val paramStr = variable.buildParamStr
 		
-		val outMap = '''«paramStr»->{[t,«spatialIndexStr»]->[t mod 2,«spatialIndexStr»]}'''
+		val modFactor = system.stencilVarModFactor
 		
-		return (new MemoryMap(system))
-			.setMemoryMap('Y', 'Y', outMap, outVar.domain.indexNames)
+		val map = '''«paramStr»->{[t,«spatialIndexStr»]->[t mod «modFactor»,«spatialIndexStr»]}'''
+		
+		return mm.setMemoryMap(variable.name, rhsMemoryName, map, variable.domain.indexNames)
 	}
 	
 	

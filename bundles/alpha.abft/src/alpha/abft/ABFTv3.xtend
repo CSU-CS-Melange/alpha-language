@@ -2,21 +2,16 @@ package alpha.abft
 
 import alpha.abft.analysis.ConvolutionDetector
 import alpha.abft.util.ConvolutionKernel
-import alpha.loader.AlphaLoader
+import alpha.model.AlphaExpression
 import alpha.model.AlphaInternalStateConstructor
-import alpha.model.AlphaModelSaver
-import alpha.model.AlphaRoot
 import alpha.model.AlphaSystem
-import alpha.model.AlphaVisitable
 import alpha.model.BINARY_OP
-import alpha.model.DependenceExpression
 import alpha.model.REDUCTION_OP
 import alpha.model.RestrictExpression
 import alpha.model.SystemBody
 import alpha.model.Variable
 import alpha.model.transformation.Normalize
 import alpha.model.transformation.reduction.NormalizeReduction
-import alpha.model.util.AShow
 import alpha.model.util.AlphaUtil
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLContext
@@ -24,23 +19,15 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLVal
-import java.util.HashMap
-import java.util.List
-import java.util.Map
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
-import static alpha.commands.UtilityBase.GetSystem
 import static alpha.model.factory.AlphaUserFactory.*
 
 import static extension alpha.model.util.AlphaUtil.copyAE
-import static extension alpha.model.util.AlphaUtil.getContainerRoot
-import static extension alpha.model.util.CommonExtensions.permutations
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.zipWith
-import static extension alpha.model.util.ISLUtil.createConstantMaff
 import static extension alpha.model.util.ISLUtil.toISLMultiAff
 import static extension alpha.model.util.ISLUtil.toISLSet
-import alpha.model.AlphaExpression
-import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
 class ABFTv3 extends ABFTv1 {
 	
@@ -117,12 +104,8 @@ class ABFTv3 extends ABFTv1 {
 			system.rename(#[H, L], 'v3')
 		}
 		
-		system.pprint('before normalize:')
-		
 		Normalize.apply(system)
 		NormalizeReduction.apply(system)
-		
-		system.pprint('after normalize:')
 		
 		system
 	}
@@ -132,8 +115,8 @@ class ABFTv3 extends ABFTv1 {
 		val ce = createCaseExpression
 		
 		// recursive case branch
-		val centerDomain = alpha.abft.ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim)
-		val CiBoundaryExpr = alpha.abft.ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L)
+		val centerDomain = ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim)
+		val CiBoundaryExpr = ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L)
 		val CiStencilReduceExpr = createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim)
 		val be = createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr)
 		val re = createRestrictExpression(centerDomain, be)
@@ -149,22 +132,24 @@ class ABFTv3 extends ABFTv1 {
 		ce.exprs += re
 		ce.exprs += re2
 		
-		
-		
 		val equ = createStandardEquation(CVar, ce)
-//		val equ = createStandardEquation(CVar, createZeroExpression(CVar.domain.space.copy))
 		
 		systemBody.equations += equ
 		
-		println
 		AlphaInternalStateConstructor.recomputeContextDomain(equ)
-		println
+		
 	}
 	
 	def static createCiCenterExpr(Variable CVar, Variable WVar, Variable WiVar, Variable stencilVar, int spaceTileDim, int H, int L) {
 		/*  C[t-1,ti,j,k] * (Wi[-1,0,0,0] - W[-1,0,0,0]
 		 *  + reduce(+, [p], {:p<0} : W(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10+p,j,k]))
 		 *  - reduce(+, [p], {:p>0} : W(h,p,0,0) * (Y[t+h,10ti-1+p,j,k] - Y[t+h,10ti+10-1+p,j,k]))
+		 * 
+		 *  or
+		 * 
+		 * C[t-1,ti,j,k] * (Wi[-1,0,0,0] - W[-1,0,0,0]
+		 *  + reduce(+, [p], {:p<0} : W(h,p,0,0) * (Y[t+h,10ti+p,j,k] - Y[t+h,10ti+10+p,j,k]))
+		 *  + reduce(+, [p], {:p>0} : W(h,p,0,0) * (Y[t+h,10ti+10-1+p,j,k] + Y[t+h,10ti-1+p,j,k]))
 		 */
 		val indexNames = CVar.domain.indexNames
 		val paramStr = CVar.buildParamStr
@@ -238,7 +223,7 @@ class ABFTv3 extends ABFTv1 {
 		
 		val posReduceExpr = {
 			val domain = '''«paramStr»->{[«bodyIndexNames.join(',')»] : «pqrName»>0}'''.toString.toISLSet 
-			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExprR1, stencilVarExprR2)
+			val stencilVarDiffExpr = createBinaryExpression(BINARY_OP.SUB, stencilVarExprR2, stencilVarExprR1)
 			val WYBinExpr = createBinaryExpression(BINARY_OP.MUL, WExpr.copyAE, stencilVarDiffExpr)
 			val body = createRestrictExpression(domain, WYBinExpr)
 			createReduceExpression(REDUCTION_OP.SUM, projection.toISLMultiAff, body)
@@ -248,7 +233,7 @@ class ABFTv3 extends ABFTv1 {
 		//  negReduce(...) - posReduce(...)
 		////////////////////////////////////////////////////////////
 		
-		val diffReduceExpr = createBinaryExpression(BINARY_OP.SUB, negReduceExpr, posReduceExpr)
+		val diffReduceExpr = createBinaryExpression(BINARY_OP.ADD, negReduceExpr, posReduceExpr)
 		
 		////////////////////////////////////////////////////////////
 		//  CWExpr + diffReduceExpr
@@ -327,10 +312,6 @@ class ABFTv3 extends ABFTv1 {
 		val constraints = centerDomain.copy.basicSets.flatMap[getConstraints]
 			.map[aff]
 			.map[negate]
-			.map[aff | 
-				println(aff.toString(ISL_FORMAT.C))
-				aff
-			].toArrayList
 			.map[aff | aff.toString(ISL_FORMAT.C) + ' > 0']
 			.join(' or ')
 			

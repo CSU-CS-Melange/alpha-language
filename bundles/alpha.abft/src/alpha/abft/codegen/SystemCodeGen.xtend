@@ -120,7 +120,7 @@ class SystemCodeGen {
 		this.scheduleDomain = buildScheduleDomain
 		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
 		
-		println(scheduleStr)
+//		println(scheduleStr)
 		
 		this.schedule = scheduleStr.toISLSchedule
 		

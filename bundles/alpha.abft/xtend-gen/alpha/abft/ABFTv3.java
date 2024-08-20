@@ -47,7 +47,6 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -110,39 +109,39 @@ public class ABFTv3 extends ABFTv1 {
       if (renameSystem) {
         ABFTv1.rename(system, new int[] { H, L }, "v3");
       }
-      ABFTv1.pprint(system, "before normalize:");
       Normalize.apply(system);
       NormalizeReduction.apply(system);
-      ABFTv1.pprint(system, "after normalize:");
       _xblockexpression = system;
     }
     return _xblockexpression;
   }
 
-  public static void addCiEquation(final SystemBody systemBody, final Variable CVar, final Variable stencilVar, final Variable WVar, final Variable WiVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim, final int H, final int L) {
-    final CaseExpression ce = AlphaUserFactory.createCaseExpression();
-    final ISLSet centerDomain = ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim);
-    final BinaryExpression CiBoundaryExpr = ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L);
-    final ReduceExpression CiStencilReduceExpr = ABFTv3.createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim);
-    final BinaryExpression be = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr);
-    final RestrictExpression re = AlphaUserFactory.createRestrictExpression(centerDomain, be);
-    List<String> _indexNames = CVar.getDomain().getIndexNames();
-    String _get = stencilVar.getDomain().getIndexNames().get(spaceTileDim);
-    final Iterable<String> contextIndexNames = Iterables.<String>concat(_indexNames, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_get)));
-    final DependenceExpression stencilVarExpr = ABFTv3.createStencilVarExpr(stencilVar, ((String[])Conversions.unwrapArray(contextIndexNames, String.class)));
-    final ReduceExpression reduceExpr = ABFTv3.createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr);
-    final ISLSet boundaryDomain = ABFTv3.createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim);
-    final RestrictExpression re2 = AlphaUserFactory.createRestrictExpression(boundaryDomain, reduceExpr);
-    EList<AlphaExpression> _exprs = ce.getExprs();
-    _exprs.add(re);
-    EList<AlphaExpression> _exprs_1 = ce.getExprs();
-    _exprs_1.add(re2);
-    final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, ce);
-    EList<Equation> _equations = systemBody.getEquations();
-    _equations.add(equ);
-    InputOutput.println();
-    AlphaInternalStateConstructor.recomputeContextDomain(equ);
-    InputOutput.println();
+  public static List<AlphaIssue> addCiEquation(final SystemBody systemBody, final Variable CVar, final Variable stencilVar, final Variable WVar, final Variable WiVar, final ConvolutionKernel convolutionKernel, final int spaceTileDim, final int H, final int L) {
+    List<AlphaIssue> _xblockexpression = null;
+    {
+      final CaseExpression ce = AlphaUserFactory.createCaseExpression();
+      final ISLSet centerDomain = ABFTv3.createCiCenterDomain(CVar, convolutionKernel, spaceTileDim);
+      final BinaryExpression CiBoundaryExpr = ABFTv3.createCiCenterExpr(CVar, WVar, WiVar, stencilVar, spaceTileDim, H, L);
+      final ReduceExpression CiStencilReduceExpr = ABFTv3.createCiStencilReduceExpr(CVar, WVar, WiVar, spaceTileDim);
+      final BinaryExpression be = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, CiBoundaryExpr, CiStencilReduceExpr);
+      final RestrictExpression re = AlphaUserFactory.createRestrictExpression(centerDomain, be);
+      List<String> _indexNames = CVar.getDomain().getIndexNames();
+      String _get = stencilVar.getDomain().getIndexNames().get(spaceTileDim);
+      final Iterable<String> contextIndexNames = Iterables.<String>concat(_indexNames, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_get)));
+      final DependenceExpression stencilVarExpr = ABFTv3.createStencilVarExpr(stencilVar, ((String[])Conversions.unwrapArray(contextIndexNames, String.class)));
+      final ReduceExpression reduceExpr = ABFTv3.createChecksumReduceExpression(CVar, stencilVar, spaceTileDim, H, L, stencilVarExpr);
+      final ISLSet boundaryDomain = ABFTv3.createCiBoundaryDomain(CVar, convolutionKernel, spaceTileDim);
+      final RestrictExpression re2 = AlphaUserFactory.createRestrictExpression(boundaryDomain, reduceExpr);
+      EList<AlphaExpression> _exprs = ce.getExprs();
+      _exprs.add(re);
+      EList<AlphaExpression> _exprs_1 = ce.getExprs();
+      _exprs_1.add(re2);
+      final StandardEquation equ = AlphaUserFactory.createStandardEquation(CVar, ce);
+      EList<Equation> _equations = systemBody.getEquations();
+      _equations.add(equ);
+      _xblockexpression = AlphaInternalStateConstructor.recomputeContextDomain(equ);
+    }
+    return _xblockexpression;
   }
 
   public static BinaryExpression createCiCenterExpr(final Variable CVar, final Variable WVar, final Variable WiVar, final Variable stencilVar, final int spaceTileDim, final int H, final int L) {
@@ -265,13 +264,13 @@ public class ABFTv3 extends ABFTv1 {
         _builder_2.append(pqrName);
         _builder_2.append(">0}");
         final ISLSet domain = ISLUtil.toISLSet(_builder_2.toString());
-        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, stencilVarExprR1, stencilVarExprR2);
+        final BinaryExpression stencilVarDiffExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, stencilVarExprR2, stencilVarExprR1);
         final BinaryExpression WYBinExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.MUL, AlphaUtil.<DependenceExpression>copyAE(WExpr), stencilVarDiffExpr);
         final RestrictExpression body = AlphaUserFactory.createRestrictExpression(domain, WYBinExpr);
         _xblockexpression_3 = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, ISLUtil.toISLMultiAff(projection), body);
       }
       final ReduceExpression posReduceExpr = _xblockexpression_3;
-      final BinaryExpression diffReduceExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, negReduceExpr, posReduceExpr);
+      final BinaryExpression diffReduceExpr = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, negReduceExpr, posReduceExpr);
       _xblockexpression = AlphaUserFactory.createBinaryExpression(BINARY_OP.ADD, CWExpr, diffReduceExpr);
     }
     return _xblockexpression;
@@ -437,19 +436,11 @@ public class ABFTv3 extends ABFTv1 {
       final Function1<ISLAff, ISLAff> _function_2 = (ISLAff it) -> {
         return it.negate();
       };
-      final Function1<ISLAff, ISLAff> _function_3 = (ISLAff aff) -> {
-        ISLAff _xblockexpression_1 = null;
-        {
-          InputOutput.<String>println(aff.toString(ISL_FORMAT.C));
-          _xblockexpression_1 = aff;
-        }
-        return _xblockexpression_1;
-      };
-      final Function1<ISLAff, String> _function_4 = (ISLAff aff) -> {
+      final Function1<ISLAff, String> _function_3 = (ISLAff aff) -> {
         String _string = aff.toString(ISL_FORMAT.C);
         return (_string + " > 0");
       };
-      final String constraints = IterableExtensions.join(ListExtensions.<ISLAff, String>map(CommonExtensions.<ISLAff>toArrayList(IterableExtensions.<ISLAff, ISLAff>map(IterableExtensions.<ISLAff, ISLAff>map(IterableExtensions.<ISLConstraint, ISLAff>map(IterableExtensions.<ISLBasicSet, ISLConstraint>flatMap(centerDomain.copy().getBasicSets(), _function), _function_1), _function_2), _function_3)), _function_4), " or ");
+      final String constraints = IterableExtensions.join(IterableExtensions.<ISLAff, String>map(IterableExtensions.<ISLAff, ISLAff>map(IterableExtensions.<ISLConstraint, ISLAff>map(IterableExtensions.<ISLBasicSet, ISLConstraint>flatMap(centerDomain.copy().getBasicSets(), _function), _function_1), _function_2), _function_3), " or ");
       StringConcatenation _builder = new StringConcatenation();
       _builder.append(paramStr);
       _builder.append("->{[");
