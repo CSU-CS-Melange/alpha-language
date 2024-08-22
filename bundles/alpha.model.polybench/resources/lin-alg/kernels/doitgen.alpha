@@ -1,0 +1,16 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+//  You, H., Seymour, K., Dongarra, J., Moore, S.
+//  "Empirical Tuning of a Multiresolution Analysis Kernel using a Specialized Code Generator,"
+//  ICL Technical Report, ICL-UT-07-02, March 5, 2007.
+//    http://icl.cs.utk.edu/news_pub/submissions/gco-madness-notes.ps
+affine doitgen [Np, Nq, Nr, Ns]-> {: Np, Nq, Nr, Ns > 0}
+	inputs
+		Ain: {[r,q,s]: 0 <= r < Nr && 0 <= q < Nq && 0 <= s < Ns};
+		x: {[p,s]: 0 <= p < Np && 0 <= s < Ns};
+	outputs
+		Aout: {[r, q, p]: 0 <= r < Nr && 0 <= q < Nq && 0 <= p < Np};
+	let
+		Aout[r,q,p] = reduce(+, [s], Ain[r,q,s] * x[p,s]);
+.

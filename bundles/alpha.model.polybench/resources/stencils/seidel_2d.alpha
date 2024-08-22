@@ -1,0 +1,28 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+//Gauss-Seidel 2D
+affine seidel_2d [T, N] -> {: T > 2 && N > 5}
+	inputs 
+		Ain: {[i, j]: 0 <= i, j < N};
+	outputs
+		Aout: {[i,j]: 0 <= i, j < N};
+	locals
+		temp: {[t, i, j]: 0 <= i, j < N && 0 <= t < T};
+	let
+
+	temp[t,i,j] = case {
+		{: t == 0} : Ain[i, j];
+		{: t > 0 && 1 <= i, j < N - 1}: (
+			temp[t, i - 1, j - 1] + temp[t, i - 1, j] + temp[t, i - 1, j + 1] + 
+			temp[t, i, j - 1] + temp[t - 1, i, j] + temp[t - 1, i, j + 1] +
+			temp[t - 1, i + 1, j - 1] + temp[t - 1, i + 1, j] + temp[t - 1, i + 1, j + 1]
+		) / 9.0;
+		{: t > 0 && 0 == i}: temp[t - 1, i, j];
+		{: t > 0 && i == N - 1}: temp[t - 1, i, j];
+		{: t > 0 && 0 == j && 0 < i < N - 1}: temp[t - 1, i, j];
+		{: t > 0 && j==N-1 && 0 < i < N - 1} : temp[t - 1, i, j];  
+	};
+	
+	Aout[i, j] = temp[T - 1, i, j];
+.

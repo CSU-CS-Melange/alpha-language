@@ -1,0 +1,20 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+//3 Matrix Multiplications (E=A.B; F=C.D; G=E.F)
+affine three_mm [P,Q,R,S,T] -> {: P, Q, R, S, T > 0}
+	inputs
+		A: {[i,j]: 0 <= i < P && 0 <= j < Q};
+		B: {[i,j]: 0 <= i < Q && 0 <= j < R};
+		C: {[i,j]: 0 <= i < R && 0 <= j < S};
+		D: {[i,j]: 0 <= i < S && 0 <= j < T};
+	outputs
+		G: {[i,j]: 0 <= i < P && 0 <= j < T};
+	locals
+		E: {[i,j]: 0 <= i < P && 0 <= j < R};
+		F: {[i,j]: 0 <= i < R && 0 <= j < T};
+	let
+		E[i,j] = reduce(+, [k], A[i,k] * B[k,j]);
+		F[i,j] = reduce(+, [k], C[i,k] * D[k,j]);
+		G[i,j] = reduce(+, [k], E[i,k] * F[k,j]);
+. 

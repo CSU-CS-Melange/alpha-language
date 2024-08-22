@@ -1,0 +1,25 @@
+// Authors: Tomofumi Yuki
+// Slight modification (to make everything square): Guillaume Iooss
+// Translated to Alpha by Jonathon Yallop
+
+//Summed matrix-vector multiplies
+//
+// y := alpha * A.x + beta * B.x
+//
+// Part of updated BLAS
+//
+// Blackford, L. Susan, et al. 
+// "An updated set of basic linear algebra subprograms (BLAS)." 
+// ACM Transactions on Mathematical Software 28.2 (2002): 135-151.
+//   http://dl.acm.org/citation.cfm?id=567807
+
+affine gesummv [N] -> {: N > 0}
+	inputs
+		alpha, beta: {};
+		A, B: {[i, j]: 0 <= i < N and 0 <= j < N};
+		x: {[i]: 0 <= i < N};
+	outputs
+		y: {[i]: 0 <= i < N};
+	let
+		y[i] = alpha[] * reduce(+, [j], A[i, j] * x[j]) + beta[] * reduce(+, [j], B[i, j] * x[j]);
+.

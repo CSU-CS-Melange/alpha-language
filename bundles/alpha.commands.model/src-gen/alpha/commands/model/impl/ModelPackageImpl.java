@@ -151,6 +151,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	private ModelPackageImpl() {
 		super(eNS_URI, ModelFactory.eINSTANCE);
 	}
+
 	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

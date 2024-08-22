@@ -1,0 +1,28 @@
+// Author: Guillaume Iooss
+// Alpha Author: Jonathon Y.
+
+external sqrt(1)
+
+affine gramschmidt [N, M] -> {: 2 <= N && 2 <= M}
+inputs
+	A: {[i,j]: 0 <= i < M && 0 <= j < N};
+outputs
+	R: {[k,j]: 0 <= k <= j < N};
+	Q: {[i,k]: 0 <= i < M && 0 <= k < N};
+locals
+	Atemp: {[k, i, j]: 0 <= k < N && 0 <= i < M && 0 <= j < N};
+let
+	Q[i,k] = Atemp[k,i,k] / R[k,k];
+	
+	R[k,j] = case {
+		{: k == j} : sqrt(reduce(+, [x], Atemp[k, x, k] * Atemp[k, x, k]));
+		{: k < j} : reduce(+, [a], Q[a, k] * Atemp[k, a, j]);
+	};
+	
+	// Might be a better way to do that, but I do not want to redo the full summation (from k=0 to k=j) every time
+	Atemp[k,i,j] = case {
+		{[k,i,j]: k == 0} : A[i,j];
+		{[k,i,j]: 0 < k < j}: Atemp[k-1, i, j] - Q[i, k - 1] * R[k - 1, j];
+		{[k,i,j]: 0 <= j <= k && 0 < k} : Atemp[k - 1, i, j];
+	};
+.

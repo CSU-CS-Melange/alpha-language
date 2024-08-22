@@ -13,6 +13,7 @@ Export-Package: alpha.codegen,
  alpha.codegen.demandDriven,
  alpha.codegen.impl,
  alpha.codegen.isl,
+ alpha.codegen.scheduledC,
  alpha.codegen.util
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.emf.ecore;visibility:=reexport,

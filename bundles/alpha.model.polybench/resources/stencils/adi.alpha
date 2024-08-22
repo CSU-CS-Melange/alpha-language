@@ -1,0 +1,99 @@
+// Author: Guillaume Iooss
+//Alpha version: Jonathon Y.
+
+affine adi [TSTEPS, N] -> {: 2 < TSTEPS && 2 < N}
+inputs
+	u0: {[i, j]: 0 <= i < N && 0 <= j < N};
+	p0: {[i, j]: 1 <= i < N && 0 <= j < N};
+	q0: {[i, j]: 1 <= i < N && 0 <= j < N};
+outputs
+	U: {[i, j]: 1<=i<N && 0<=j<N};
+	V: {[j, i]: 1 <= i < N && 0 <= j < N};
+	P: {[i, j]: 1 <= i < N && 0 <= j < N};
+	Q: {[i, j]: 1 <= i < N && 0 <= j < N};
+locals
+	DX: {};
+	DY: {};
+	DT: {};
+	B1: {};
+	B2: {};
+	mul1: {};
+	mul2: {};
+	A: {};
+	B: {};
+	C: {};
+	D: {};
+	E: {};
+	F: {};
+	uTemp: {[t, i, j]: 0 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};
+	vTemp: {[t, j, i]: 1 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};
+	p1Temp: {[t, i, j]: 1 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};	// Column swap
+	p2Temp: {[t, i, j]: 1 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};	// Row swap
+	q1Temp: {[t, i, j]: 1 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};	// Column swap
+	q2Temp: {[t, i, j]: 1 <= t <= TSTEPS && 1 <= i < N && 0 <= j < N};	// Row swap
+let
+	DX = 1.0 / val[N];
+	DY = 1.0 / val[N];
+	DT = 1.0 / val[TSTEPS];
+	
+	B1 = 2.0;
+	B2 = 1.0;
+	
+	mul1 = B1 * DT / (DX * DX);
+	mul2 = B2 * DT / (DY * DY);
+	
+	A = -mul1 / 2.0;
+	B = 1.0 + mul1;
+	C = A;
+	D = -mul2/2.0;
+	E = 1.0 + mul2;
+	F = D;
+	
+	// Column swap
+	p1Temp[t,i,j] = case {
+		{[t, i, j]: j == 0} : 0;
+		{[t, i, j]: 0 < j < N - 1} : -C / (A * p1Temp[t, i, j - 1] + B);
+		{[t, i, j]: t == 1 && j == N - 1} : p0[i,j];
+		{[t, i, j]: t > 1 && j == N - 1} : p2Temp[t - 1, i, j];
+	};
+	
+	q1Temp[t,i,j] = case {
+		{[t, i, j]: j==0 && i<N-1} : vTemp[t,0,i];
+		{[t, i, j]: 0<j<N-1 && i<N-1} : (-D * uTemp[t - 1, j, i - 1] + (1 + 2 * D) * uTemp[t - 1, j, i] - F * uTemp[t - 1, j, i + 1] - A * q1Temp[t, i, j - 1] ) / (A * p1Temp[t, i, j - 1] + B);
+		{[t, i, j]: j==N-1 && i<N-1} : q1Temp[t,i,j];
+		{[t, i, j]: t==1 && i==N-1} : q0[i,j];
+		{[t, i, j]: t > 1 && i == N - 1} : q2Temp[t - 1, i, j];
+	};
+	
+	vTemp[t,j,i] = case {
+		{[t, j, i]: j==0} : 1;
+		{[t, j, i]: j==N-1} : 1;
+		{[t, j, i]: 0<j<N-1}: p1Temp[t,i,j] * vTemp[t,j+1,i] + q2Temp[t,i,j];
+	};
+	
+	// Row swap
+	p2Temp[t,i,j] = case {
+		{[t, i, j]: j == 0} : 0;
+		{[t, i, j]: 0 < j < N - 1} : -F / (D * p2Temp[t, i, j - 1] + E);
+		{[t, i, j]: j == N - 1} : p1Temp[t, i, j];
+	};
+	
+	q2Temp[t,i,j] = case {
+		{[t, i, j]: j==0 && i < N - 1} : uTemp[t,i,0];
+		{[t, i, j]: 0 < j < N - 1 && i < N - 1} : (-A * vTemp[t, i - 1, j] + (1 + 2 * A) * vTemp[t, i, j] - C * vTemp[t, i + 1, j] - D * q2Temp[t, i, j - 1]) / (D * p2Temp[t, i, j - 1] + E);
+		{[t, i, j]: j == N - 1 && i < N - 1} : q1Temp[t,i,j];
+		{[t, i, j]: i == N - 1} : q1Temp[t,i,j];
+	};
+	
+	uTemp[t,i,j] = case {
+		{[t, i, j]: t == 0} : u0[i, j];
+		{[t, i, j]: t > 0 && j == 0} : 1;
+		{[t, i, j]: t > 0 && j == N - 1} : 1;
+		{[t, i, j]: t > 0 && 0 < j < N - 1} : p2Temp[t, i, j] * uTemp[t, i, j + 1] + q2Temp[t, i, j];
+	};
+	
+	U[i, j] = uTemp[TSTEPS, i, j];
+	V[i, j] = vTemp[TSTEPS, i, j];
+	P[i, j] = p2Temp[TSTEPS, i, j];
+	Q[i, j] = q2Temp[TSTEPS, i, j];
+.

@@ -1,0 +1,31 @@
+//Author: Revathy Rajsree
+//Alpha version: Jonathon Y.
+
+//Heat-3D stencil
+
+affine heat_3d [T, N] -> {: T > 2 && N > 5}
+	inputs
+		Ain: {[i, j, k]: 0 <= i, j, k < N};
+	outputs
+		Aout: {[i, j, k]: 0 <= i, j, k < N};
+	locals
+		temp: {[t, i, j, k]: 0 <= i, j, k < N && 0 <= t < T};
+		
+	let
+		temp[t,i,j,k] = case {
+			{: t == 0} : Ain[i, j, k];
+			{: t > 0 && 1 <= i, j, k < N - 1}: temp[t-1,i,j,k] + (
+				  0.125 * (temp[t - 1, i + 1, j, k] - 2 * temp[t - 1, i, j, k] + temp[t - 1, i - 1, j, k]) +
+				  0.125 * (temp[t - 1, i, j + 1, k] - 2 * temp[t - 1, i, j, k] + temp[t - 1, i, j - 1, k]) +
+				  0.125 * (temp[t - 1, i, j, k + 1] - 2 * temp[t - 1, i, j, k] + temp[t - 1, i, j, k - 1])				
+				) ;
+			{: t > 0 && i == 0} : temp[t - 1, i, j, k];
+			{: t > 0 && i == N - 1} : temp[t - 1, i, j, k];
+			{: t > 0 && j == 0 && 0 < i < N - 1} : temp[t - 1, i, j, k];
+			{: t > 0 && j == N - 1 && 0 < i < N - 1} : temp[t - 1, i, j, k];
+			{: t > 0 && k == 0 && 0 < i < N - 1 && 0 < j < N - 1} : temp[t - 1, i, j, k];
+			{: t > 0 && k == N - 1 && 0 < i < N - 1 && 0 < j < N - 1}: temp[t - 1, i, j, k];		
+		};
+		
+	Aout[i, j, k] = temp[T - 1, i, j, k];
+.

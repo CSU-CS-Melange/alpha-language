@@ -1,0 +1,34 @@
+// Author: Tomofumi Yuki
+//	Guillaume Iooss
+// Translated to Alpha by Jonathon Yallop
+//
+//Symmetric rank 2k update
+//
+//  C:= alpha * A * B^T + alpha * B * A^T + beta*C 
+//  -- C = C^T
+//
+// this is one of many configurations of syr2k in BLAS
+//
+// Part of updated BLAS
+//
+// Blackford, L. Susan, et al. 
+// "An updated set of basic linear algebra subprograms (BLAS)." 
+// ACM Transactions on Mathematical Software 28.2 (2002): 135-151.
+//   http://dl.acm.org/citation.cfm?id=567807
+
+
+affine syr2k [N, M] -> {: N, M > 0}
+	inputs
+		alpha, beta: {};
+		A, B: {[i,j]: 0 <= i < N && 0 <= j < M};
+		Cin: {[i,j]: 0 <= j <= i < N};
+	outputs
+		Cout: {[i,j]: 0 <= j <= i < N};
+	let
+		Cout[i,j] = alpha[] * reduce(+, [k], A[i,k] * B[j,k])
+				  + alpha[] * reduce(+, [k], B[i,k] * A[j,k]) 
+				  + beta[] *Cin[i,j];
+.
+
+
+

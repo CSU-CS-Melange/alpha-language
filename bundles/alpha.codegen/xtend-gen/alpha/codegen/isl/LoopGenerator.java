@@ -9,6 +9,7 @@ import fr.irisa.cairn.jnimap.isl.ISLIdentifier;
 import fr.irisa.cairn.jnimap.isl.ISLIdentifierList;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import java.util.ArrayList;
@@ -58,5 +59,22 @@ public class LoopGenerator {
    */
   public static ISLASTNode generateLoops(final ISLSet parameterDomain, final ISLUnionMap schedule) {
     return ISLASTBuild.buildFromContext(parameterDomain).generate(schedule);
+  }
+
+  /**
+   * Generates the ISL AST node representing the loop statements that
+   * iterate through the points in the given domain according to the
+   * given domain for the parameters and a union map representing the schedule.
+   */
+  public static ISLASTNode generateLoops(final ISLSet domain, final ISLSchedule schedule) {
+    final Function1<String, ISLIdentifier> _function = (String it) -> {
+      return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+    };
+    final ArrayList<ISLIdentifier> ids = CommonExtensions.<ISLIdentifier>toArrayList(ListExtensions.<String, ISLIdentifier>map(domain.getIndexNames(), _function));
+    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_1 = (ISLIdentifierList list, ISLIdentifier id) -> {
+      return list.add(id);
+    };
+    final ISLIdentifierList idList = IterableExtensions.<ISLIdentifier, ISLIdentifierList>fold(ids, ISLIdentifierList.build(ISLContext.getInstance(), 0), _function_1);
+    return ISLASTBuild.buildFromContext(domain.copy().params()).setIterators(idList).generate(schedule);
   }
 }
