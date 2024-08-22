@@ -1,0 +1,21 @@
+// Author: Tomofumi Yuki
+//Alpha version: Jonathon Y.
+
+//jacobi 1D stencil
+affine jacobi_1d [T, N] -> {: T > 2 && N > 5}
+inputs
+	Ain: {[i]: 0 <= i < N};
+outputs 
+	Aout: {[i]: 0 <= i < N};
+locals
+	temp: {[t, i]: 0 <= i < N && 0 <= t < T};
+let
+	temp[t,i] = case {
+					{: t == 0} : Ain[i];
+					{: t > 0 && 1 <= i < N - 1}: (temp[t - 1, i] + temp[t - 1, i - 1] + temp[t - 1, i + 1]) * 0.33333;
+					{: t > 0 && 0 == i}: Ain[i];
+					{: t > 0 && i == N - 1} : Ain[i];  
+				}; 
+
+	Aout[i] = temp[T-1,i]; 
+.

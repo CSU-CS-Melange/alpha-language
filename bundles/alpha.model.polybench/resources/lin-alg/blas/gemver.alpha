@@ -1,0 +1,29 @@
+// Author: Tomofumi Yuki
+// Slight correction in the computation of x : Guillaume Iooss
+// Translated to alpha by Jonathon Yallop
+
+// Multiple matrix-vector mults and low rank updates
+//
+// A' := A + u1.v1 + u2.v2
+// x  := beta * A'.y + z
+// w  := alpha * A'.x
+//
+// Part of updated BLAS
+//
+// Blackford, L. Susan, et al. 
+// "An updated set of basic linear algebra subprograms (BLAS)." 
+// ACM Transactions on Mathematical Software 28.2 (2002): 135-151.
+//   http://dl.acm.org/citation.cfm?id=567807
+affine gemver [N] -> {: N > 0}
+	inputs
+		Ain: {[i,j]: 0 <= i, j < N};
+		u1, u2, v1, v2, y, z: {[i]: 0 <= i < N};
+		alpha, beta: {};
+	outputs
+		Aout: {[i,j]: 0 <= i, j < N};
+		w, x: {[i]: 0 <= i < N};
+	let
+		Aout[i,j] = Ain[i,j] + u1[i] * v1[j] + u2[i] * v2[j];
+		x[i] = beta * reduce(+, [j], Aout[i, j] * y[j]) + z[i];
+		w[i] = alpha * reduce(+, [j], Aout[i, j] * x[j]);
+.

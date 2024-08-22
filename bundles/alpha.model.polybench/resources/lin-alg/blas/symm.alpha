@@ -1,0 +1,20 @@
+// Author: Tomofumi Yuki
+// Translated to Alpha by Jonathon Yallop
+
+//BLAS routine (symmetric matrix matrix multiply)
+// C := alpha*A*B + beta*C; A is symmetric, B anc C are MxN
+//
+// There are various options in BLAS for how A is stored. Here A is upper triangular.
+affine symm [N, M] -> {: N, M > 0}
+	inputs
+		alpha, beta: {};
+		A: {[i,j]: 0 <= i <= j < M};
+		B, C: {[i,j]: 0 <= i < M && 0 <= j < N};
+	outputs
+		Cout: {[i,j]: 0 <= i < M && 0 <= j < N};
+	let
+		Cout[i,j] = case {
+						{: i <= j} : alpha * reduce(+, [k], {: i <= k}: A[i, k] * B[k, j]) + beta * C[i, j];
+						{: j < i}  : alpha * reduce(+, [k], {: k < i} : A[k, i] * B[k, j]) + beta * C[i, j];
+					};	
+.

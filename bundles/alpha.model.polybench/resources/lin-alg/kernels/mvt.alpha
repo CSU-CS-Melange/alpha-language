@@ -1,0 +1,31 @@
+// Author: Tomofumi Yuki
+// Modified by Mugdha Puranik and Raj Bharath Chandra Mohan
+// Adapted to Alpha by Jonathon Yallop
+
+// Original Tomofumi Comments
+//The closest source program I found is the following, 
+// but it seems to have combined two independent BLAS routines into one. 
+//There is also gemvt, but its not the same. (Multiple matrix-vector multiplies)
+//
+//Matrix-vector product
+//
+// x := alpha * A.x,
+// x := alpha * A^T.x
+//
+// Part of updated BLAS
+//
+// Blackford, L. Susan, et al. 
+// "An updated set of basic linear algebra subprograms (BLAS)." 
+// ACM Transactions on Mathematical Software 28.2 (2002): 135-151.
+//   http://dl.acm.org/citation.cfm?id=567807
+affine mvt [N] -> {: N > 0 }
+	inputs
+		A: {[i, j]: 0 <= i, j < N};
+		Y1, Y2: {[i]: 0 <= i < N}; 
+		x1in, x2in: {[i]: 0 <= i < N};
+	outputs
+		x1out, x2out: {[i]: 0 <= i < N};
+	let
+		x1out[i] = x1in[i] + reduce(+, [j], A[i,j] * Y1[j]);
+		x2out[i] = x2in[i] + reduce(+, [j], A[j,i] * Y2[j]); 	
+.

@@ -1,0 +1,27 @@
+// Author: Swetha Varadarajan
+
+external foo(2)
+affine nussinov [N] -> {: N >= 1}
+inputs
+	seq: {[i]: 1 <= i <= N};
+	
+outputs
+	table: {[i, j]: 1 <= i <= N && j >= 1 && i - 1 <= j <= N};//{i,j|1<=(i,j)<=N}; //
+locals
+	W: {[i, j]: 1 <= i <= N && j >= 1 && i - 1 <= j <= N};
+let
+	
+	W [i,j] = foo(seq[i],seq[j]);
+			
+	
+	table[i,j] =  case {
+					{[i, j]: i == j}: 0;
+					{[i, j]: i > j}: 0;
+					{[i, j]: i + 1 == j}: max(table[i + 1, j], table[i, j - 1], (table[i + 1, j - 1] + W[i, j]));
+					{[i, j]: i + 1 < j}: max(table[i + 1, j], table[i, j - 1], (table[i + 1, j - 1] + W[i, j]),
+								reduce(max, [k], {: i < k < j}: table[i, k] + table[k + 1, j]));
+				};
+								
+					
+				
+.
