@@ -8,8 +8,6 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT;
 import java.util.ArrayList;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.Functions.Function2;
-import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
@@ -24,7 +22,7 @@ public class AffineConverter {
    * one for each output dimension.
    */
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff) {
-    return AffineConverter.convertMultiAff(multiAff, false);
+    return AffineConverter.convertMultiAff(multiAff, true);
   }
 
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff, final boolean explicitParentheses) {
@@ -42,15 +40,11 @@ public class AffineConverter {
   }
 
   public static CustomExpr convertAff(final ISLAff aff, final boolean explicitParentheses) {
+    String expr = aff.toString(ISL_FORMAT.C);
     if (explicitParentheses) {
-      final Function2<String, String, String> _function = (String ret, String index) -> {
-        return ret.replace(index, (("(" + index) + ")"));
-      };
-      final String literal = IterableExtensions.<String, String>fold(aff.getInputNames(), 
-        aff.toString(ISL_FORMAT.C), _function);
-      return Factory.customExpr((("(" + literal) + ")"));
-    } else {
-      return Factory.customExpr(aff.toString(ISL_FORMAT.C));
+      expr = expr.replaceAll("(\\b[_a-zA-Z]\\w*\\b)", "($1)");
+      expr = expr.replaceAll("\\(floord\\)", "floord");
     }
+    return Factory.customExpr((("(" + expr) + ")"));
   }
 }

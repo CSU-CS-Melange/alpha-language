@@ -54,7 +54,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
 @SuppressWarnings("all")
 public class ABFTv3 extends ABFTv1 {
   public static void main(final String[] args) {
-    ABFTv3.insertChecksum("star3d2t1r", new int[] { 16, 10 });
+    ABFTv3.insertChecksum("star1d1r", new int[] { 5, 10 });
   }
 
   public static void insertChecksum(final String systemName, final int[] tileSizes) {

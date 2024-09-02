@@ -27,6 +27,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import org.eclipse.xtend.lib.annotations.Accessors
 
+import static alpha.model.factory.AlphaUserFactory.*
+
 import static extension alpha.abft.ABFT.buildParamStr
 import static extension alpha.codegen.ProgramPrinter.print
 import static extension alpha.codegen.ProgramPrinter.printExpr
@@ -35,7 +37,9 @@ import static extension alpha.codegen.demandDriven.WriteC.getCardinalityExpr
 import static extension alpha.codegen.isl.AffineConverter.convertAff
 import static extension alpha.codegen.isl.AffineConverter.convertMultiAff
 import static extension alpha.codegen.isl.PolynomialConverter.convert
+import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
+import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toEmptyUnionSet
@@ -44,6 +48,12 @@ import static extension alpha.model.util.ISLUtil.toISLMap
 import static extension alpha.model.util.ISLUtil.toISLSchedule
 import static extension alpha.model.util.ISLUtil.toISLSet
 import static extension fr.irisa.cairn.jnimap.isl.ISLMap.buildIdentity
+import alpha.model.BinaryExpression
+import alpha.model.RestrictExpression
+import org.eclipse.emf.ecore.util.EcoreUtil
+import alpha.model.AlphaInternalStateConstructor
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.SimplifyExpressions
 
 enum Version {
 		BASELINE,
@@ -66,7 +76,7 @@ class SystemCodeGen {
 	val SystemBody systemBody
 	
 	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
-	val ISLSchedule schedule
+	ISLSchedule schedule
 	
 	@Accessors(PUBLIC_GETTER, PROTECTED_SETTER)
 	val String scheduleStr
@@ -105,6 +115,8 @@ class SystemCodeGen {
 			
 		this.system = system
 		this.systemBody = system.systemBodies.get(0)
+		
+		
 		this.memoryMap = memoryMap ?: new MemoryMap(system)
 		
 		this.dataType = BaseDataType.FLOAT
@@ -123,6 +135,10 @@ class SystemCodeGen {
 //		println(scheduleStr)
 		
 		this.schedule = scheduleStr.toISLSchedule
+		
+		// tweak C2 expr since we're using a mod memory map for C2(_NRs) and they all
+		// are being done as normalized reductions
+		systemBody.standardEquations.findFirst[variable.name == 'C2']?.expr?.tweakC2Expr
 		
 		StandardizeNames.apply(system)
 	}
@@ -682,12 +698,46 @@ class SystemCodeGen {
 				defIndexNamesStr = reduceVarIndexNamesStr
 				op = '+='				
 			}
-			val stmtStr = '''«lhs» «op» «rhs»''' 
+			
+			
+			val stmtStr = if (eq.variable.name == 'C2') {
+				val zeroLhs = '''«eq.variable.name»(«indexNames.map[n | if (n=='t') 't+1' else n].join(',')»)'''
+				'''do { «lhs» += «rhs»; «zeroLhs» = 0; } while(0)'''
+			} else {
+				'''«lhs» «op» «rhs»''' 
+			}
+			
 			
 			'''#define «name»(«defIndexNamesStr») «stmtStr»'''
 		]
 		
 		(macros + c2cbeMacros + stencilVarMacros).sort.join('\n')
+	}
+	
+	def tweakC2Expr(AlphaExpression expr) {
+		if ((expr.getContainerEquation as StandardEquation).variable.name != 'C2' || version != Version.ABFT_V3)
+			return;
+			
+//		val rootCp = expr.getContainerRoot.copyAE
+//		val exprCp = rootCp.systems.get(0).systemBodies.get(0).standardEquations.findFirst[variable.name == 'C2'].expr
+		
+		val eq = expr.getContainerEquation
+		val space = expr.contextDomain.space
+		val ce = expr as CaseExpression
+		val re = ce.exprs.get(0) as RestrictExpression
+		val be1 = re.expr as BinaryExpression
+		val be2 = be1.left as BinaryExpression
+		val targetExpr = be2.left.copyAE
+		
+		EcoreUtil.replace(be1.right, createZeroExpression(space.copy))
+		EcoreUtil.replace(be2.right, createZeroExpression(space.copy))
+		EcoreUtil.replace(ce.exprs.get(1), createZeroExpression(space.copy))
+//		EcoreUtil.replace(ce, targetExpr)
+		
+//		AlphaInternalStateConstructor.recomputeContextDomain(expr)
+//		Normalize.apply(expr)
+//		SimplifyExpressions.apply(expr)
+		AlphaInternalStateConstructor.recomputeContextDomain(eq)
 	}
 	
 	def prepareResult() {
@@ -733,7 +783,7 @@ class SystemCodeGen {
 			val H = tileSizes.get(0)
 			val L = tileSizes.get(1)
 			val coords = newLinkedList
-			coords += '''«H»*(«tt»-1)<t_INJ && t_INJ<«H»*«tt»'''
+//			coords += '''«H»*(«tt»-1)<t_INJ && t_INJ<«H»*«tt»'''
 			coords += '''«L»*«ti»<i_INJ && i_INJ<«L»*«ti»+«L»'''
 			val rest = (2..<stencilVar.domain.indexNames.size).map[i | stencilVar.domain.indexNames.get(i)]
 			coords.addAll(rest)

@@ -21,7 +21,7 @@ class AffineConverter {
 	 * one for each output dimension.
 	 */
 	def static convertMultiAff(ISLMultiAff multiAff) {
-		multiAff.convertMultiAff(false)
+		multiAff.convertMultiAff(true)
 	}
 	def static convertMultiAff(ISLMultiAff multiAff, boolean explicitParentheses) {
 		return multiAff.affs.map[convertAff(explicitParentheses)].toArrayList
@@ -32,19 +32,11 @@ class AffineConverter {
 		aff.convertAff(true)
 	}
 	def static convertAff(ISLAff aff, boolean explicitParentheses) {
+		var expr = aff.toString(ISL_FORMAT.C)
 		if (explicitParentheses) {
-//			val inputNames = SortedInputNames.getInputNames(aff)
-			val literal = aff.inputNames.fold(
-				aff.toString(ISL_FORMAT.C),
-				[ret, index | 
-//					println('-->' + index)
-					ret.replace(index, '(' + index + ')')
-				]
-			)
-//			println
-			return Factory.customExpr("(" + literal + ")")
-		} else {
-			return Factory.customExpr(aff.toString(ISL_FORMAT.C))
+			expr = expr.replaceAll('(\\b[_a-zA-Z]\\w*\\b)', '($1)')
+			expr = expr.replaceAll('\\(floord\\)', 'floord')
 		}
+		return Factory.customExpr("(" + expr + ")")
 	}
 }

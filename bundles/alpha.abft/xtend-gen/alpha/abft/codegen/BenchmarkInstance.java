@@ -42,7 +42,7 @@ public class BenchmarkInstance {
   }
 
   public static MemoryMap v3MemoryMap(final AlphaSystem system) {
-    return BenchmarkInstance.setModMemoryMap(system, "Y").setMemoryMap("C2_NR2", "C2").setMemoryMap("C2_NR4", "C2");
+    return BenchmarkInstance.setModMemoryMap(BenchmarkInstance.setModMemoryMap(BenchmarkInstance.setModMemoryMap(BenchmarkInstance.setModMemoryMap(BenchmarkInstance.setModMemoryMap(BenchmarkInstance.setModMemoryMap(system, "Y"), system, "C2", "C2"), system, "C2_NR", "C2"), system, "C2_NR2", "C2"), system, "C2_NR3", "C2"), system, "C2_NR4", "C2");
   }
 
   public static CharSequence baselineSchedule(final AlphaSystem system) {

@@ -317,13 +317,8 @@ class WrapperCodeGen extends SystemCodeGen {
 				T = «#[20, 4*TT].max»;
 				
 				result = «v1System.call»;
+				«thresholdVarV1» = 10 * result.noise;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
-				for (int i=9; i>=0; i--) {
-					«thresholdVarV1» = thresholds[i];
-					if («thresholdVarV1» >= fabs(result.noise))
-						break;
-				}
 				printf(" «thresholdVarV1» set to: %E\n", «thresholdVarV1»);
 				T = input_T;
 			} else {
@@ -338,13 +333,8 @@ class WrapperCodeGen extends SystemCodeGen {
 				T = «#[20, 4*TT].max»;
 				
 				result = «v2System.call»;
+				«thresholdVarV2» = 10 * result.noise;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
-				for (int i=9; i>=0; i--) {
-					«thresholdVarV2» = thresholds[i];
-					if («thresholdVarV2» >= fabs(result.noise))
-						break;
-				}
 				printf(" «thresholdVarV2» set to: %E\n", «thresholdVarV2»);
 				T = input_T;
 			} else {
@@ -359,13 +349,8 @@ class WrapperCodeGen extends SystemCodeGen {
 				T = «#[20, 4*TT].max»;
 				
 				result = «v3System.call»;
+				«thresholdVarV3» = 10 * result.noise;
 				printf("floating point noise: %E\n", result.noise);
-				float thresholds[10] = { 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 0.0 };
-				for (int i=9; i>=0; i--) {
-					«thresholdVarV3» = thresholds[i];
-					if («thresholdVarV3» >= fabs(result.noise))
-						break;
-				}
 				printf(" «thresholdVarV3» set to: %E\n", «thresholdVarV3»);
 				T = input_T;
 			} else {

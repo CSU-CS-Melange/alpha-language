@@ -38,9 +38,12 @@ class BenchmarkInstance {
 //		)
 //		new MemoryMap(system)
 		system.setModMemoryMap('Y')
-//			.setMemoryMap('C2_NR', 'C2')
-			.setMemoryMap('C2_NR2', 'C2')
-			.setMemoryMap('C2_NR4', 'C2')
+			.setModMemoryMap(system, 'C2', 'C2')
+			.setModMemoryMap(system, 'C2_NR', 'C2')
+			.setModMemoryMap(system, 'C2_NR2', 'C2')
+			.setModMemoryMap(system, 'C2_NR3', 'C2')
+			.setModMemoryMap(system, 'C2_NR4', 'C2')
+			
 	}
 	
 	

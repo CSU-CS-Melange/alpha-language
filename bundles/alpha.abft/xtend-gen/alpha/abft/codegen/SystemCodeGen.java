@@ -20,13 +20,17 @@ import alpha.codegen.demandDriven.WriteCTypeGenerator;
 import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.PolynomialConverter;
 import alpha.model.AlphaExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaSystem;
+import alpha.model.BinaryExpression;
 import alpha.model.CaseExpression;
 import alpha.model.Equation;
 import alpha.model.ReduceExpression;
+import alpha.model.RestrictExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.Variable;
+import alpha.model.factory.AlphaUserFactory;
 import alpha.model.transformation.StandardizeNames;
 import alpha.model.util.AShow;
 import alpha.model.util.AlphaUtil;
@@ -47,6 +51,7 @@ import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtend2.lib.StringConcatenation;
@@ -87,7 +93,7 @@ public class SystemCodeGen {
   private final SystemBody systemBody;
 
   @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
-  private final ISLSchedule schedule;
+  private ISLSchedule schedule;
 
   @Accessors({ AccessorType.PUBLIC_GETTER, AccessorType.PROTECTED_SETTER })
   private final String scheduleStr;
@@ -149,6 +155,18 @@ public class SystemCodeGen {
       this.scheduleDomain = this.buildScheduleDomain();
       this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
       this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+        String _name = it.getVariable().getName();
+        return Boolean.valueOf(Objects.equal(_name, "C2"));
+      };
+      StandardEquation _findFirst = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function);
+      AlphaExpression _expr = null;
+      if (_findFirst!=null) {
+        _expr=_findFirst.getExpr();
+      }
+      if (_expr!=null) {
+        this.tweakC2Expr(_expr);
+      }
       StandardizeNames.apply(system);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
@@ -1629,13 +1647,51 @@ public class SystemCodeGen {
             defIndexNamesStr = reduceVarIndexNamesStr;
             op = "+=";
           }
-          StringConcatenation _builder_1 = new StringConcatenation();
-          _builder_1.append(lhs);
-          _builder_1.append(" ");
-          _builder_1.append(op);
-          _builder_1.append(" ");
-          _builder_1.append(rhs);
-          final String stmtStr = _builder_1.toString();
+          String _xifexpression_2 = null;
+          String _name_2 = eq.getVariable().getName();
+          boolean _equals_1 = Objects.equal(_name_2, "C2");
+          if (_equals_1) {
+            String _xblockexpression_4 = null;
+            {
+              StringConcatenation _builder_1 = new StringConcatenation();
+              String _name_3 = eq.getVariable().getName();
+              _builder_1.append(_name_3);
+              _builder_1.append("(");
+              final Function1<String, String> _function_7 = (String n) -> {
+                String _xifexpression_3 = null;
+                boolean _equals_2 = Objects.equal(n, "t");
+                if (_equals_2) {
+                  _xifexpression_3 = "t+1";
+                } else {
+                  _xifexpression_3 = n;
+                }
+                return _xifexpression_3;
+              };
+              String _join = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_7), ",");
+              _builder_1.append(_join);
+              _builder_1.append(")");
+              final String zeroLhs = _builder_1.toString();
+              StringConcatenation _builder_2 = new StringConcatenation();
+              _builder_2.append("do { ");
+              _builder_2.append(lhs);
+              _builder_2.append(" += ");
+              _builder_2.append(rhs);
+              _builder_2.append("; ");
+              _builder_2.append(zeroLhs);
+              _builder_2.append(" = 0; } while(0)");
+              _xblockexpression_4 = _builder_2.toString();
+            }
+            _xifexpression_2 = _xblockexpression_4;
+          } else {
+            StringConcatenation _builder_1 = new StringConcatenation();
+            _builder_1.append(lhs);
+            _builder_1.append(" ");
+            _builder_1.append(op);
+            _builder_1.append(" ");
+            _builder_1.append(rhs);
+            _xifexpression_2 = _builder_1.toString();
+          }
+          final String stmtStr = _xifexpression_2;
           StringConcatenation _builder_2 = new StringConcatenation();
           _builder_2.append("#define ");
           _builder_2.append(name);
@@ -1652,6 +1708,26 @@ public class SystemCodeGen {
       _xblockexpression = IterableExtensions.join(IterableExtensions.<String>sort(Iterables.<String>concat(_plus, stencilVarMacros)), "\n");
     }
     return _xblockexpression;
+  }
+
+  public void tweakC2Expr(final AlphaExpression expr) {
+    if (((!Objects.equal(((StandardEquation) AlphaUtil.getContainerEquation(expr)).getVariable().getName(), "C2")) || (!Objects.equal(this.version, Version.ABFT_V3)))) {
+      return;
+    }
+    final Equation eq = AlphaUtil.getContainerEquation(expr);
+    final ISLSpace space = expr.getContextDomain().getSpace();
+    final CaseExpression ce = ((CaseExpression) expr);
+    AlphaExpression _get = ce.getExprs().get(0);
+    final RestrictExpression re = ((RestrictExpression) _get);
+    AlphaExpression _expr = re.getExpr();
+    final BinaryExpression be1 = ((BinaryExpression) _expr);
+    AlphaExpression _left = be1.getLeft();
+    final BinaryExpression be2 = ((BinaryExpression) _left);
+    final AlphaExpression targetExpr = AlphaUtil.<AlphaExpression>copyAE(be2.getLeft());
+    EcoreUtil.replace(be1.getRight(), AlphaUserFactory.createZeroExpression(space.copy()));
+    EcoreUtil.replace(be2.getRight(), AlphaUserFactory.createZeroExpression(space.copy()));
+    EcoreUtil.replace(ce.getExprs().get(1), AlphaUserFactory.createZeroExpression(space.copy()));
+    AlphaInternalStateConstructor.recomputeContextDomain(eq);
   }
 
   public String prepareResult() {
@@ -1751,35 +1827,26 @@ public class SystemCodeGen {
           final int L = this.tileSizes[1];
           final LinkedList<String> coords = CollectionLiterals.<String>newLinkedList();
           StringConcatenation _builder_4 = new StringConcatenation();
-          _builder_4.append(H);
-          _builder_4.append("*(");
-          _builder_4.append(tt);
-          _builder_4.append("-1)<t_INJ && t_INJ<");
-          _builder_4.append(H);
+          _builder_4.append(L);
           _builder_4.append("*");
-          _builder_4.append(tt);
+          _builder_4.append(ti);
+          _builder_4.append("<i_INJ && i_INJ<");
+          _builder_4.append(L);
+          _builder_4.append("*");
+          _builder_4.append(ti);
+          _builder_4.append("+");
+          _builder_4.append(L);
           coords.add(_builder_4.toString());
-          StringConcatenation _builder_5 = new StringConcatenation();
-          _builder_5.append(L);
-          _builder_5.append("*");
-          _builder_5.append(ti);
-          _builder_5.append("<i_INJ && i_INJ<");
-          _builder_5.append(L);
-          _builder_5.append("*");
-          _builder_5.append(ti);
-          _builder_5.append("+");
-          _builder_5.append(L);
-          coords.add(_builder_5.toString());
           int _size = this.stencilVar.getDomain().getIndexNames().size();
           final Function1<Integer, String> _function_2 = (Integer i) -> {
             return this.stencilVar.getDomain().getIndexNames().get((i).intValue());
           };
           final Iterable<String> rest = IterableExtensions.<Integer, String>map(new ExclusiveRange(2, _size, true), _function_2);
           Iterables.<String>addAll(coords, rest);
-          StringConcatenation _builder_6 = new StringConcatenation();
+          StringConcatenation _builder_5 = new StringConcatenation();
           String _join_2 = IterableExtensions.join(coords, " && ");
-          _builder_6.append(_join_2);
-          _xblockexpression_1 = _builder_6.toString();
+          _builder_5.append(_join_2);
+          _xblockexpression_1 = _builder_5.toString();
         }
         _xifexpression = _xblockexpression_1;
       } else {
@@ -2408,6 +2475,10 @@ public class SystemCodeGen {
   @Pure
   public ISLSchedule getSchedule() {
     return this.schedule;
+  }
+
+  protected void setSchedule(final ISLSchedule schedule) {
+    this.schedule = schedule;
   }
 
   @Pure
