@@ -421,7 +421,7 @@ class OptimalSimplifyingReductions {
 		RemoveIdenticalAnswers.transform(re, step.identicalAnswerBasis, step.identicalAnswerDomain)
 	}
 	protected dispatch def applyDPStep(ReduceExpression re, StepFractalSimplify step) {
-		FractalSimplify.transform(re, step.largerReduceExpr)
+		FractalSimplify.apply(re, step.largerReduceExpr)
 	}
 	protected dispatch def applyDPStep(AlphaExpression ae, DynamicProgrammingStep step) {
 		// do nothing

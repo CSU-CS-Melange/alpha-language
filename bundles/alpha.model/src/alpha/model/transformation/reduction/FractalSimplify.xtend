@@ -2,8 +2,10 @@ package alpha.model.transformation.reduction
 
 import alpha.model.AbstractReduceExpression
 
+import static extension alpha.model.util.AlphaUtil.getContainerSystem
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.analysis.reduction.ReductionUtil.isSimilar
+import alpha.model.util.AShow
 
 /**
  * Given two reductions whose bodies are homothetic scalings of each other, express the larger 
@@ -33,6 +35,11 @@ class FractalSimplify {
 	def static void transform(AbstractReduceExpression smallerReduceExpr, AbstractReduceExpression reduceExpr) {
 		
 		debug('asdf')
+		
+		debug('smallerReduceExpr:\n' + AShow.print(smallerReduceExpr.getContainerSystem))
+
+		debug('reduceExpr:\n' + AShow.print(reduceExpr.getContainerSystem))
+		
 		throw new Exception('fractal transform not yet implemented')
 			
 	}

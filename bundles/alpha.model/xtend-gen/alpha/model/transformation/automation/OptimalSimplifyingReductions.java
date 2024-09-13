@@ -701,7 +701,7 @@ public class OptimalSimplifyingReductions {
   }
 
   protected Integer _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepFractalSimplify step) {
-    FractalSimplify.transform(re, step.largerReduceExpr);
+    FractalSimplify.apply(re, step.largerReduceExpr);
     return null;
   }
 
