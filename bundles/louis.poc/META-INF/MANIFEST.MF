@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Louis
+Bundle-SymbolicName: louis
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: louis
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: fr.irisa.cairn.jnimap;bundle-version="1.4.0",
+ fr.irisa.cairn.jnimap.isl;bundle-version="2.5.0",
+ alpha.model;bundle-version="0.1.0",
+ alpha.model.xtext;bundle-version="0.1.0",
+ alpha.targetmapping;bundle-version="0.1.0",
+ alpha.targetmapping.xtext;bundle-version="0.1.0",
+ alpha.loader;bundle-version="0.1.0",
+ alpha.commands;bundle-version="0.1.0",
+ alpha.codegen;bundle-version="0.1.0"

@@ -1,0 +1,26 @@
+//affine exercise [N,W]->{ : 10<W<N }
+//	inputs 
+//		X : {[i] : 0<=i<=N+W}
+//	outputs
+//		Y : {[i] : 0<=i<=N}
+//	let
+//		Y = reduce(max, (i,j->i), {: i<=j<=i+W} : X[j]);
+//.
+
+affine fractal2d [N]->{ : 10<N }
+	inputs 
+		X : {[i] : 0<=i<=2N}
+	outputs
+		Y : {[i] : 0<=i<=N}
+	let
+		Y[i] = reduce(max, (i,j->i), {: i<=j<=2i} : X[j]);
+.
+
+//affine d4 [N]->{ : 10<N }
+//	inputs 
+//		X : {[i,j] : 0<=i,j<=2N}
+//	outputs
+//		Y : {[i,j] : 0<=i<=j<=N}
+//	let
+//		Y[i,j] = reduce(max, (i,j,k,l->i,j), {: i<=k<=2i and i+j<=l<=2j } : X[k,l]);
+//.
