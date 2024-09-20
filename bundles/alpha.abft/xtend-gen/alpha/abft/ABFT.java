@@ -65,7 +65,8 @@ public class ABFT {
   private static HashMap<String, AlphaRoot> loadOrGet = CollectionLiterals.<String, AlphaRoot>newHashMap();
 
   public static void main(final String[] args) {
-    ABFT.insertChecksumV3("star3d2t1r", new int[] { 16, 10 });
+    ABFT.insertChecksumV1("star1d1r", new int[] { 3, 10 });
+    ABFT.insertChecksumV2("star1d1r", new int[] { 3, 16 });
   }
 
   public static void insert_checksums(final String systemName, final int[] tileSizes) {

@@ -151,15 +151,25 @@ public class SystemCodeGen {
       this.stmtPrefix = "S";
       this.stencilVar = system.getOutputs().get(0);
       this.version = version;
-      this.tileSizes = tileSizes;
+      final int nbDims = this.stencilVar.getDomain().getIndexNames().size();
+      final int nbTileDims = ((List<Integer>)Conversions.doWrapArray(tileSizes)).size();
+      if ((nbDims != nbTileDims)) {
+        final Function1<Integer, Integer> _function = (Integer it) -> {
+          return Integer.valueOf((-1));
+        };
+        Iterable<Integer> _map = IterableExtensions.<Integer, Integer>map(new ExclusiveRange(nbTileDims, nbDims, true), _function);
+        this.tileSizes = ((int[])Conversions.unwrapArray(IterableExtensions.<Integer>toList(Iterables.<Integer>concat(((Iterable<? extends Integer>)Conversions.doWrapArray(tileSizes)), _map)), int.class));
+      } else {
+        this.tileSizes = tileSizes;
+      }
       this.scheduleDomain = this.buildScheduleDomain();
       this.scheduleStr = SystemCodeGen.injectIndices(schedule, this.scheduleDomain, this.stmtPrefix);
       this.schedule = ISLUtil.toISLSchedule(this.scheduleStr);
-      final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
+      final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation it) -> {
         String _name = it.getVariable().getName();
         return Boolean.valueOf(Objects.equal(_name, "C2"));
       };
-      StandardEquation _findFirst = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function);
+      StandardEquation _findFirst = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function_1);
       AlphaExpression _expr = null;
       if (_findFirst!=null) {
         _expr=_findFirst.getExpr();
@@ -650,7 +660,7 @@ public class SystemCodeGen {
               }
               _builder_1.append(_xifexpression_11);
               _builder_1.append(i);
-              _builder_1.append("_INJ\")) : -1");
+              _builder_1.append("_INJ\")) : (int)(N/2)");
               return _builder_1.toString();
             };
             String _join_4 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_5), ";\n");
@@ -1747,7 +1757,49 @@ public class SystemCodeGen {
         _builder.newLine();
         return _builder.toString();
       }
-      final ISLUnionSet domain = variable.getDomain().setTupleName((this.stmtPrefix + name)).toUnionSet();
+      ISLUnionSet _xifexpression = null;
+      boolean _equals = Objects.equal(this.version, Version.ABFT_V3);
+      if (_equals) {
+        ISLUnionSet _xblockexpression_1 = null;
+        {
+          final List<String> indexNames = variable.getDomain().getIndexNames();
+          int _size = indexNames.size();
+          final int nbNonTileDims = (_size - 2);
+          final Function1<Integer, String> _function_1 = (Integer i) -> {
+            return indexNames.get((2 + (i).intValue()));
+          };
+          final Iterable<String> nonTileDimNames = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, nbNonTileDims, true), _function_1);
+          final int nbParams = variable.getDomain().dim(ISLDimType.isl_dim_param);
+          final ISLSet set = variable.getDomain().addDims(ISLDimType.isl_dim_param, nbNonTileDims);
+          int _size_1 = IterableExtensions.size(nonTileDimNames);
+          final Function2<ISLSet, Integer, ISLSet> _function_2 = (ISLSet s, Integer i) -> {
+            String _get = ((String[])Conversions.unwrapArray(nonTileDimNames, String.class))[(i).intValue()];
+            String _plus = (_get + "_INJ");
+            return s.setDimName(ISLDimType.isl_dim_param, (nbParams + (i).intValue()), _plus);
+          };
+          final ISLSet ret = IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, _size_1, true), set, _function_2);
+          final String params = IterableExtensions.join(ret.getParamNames(), ",");
+          String _get = indexNames.get(0);
+          String _get_1 = indexNames.get(1);
+          final Function1<String, String> _function_3 = (String it) -> {
+            return (it + "_INJ");
+          };
+          Iterable<String> _map = IterableExtensions.<String, String>map(nonTileDimNames, _function_3);
+          final String indexNameStr = IterableExtensions.join(Iterables.<String>concat(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_get, _get_1)), _map), ",");
+          StringConcatenation _builder_1 = new StringConcatenation();
+          _builder_1.append("[");
+          _builder_1.append(params);
+          _builder_1.append("]->{[");
+          _builder_1.append(indexNameStr);
+          _builder_1.append("]}");
+          final ISLSet intersection = ISLUtil.toISLSet(_builder_1.toString());
+          _xblockexpression_1 = ret.intersect(intersection).setTupleName((this.stmtPrefix + name)).toUnionSet();
+        }
+        _xifexpression = _xblockexpression_1;
+      } else {
+        _xifexpression = variable.getDomain().setTupleName((this.stmtPrefix + name)).toUnionSet();
+      }
+      final ISLUnionSet domain = _xifexpression;
       final List<String> indexNames = domain.getSets().get(0).getIndexNames();
       final String idxStr = IterableExtensions.join(indexNames, ",");
       StringConcatenation _builder_1 = new StringConcatenation();
@@ -1816,10 +1868,10 @@ public class SystemCodeGen {
         }
       }
       final String vStr = _switchResult;
-      String _xifexpression = null;
-      boolean _equals = Objects.equal(this.version, Version.ABFT_V3);
-      if (_equals) {
-        String _xblockexpression_1 = null;
+      String _xifexpression_1 = null;
+      boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V3);
+      if (_equals_1) {
+        String _xblockexpression_2 = null;
         {
           final String tt = indexNames.get(0);
           final String ti = indexNames.get(1);
@@ -1846,9 +1898,9 @@ public class SystemCodeGen {
           StringConcatenation _builder_5 = new StringConcatenation();
           String _join_2 = IterableExtensions.join(coords, " && ");
           _builder_5.append(_join_2);
-          _xblockexpression_1 = _builder_5.toString();
+          _xblockexpression_2 = _builder_5.toString();
         }
-        _xifexpression = _xblockexpression_1;
+        _xifexpression_1 = _xblockexpression_2;
       } else {
         final Function1<String, String> _function_2 = (String n) -> {
           StringConcatenation _builder_4 = new StringConcatenation();
@@ -1858,19 +1910,19 @@ public class SystemCodeGen {
           _builder_4.append("_INJ");
           return _builder_4.toString();
         };
-        _xifexpression = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), " && ");
+        _xifexpression_1 = IterableExtensions.join(ListExtensions.<String, String>map(indexNames, _function_2), " && ");
       }
-      final String containsInjectionConditions = _xifexpression;
-      String _xifexpression_1 = null;
-      boolean _equals_1 = Objects.equal(this.version, Version.ABFT_V3);
-      if (_equals_1) {
+      final String containsInjectionConditions = _xifexpression_1;
+      String _xifexpression_2 = null;
+      boolean _equals_2 = Objects.equal(this.version, Version.ABFT_V3);
+      if (_equals_2) {
         final Function1<String, String> _function_3 = (String i) -> {
           StringConcatenation _builder_4 = new StringConcatenation();
           _builder_4.append(i);
           _builder_4.append("_INJ");
           return _builder_4.toString();
         };
-        _xifexpression_1 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_3), ", ");
+        _xifexpression_2 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_3), ", ");
       } else {
         final Function1<String, String> _function_4 = (String i) -> {
           StringConcatenation _builder_4 = new StringConcatenation();
@@ -1879,9 +1931,9 @@ public class SystemCodeGen {
           _builder_4.append("_INJ");
           return _builder_4.toString();
         };
-        _xifexpression_1 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_4), ", ");
+        _xifexpression_2 = IterableExtensions.join(ListExtensions.<String, String>map(this.stencilVar.getDomain().getIndexNames(), _function_4), ", ");
       }
-      final String injInit = _xifexpression_1;
+      final String injInit = _xifexpression_2;
       StringConcatenation _builder_4 = new StringConcatenation();
       _builder_4.append("#if defined ");
       _builder_4.append(SystemCodeGen.TIMING);

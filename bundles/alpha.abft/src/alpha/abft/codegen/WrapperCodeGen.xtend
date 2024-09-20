@@ -161,7 +161,12 @@ class WrapperCodeGen extends SystemCodeGen {
 		val injectionSite = tInjectionSite + sInjectionSite
 		// random number in [1,N-1]
 		val v3tInjectionSite = #['''(rand() % (T-2*«TT») + «TT»)''']
-		val v3sInjectionSite = TXs.map[TX | '''(rand() % (N-2*«TX») + «TX»)''']
+		val v3sInjectionSite = TXs.map[TX | 
+			if (TX != -1)
+				'''(rand() % (N-2*«TX») + «TX»)'''
+			else
+				'''((int)(N/2))'''
+		]
 		val v3InjectionSite = v3tInjectionSite + v3sInjectionSite
 		
 		val thresholdVarV1 = 'threshold_v1'

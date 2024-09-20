@@ -33,8 +33,8 @@ class ABFTv3 extends ABFTv1 {
 	
 	def static void main(String[] args) {
 		
-//		'star3d2t1r'.insertChecksum(#[5, 10])
-		'star1d1r'.insertChecksum(#[5, 10])
+		'star3d1r'.insertChecksum(#[5, 50])
+//		'star1d1r'.insertChecksum(#[3, 10])
 				
 	}
 	

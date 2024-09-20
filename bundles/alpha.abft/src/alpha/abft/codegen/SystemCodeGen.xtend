@@ -127,7 +127,15 @@ class SystemCodeGen {
 		
 		this.stencilVar = system.outputs.get(0)
 		this.version = version
-		this.tileSizes = tileSizes
+		val nbDims = stencilVar.domain.indexNames.size
+		val nbTileDims = tileSizes.size
+		if (nbDims != nbTileDims) {
+			// add stubs for TSs not specified
+			// [2,17] -> [2,17,-1,-1]
+			this.tileSizes = (tileSizes + (nbTileDims..<nbDims).map[-1]).toList
+		} else {
+			this.tileSizes = tileSizes
+		}
 		
 		this.scheduleDomain = buildScheduleDomain
 		this.scheduleStr = schedule.injectIndices(scheduleDomain, stmtPrefix)
@@ -303,7 +311,7 @@ class SystemCodeGen {
 		#if defined ERROR_INJECTION
 		// Error injection configuration
 		«stencilVar.domain.indexNames.map[i |
-  	  '''«if (notV3) 't'»«i»_INJ = getenv("«if (notV3) 't'»«i»_INJ") != NULL ? atoi(getenv("«if (notV3) 't'»«i»_INJ")) : -1'''].join(';\n')
+  	  '''«if (notV3) 't'»«i»_INJ = getenv("«if (notV3) 't'»«i»_INJ") != NULL ? atoi(getenv("«if (notV3) 't'»«i»_INJ")) : (int)(N/2)'''].join(';\n')
   	  	»;
 		BIT = getenv("bit") != NULL ? atoi(getenv("bit")) : (int)(rand() % «if (dataType == BaseDataType.FLOAT) 32 else 64»);
 		#endif
@@ -749,7 +757,30 @@ class SystemCodeGen {
 				result.result = execution_time;
 			''';
 			
-		val domain = variable.domain.setTupleName(stmtPrefix + name).toUnionSet
+		val domain = if (version == Version.ABFT_V3) {
+			val indexNames = variable.domain.indexNames
+			val nbNonTileDims = indexNames.size - 2
+			val nonTileDimNames = (0..<nbNonTileDims).map[i | indexNames.get(2+i)]
+			val nbParams = variable.domain.dim(ISLDimType.isl_dim_param)
+			val set = variable.domain
+				.addDims(ISLDimType.isl_dim_param, nbNonTileDims)
+			
+			val ret = (0..<nonTileDimNames.size).fold(
+				set,
+				[s,i | 
+					s.setDimName(ISLDimType.isl_dim_param, nbParams+i, nonTileDimNames.get(i) + '_INJ')
+				]
+			)	
+			
+			val params = ret.paramNames.join(',')
+			val indexNameStr = (#[indexNames.get(0), indexNames.get(1)] + nonTileDimNames.map[it + '_INJ']).join(',')
+			val intersection = '''[«params»]->{[«indexNameStr»]}'''.toString.toISLSet
+			
+			ret.intersect(intersection).setTupleName(stmtPrefix + name).toUnionSet
+		} else {
+			variable.domain.setTupleName(stmtPrefix + name)
+			.toUnionSet
+		}
 		val indexNames = domain.sets.get(0).indexNames
 		val idxStr = indexNames.join(',')
 		val SVar = '''«stmtPrefix»«name»[«idxStr»]'''

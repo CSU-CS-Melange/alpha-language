@@ -452,13 +452,21 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_1.append(")");
       final List<String> v3tInjectionSite = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(_builder_1.toString()));
       final Function1<Integer, String> _function_9 = (Integer TX) -> {
-        StringConcatenation _builder_2 = new StringConcatenation();
-        _builder_2.append("(rand() % (N-2*");
-        _builder_2.append(TX);
-        _builder_2.append(") + ");
-        _builder_2.append(TX);
-        _builder_2.append(")");
-        return _builder_2.toString();
+        String _xifexpression = null;
+        if (((TX).intValue() != (-1))) {
+          StringConcatenation _builder_2 = new StringConcatenation();
+          _builder_2.append("(rand() % (N-2*");
+          _builder_2.append(TX);
+          _builder_2.append(") + ");
+          _builder_2.append(TX);
+          _builder_2.append(")");
+          _xifexpression = _builder_2.toString();
+        } else {
+          StringConcatenation _builder_3 = new StringConcatenation();
+          _builder_3.append("((int)(N/2))");
+          _xifexpression = _builder_3.toString();
+        }
+        return _xifexpression;
       };
       final Iterable<String> v3sInjectionSite = IterableExtensions.<Integer, String>map(TXs, _function_9);
       final Iterable<String> v3InjectionSite = Iterables.<String>concat(v3tInjectionSite, v3sInjectionSite);

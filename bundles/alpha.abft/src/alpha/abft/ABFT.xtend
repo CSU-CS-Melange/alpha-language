@@ -46,7 +46,8 @@ class ABFT {
 	
 	def static void main(String[] args) {
 		
-		'star3d2t1r'.insertChecksumV3(#[16, 10])
+		'star1d1r'.insertChecksumV1(#[3, 10])
+		'star1d1r'.insertChecksumV2(#[3, 16])
 				
 	}
 	
