@@ -708,7 +708,7 @@ class SystemCodeGen {
 			}
 			
 			
-			val stmtStr = if (eq.variable.name == 'C2') {
+			val stmtStr = if (eq.variable.name == 'C2' && version != Version.ABFT_V1) {
 				val zeroLhs = '''«eq.variable.name»(«indexNames.map[n | if (n=='t') 't+1' else n].join(',')»)'''
 				'''do { «lhs» += «rhs»; «zeroLhs» = 0; } while(0)'''
 			} else {

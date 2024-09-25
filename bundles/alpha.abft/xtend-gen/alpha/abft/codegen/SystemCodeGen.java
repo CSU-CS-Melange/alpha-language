@@ -1658,19 +1658,17 @@ public class SystemCodeGen {
             op = "+=";
           }
           String _xifexpression_2 = null;
-          String _name_2 = eq.getVariable().getName();
-          boolean _equals_1 = Objects.equal(_name_2, "C2");
-          if (_equals_1) {
+          if ((Objects.equal(eq.getVariable().getName(), "C2") && (!Objects.equal(this.version, Version.ABFT_V1)))) {
             String _xblockexpression_4 = null;
             {
               StringConcatenation _builder_1 = new StringConcatenation();
-              String _name_3 = eq.getVariable().getName();
-              _builder_1.append(_name_3);
+              String _name_2 = eq.getVariable().getName();
+              _builder_1.append(_name_2);
               _builder_1.append("(");
               final Function1<String, String> _function_7 = (String n) -> {
                 String _xifexpression_3 = null;
-                boolean _equals_2 = Objects.equal(n, "t");
-                if (_equals_2) {
+                boolean _equals_1 = Objects.equal(n, "t");
+                if (_equals_1) {
                   _xifexpression_3 = "t+1";
                 } else {
                   _xifexpression_3 = n;

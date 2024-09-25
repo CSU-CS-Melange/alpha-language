@@ -734,50 +734,88 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_2.append("\t");
       _builder_2.newLine();
       _builder_2.append("\t");
-      _builder_2.append("struct Result r0 = ");
+      _builder_2.append("// warm up");
+      _builder_2.newLine();
+      _builder_2.append("\t");
       CharSequence _call = this.call(system);
       _builder_2.append(_call, "\t");
       _builder_2.append(";");
       _builder_2.newLineIfNotEmpty();
       _builder_2.append("\t");
+      _builder_2.append("for (int i=0; i<3; i++) {");
+      _builder_2.newLine();
+      _builder_2.append("\t\t");
+      _builder_2.append("struct Result r0 = ");
+      CharSequence _call_1 = this.call(system);
+      _builder_2.append(_call_1, "\t\t");
+      _builder_2.append(";");
+      _builder_2.newLineIfNotEmpty();
+      _builder_2.append("\t\t");
       _builder_2.append("printf(\"v0 time: %0.4f sec\\n\", r0.result);");
+      _builder_2.newLine();
+      _builder_2.append("\t");
+      _builder_2.append("}");
       _builder_2.newLine();
       {
         if ((this.v1System != null)) {
           _builder_2.append("\t");
+          _builder_2.append("for (int i=0; i<3; i++) {");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("struct Result r1 = ");
-          CharSequence _call_1 = this.call(this.v1System);
-          _builder_2.append(_call_1, "\t");
+          CharSequence _call_2 = this.call(this.v1System);
+          _builder_2.append(_call_2, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("printf(\"v1 time: %0.4f sec\\n\", r1.result);");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("}");
           _builder_2.newLine();
         }
       }
       {
         if ((this.v2System != null)) {
           _builder_2.append("\t");
+          _builder_2.append("for (int i=0; i<3; i++) {");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("struct Result r2 = ");
-          CharSequence _call_2 = this.call(this.v2System);
-          _builder_2.append(_call_2, "\t");
+          CharSequence _call_3 = this.call(this.v2System);
+          _builder_2.append(_call_3, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("printf(\"v2 time: %0.4f sec\\n\", r2.result);");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("}");
           _builder_2.newLine();
         }
       }
       {
         if ((this.v3System != null)) {
           _builder_2.append("\t");
+          _builder_2.append("for (int i=0; i<3; i++) {");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("struct Result r3 = ");
-          CharSequence _call_3 = this.call(this.v3System);
-          _builder_2.append(_call_3, "\t");
+          CharSequence _call_4 = this.call(this.v3System);
+          _builder_2.append(_call_4, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
+          _builder_2.append("\t");
           _builder_2.append("printf(\"v3 time: %0.4f sec\\n\", r3.result);");
+          _builder_2.newLine();
+          _builder_2.append("\t");
+          _builder_2.append("}");
           _builder_2.newLine();
         }
       }
@@ -790,8 +828,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v1System != null)) {
           _builder_2.append("\t");
-          CharSequence _call_4 = this.call(this.v1System);
-          _builder_2.append(_call_4, "\t");
+          CharSequence _call_5 = this.call(this.v1System);
+          _builder_2.append(_call_5, "\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
         }
@@ -799,8 +837,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v2System != null)) {
           _builder_2.append("\t");
-          CharSequence _call_5 = this.call(this.v2System);
-          _builder_2.append(_call_5, "\t");
+          CharSequence _call_6 = this.call(this.v2System);
+          _builder_2.append(_call_6, "\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
         }
@@ -808,8 +846,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       {
         if ((this.v3System != null)) {
           _builder_2.append("\t");
-          CharSequence _call_6 = this.call(this.v3System);
-          _builder_2.append(_call_6, "\t");
+          CharSequence _call_7 = this.call(this.v3System);
+          _builder_2.append(_call_7, "\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
         }
@@ -958,8 +996,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t");
           _builder_2.append("result = ");
-          CharSequence _call_7 = this.call(this.v1System);
-          _builder_2.append(_call_7, "\t\t");
+          CharSequence _call_8 = this.call(this.v1System);
+          _builder_2.append(_call_8, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
@@ -1027,8 +1065,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t");
           _builder_2.append("result = ");
-          CharSequence _call_8 = this.call(this.v2System);
-          _builder_2.append(_call_8, "\t\t");
+          CharSequence _call_9 = this.call(this.v2System);
+          _builder_2.append(_call_9, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
@@ -1096,8 +1134,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t");
           _builder_2.append("result = ");
-          CharSequence _call_9 = this.call(this.v3System);
-          _builder_2.append(_call_9, "\t\t");
+          CharSequence _call_10 = this.call(this.v3System);
+          _builder_2.append(_call_10, "\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
@@ -1157,8 +1195,8 @@ public class WrapperCodeGen extends SystemCodeGen {
       _builder_2.append("// Get GOLD result, run the input program");
       _builder_2.newLine();
       _builder_2.append("\t");
-      CharSequence _call_10 = this.call(system, WrapperCodeGen.goldSuffix);
-      _builder_2.append(_call_10, "\t");
+      CharSequence _call_11 = this.call(system, WrapperCodeGen.goldSuffix);
+      _builder_2.append(_call_11, "\t");
       _builder_2.append(";");
       _builder_2.newLineIfNotEmpty();
       _builder_2.append("\t");
@@ -1241,8 +1279,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t\t");
           _builder_2.append("struct Result v = ");
-          CharSequence _call_11 = this.call(this.v1System);
-          _builder_2.append(_call_11, "\t\t\t");
+          CharSequence _call_12 = this.call(this.v1System);
+          _builder_2.append(_call_12, "\t\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
@@ -1355,8 +1393,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t\t");
           _builder_2.append("struct Result v = ");
-          CharSequence _call_12 = this.call(this.v2System);
-          _builder_2.append(_call_12, "\t\t\t");
+          CharSequence _call_13 = this.call(this.v2System);
+          _builder_2.append(_call_13, "\t\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");
@@ -1485,8 +1523,8 @@ public class WrapperCodeGen extends SystemCodeGen {
           _builder_2.append("\t");
           _builder_2.append("\t\t");
           _builder_2.append("struct Result v = ");
-          CharSequence _call_13 = this.call(this.v3System);
-          _builder_2.append(_call_13, "\t\t\t");
+          CharSequence _call_14 = this.call(this.v3System);
+          _builder_2.append(_call_14, "\t\t\t");
           _builder_2.append(";");
           _builder_2.newLineIfNotEmpty();
           _builder_2.append("\t");

@@ -262,19 +262,29 @@ class WrapperCodeGen extends SystemCodeGen {
 			
 			#if defined «TIMING»
 			
-			struct Result r0 = «system.call»;
-			printf("v0 time: %0.4f sec\n", r0.result);
+			// warm up
+			«system.call»;
+			for (int i=0; i<3; i++) {
+				struct Result r0 = «system.call»;
+				printf("v0 time: %0.4f sec\n", r0.result);
+			}
 			«IF v1System !==null»
-			struct Result r1 = «v1System.call»;
-			printf("v1 time: %0.4f sec\n", r1.result);
+			for (int i=0; i<3; i++) {
+				struct Result r1 = «v1System.call»;
+				printf("v1 time: %0.4f sec\n", r1.result);
+			}
 			«ENDIF»
 			«IF v2System !==null»
-			struct Result r2 = «v2System.call»;
-			printf("v2 time: %0.4f sec\n", r2.result);
+			for (int i=0; i<3; i++) {
+				struct Result r2 = «v2System.call»;
+				printf("v2 time: %0.4f sec\n", r2.result);
+			}
 			«ENDIF»
 			«IF v3System !==null»
-			struct Result r3 = «v3System.call»;
-			printf("v3 time: %0.4f sec\n", r3.result);
+			for (int i=0; i<3; i++) {
+				struct Result r3 = «v3System.call»;
+				printf("v3 time: %0.4f sec\n", r3.result);
+			}
 			«ENDIF»
 			
 			#elif defined «REPORT_COMPLEXITY_ONLY»
