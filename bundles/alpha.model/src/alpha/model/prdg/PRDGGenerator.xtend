@@ -65,12 +65,14 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	}
 	
 	override void visitVariableExpression(VariableExpression ve) {
-		var target = new PRDGNode(ve.variable.name, ve.variable.domain)
-		val dom = !this.domains.empty() ? this.domains.peek.copy : ve.contextDomain.copy
-		val fun = this.functions.peek.copy
-		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, fun)
-		prdg.addEdge(edge)
-		
+		if (prdg.getNode(ve.variable.name) !== null) {
+//			var target = new PRDGNode(ve.variable.name, ve.variable.domain)
+			val target = prdg.getNode(ve.variable.name) 
+			val dom = !this.domains.empty() ? this.domains.peek.copy : ve.contextDomain.copy
+			val fun = this.functions.peek.copy
+			val edge = new PRDGEdge(this.sources.peek, target, dom.copy, fun)
+			prdg.addEdge(edge)
+		}
 	}
 	
 	override void inReduceExpression(ReduceExpression reduceExpression) {

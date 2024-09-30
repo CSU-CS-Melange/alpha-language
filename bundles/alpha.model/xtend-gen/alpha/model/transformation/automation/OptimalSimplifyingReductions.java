@@ -13,6 +13,8 @@ import alpha.model.analysis.reduction.CandidateReuse;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.matrix.MatrixOperations;
+import alpha.model.prdg.PRDG;
+import alpha.model.prdg.PRDGGenerator;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.SplitUnionIntoCase;
 import alpha.model.transformation.reduction.Distributivity;
@@ -294,6 +296,8 @@ public class OptimalSimplifyingReductions {
 
   protected boolean verbose;
 
+  protected PRDG prdg;
+
   /**
    * This maps contains the simplified versions of the program obtained
    * during exploration. Simplified versions are grouped by complexity.
@@ -313,6 +317,7 @@ public class OptimalSimplifyingReductions {
     }
     this.root = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(system));
     this.system = this.root.getSystem(system.getFullyQualifiedName());
+    this.prdg = PRDGGenerator.apply(system);
     this.systemBodyID = 0;
     this.systemBody = this.system.getSystemBodies().get(this.systemBodyID);
     this.optimizations = CollectionLiterals.<Integer, List<OptimalSimplifyingReductions.State>>newHashMap();
@@ -431,44 +436,9 @@ public class OptimalSimplifyingReductions {
    * reduce expressions need to be recursively explored.
    */
   private void _optimizeEquation(final StandardEquation eq, final ReduceExpression re, final OptimalSimplifyingReductions.State state) {
-    final SystemBody containerSystemBody = AlphaUtil.getContainerSystemBody(eq);
-    boolean _isOptimallySimplified = this.isOptimallySimplified(re);
-    if (_isOptimallySimplified) {
-      eq.setExplored();
-      return;
-    }
-    final SystemBody body = AlphaUtil.getContainerSystemBody(eq);
-    while ((!this.sideEffectFreeTransformations(body, eq.getVariable().getName()))) {
-    }
-    final StandardEquation targetEq = body.getStandardEquation(eq.getVariable().getName());
-    boolean _isNotReduceExpr = OptimalSimplifyingReductions.isNotReduceExpr(targetEq.getExpr());
-    if (_isNotReduceExpr) {
-      eq.setExplored();
-      return;
-    }
-    AlphaExpression _expr = targetEq.getExpr();
-    final List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
-    final Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep> _function = (OptimalSimplifyingReductions.DynamicProgrammingStep c) -> {
-      String _description = c.description();
-      String _plus = ("candidate: " + _description);
-      this.debug(_plus);
-    };
-    candidates.forEach(_function);
-    for (final OptimalSimplifyingReductions.DynamicProgrammingStep step : candidates) {
-      {
-        final AlphaRoot optimizedRoot = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(containerSystemBody));
-        final SystemBody optimizedBody = optimizedRoot.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID);
-        final StandardEquation optimizedEq = this.getEquation(optimizedRoot, targetEq.getName());
-        this.applyDPStep(optimizedEq.getExpr(), step);
-        optimizedEq.setExplored(Boolean.valueOf(OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr())));
-        final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> steps = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
-        steps.addAll(state.steps);
-        steps.add(step);
-        final OptimalSimplifyingReductions.State newState = new OptimalSimplifyingReductions.State(optimizedBody, steps);
-        this.optimizeUnexploredEquations(newState);
-      }
-    }
-    eq.setExplored();
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method respectsFeasibleSpace(DynamicProgrammingStep) is undefined for the type PRDG"
+      + "\nThis expression is not allowed in this context, since it doesn\'t cause any side effects.");
   }
 
   private void _optimizeEquation(final StandardEquation eq, final AlphaExpression ae, final OptimalSimplifyingReductions.State state) {

@@ -24,8 +24,8 @@ public class FoutrierScheduler implements Scheduler {
   public ISLSchedule generateSchedule() {
     ISLSchedule _xblockexpression = null;
     {
-      ISLUnionSet domains = this.prdg.generateDomains();
-      ISLUnionMap islPRDG = this.prdg.generateISLPRDG();
+      ISLUnionSet domains = this.prdg.generateDomains().copy();
+      ISLUnionMap islPRDG = this.prdg.generateISLPRDG().copy();
       _xblockexpression = this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, ISLSchedule.JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER);
     }
     return _xblockexpression;

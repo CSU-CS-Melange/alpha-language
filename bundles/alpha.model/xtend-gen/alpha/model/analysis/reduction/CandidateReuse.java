@@ -97,11 +97,13 @@ public class CandidateReuse {
       return;
     }
     final ISLBasicSet reuseSpace = DomainOperations.toBasicSetFromKernel(areSS, this.are.getBody().getContextDomain().getSpace());
+    InputOutput.<String>println(("Reuse Space: " + reuseSpace));
     final Face face = this.are.getFacet();
     String _string = face.toLinearSpace().toString();
     String _plus = ("(candidateReuse) Lp = " + _string);
     CandidateReuse.debug(_plus);
     final List<Face> facets = IterableExtensions.<Face>toList(face.generateChildren());
+    InputOutput.<String>println(("Facets: " + facets));
     int _size = facets.size();
     boolean _equals = (_size == 0);
     if (_equals) {
@@ -163,7 +165,11 @@ public class CandidateReuse {
           this.reuseVectorWithIdenticalAnswers = reuseVector;
           return;
         }
-        this.vectors.add(reuseVector);
+        boolean respectsSchedule = true;
+        if (respectsSchedule) {
+          this.vectors.add(reuseVector);
+        } else {
+        }
       }
     }
   }

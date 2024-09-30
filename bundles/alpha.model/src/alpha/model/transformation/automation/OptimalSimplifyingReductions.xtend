@@ -41,6 +41,8 @@ import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
+import alpha.model.prdg.PRDGGenerator
+import alpha.model.prdg.PRDG
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -70,6 +72,7 @@ class OptimalSimplifyingReductions {
 	protected int targetComplexity
 	protected boolean trySplitting
 	protected boolean verbose
+	protected PRDG prdg
 	
 	/**
 	 * This maps contains the simplified versions of the program obtained
@@ -88,6 +91,7 @@ class OptimalSimplifyingReductions {
 		}
 		this.root = EcoreUtil.copy(AlphaUtil.getContainerRoot(system))
 		this.system = this.root.getSystem(system.fullyQualifiedName)
+		this.prdg = PRDGGenerator.apply(system)
 		this.systemBodyID = 0
 		this.systemBody = this.system.systemBodies.get(this.systemBodyID)
 		this.optimizations = newHashMap
@@ -207,9 +211,8 @@ class OptimalSimplifyingReductions {
 		
 		// Enumerate the list of candidate dynamic programming steps
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
-		candidates.forEach[c |
-			debug("candidate: " + c.description)
-		]
+		candidates.forEach[c | debug("candidate: " + c.description)]
+		candidates.filter[c | this.prdg.respectsFeasibleSpace(c) ]
 		
 		// Explore each step recursively. For each step, create a new state by applying the step.
 		// Then recursively call optimizeUnexploredEquations for the new state
@@ -230,6 +233,7 @@ class OptimalSimplifyingReductions {
 		// eq is marked as explored
 		eq.setExplored
 	}
+	
 	private def dispatch void optimizeEquation(StandardEquation eq, AlphaExpression ae, State state) {
 		eq.explored = true
 	}

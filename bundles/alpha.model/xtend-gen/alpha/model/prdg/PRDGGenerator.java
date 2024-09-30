@@ -98,23 +98,25 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void visitVariableExpression(final VariableExpression ve) {
-    String _name = ve.getVariable().getName();
-    ISLSet _domain = ve.getVariable().getDomain();
-    PRDGNode target = new PRDGNode(_name, _domain);
-    ISLSet _xifexpression = null;
-    boolean _empty = this.domains.empty();
-    boolean _not = (!_empty);
-    if (_not) {
-      _xifexpression = this.domains.peek().copy();
-    } else {
-      _xifexpression = ve.getContextDomain().copy();
+    PRDGNode _node = this.prdg.getNode(ve.getVariable().getName());
+    boolean _tripleNotEquals = (_node != null);
+    if (_tripleNotEquals) {
+      final PRDGNode target = this.prdg.getNode(ve.getVariable().getName());
+      ISLSet _xifexpression = null;
+      boolean _empty = this.domains.empty();
+      boolean _not = (!_empty);
+      if (_not) {
+        _xifexpression = this.domains.peek().copy();
+      } else {
+        _xifexpression = ve.getContextDomain().copy();
+      }
+      final ISLSet dom = _xifexpression;
+      final ISLMultiAff fun = this.functions.peek().copy();
+      PRDGNode _peek = this.sources.peek();
+      ISLSet _copy = dom.copy();
+      final PRDGEdge edge = new PRDGEdge(_peek, target, _copy, fun);
+      this.prdg.addEdge(edge);
     }
-    final ISLSet dom = _xifexpression;
-    final ISLMultiAff fun = this.functions.peek().copy();
-    PRDGNode _peek = this.sources.peek();
-    ISLSet _copy = dom.copy();
-    final PRDGEdge edge = new PRDGEdge(_peek, target, _copy, fun);
-    this.prdg.addEdge(edge);
   }
 
   @Override
