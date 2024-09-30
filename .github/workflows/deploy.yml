@@ -24,22 +24,23 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
       
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     container: ghcr.io/csu-cs-melange/alpha-language-image:latest
 
     steps:
-    - name: Cache alpha language plugin
-      id: cache-plugin
-      uses: actions/cache@v3
+    - name: Load the build artifacts
+      uses: actions/download-artifact@v4
       with:
-        path: ./releng/alpha.language.update/target/repository
-        key: cache-plugin
+        name: plugin-artifact   # Must match the name from the build action.
 
     - name: Set SHORT_SHA 
       run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
     - name: Make downloads directory
       run: mkdir -p ./releng/alpha.language.update/target/repository/downloads
+
+    - name: fix permissions
+      run: chmod +x ./scripts/make-update-site-readme.sh
 
     - name: make update-site readme
       run: ./scripts/make-update-site-readme.sh
@@ -51,13 +52,10 @@ jobs:
         destination: "./update-site"
 
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v1
+      uses: actions/upload-pages-artifact@v3
       with:
         path: "./update-site"
 
     - name: deploy update-site
       id: deployment
-      uses: actions/deploy-pages@v2 # or the latest "vX.X.X" version tag for this action
-
-
-
+      uses: actions/deploy-pages@v4

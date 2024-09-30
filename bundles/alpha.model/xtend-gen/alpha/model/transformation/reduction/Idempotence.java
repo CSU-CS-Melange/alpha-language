@@ -62,7 +62,7 @@ public class Idempotence {
     if ((kerFc == null)) {
       return false;
     }
-    return false;
+    return true;
   }
 
   private static void transform(final AbstractReduceExpression are) {
