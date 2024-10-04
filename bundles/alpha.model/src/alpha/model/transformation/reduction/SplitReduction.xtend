@@ -21,7 +21,9 @@ import static extension alpha.model.matrix.MatrixOperations.*
 import static extension alpha.model.util.AffineFunctionOperations.*
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
+import static extension alpha.model.util.ISLUtil.dimensionality
 import alpha.model.StandardEquation
+import alpha.model.util.Face
 
 /**
  * This class carries out the analysis required for splitting from the max 
@@ -124,22 +126,26 @@ class SplitReduction {
 			val stdEq = if (eq instanceof StandardEquation) eq as StandardEquation else null
 			debug('enumerating splits for Equation ' + if (stdEq !== null) stdEq.variable.name else '' + ': ' + are)
 		}
-		
+	
+		val fp = are.projection
+		val fd = are.body.getReuseMaff
+		enumerateCandidateSplits(are.facet, fp, fd)
+	}
+	
+	static def ISLConstraint[] enumerateCandidateSplits(Face bodyFace, ISLMultiAff fp, ISLMultiAff fd) {	
 		val splits = newArrayList
 		
-		val bodyFace = are.facet
 		val bodyDomain = bodyFace.toBasicSet
 		val bodyDim = bodyFace.dimensionality
 		val faces = bodyFace.lattice.getFaces(bodyDim - 2).map[toBasicSet]
 		
 		// Construct splits that saturate the accumulation space
-		val accVec = are.projection.construct1DBasis
+		val accVec = fp.construct1DBasis
 		if (accVec !== null)
 			splits.addAll(faces.map[copy.constructSplit(accVec)].reject[s | s === null])
 		
 		// Construct splits that saturate the reuse space
-		val reuseMaff = are.body.getReuseMaff
-		val reuseVec = if (reuseMaff !== null) reuseMaff.construct1DBasis else null
+		val reuseVec = if (fd !== null) fd.construct1DBasis else null
 		if (reuseVec !== null)
 			splits.addAll(faces.map[copy.constructSplit(reuseVec)].reject[s | s === null])
 		
@@ -158,7 +164,13 @@ class SplitReduction {
 	 * false otherwise.
 	 */
 	static def isUseful(ISLConstraint split, ISLBasicSet bset) {
-		bset.copy.toSet.subtract(split.copy.toBasicSet.toSet).nbBasicSets == 2
+		val splitSets = bset.copy.toSet.subtract(split.copy.toBasicSet.toSet)
+		val nbFreeDims = bset.dimensionality
+		val sameNbFreeDims = splitSets.basicSets.map[s | s.dimensionality == nbFreeDims]
+				.reduce[v1,v2 | v1 && v2]
+		val has2Pieces = splitSets.nbBasicSets == 2
+		return has2Pieces && sameNbFreeDims
+		
 	}
 	
 	/** 

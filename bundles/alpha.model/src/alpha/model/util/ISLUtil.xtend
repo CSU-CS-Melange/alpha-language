@@ -192,10 +192,11 @@ class ISLUtil {
 			.dropCols(constantCol, 1)
 			.toLongMatrix.get(0)
 		
-		val nonZeros = vec.reject[v|v==0]
-		if (nonZeros.size >0 && nonZeros.toList.get(0) < 0) {
-			return vec.scalarMultiplication(-1)
-		}
+		// I'm not sure if/why we need these lines below
+//		val nonZeros = vec.reject[v|v==0]
+//		if (nonZeros.size >0 && nonZeros.toList.get(0) < 0) {
+//			return vec.scalarMultiplication(-1)
+//		}
 		
 		return vec
 	}

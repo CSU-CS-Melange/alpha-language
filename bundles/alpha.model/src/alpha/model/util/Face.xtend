@@ -19,6 +19,7 @@ import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.isEffectivelySaturated
 import static extension alpha.model.util.ISLUtil.nullSpace
 import static extension alpha.model.util.ISLUtil.toEqualityConstraint
+import static extension alpha.model.util.ISLUtil.toLinearUnitVector
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 /**
@@ -129,7 +130,7 @@ class Face {
 	
 	/** Returns True if labeling contains at least one POS and NEG label, or false otherwise */
 	static def isValid(Label... labeling) {
-		return labeling.exists[it == Label.POS] && labeling.exists[it == Label.NEG]
+		return labeling.exists[it == Label.POS] || labeling.exists[it == Label.NEG]
 	}
 	
 	/**
@@ -190,6 +191,31 @@ class Face {
 			.removeRedundancies
 			
 		return labeling -> domain
+	}
+	
+	def static dot(long[] v1, long[] v2) {
+		if (v1.size != v2.size) {
+			throw new Exception('Inner product requires vectors of same size')
+		}
+		var ret = 0L
+		for (var i=0; i<v1.size; i++) {
+			ret = ret + v1.get(i) * v2.get(i)
+		}
+		ret
+	}
+	
+	def getLabeling(long[] vector) {
+		generateChildren.map[f | f->f.getNormalVector(this).toLinearUnitVector].map[
+			val f = key
+			val normal = value
+//			println('facet: ' + normal.join(',') + ' ' + f.toBasicSet.removeRedundancies)
+			val dotProduct = normal.dot(vector)
+			switch (dotProduct) {
+				case dotProduct > 0 : Label.POS
+				case dotProduct < 0 : Label.NEG
+				default : Label.ZERO
+			}
+		]
 	}
 	
 	def toLabelInducingConstraint(ISLAff vector, Label label) {
@@ -292,7 +318,7 @@ class Face {
 		} else {
 			return Boundary.NON
 		}
-	} 
+	}
 	
 	
 	/** Returns a string indicating which constraints were saturated to form this face. */

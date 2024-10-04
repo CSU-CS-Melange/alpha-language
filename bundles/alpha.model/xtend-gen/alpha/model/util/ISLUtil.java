@@ -290,13 +290,6 @@ public class ISLUtil {
     int _nbInputs = aff.getNbInputs();
     final int constantCol = (_nbParams + _nbInputs);
     final long[] vec = DomainOperations.toISLEqualityMatrix(aff.toEqualityConstraint().toBasicSet()).dropCols(constantCol, 1).toLongMatrix()[0];
-    final Function1<Long, Boolean> _function = (Long v) -> {
-      return Boolean.valueOf(((v).longValue() == 0));
-    };
-    final Iterable<Long> nonZeros = IterableExtensions.<Long>reject(((Iterable<Long>)Conversions.doWrapArray(vec)), _function);
-    if (((IterableExtensions.size(nonZeros) > 0) && ((IterableExtensions.<Long>toList(nonZeros).get(0)).longValue() < 0))) {
-      return MatrixOperations.scalarMultiplication(vec, (-1));
-    }
     return vec;
   }
 

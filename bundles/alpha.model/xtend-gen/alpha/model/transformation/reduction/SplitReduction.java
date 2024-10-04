@@ -14,6 +14,7 @@ import alpha.model.transformation.Normalize;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.Face;
+import alpha.model.util.ISLUtil;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -32,6 +33,7 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -137,33 +139,42 @@ public class SplitReduction {
    * should result in the existence of valid splits at some point in the exploration.
    */
   public static ISLConstraint[] enumerateCandidateSplits(final AbstractReduceExpression are) {
-    if (SplitReduction.DEBUG) {
-      final Equation eq = AlphaUtil.getContainerEquation(are);
-      StandardEquation _xifexpression = null;
-      if ((eq instanceof StandardEquation)) {
-        _xifexpression = ((StandardEquation) eq);
-      } else {
-        _xifexpression = null;
+    ISLConstraint[] _xblockexpression = null;
+    {
+      if (SplitReduction.DEBUG) {
+        final Equation eq = AlphaUtil.getContainerEquation(are);
+        StandardEquation _xifexpression = null;
+        if ((eq instanceof StandardEquation)) {
+          _xifexpression = ((StandardEquation) eq);
+        } else {
+          _xifexpression = null;
+        }
+        final StandardEquation stdEq = _xifexpression;
+        String _xifexpression_1 = null;
+        if ((stdEq != null)) {
+          _xifexpression_1 = stdEq.getVariable().getName();
+        } else {
+          _xifexpression_1 = (("" + ": ") + are);
+        }
+        String _plus = ("enumerating splits for Equation " + _xifexpression_1);
+        SplitReduction.debug(_plus);
       }
-      final StandardEquation stdEq = _xifexpression;
-      String _xifexpression_1 = null;
-      if ((stdEq != null)) {
-        _xifexpression_1 = stdEq.getVariable().getName();
-      } else {
-        _xifexpression_1 = (("" + ": ") + are);
-      }
-      String _plus = ("enumerating splits for Equation " + _xifexpression_1);
-      SplitReduction.debug(_plus);
+      final ISLMultiAff fp = are.getProjection();
+      final ISLMultiAff fd = SplitReduction.getReuseMaff(are.getBody());
+      _xblockexpression = SplitReduction.enumerateCandidateSplits(are.getFacet(), fp, fd);
     }
+    return _xblockexpression;
+  }
+
+  public static ISLConstraint[] enumerateCandidateSplits(final Face bodyFace, final ISLMultiAff fp, final ISLMultiAff fd) {
     final ArrayList<ISLConstraint> splits = CollectionLiterals.<ISLConstraint>newArrayList();
-    final Face bodyFace = are.getFacet();
     final ISLBasicSet bodyDomain = bodyFace.toBasicSet();
     final int bodyDim = bodyFace.getDimensionality();
     final Function1<Face, ISLBasicSet> _function = (Face it) -> {
       return it.toBasicSet();
     };
     final List<ISLBasicSet> faces = ListExtensions.<Face, ISLBasicSet>map(bodyFace.getLattice().getFaces((bodyDim - 2)), _function);
-    final ISLMultiAff accVec = SplitReduction.construct1DBasis(are.getProjection());
+    final ISLMultiAff accVec = SplitReduction.construct1DBasis(fp);
     if ((accVec != null)) {
       final Function1<ISLBasicSet, ISLConstraint> _function_1 = (ISLBasicSet it) -> {
         return SplitReduction.constructSplit(it.copy(), accVec);
@@ -173,14 +184,13 @@ public class SplitReduction {
       };
       Iterables.<ISLConstraint>addAll(splits, IterableExtensions.<ISLConstraint>reject(ListExtensions.<ISLBasicSet, ISLConstraint>map(faces, _function_1), _function_2));
     }
-    final ISLMultiAff reuseMaff = SplitReduction.getReuseMaff(are.getBody());
-    ISLMultiAff _xifexpression_2 = null;
-    if ((reuseMaff != null)) {
-      _xifexpression_2 = SplitReduction.construct1DBasis(reuseMaff);
+    ISLMultiAff _xifexpression = null;
+    if ((fd != null)) {
+      _xifexpression = SplitReduction.construct1DBasis(fd);
     } else {
-      _xifexpression_2 = null;
+      _xifexpression = null;
     }
-    final ISLMultiAff reuseVec = _xifexpression_2;
+    final ISLMultiAff reuseVec = _xifexpression;
     if ((reuseVec != null)) {
       final Function1<ISLBasicSet, ISLConstraint> _function_3 = (ISLBasicSet it) -> {
         return SplitReduction.constructSplit(it.copy(), reuseVec);
@@ -196,8 +206,8 @@ public class SplitReduction {
     final Iterable<ISLConstraint> usefulSplits = IterableExtensions.<ISLConstraint>filter(splits, _function_5);
     final Consumer<ISLConstraint> _function_6 = (ISLConstraint s) -> {
       String _string = s.toString();
-      String _plus_1 = ("(enumerateCandidateSplits) " + _string);
-      SplitReduction.debug(_plus_1);
+      String _plus = ("(enumerateCandidateSplits) " + _string);
+      SplitReduction.debug(_plus);
     };
     usefulSplits.forEach(_function_6);
     return ((ISLConstraint[])Conversions.unwrapArray(usefulSplits, ISLConstraint.class));
@@ -208,8 +218,19 @@ public class SplitReduction {
    * false otherwise.
    */
   public static boolean isUseful(final ISLConstraint split, final ISLBasicSet bset) {
-    int _nbBasicSets = bset.copy().toSet().subtract(split.copy().toBasicSet().toSet()).getNbBasicSets();
-    return (_nbBasicSets == 2);
+    final ISLSet splitSets = bset.copy().toSet().subtract(split.copy().toBasicSet().toSet());
+    final int nbFreeDims = ISLUtil.dimensionality(bset);
+    final Function1<ISLBasicSet, Boolean> _function = (ISLBasicSet s) -> {
+      int _dimensionality = ISLUtil.dimensionality(s);
+      return Boolean.valueOf((_dimensionality == nbFreeDims));
+    };
+    final Function2<Boolean, Boolean, Boolean> _function_1 = (Boolean v1, Boolean v2) -> {
+      return Boolean.valueOf(((v1).booleanValue() && (v2).booleanValue()));
+    };
+    final Boolean sameNbFreeDims = IterableExtensions.<Boolean>reduce(ListExtensions.<ISLBasicSet, Boolean>map(splitSets.getBasicSets(), _function), _function_1);
+    int _nbBasicSets = splitSets.getNbBasicSets();
+    final boolean has2Pieces = (_nbBasicSets == 2);
+    return (has2Pieces && (sameNbFreeDims).booleanValue());
   }
 
   /**

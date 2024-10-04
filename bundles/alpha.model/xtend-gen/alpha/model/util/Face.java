@@ -156,7 +156,7 @@ public class Face {
   public static boolean isValid(final Face.Label... labeling) {
     return (IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
       return Boolean.valueOf(Objects.equal(it, Face.Label.POS));
-    })) && IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
+    })) || IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
       return Boolean.valueOf(Objects.equal(it, Face.Label.NEG));
     })));
   }
@@ -223,6 +223,65 @@ public class Face {
     };
     final ISLBasicSet domain = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<Pair<ISLAff, Face.Label>, ISLConstraint>map(CommonExtensions.<ISLAff, Face.Label>zipWith(ListExtensions.<Face, ISLAff>map(facets, _function), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function_1), this.toLinearSpace(), _function_2).dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).removeRedundancies();
     return Pair.<Face.Label[], ISLBasicSet>of(labeling, domain);
+  }
+
+  public static long dot(final long[] v1, final long[] v2) {
+    try {
+      long _xblockexpression = (long) 0;
+      {
+        int _size = ((List<Long>)Conversions.doWrapArray(v1)).size();
+        int _size_1 = ((List<Long>)Conversions.doWrapArray(v2)).size();
+        boolean _notEquals = (_size != _size_1);
+        if (_notEquals) {
+          throw new Exception("Inner product requires vectors of same size");
+        }
+        long ret = 0L;
+        for (int i = 0; (i < ((List<Long>)Conversions.doWrapArray(v1)).size()); i++) {
+          long _get = v1[i];
+          long _get_1 = v2[i];
+          long _multiply = (_get * _get_1);
+          long _plus = (ret + _multiply);
+          ret = _plus;
+        }
+        _xblockexpression = ret;
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  public List<Face.Label> getLabeling(final long[] vector) {
+    final Function1<Face, Pair<Face, long[]>> _function = (Face f) -> {
+      long[] _linearUnitVector = ISLUtil.toLinearUnitVector(f.getNormalVector(this));
+      return Pair.<Face, long[]>of(f, _linearUnitVector);
+    };
+    final Function1<Pair<Face, long[]>, Face.Label> _function_1 = (Pair<Face, long[]> it) -> {
+      Face.Label _xblockexpression = null;
+      {
+        final Face f = it.getKey();
+        final long[] normal = it.getValue();
+        final long dotProduct = Face.dot(normal, vector);
+        Face.Label _switchResult = null;
+        boolean _matched = false;
+        if ((dotProduct > 0)) {
+          _matched=true;
+          _switchResult = Face.Label.POS;
+        }
+        if (!_matched) {
+          if ((dotProduct < 0)) {
+            _matched=true;
+            _switchResult = Face.Label.NEG;
+          }
+        }
+        if (!_matched) {
+          _switchResult = Face.Label.ZERO;
+        }
+        _xblockexpression = _switchResult;
+      }
+      return _xblockexpression;
+    };
+    return ListExtensions.<Pair<Face, long[]>, Face.Label>map(ListExtensions.<Face, Pair<Face, long[]>>map(this.generateChildren(), _function), _function_1);
   }
 
   public ISLConstraint toLabelInducingConstraint(final ISLAff vector, final Face.Label label) {
