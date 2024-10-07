@@ -33,6 +33,7 @@ import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
 import com.google.common.base.Objects;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
@@ -357,6 +358,7 @@ public class OptimalSimplifyingReductions {
     PermutationCaseReduce.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
     Normalize.apply(this.systemBody);
+    this.prdg = PRDGGenerator.apply(this.system);
     this.debug("After preprocessing:");
     this.debug(Show.<SystemBody>print(this.systemBody));
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
@@ -436,9 +438,44 @@ public class OptimalSimplifyingReductions {
    * reduce expressions need to be recursively explored.
    */
   private void _optimizeEquation(final StandardEquation eq, final ReduceExpression re, final OptimalSimplifyingReductions.State state) {
-    throw new Error("Unresolved compilation problems:"
-      + "\nThe method respectsFeasibleSpace(DynamicProgrammingStep) is undefined for the type PRDG"
-      + "\nThis expression is not allowed in this context, since it doesn\'t cause any side effects.");
+    final SystemBody containerSystemBody = AlphaUtil.getContainerSystemBody(eq);
+    boolean _isOptimallySimplified = this.isOptimallySimplified(re);
+    if (_isOptimallySimplified) {
+      eq.setExplored();
+      return;
+    }
+    final SystemBody body = AlphaUtil.getContainerSystemBody(eq);
+    while ((!this.sideEffectFreeTransformations(body, eq.getVariable().getName()))) {
+    }
+    final StandardEquation targetEq = body.getStandardEquation(eq.getVariable().getName());
+    boolean _isNotReduceExpr = OptimalSimplifyingReductions.isNotReduceExpr(targetEq.getExpr());
+    if (_isNotReduceExpr) {
+      eq.setExplored();
+      return;
+    }
+    AlphaExpression _expr = targetEq.getExpr();
+    final List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
+    final Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep> _function = (OptimalSimplifyingReductions.DynamicProgrammingStep c) -> {
+      String _description = c.description();
+      String _plus = ("candidate: " + _description);
+      this.debug(_plus);
+    };
+    candidates.forEach(_function);
+    for (final OptimalSimplifyingReductions.DynamicProgrammingStep step : candidates) {
+      {
+        final AlphaRoot optimizedRoot = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(containerSystemBody));
+        final SystemBody optimizedBody = optimizedRoot.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID);
+        final StandardEquation optimizedEq = this.getEquation(optimizedRoot, targetEq.getName());
+        this.applyDPStep(optimizedEq.getExpr(), step);
+        optimizedEq.setExplored(Boolean.valueOf(OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr())));
+        final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> steps = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
+        steps.addAll(state.steps);
+        steps.add(step);
+        final OptimalSimplifyingReductions.State newState = new OptimalSimplifyingReductions.State(optimizedBody, steps);
+        this.optimizeUnexploredEquations(newState);
+      }
+    }
+    eq.setExplored();
   }
 
   private void _optimizeEquation(final StandardEquation eq, final AlphaExpression ae, final OptimalSimplifyingReductions.State state) {
@@ -512,19 +549,44 @@ public class OptimalSimplifyingReductions {
         OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, _identicalAnswerBasis, _identicalAnswerDomain);
         return Collections.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>newArrayList(_stepRemoveIndenticalAnswers));
       } else {
-        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
+        InputOutput.<String>println("Reuse Vectors: ");
+        final Consumer<long[]> _function = (long[] x) -> {
+          final Consumer<Long> _function_1 = (Long i) -> {
+            String _plus = (i + " ");
+            InputOutput.<String>print(_plus);
+          };
+          ((List<Long>)Conversions.doWrapArray(x)).forEach(_function_1);
+          InputOutput.println();
+        };
+        candidateReuse.getVectors().forEach(_function);
+        final Function1<long[], Boolean> _function_1 = (long[] vec) -> {
+          return Boolean.valueOf(this.prdg.respectsScheduleSpace(AlphaUtil.getContainerEquation(targetRE).getName(), vec));
+        };
+        Iterable<long[]> vectors = IterableExtensions.<long[]>filter(candidateReuse.getVectors(), _function_1);
+        InputOutput.<String>println("Filtered Vectors:");
+        final Consumer<long[]> _function_2 = (long[] vec) -> {
+          final Consumer<Long> _function_3 = (Long i) -> {
+            String _plus = (i + " ");
+            InputOutput.<String>print(_plus);
+          };
+          ((List<Long>)Conversions.doWrapArray(vec)).forEach(_function_3);
+          InputOutput.println();
+        };
+        vectors.forEach(_function_2);
+        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function_3 = (long[] vec) -> {
           return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
         };
-        candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
+        Iterables.<OptimalSimplifyingReductions.DynamicProgrammingStep>addAll(candidates, 
+          IterableExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(vectors, _function_3));
       }
     }
     boolean _shouldSplit = this.shouldSplit(targetRE, shouldSimplify);
     if (_shouldSplit) {
       final ISLConstraint[] splits = SplitReduction.enumerateCandidateSplits(targetRE);
-      final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_1 = (ISLConstraint split) -> {
+      final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_4 = (ISLConstraint split) -> {
         return new OptimalSimplifyingReductions.StepSplitReduction(targetRE, split);
       };
-      candidates.addAll(ListExtensions.<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>map(((List<ISLConstraint>)Conversions.doWrapArray(splits)), _function_1));
+      candidates.addAll(ListExtensions.<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>map(((List<ISLConstraint>)Conversions.doWrapArray(splits)), _function_4));
     }
     boolean _testLegality = Idempotence.testLegality(targetRE, SSAR);
     if (_testLegality) {

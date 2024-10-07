@@ -87,12 +87,10 @@ class CandidateReuse {
 		
 		// construct reuse space
 		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
-		println("Reuse Space: " + reuseSpace)
 		// construct face lattice
 		val face = are.facet
 		debug('(candidateReuse) Lp = ' + face.toLinearSpace.toString)
 		val facets = face.generateChildren.toList
-		println("Facets: " + facets)
 		
 		if (facets.size == 0)
 			return;
@@ -130,13 +128,7 @@ class CandidateReuse {
 				reuseVectorWithIdenticalAnswers = reuseVector
 				return
 			}
-			var respectsSchedule = true
-			if (respectsSchedule) {
-				vectors.add(reuseVector)				
-			} else {
-				
-			}
-
+			vectors.add(reuseVector)
 		}
 	}
 	

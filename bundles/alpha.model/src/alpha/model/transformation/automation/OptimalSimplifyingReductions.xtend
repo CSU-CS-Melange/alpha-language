@@ -131,6 +131,7 @@ class OptimalSimplifyingReductions {
 		PermutationCaseReduce.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
+		this.prdg = PRDGGenerator.apply(system)
 		
 		debug('After preprocessing:')
 		debug(Show.print(systemBody))
@@ -212,7 +213,6 @@ class OptimalSimplifyingReductions {
 		// Enumerate the list of candidate dynamic programming steps
 		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
 		candidates.forEach[c | debug("candidate: " + c.description)]
-		candidates.filter[c | this.prdg.respectsFeasibleSpace(c) ]
 		
 		// Explore each step recursively. For each step, create a new state by applying the step.
 		// Then recursively call optimizeUnexploredEquations for the new state
@@ -291,8 +291,10 @@ class OptimalSimplifyingReductions {
 		
 		// SimplifyingReductions 
 		val shouldSimplify = targetRE.shouldSimplify
+		
 		if (shouldSimplify) {
 			val candidateReuse = new CandidateReuse(targetRE, SSAR)
+
 			if (candidateReuse.hasIdenticalAnswers) {
 				/*
 				 * If identical answers are found, then do not continue processing other DP steps. 
@@ -305,7 +307,15 @@ class OptimalSimplifyingReductions {
 					candidateReuse.identicalAnswerDomain
 				)]
 			} else {
-				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
+				println("Reuse Vectors: ")
+				candidateReuse.vectors.forEach[x | x.forEach[i | print(i + " ")] println()]
+				var vectors = candidateReuse.vectors
+					.filter[vec | this.prdg.respectsScheduleSpace(targetRE.containerEquation.name, vec)]
+				println("Filtered Vectors:")
+				vectors.forEach[vec | vec.forEach[ i | print(i + " ")] println()]
+				candidates.addAll(
+					vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)]
+				)
 			}
 		}
 		
