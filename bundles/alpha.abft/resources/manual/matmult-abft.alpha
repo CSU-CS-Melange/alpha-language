@@ -1,0 +1,17 @@
+affine matmult [N]->{: N>0}
+inputs
+  A, B : {[i,j] : 0<=i,j<N}
+outputs
+  C : {[i,j] : 0<=i,j<N}
+  Inv_C_i : {[i] : 0<=i<N}
+locals
+  C_C_i_0, C_C_i_1: {[i] : 0<=i<N}
+let
+  C[i,j] = reduce(+, [k], A[i,k]*B[k,j]);
+  
+  C_C_i_0[i] = reduce(+, [j], C[i,j]);
+  
+  C_C_i_1[i] = reduce(+, [j,k], A[i,k]*B[k,j]);
+  
+  Inv_C_i[i] = (C_C_i_0 - C_C_i_0) / C_C_i_0;
+.

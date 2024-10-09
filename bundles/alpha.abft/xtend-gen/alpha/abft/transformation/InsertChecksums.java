@@ -51,10 +51,10 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
  * 	   // equations
  * 
  *     O_C_i_0[i] = reduce(+, [j], O[i,j]);
- *     O_C_i_1[i] = reduce(+, [j], O[i,j]);  // subsequently run simplification on this
+ *     O_C_i_1[i] = reduce(+, [j], O[i,j]);  // substitute and run simplification on this
  * 
  *     O_C_j_0[j] = reduce(+, [i], O[i,j]);
- *     O_C_j_1[j] = reduce(+, [i], O[i,j]);  // subsequently run simplification on this
+ *     O_C_j_1[j] = reduce(+, [i], O[i,j]);  // substitute and run simplification on this
  * 
  *     Inv_C_i[i] = (O_C_i_0 - O_C_i_1) / O_C_i_0;
  *     Inv_C_j[j] = (O_C_j_0 - O_C_j_1) / O_C_j_0;
