@@ -1,0 +1,8 @@
+affine matmult [N]->{: N>0}
+inputs
+  A, B : {[i,j] : 0<=i,j<N}
+outputs
+  C : {[i,j] : 0<=i,j<N}
+let
+  C[i,j] = reduce(+, [k], A[i,k]*B[k,j]);
+.
