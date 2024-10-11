@@ -273,7 +273,6 @@ class SplitReduction {
 			return splits
 		}
 		
-		val bodyDomain = bodyFace.toBasicSet
 		val faces = bodyFace.lattice.getFaces(bodyDim - 2).map[toBasicSet]
 		
 		// Construct splits that saturate the accumulation space

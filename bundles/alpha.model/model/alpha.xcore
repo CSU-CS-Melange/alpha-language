@@ -798,6 +798,7 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	contains AlphaExpression body
 	Face z__internal_facet
 	int nbFreeDimensionsInBody
+	Boolean z__fractalSimplify
 	
 	op JNIISLMultiAff getProjection() {
 		if (projectionExpr.^type != POLY_OBJECT_TYPE.FUNCTION ) null
@@ -810,6 +811,9 @@ abstract class AbstractReduceExpression extends AlphaExpression {
 	
 	op Face getFacet() { if (z__internal_facet === null) FaceLattice.create(body.contextDomain).root else z__internal_facet }
 	op void setFacet(Face face) { z__internal_facet = facet }
+	
+	op boolean getFractalSimplify() { if (z__fractalSimplify === null) false else z__fractalSimplify }
+	op void setFractalSimplify(boolean value) { z__fractalSimplify = value}
 }
 class ReduceExpression extends AbstractReduceExpression {
 	

@@ -40,6 +40,7 @@ import org.eclipse.emf.ecore.impl.ENotificationImpl;
  *   <li>{@link alpha.model.impl.AbstractReduceExpressionImpl#getBody <em>Body</em>}</li>
  *   <li>{@link alpha.model.impl.AbstractReduceExpressionImpl#getZ__internal_facet <em>Zinternal facet</em>}</li>
  *   <li>{@link alpha.model.impl.AbstractReduceExpressionImpl#getNbFreeDimensionsInBody <em>Nb Free Dimensions In Body</em>}</li>
+ *   <li>{@link alpha.model.impl.AbstractReduceExpressionImpl#getZ__fractalSimplify <em>Zfractal Simplify</em>}</li>
  * </ul>
  *
  * @generated
@@ -124,6 +125,26 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 	 * @ordered
 	 */
 	protected Integer nbFreeDimensionsInBody = NB_FREE_DIMENSIONS_IN_BODY_EDEFAULT;
+
+	/**
+	 * The default value of the '{@link #getZ__fractalSimplify() <em>Zfractal Simplify</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getZ__fractalSimplify()
+	 * @generated
+	 * @ordered
+	 */
+	protected static final Boolean ZFRACTAL_SIMPLIFY_EDEFAULT = null;
+
+	/**
+	 * The cached value of the '{@link #getZ__fractalSimplify() <em>Zfractal Simplify</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see #getZ__fractalSimplify()
+	 * @generated
+	 * @ordered
+	 */
+	protected Boolean z__fractalSimplify = ZFRACTAL_SIMPLIFY_EDEFAULT;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -298,6 +319,27 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public Boolean getZ__fractalSimplify() {
+		return z__fractalSimplify;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setZ__fractalSimplify(Boolean newZ__fractalSimplify) {
+		Boolean oldZ__fractalSimplify = z__fractalSimplify;
+		z__fractalSimplify = newZ__fractalSimplify;
+		if (eNotificationRequired())
+			eNotify(new ENotificationImpl(this, Notification.SET, ModelPackage.ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY, oldZ__fractalSimplify, z__fractalSimplify));
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public ISLMultiAff getProjection() {
 		ISLMultiAff _xifexpression = null;
 		POLY_OBJECT_TYPE _type = this.getProjectionExpr().getType();
@@ -353,6 +395,33 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public Boolean getFractalSimplify() {
+		Boolean _xifexpression = null;
+		Boolean _z__fractalSimplify = this.getZ__fractalSimplify();
+		boolean _tripleEquals = (_z__fractalSimplify == null);
+		if (_tripleEquals) {
+			_xifexpression = Boolean.valueOf(false);
+		}
+		else {
+			_xifexpression = this.getZ__fractalSimplify();
+		}
+		return _xifexpression;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setFractalSimplify(final Boolean value) {
+		this.setZ__fractalSimplify(value);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	@Override
 	public NotificationChain eInverseRemove(InternalEObject otherEnd, int featureID, NotificationChain msgs) {
 		switch (featureID) {
@@ -382,6 +451,8 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 				return getZ__internal_facet();
 			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY:
 				return getNbFreeDimensionsInBody();
+			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY:
+				return getZ__fractalSimplify();
 		}
 		return super.eGet(featureID, resolve, coreType);
 	}
@@ -408,6 +479,9 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 				return;
 			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY:
 				setNbFreeDimensionsInBody((Integer)newValue);
+				return;
+			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY:
+				setZ__fractalSimplify((Boolean)newValue);
 				return;
 		}
 		super.eSet(featureID, newValue);
@@ -436,6 +510,9 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY:
 				setNbFreeDimensionsInBody(NB_FREE_DIMENSIONS_IN_BODY_EDEFAULT);
 				return;
+			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY:
+				setZ__fractalSimplify(ZFRACTAL_SIMPLIFY_EDEFAULT);
+				return;
 		}
 		super.eUnset(featureID);
 	}
@@ -458,6 +535,8 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 				return ZINTERNAL_FACET_EDEFAULT == null ? z__internal_facet != null : !ZINTERNAL_FACET_EDEFAULT.equals(z__internal_facet);
 			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY:
 				return NB_FREE_DIMENSIONS_IN_BODY_EDEFAULT == null ? nbFreeDimensionsInBody != null : !NB_FREE_DIMENSIONS_IN_BODY_EDEFAULT.equals(nbFreeDimensionsInBody);
+			case ModelPackage.ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY:
+				return ZFRACTAL_SIMPLIFY_EDEFAULT == null ? z__fractalSimplify != null : !ZFRACTAL_SIMPLIFY_EDEFAULT.equals(z__fractalSimplify);
 		}
 		return super.eIsSet(featureID);
 	}
@@ -478,6 +557,8 @@ public abstract class AbstractReduceExpressionImpl extends AlphaExpressionImpl i
 		result.append(z__internal_facet);
 		result.append(", nbFreeDimensionsInBody: ");
 		result.append(nbFreeDimensionsInBody);
+		result.append(", z__fractalSimplify: ");
+		result.append(z__fractalSimplify);
 		result.append(')');
 		return result.toString();
 	}

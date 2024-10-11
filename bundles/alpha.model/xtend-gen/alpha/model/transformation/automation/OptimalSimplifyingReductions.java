@@ -39,6 +39,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -327,6 +328,8 @@ public class OptimalSimplifyingReductions {
 
   protected boolean verbose;
 
+  protected HashSet discoveredSignatures;
+
   /**
    * This maps contains the simplified versions of the program obtained
    * during exploration. Simplified versions are grouped by complexity.
@@ -363,6 +366,7 @@ public class OptimalSimplifyingReductions {
     this.trySplitting = trySplitting;
     this.verbose = verbose;
     this.explored2Faces = CollectionLiterals.<AbstractReduceExpression, Face>newHashMap();
+    this.discoveredSignatures = CollectionLiterals.<Object>newHashSet();
   }
 
   /**
@@ -445,7 +449,8 @@ public class OptimalSimplifyingReductions {
         }
       }
       final int stateComplexity = state.complexity();
-      if ((stateComplexity == this.targetComplexity)) {
+      final int signature = Show.<SystemBody>print(state.body).hashCode();
+      if (((stateComplexity == this.targetComplexity) && (!this.discoveredSignatures.contains(Integer.valueOf(signature))))) {
         StringConcatenation _builder = new StringConcatenation();
         _builder.append("[alpha]: found simplification/v");
         _builder.append(this.optimizationNum);
@@ -456,6 +461,7 @@ public class OptimalSimplifyingReductions {
         InputOutput.<String>println(_builder.toString());
         this.optimizationNum++;
         this.addToOptimzations(state);
+        this.discoveredSignatures.add(Integer.valueOf(signature));
         if ((this.throttle && (this.optimizationNum >= this.throttleLimit))) {
           throw new OptimalSimplifyingReductions.ThrottleException();
         }
@@ -499,7 +505,7 @@ public class OptimalSimplifyingReductions {
         final SystemBody optimizedBody = optimizedRoot.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID);
         final StandardEquation optimizedEq = this.getEquation(optimizedRoot, targetEq.getName());
         this.applyDPStep(optimizedEq.getExpr(), step);
-        optimizedEq.setExplored(Boolean.valueOf(OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr())));
+        optimizedEq.setExplored(Boolean.valueOf((OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr()) || (step instanceof OptimalSimplifyingReductions.StepFractalSimplify))));
         final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> steps = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
         steps.addAll(state.steps);
         steps.add(step);

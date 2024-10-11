@@ -44,6 +44,11 @@ public class ComplexityCalculator extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void outReduceExpression(final ReduceExpression re) {
-    this.updateComplexity(ISLUtil.dimensionality(re.getBody().getContextDomain()));
+    Boolean _fractalSimplify = re.getFractalSimplify();
+    if ((_fractalSimplify).booleanValue()) {
+      this.updateComplexity(1);
+    } else {
+      this.updateComplexity(ISLUtil.dimensionality(re.getBody().getContextDomain()));
+    }
   }
 }

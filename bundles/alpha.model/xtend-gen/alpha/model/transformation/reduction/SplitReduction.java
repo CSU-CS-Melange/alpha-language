@@ -16,6 +16,7 @@ import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import alpha.model.util.Face;
 import alpha.model.util.ISLUtil;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -342,8 +343,53 @@ public class SplitReduction {
   }
 
   public static ISLConstraint[] enumerateCandidateSplits(final Face bodyFace, final ISLMultiAff fp, final ISLMultiAff fd) {
-    throw new Error("Unresolved compilation problems:"
-      + "\nDuplicate local variable bodyDomain");
+    final ArrayList<ISLConstraint> splits = CollectionLiterals.<ISLConstraint>newArrayList();
+    final ISLBasicSet bodyDomain = bodyFace.toBasicSet();
+    final int bodyDim = bodyFace.getDimensionality();
+    if ((bodyDim <= 1)) {
+      return ((ISLConstraint[])Conversions.unwrapArray(splits, ISLConstraint.class));
+    }
+    final Function1<Face, ISLBasicSet> _function = (Face it) -> {
+      return it.toBasicSet();
+    };
+    final List<ISLBasicSet> faces = ListExtensions.<Face, ISLBasicSet>map(bodyFace.getLattice().getFaces((bodyDim - 2)), _function);
+    final ISLMultiAff accVec = SplitReduction.construct1DBasis(fp);
+    if ((accVec != null)) {
+      final Function1<ISLBasicSet, ISLConstraint> _function_1 = (ISLBasicSet it) -> {
+        return SplitReduction.constructSplit(it.copy(), accVec);
+      };
+      final Function1<ISLConstraint, Boolean> _function_2 = (ISLConstraint s) -> {
+        return Boolean.valueOf((s == null));
+      };
+      Iterables.<ISLConstraint>addAll(splits, IterableExtensions.<ISLConstraint>reject(ListExtensions.<ISLBasicSet, ISLConstraint>map(faces, _function_1), _function_2));
+    }
+    ISLMultiAff _xifexpression = null;
+    if ((fd != null)) {
+      _xifexpression = SplitReduction.construct1DBasis(fd);
+    } else {
+      _xifexpression = null;
+    }
+    final ISLMultiAff reuseVec = _xifexpression;
+    if ((reuseVec != null)) {
+      final Function1<ISLBasicSet, ISLConstraint> _function_3 = (ISLBasicSet it) -> {
+        return SplitReduction.constructSplit(it.copy(), reuseVec);
+      };
+      final Function1<ISLConstraint, Boolean> _function_4 = (ISLConstraint s) -> {
+        return Boolean.valueOf((s == null));
+      };
+      Iterables.<ISLConstraint>addAll(splits, IterableExtensions.<ISLConstraint>reject(ListExtensions.<ISLBasicSet, ISLConstraint>map(faces, _function_3), _function_4));
+    }
+    final Function1<ISLConstraint, Boolean> _function_5 = (ISLConstraint s) -> {
+      return Boolean.valueOf(SplitReduction.isUseful(s, bodyDomain));
+    };
+    final Iterable<ISLConstraint> usefulSplits = IterableExtensions.<ISLConstraint>filter(splits, _function_5);
+    final Consumer<ISLConstraint> _function_6 = (ISLConstraint s) -> {
+      String _string = s.toString();
+      String _plus = ("(enumerateCandidateSplits) " + _string);
+      SplitReduction.debug(_plus);
+    };
+    usefulSplits.forEach(_function_6);
+    return ((ISLConstraint[])Conversions.unwrapArray(usefulSplits, ISLConstraint.class));
   }
 
   /**

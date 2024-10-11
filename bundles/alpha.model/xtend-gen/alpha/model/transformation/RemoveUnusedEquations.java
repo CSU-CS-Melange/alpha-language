@@ -7,6 +7,8 @@ import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.Variable;
 import alpha.model.VariableExpression;
+import alpha.model.util.AlphaUtil;
+import com.google.common.base.Objects;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.Consumer;
@@ -35,12 +37,31 @@ public class RemoveUnusedEquations {
   }
 
   public static void apply(final AlphaSystem system) {
+    int nbEquationsBefore = 0;
+    int nbEquationsAfter = 0;
+    do {
+      {
+        nbEquationsBefore = EcoreUtil2.<StandardEquation>getAllContentsOfType(system, StandardEquation.class).size();
+        RemoveUnusedEquations.transform(system);
+        nbEquationsAfter = EcoreUtil2.<StandardEquation>getAllContentsOfType(system, StandardEquation.class).size();
+      }
+    } while((nbEquationsBefore != nbEquationsAfter));
+  }
+
+  public static void transform(final AlphaSystem system) {
     final HashMap<Variable, Boolean> map = new HashMap<Variable, Boolean>();
     final Function1<VariableExpression, Boolean> _function = (VariableExpression ve) -> {
       return ve.getVariable().isLocal();
     };
     final Consumer<VariableExpression> _function_1 = (VariableExpression ve) -> {
-      map.put(ve.getVariable(), Boolean.valueOf(true));
+      Equation _containerEquation = AlphaUtil.getContainerEquation(ve);
+      final StandardEquation eq = ((StandardEquation) _containerEquation);
+      Variable _variable = eq.getVariable();
+      Variable _variable_1 = ve.getVariable();
+      boolean _notEquals = (!Objects.equal(_variable, _variable_1));
+      if (_notEquals) {
+        map.put(ve.getVariable(), Boolean.valueOf(true));
+      }
     };
     IterableExtensions.<VariableExpression>filter(EcoreUtil2.<VariableExpression>getAllContentsOfType(system, VariableExpression.class), _function).forEach(_function_1);
     final Predicate<Variable> _function_2 = (Variable v) -> {

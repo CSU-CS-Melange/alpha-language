@@ -46,6 +46,7 @@ import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
+import java.util.HashSet
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -75,6 +76,8 @@ class OptimalSimplifyingReductions {
 	protected int targetComplexity
 	protected boolean trySplitting
 	protected boolean verbose
+	
+	protected HashSet discoveredSignatures
 	
 	/**
 	 * This maps contains the simplified versions of the program obtained
@@ -110,6 +113,7 @@ class OptimalSimplifyingReductions {
 		this.trySplitting = trySplitting
 		this.verbose = verbose
 		this.explored2Faces = newHashMap
+		this.discoveredSignatures = newHashSet
 	}
 	
 	/** 
@@ -185,10 +189,12 @@ class OptimalSimplifyingReductions {
 		}
 		
 		val stateComplexity = state.complexity
-		if (stateComplexity == targetComplexity) {
+		val signature = Show.print(state.body).hashCode
+		if (stateComplexity == targetComplexity && !(discoveredSignatures.contains(signature))) {
 			println('''[alpha]: found simplification/v«optimizationNum»/«system.name».alpha''')
 			optimizationNum++
 			state.addToOptimzations
+			discoveredSignatures.add(signature)
 			if (throttle && optimizationNum >= throttleLimit)
 				throw new ThrottleException
 		}
@@ -229,7 +235,7 @@ class OptimalSimplifyingReductions {
 			val optimizedBody = optimizedRoot.getSystem(originalSystemName).systemBodies.get(systemBodyID)
 			val optimizedEq = optimizedRoot.getEquation(targetEq.name)
 			optimizedEq.expr.applyDPStep(step)
-			optimizedEq.explored = optimizedEq.expr.isNotReduceExpr
+			optimizedEq.explored = optimizedEq.expr.isNotReduceExpr || step instanceof StepFractalSimplify
 			val steps = newLinkedList
 			steps.addAll(state.steps)
 			steps += step

@@ -43,6 +43,9 @@ class ComplexityCalculator extends AbstractAlphaCompleteVisitor {
 	}
 	
 	override outReduceExpression(ReduceExpression re) {
-		updateComplexity(re.body.contextDomain.dimensionality)
+		if (re.fractalSimplify)
+			updateComplexity(1)
+		else
+			updateComplexity(re.body.contextDomain.dimensionality)
 	}
 }

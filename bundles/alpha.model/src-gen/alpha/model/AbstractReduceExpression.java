@@ -20,6 +20,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
  *   <li>{@link alpha.model.AbstractReduceExpression#getBody <em>Body</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getZ__internal_facet <em>Zinternal facet</em>}</li>
  *   <li>{@link alpha.model.AbstractReduceExpression#getNbFreeDimensionsInBody <em>Nb Free Dimensions In Body</em>}</li>
+ *   <li>{@link alpha.model.AbstractReduceExpression#getZ__fractalSimplify <em>Zfractal Simplify</em>}</li>
  * </ul>
  *
  * @see alpha.model.ModelPackage#getAbstractReduceExpression()
@@ -141,6 +142,28 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	void setNbFreeDimensionsInBody(Integer value);
 
 	/**
+	 * Returns the value of the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Zfractal Simplify</em>' attribute.
+	 * @see #setZ__fractalSimplify(Boolean)
+	 * @see alpha.model.ModelPackage#getAbstractReduceExpression_Z__fractalSimplify()
+	 * @model unique="false"
+	 * @generated
+	 */
+	Boolean getZ__fractalSimplify();
+
+	/**
+	 * Sets the value of the '{@link alpha.model.AbstractReduceExpression#getZ__fractalSimplify <em>Zfractal Simplify</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Zfractal Simplify</em>' attribute.
+	 * @see #getZ__fractalSimplify()
+	 * @generated
+	 */
+	void setZ__fractalSimplify(Boolean value);
+
+	/**
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @model kind="operation" dataType="alpha.model.JNIISLMultiAff" unique="false"
@@ -171,5 +194,21 @@ public interface AbstractReduceExpression extends AlphaExpression {
 	 * @generated
 	 */
 	void setFacet(Face face);
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model kind="operation" dataType="alpha.model.boolean" unique="false"
+	 * @generated
+	 */
+	Boolean getFractalSimplify();
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @model valueDataType="alpha.model.boolean" valueUnique="false"
+	 * @generated
+	 */
+	void setFractalSimplify(Boolean value);
 
 } // AbstractReduceExpression

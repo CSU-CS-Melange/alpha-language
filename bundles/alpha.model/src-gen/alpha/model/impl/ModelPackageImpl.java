@@ -104,6 +104,7 @@ import org.eclipse.emf.ecore.EEnum;
 import org.eclipse.emf.ecore.EOperation;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EcorePackage;
 
 import org.eclipse.emf.ecore.impl.EPackageImpl;
 
@@ -860,6 +861,9 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		ModelPackageImpl theModelPackage = registeredModelPackage instanceof ModelPackageImpl ? (ModelPackageImpl)registeredModelPackage : new ModelPackageImpl();
 
 		isInited = true;
+
+		// Initialize simple dependencies
+		EcorePackage.eINSTANCE.eClass();
 
 		// Create package meta-data objects
 		theModelPackage.createPackageContents();
@@ -1728,6 +1732,15 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 	 */
 	public EAttribute getAbstractReduceExpression_NbFreeDimensionsInBody() {
 		return (EAttribute)abstractReduceExpressionEClass.getEStructuralFeatures().get(4);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getAbstractReduceExpression_Z__fractalSimplify() {
+		return (EAttribute)abstractReduceExpressionEClass.getEStructuralFeatures().get(5);
 	}
 
 	/**
@@ -3065,6 +3078,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		createEReference(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__BODY);
 		createEAttribute(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__ZINTERNAL_FACET);
 		createEAttribute(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY);
+		createEAttribute(abstractReduceExpressionEClass, ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY);
 
 		reduceExpressionEClass = createEClass(REDUCE_EXPRESSION);
 
@@ -3269,6 +3283,9 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		setName(eNAME);
 		setNsPrefix(eNS_PREFIX);
 		setNsURI(eNS_URI);
+
+		// Obtain other dependent packages
+		EcorePackage theEcorePackage = (EcorePackage)EPackage.Registry.INSTANCE.getEPackage(EcorePackage.eNS_URI);
 
 		// Create type parameters
 
@@ -4085,6 +4102,7 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 		initEReference(getAbstractReduceExpression_Body(), this.getAlphaExpression(), null, "body", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getAbstractReduceExpression_Z__internal_facet(), this.getFace(), "z__internal_facet", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getAbstractReduceExpression_NbFreeDimensionsInBody(), this.getint(), "nbFreeDimensionsInBody", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getAbstractReduceExpression_Z__fractalSimplify(), theEcorePackage.getEBooleanObject(), "z__fractalSimplify", null, 0, 1, AbstractReduceExpression.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		addEOperation(abstractReduceExpressionEClass, this.getJNIISLMultiAff(), "getProjection", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
@@ -4095,6 +4113,11 @@ public class ModelPackageImpl extends EPackageImpl implements ModelPackage {
 
 		op = addEOperation(abstractReduceExpressionEClass, null, "setFacet", 0, 1, !IS_UNIQUE, IS_ORDERED);
 		addEParameter(op, this.getFace(), "face", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		addEOperation(abstractReduceExpressionEClass, this.getboolean(), "getFractalSimplify", 0, 1, !IS_UNIQUE, IS_ORDERED);
+
+		op = addEOperation(abstractReduceExpressionEClass, null, "setFractalSimplify", 0, 1, !IS_UNIQUE, IS_ORDERED);
+		addEParameter(op, this.getboolean(), "value", 0, 1, !IS_UNIQUE, IS_ORDERED);
 
 		initEClass(reduceExpressionEClass, ReduceExpression.class, "ReduceExpression", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 

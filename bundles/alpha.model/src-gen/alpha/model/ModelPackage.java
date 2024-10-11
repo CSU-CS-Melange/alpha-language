@@ -1784,13 +1784,22 @@ public interface ModelPackage extends EPackage {
 	int ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ALPHA_EXPRESSION_FEATURE_COUNT + 4;
 
 	/**
+	 * The feature id for the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = ALPHA_EXPRESSION_FEATURE_COUNT + 5;
+
+	/**
 	 * The number of structural features of the '<em>Abstract Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 5;
+	int ABSTRACT_REDUCE_EXPRESSION_FEATURE_COUNT = ALPHA_EXPRESSION_FEATURE_COUNT + 6;
 
 	/**
 	 * The meta object id for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.
@@ -1882,6 +1891,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY;
 
 	/**
 	 * The number of structural features of the '<em>Reduce Expression</em>' class.
@@ -1982,6 +2000,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -2093,6 +2120,15 @@ public interface ModelPackage extends EPackage {
 	int ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
 
 	/**
+	 * The feature id for the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ARG_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY;
+
+	/**
 	 * The number of structural features of the '<em>Arg Reduce Expression</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -2191,6 +2227,15 @@ public interface ModelPackage extends EPackage {
 	 * @ordered
 	 */
 	int EXTERNAL_ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = ARG_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY;
+
+	/**
+	 * The feature id for the '<em><b>Zfractal Simplify</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int EXTERNAL_ARG_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = ARG_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY;
 
 	/**
 	 * The feature id for the '<em><b>External Function</b></em>' reference.
@@ -5814,6 +5859,17 @@ public interface ModelPackage extends EPackage {
 	EAttribute getAbstractReduceExpression_NbFreeDimensionsInBody();
 
 	/**
+	 * Returns the meta object for the attribute '{@link alpha.model.AbstractReduceExpression#getZ__fractalSimplify <em>Zfractal Simplify</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Zfractal Simplify</em>'.
+	 * @see alpha.model.AbstractReduceExpression#getZ__fractalSimplify()
+	 * @see #getAbstractReduceExpression()
+	 * @generated
+	 */
+	EAttribute getAbstractReduceExpression_Z__fractalSimplify();
+
+	/**
 	 * Returns the meta object for class '{@link alpha.model.ReduceExpression <em>Reduce Expression</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -8052,6 +8108,14 @@ public interface ModelPackage extends EPackage {
 		 * @generated
 		 */
 		EAttribute ABSTRACT_REDUCE_EXPRESSION__NB_FREE_DIMENSIONS_IN_BODY = eINSTANCE.getAbstractReduceExpression_NbFreeDimensionsInBody();
+
+		/**
+		 * The meta object literal for the '<em><b>Zfractal Simplify</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute ABSTRACT_REDUCE_EXPRESSION__ZFRACTAL_SIMPLIFY = eINSTANCE.getAbstractReduceExpression_Z__fractalSimplify();
 
 		/**
 		 * The meta object literal for the '{@link alpha.model.impl.ReduceExpressionImpl <em>Reduce Expression</em>}' class.
