@@ -90,4 +90,17 @@ class CommonExtensions {
 			.map[remainder | elements.get(remainder.intValue)]
 			.toArrayList
 	}
+	
+	/**
+	 * Returns the dot product between two arrays of the same size
+	 */
+	def static dot(long[] v1, long[] v2) {
+		if (v1.size != v2.size)
+			throw new Exception('dot product operands must be of same size')
+		var sum = 0l
+		for (i : 0..<v1.size) {
+			sum += v1.get(i) * v2.get(i)
+		}
+		return sum
+	}
 }

@@ -10,12 +10,14 @@ import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.analysis.reduction.CandidateReuse;
+import alpha.model.analysis.reduction.ReductionUtil;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.matrix.MatrixOperations;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.SplitUnionIntoCase;
 import alpha.model.transformation.reduction.Distributivity;
+import alpha.model.transformation.reduction.FractalSimplify;
 import alpha.model.transformation.reduction.HigherOrderOperator;
 import alpha.model.transformation.reduction.Idempotence;
 import alpha.model.transformation.reduction.NormalizeReduction;
@@ -28,6 +30,7 @@ import alpha.model.transformation.reduction.SimplifyingReductions;
 import alpha.model.transformation.reduction.SplitReduction;
 import alpha.model.util.AlphaOperatorUtil;
 import alpha.model.util.AlphaUtil;
+import alpha.model.util.Face;
 import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
 import com.google.common.base.Objects;
@@ -169,6 +172,10 @@ public class OptimalSimplifyingReductions {
   public static class StepSplitReduction extends OptimalSimplifyingReductions.DynamicProgrammingStep {
     private ISLConstraint split;
 
+    public StepSplitReduction(final AbstractReduceExpression targetRE) {
+      super(targetRE);
+    }
+
     public StepSplitReduction(final AbstractReduceExpression targetRE, final ISLConstraint split) {
       super(targetRE);
       this.split = split;
@@ -176,7 +183,13 @@ public class OptimalSimplifyingReductions {
 
     @Override
     public String description() {
-      return String.format("Apply SplitReduction%s with %s", this.toEqStr(), this.split);
+      String _xifexpression = null;
+      if ((this.split != null)) {
+        _xifexpression = String.format("Apply SplitReduction%s with %s", this.toEqStr(), this.split);
+      } else {
+        _xifexpression = String.format("Apply SplitReduction%s", this.toEqStr());
+      }
+      return _xifexpression;
     }
   }
 
@@ -194,6 +207,26 @@ public class OptimalSimplifyingReductions {
     @Override
     public String description() {
       return String.format("Apply RemoveIdenticalAnswers %s with %s", this.toEqStr(), this.identicalAnswerBasis);
+    }
+  }
+
+  public static class StepFractalSimplify extends OptimalSimplifyingReductions.DynamicProgrammingStep {
+    private AbstractReduceExpression largerReduceExpr;
+
+    public StepFractalSimplify(final AbstractReduceExpression targetRE, final AbstractReduceExpression largerReduceExpr) {
+      super(targetRE);
+      this.largerReduceExpr = largerReduceExpr;
+    }
+
+    @Override
+    public String description() {
+      String _xblockexpression = null;
+      {
+        Equation _containerEquation = AlphaUtil.getContainerEquation(this.largerReduceExpr);
+        final String largerEqName = ((StandardEquation) _containerEquation).getVariable().getName();
+        _xblockexpression = String.format("Apply FractalSimplify%s with %s", this.toEqStr(), largerEqName);
+      }
+      return _xblockexpression;
     }
   }
 
@@ -303,6 +336,11 @@ public class OptimalSimplifyingReductions {
   public Map<Integer, List<OptimalSimplifyingReductions.State>> optimizations;
 
   /**
+   * Data structure to keep track of 2-faces used to detect fractal simplification
+   */
+  private Map<AbstractReduceExpression, Face> explored2Faces;
+
+  /**
    * Creates an OSR instance and initializes exploration space parameters
    */
   protected OptimalSimplifyingReductions(final AlphaSystem system, final int limit, final int complexity, final boolean trySplitting, final boolean verbose) {
@@ -324,6 +362,7 @@ public class OptimalSimplifyingReductions {
     this.targetComplexity = complexity;
     this.trySplitting = trySplitting;
     this.verbose = verbose;
+    this.explored2Faces = CollectionLiterals.<AbstractReduceExpression, Face>newHashMap();
   }
 
   /**
@@ -526,6 +565,44 @@ public class OptimalSimplifyingReductions {
   }
 
   /**
+   * Tests if this reduce expression needs to be fractal simplified. If all of the
+   * following hold for the reduction body D:
+   *   1) the reduction operator does not admit an inverse
+   *   2) D is 2-dimensional
+   *   3) D is geometrically similar to a previously encountered reduction (re') body
+   * 
+   * Then the similar reduction re' is returned, else null is returned.
+   */
+  private AbstractReduceExpression fractalSimplification(final AbstractReduceExpression are) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(are);
+    final String varName = ((StandardEquation) _containerEquation).getVariable().getName();
+    this.debug((("Testing if equation " + varName) + " needs fractal simplification"));
+    final Face facet = are.getFacet();
+    boolean _hasInverse = AlphaOperatorUtil.hasInverse(are.getOperator());
+    if (_hasInverse) {
+      return null;
+    }
+    boolean _equals = Objects.equal(varName, "Y_NR4");
+    if (_equals) {
+      InputOutput.println();
+    }
+    final Function1<Map.Entry<AbstractReduceExpression, Face>, Boolean> _function = (Map.Entry<AbstractReduceExpression, Face> es) -> {
+      return Boolean.valueOf(ReductionUtil.isSimilar(are, es.getKey()));
+    };
+    final Map.Entry<AbstractReduceExpression, Face> similarExplored2Face = IterableExtensions.<Map.Entry<AbstractReduceExpression, Face>>findFirst(this.explored2Faces.entrySet(), _function);
+    if ((similarExplored2Face != null)) {
+      final AbstractReduceExpression largerReduceExpr = similarExplored2Face.getKey();
+      Equation _containerEquation_1 = AlphaUtil.getContainerEquation(similarExplored2Face.getKey());
+      final String similarVarName = ((StandardEquation) _containerEquation_1).getVariable().getName();
+      this.debug(((varName + " is similar to previously encountered reduction ") + similarVarName));
+      return largerReduceExpr;
+    }
+    this.explored2Faces.put(are, facet);
+    this.debug((varName + " is NOT similar to any previously encountered reductions"));
+    return null;
+  }
+
+  /**
    * Creates a list of possible transformations that are valid steps in the DP
    */
   protected List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
@@ -537,9 +614,9 @@ public class OptimalSimplifyingReductions {
       final CandidateReuse candidateReuse = new CandidateReuse(targetRE, SSAR);
       boolean _isHasIdenticalAnswers = candidateReuse.isHasIdenticalAnswers();
       if (_isHasIdenticalAnswers) {
-        ISLMultiAff _identicalAnswerBasis = candidateReuse.identicalAnswerBasis();
-        ISLSet _identicalAnswerDomain = candidateReuse.getIdenticalAnswerDomain();
-        OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, _identicalAnswerBasis, _identicalAnswerDomain);
+        final ISLMultiAff maff = candidateReuse.identicalAnswerBasis();
+        final ISLSet domain = candidateReuse.getIdenticalAnswerDomain();
+        OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, maff, domain);
         return Collections.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>newArrayList(_stepRemoveIndenticalAnswers));
       } else {
         final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
@@ -548,13 +625,23 @@ public class OptimalSimplifyingReductions {
         candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
       }
     }
-    boolean _shouldSplit = this.shouldSplit(targetRE, shouldSimplify);
-    if (_shouldSplit) {
-      final ISLConstraint[] splits = SplitReduction.enumerateCandidateSplits(targetRE);
-      final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_1 = (ISLConstraint split) -> {
-        return new OptimalSimplifyingReductions.StepSplitReduction(targetRE, split);
-      };
-      candidates.addAll(ListExtensions.<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>map(((List<ISLConstraint>)Conversions.doWrapArray(splits)), _function_1));
+    final AbstractReduceExpression largerRE = this.fractalSimplification(targetRE);
+    if ((largerRE != null)) {
+      OptimalSimplifyingReductions.StepFractalSimplify _stepFractalSimplify = new OptimalSimplifyingReductions.StepFractalSimplify(targetRE, largerRE);
+      return Collections.<OptimalSimplifyingReductions.StepFractalSimplify>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepFractalSimplify>newArrayList(_stepFractalSimplify));
+    }
+    if ((this.shouldSplit(targetRE, shouldSimplify) && candidates.isEmpty())) {
+      boolean _requiresFractalSplits = SplitReduction.requiresFractalSplits(targetRE);
+      if (_requiresFractalSplits) {
+        OptimalSimplifyingReductions.StepSplitReduction _stepSplitReduction = new OptimalSimplifyingReductions.StepSplitReduction(targetRE);
+        candidates.add(_stepSplitReduction);
+      } else {
+        final ISLConstraint[] splits = SplitReduction.enumerateCandidateSplits(targetRE);
+        final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_1 = (ISLConstraint split) -> {
+          return new OptimalSimplifyingReductions.StepSplitReduction(targetRE, split);
+        };
+        candidates.addAll(ListExtensions.<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>map(((List<ISLConstraint>)Conversions.doWrapArray(splits)), _function_1));
+      }
     }
     boolean _testLegality = Idempotence.testLegality(targetRE, SSAR);
     if (_testLegality) {
@@ -610,6 +697,11 @@ public class OptimalSimplifyingReductions {
 
   protected Integer _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepRemoveIndenticalAnswers step) {
     RemoveIdenticalAnswers.transform(re, step.identicalAnswerBasis, step.identicalAnswerDomain);
+    return null;
+  }
+
+  protected Integer _applyDPStep(final ReduceExpression re, final OptimalSimplifyingReductions.StepFractalSimplify step) {
+    FractalSimplify.transform(re, step.largerReduceExpr);
     return null;
   }
 
@@ -730,6 +822,9 @@ public class OptimalSimplifyingReductions {
 
   protected Integer applyDPStep(final AlphaExpression re, final OptimalSimplifyingReductions.DynamicProgrammingStep step) {
     if (re instanceof ReduceExpression
+         && step instanceof OptimalSimplifyingReductions.StepFractalSimplify) {
+      return _applyDPStep((ReduceExpression)re, (OptimalSimplifyingReductions.StepFractalSimplify)step);
+    } else if (re instanceof ReduceExpression
          && step instanceof OptimalSimplifyingReductions.StepHigherOrderOperator) {
       return _applyDPStep((ReduceExpression)re, (OptimalSimplifyingReductions.StepHigherOrderOperator)step);
     } else if (re instanceof ReduceExpression

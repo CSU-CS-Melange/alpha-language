@@ -4,6 +4,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import java.util.ArrayList
 import java.util.HashMap
@@ -17,10 +18,10 @@ import static extension alpha.model.util.CommonExtensions.toIndexHashMap
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.isEffectivelySaturated
-import static extension alpha.model.util.ISLUtil.nullSpace
 import static extension alpha.model.util.ISLUtil.toEqualityConstraint
 import static extension alpha.model.util.ISLUtil.toLinearUnitVector
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import static extension alpha.model.util.ISLUtil.toISLConstraint
 
 /**
  * Represents a face which can be used to construct a face lattice.
@@ -255,6 +256,26 @@ class Face {
 			.aff
 			.dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
 			.setConstant(0)
+			/*
+			 * At this point, some index coefficients may not have the same meaning in isolation
+			 * but isl retains the coefficients instead of recomputing new ones.
+			 * For example, the two constraints:
+			 *   c0 = [N]->{[i] : i=5}
+			 *   c1 = [N]->{[i] : 2i=N}
+			 * have the same linear space (i.e., i=0). After dropping params and constants for
+			 * c1, it has the state:
+			 *   c1 = {[i] : 2i=0}
+			 * and consequently the underlying ISLAff has the coefficients [2,0], which does not
+			 * correctly represent the coefficients of the normal vector, which should be [1,0].
+			 */
+			.toEqualityConstraint.toString.toISLConstraint.aff
+			/*
+			 * Parsing the constraint from the string '{[i] : 2i=0}' recognizes
+			 * that the 2 is unecessary and results in the desired constraint of the form:
+			 *   c1 = {[i] : i=0}
+			 * 
+			 * There may be a cleaner way to do this.
+			 */
 	}
 	
 	/** Constructs a new face by saturating an additional constraint compared to this face. */
@@ -287,6 +308,11 @@ class Face {
 			.map[c | c.copy]
 			.fold(universe, [s, c | s.addConstraint(c)])
 			.removeRedundancies
+	}
+	
+	/** Construct the set which represents this face. */
+	def toSet() {
+		toBasicSet.toSet
 	}
 	
 	/**
@@ -327,6 +353,15 @@ class Face {
 			.reject[idx | unsaturatedConstraints.containsKey(idx)]
 			.join(",")
 		return "{" + saturatedIndexes + "}"
+	}
+	
+	/**
+	 * Returns the vertices of the current face
+	 */
+	def Face[] getVertices() {
+		lattice.getFaces(0)
+			.filter[f | f.saturatedConstraints.containsAll(this.saturatedConstraints)]
+			.reject[f | f.toBasicSet.isEmpty]
 	}
 	
 	////////////////////////////////////////////////////////////

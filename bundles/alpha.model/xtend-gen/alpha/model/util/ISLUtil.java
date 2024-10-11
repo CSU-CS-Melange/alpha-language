@@ -289,7 +289,7 @@ public class ISLUtil {
     int _nbParams = aff.getNbParams();
     int _nbInputs = aff.getNbInputs();
     final int constantCol = (_nbParams + _nbInputs);
-    final long[] vec = DomainOperations.toISLEqualityMatrix(aff.toEqualityConstraint().toBasicSet()).dropCols(constantCol, 1).toLongMatrix()[0];
+    final long[] vec = DomainOperations.toISLEqualityMatrix(aff.copy().toEqualityConstraint().toBasicSet()).dropCols(constantCol, 1).toLongMatrix()[0];
     return vec;
   }
 
