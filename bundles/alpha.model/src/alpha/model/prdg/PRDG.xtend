@@ -138,13 +138,18 @@ class PRDG {
 	def boolean respectsScheduleSpace(String variable, long[] ls) {
 		var feasibleSpace = new FeasibleSpace(this)
 		var set = feasibleSpace.space
-		println("PRDG: " + set)
+//		println("PRDG: " + set)
 		var variables = feasibleSpace.variables
 		var indices = feasibleSpace.variableIndices.get(variable)
-		println("Variable Indices: " + indices)
+//		println("Variable Indices: " + indices)
 		var indexMappings = feasibleSpace.indexMappings
+		this.edges.forEach[x | println(x)]
+		println("Variables")
+		variables.forEach[x, y | println(x + ", " + y)]
 		var matrix = PolyLibMatrix.createFromLongMatrix(set.toPolyLibArray)
 		var rays = PolyLibPolyhedron.buildFromConstraints(matrix, 10).builRaysVertices
+		println("Rays: \n" + rays)
+		//TODO Check to verify this is the correct edge
 		var edge = this.edges.filter[x | x.source.name == (variable + "_reduce0_result") && x.dest.name == (variable + "_reduce0_body")].head
 		var b_row = new ArrayList()
 		for(aff : edge.function.affs) {
@@ -155,36 +160,33 @@ class PRDG {
 			value += aff.getConstant
 			b_row.add(value)
 		}
-
-//		println(rays)
+//		println("Mappings: " + indexMappings)
 		println("Vector: ")
 		ls.forEach[i | print(i + " ")]
 		println()
-		println(b_row)
-//		PolyLibMatrix.
+		println("Maps to: " + b_row)
 		for(var row = 0; row < rays.nbRows; row++) {
-			//Test if its a vertex and skip if it is
-			if(rays.getAt(row, rays.nbColumns - 1) == 1) {
-				
-			}
-			var long value = 0
-			var hasVariable = false
-			for(var i = 0; i < b_row.size; i++) {
-				for(constraint : variables.get(variable)) {
-					if(row == 0) {
-						println("Info: ")
-						println(b_row)
-						println(constraint)
+			//if the final index is 1 it is a vertex and should be skipped
+			if(rays.getAt(row, rays.nbColumns - 1) == 0 && rays.getAt(row, 0) == 1) {
+				var long value = 0
+				var hasVariable = false
+				for(var i = 0; i < b_row.size; i++) {
+					for(constraint : variables.get(variable)) {
+						println("Constraint: " + constraint + ", Index: " + indexMappings.get(constraint.key))
+						println("HERE: " + indices)
+						value += constraint.value.get(indices.get(i + 1)).value * b_row.get(i)
+								* rays.getAt(row, indexMappings.get(constraint.key))
+						if(rays.getAt(row, indexMappings.get(constraint.key) + 1) != 0) hasVariable = true			
 					}
-					value += constraint.value.get(indices.get(i)).value * b_row.get(i)
-							* rays.getAt(row, indexMappings.get(constraint.key))
-					println(value)
-					if(rays.getAt(row, indexMappings.get(constraint.key)) != 0) hasVariable = true			
 				}
-			}
-			if(value >= 0 && hasVariable) {
-				println("Respects Space")
-				return true
+				if(value >= 0 && hasVariable) {
+					println("Respects Space")
+					ls.forEach[i | print(i + " ")]
+					println()
+					return true
+				} else {
+					println("BADDDDD")
+				}
 			}
 		}
 		false

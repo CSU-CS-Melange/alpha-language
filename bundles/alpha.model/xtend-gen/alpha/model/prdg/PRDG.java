@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -182,17 +183,25 @@ public class PRDG {
     {
       FeasibleSpace feasibleSpace = new FeasibleSpace(this);
       ISLBasicSet set = feasibleSpace.getSpace();
-      InputOutput.<String>println(("PRDG: " + set));
       HashMap<String, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> variables = feasibleSpace.getVariables();
       List<String> indices = feasibleSpace.getVariableIndices().get(variable);
-      InputOutput.<String>println(("Variable Indices: " + indices));
       HashMap<String, Integer> indexMappings = feasibleSpace.getIndexMappings();
+      final Consumer<PRDGEdge> _function = (PRDGEdge x) -> {
+        InputOutput.<PRDGEdge>println(x);
+      };
+      this.edges.forEach(_function);
+      InputOutput.<String>println("Variables");
+      final BiConsumer<String, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> _function_1 = (String x, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> y) -> {
+        InputOutput.<String>println(((x + ", ") + y));
+      };
+      variables.forEach(_function_1);
       PolyLibMatrix matrix = PolyLibMatrix.createFromLongMatrix(set.toPolyLibArray());
       PolyLibMatrix rays = PolyLibPolyhedron.buildFromConstraints(matrix, 10).builRaysVertices();
-      final Function1<PRDGEdge, Boolean> _function = (PRDGEdge x) -> {
+      InputOutput.<String>println(("Rays: \n" + rays));
+      final Function1<PRDGEdge, Boolean> _function_2 = (PRDGEdge x) -> {
         return Boolean.valueOf((Objects.equal(x.getSource().getName(), (variable + "_reduce0_result")) && Objects.equal(x.getDest().getName(), (variable + "_reduce0_body"))));
       };
-      PRDGEdge edge = IterableExtensions.<PRDGEdge>head(IterableExtensions.<PRDGEdge>filter(this.edges, _function));
+      PRDGEdge edge = IterableExtensions.<PRDGEdge>head(IterableExtensions.<PRDGEdge>filter(this.edges, _function_2));
       ArrayList<Long> b_row = new ArrayList<Long>();
       List<ISLAff> _affs = edge.getFunction().getAffs();
       for (final ISLAff aff : _affs) {
@@ -212,42 +221,36 @@ public class PRDG {
         }
       }
       InputOutput.<String>println("Vector: ");
-      final Consumer<Long> _function_1 = (Long i) -> {
+      final Consumer<Long> _function_3 = (Long i) -> {
         String _plus = (i + " ");
         InputOutput.<String>print(_plus);
       };
-      ((List<Long>)Conversions.doWrapArray(ls)).forEach(_function_1);
+      ((List<Long>)Conversions.doWrapArray(ls)).forEach(_function_3);
       InputOutput.println();
-      InputOutput.<ArrayList<Long>>println(b_row);
+      InputOutput.<String>println(("Maps to: " + b_row));
       for (int row = 0; (row < rays.getNbRows()); row++) {
-        {
-          int _nbColumns = rays.getNbColumns();
-          int _minus = (_nbColumns - 1);
-          long _at = rays.getAt(row, _minus);
-          boolean _equals = (_at == 1);
-          if (_equals) {
-          }
+        if (((rays.getAt(row, (rays.getNbColumns() - 1)) == 0) && (rays.getAt(row, 0) == 1))) {
           long value = 0;
           boolean hasVariable = false;
           for (int i = 0; (i < b_row.size()); i++) {
             List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _get = variables.get(variable);
             for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint : _get) {
               {
-                if ((row == 0)) {
-                  InputOutput.<String>println("Info: ");
-                  InputOutput.<ArrayList<Long>>println(b_row);
-                  InputOutput.<Pair<String, HashMap<String, Pair<Integer, Integer>>>>println(constraint);
-                }
+                Integer _get_1 = indexMappings.get(constraint.getKey());
+                String _plus = ((("Constraint: " + constraint) + ", Index: ") + _get_1);
+                InputOutput.<String>println(_plus);
+                InputOutput.<String>println(("HERE: " + indices));
                 long _value = value;
-                Integer _value_1 = constraint.getValue().get(indices.get(i)).getValue();
-                Long _get_1 = b_row.get(i);
-                long _multiply = ((_value_1).intValue() * (_get_1).longValue());
-                long _at_1 = rays.getAt(row, (indexMappings.get(constraint.getKey())).intValue());
-                long _multiply_1 = (_multiply * _at_1);
+                Integer _value_1 = constraint.getValue().get(indices.get((i + 1))).getValue();
+                Long _get_2 = b_row.get(i);
+                long _multiply = ((_value_1).intValue() * (_get_2).longValue());
+                long _at = rays.getAt(row, (indexMappings.get(constraint.getKey())).intValue());
+                long _multiply_1 = (_multiply * _at);
                 value = (_value + _multiply_1);
-                InputOutput.<Long>println(Long.valueOf(value));
-                long _at_2 = rays.getAt(row, (indexMappings.get(constraint.getKey())).intValue());
-                boolean _notEquals = (_at_2 != 0);
+                Integer _get_3 = indexMappings.get(constraint.getKey());
+                int _plus_1 = ((_get_3).intValue() + 1);
+                long _at_1 = rays.getAt(row, _plus_1);
+                boolean _notEquals = (_at_1 != 0);
                 if (_notEquals) {
                   hasVariable = true;
                 }
@@ -256,7 +259,15 @@ public class PRDG {
           }
           if (((value >= 0) && hasVariable)) {
             InputOutput.<String>println("Respects Space");
+            final Consumer<Long> _function_4 = (Long i) -> {
+              String _plus = (i + " ");
+              InputOutput.<String>print(_plus);
+            };
+            ((List<Long>)Conversions.doWrapArray(ls)).forEach(_function_4);
+            InputOutput.println();
             return true;
+          } else {
+            InputOutput.<String>println("BADDDDD");
           }
         }
       }

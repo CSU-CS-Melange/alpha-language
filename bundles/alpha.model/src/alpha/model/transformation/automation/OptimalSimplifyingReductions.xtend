@@ -134,7 +134,7 @@ class OptimalSimplifyingReductions {
 		this.prdg = PRDGGenerator.apply(system)
 		
 		debug('After preprocessing:')
-		debug(Show.print(systemBody))
+		println(Show.print(systemBody))
 		
 		val state = new State(systemBody, newLinkedList)
 		
@@ -313,6 +313,7 @@ class OptimalSimplifyingReductions {
 					.filter[vec | this.prdg.respectsScheduleSpace(targetRE.containerEquation.name, vec)]
 				println("Filtered Vectors:")
 				vectors.forEach[vec | vec.forEach[ i | print(i + " ")] println()]
+				println("BLAHS")
 				candidates.addAll(
 					vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)]
 				)

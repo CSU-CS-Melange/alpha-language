@@ -8,18 +8,27 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Pure;
@@ -34,6 +43,9 @@ public class FeasibleSpace {
 
   @Accessors(AccessorType.PUBLIC_GETTER)
   private HashMap<String, Integer> indexMappings;
+
+  @Accessors(AccessorType.PUBLIC_GETTER)
+  private HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> reductionMappings;
 
   private ISLBasicMap space;
 
@@ -59,29 +71,95 @@ public class FeasibleSpace {
     this.dependenceMappings = CollectionLiterals.<Pair<String, String>, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>>newHashMap();
     this.functionMappings = CollectionLiterals.<Pair<String, String>, List<Pair<String, HashMap<String, Integer>>>>newHashMap();
     this.indexMappings = CollectionLiterals.<String, Integer>newHashMap();
+    this.reductionMappings = CollectionLiterals.<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>>newHashMap();
     List<PRDGNode> _nodes = prdg.getNodes();
     for (final PRDGNode node : _nodes) {
-      {
+      boolean _not = (!(node.getName().contains("_body") || node.getName().contains("_result")));
+      if (_not) {
         ISLSet domain = node.getDomain().copy().coalesce();
         this.addDomain(domain, node.getName());
       }
     }
-    List<PRDGEdge> _edges = prdg.getEdges();
-    for (final PRDGEdge edge : _edges) {
-      {
-        ISLMap function = edge.getFunction().copy().toMap().simplify().intersectDomain(edge.getDomain().copy());
-        this.addEdgeConstraints(edge.getSource().getName(), edge.getDest().getName(), function);
+    InputOutput.<String>println(("Variables: " + this.variables));
+    List<PRDGEdge> _reverse = ListExtensions.<PRDGEdge>reverse(prdg.getEdges());
+    for (final PRDGEdge edge : _reverse) {
+      boolean _contains = edge.getSource().getName().contains("_body");
+      if (_contains) {
+        ArrayList<Pair<String, ISLMultiAff>> array = new ArrayList<Pair<String, ISLMultiAff>>();
+        String _name = edge.getDest().getName();
+        ISLMultiAff _function = edge.getFunction();
+        Pair<String, ISLMultiAff> _pair = new Pair<String, ISLMultiAff>(_name, _function);
+        array.add(_pair);
+        String _name_1 = edge.getSource().getName();
+        Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _pair_1 = new Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>(null, array);
+        final BiFunction<Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> _function_1 = (Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> existing, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> n) -> {
+          Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _xblockexpression = null;
+          {
+            Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _elvis = null;
+            if (existing != null) {
+              _elvis = existing;
+            } else {
+              _elvis = n;
+            }
+            Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> x = _elvis;
+            Pair<String, ISLMultiAff> _key = x.getKey();
+            List<Pair<String, ISLMultiAff>> _value = n.getValue();
+            _xblockexpression = new Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>(_key, _value);
+          }
+          return _xblockexpression;
+        };
+        this.reductionMappings.merge(_name_1, _pair_1, _function_1);
+      } else {
+        boolean _contains_1 = edge.getDest().getName().contains("_result");
+        if (_contains_1) {
+          final Function1<PRDGEdge, Boolean> _function_2 = (PRDGEdge x) -> {
+            String _name_2 = x.getSource().getName();
+            String _name_3 = edge.getDest().getName();
+            return Boolean.valueOf(Objects.equal(_name_2, _name_3));
+          };
+          PRDGEdge body = IterableExtensions.<PRDGEdge>head(IterableExtensions.<PRDGEdge>filter(prdg.getEdges(), _function_2));
+          String _name_2 = body.getDest().getName();
+          String _name_3 = edge.getSource().getName();
+          ISLMultiAff _function_3 = body.getFunction();
+          Pair<String, ISLMultiAff> _pair_2 = new Pair<String, ISLMultiAff>(_name_3, _function_3);
+          ArrayList<Pair<String, ISLMultiAff>> _arrayList = new ArrayList<Pair<String, ISLMultiAff>>();
+          Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _pair_3 = new Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>(_pair_2, _arrayList);
+          final BiFunction<Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> _function_4 = (Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> existing, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> n) -> {
+            Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _xblockexpression = null;
+            {
+              Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> _elvis = null;
+              if (existing != null) {
+                _elvis = existing;
+              } else {
+                _elvis = n;
+              }
+              Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> x = _elvis;
+              Pair<String, ISLMultiAff> _key = n.getKey();
+              List<Pair<String, ISLMultiAff>> _value = x.getValue();
+              _xblockexpression = new Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>(_key, _value);
+            }
+            return _xblockexpression;
+          };
+          this.reductionMappings.merge(_name_2, _pair_3, _function_4);
+        } else {
+          boolean _not_1 = (!(edge.getDest().getName().contains("_body") || edge.getSource().getName().contains("_result")));
+          if (_not_1) {
+            ISLMap function = edge.getFunction().copy().toMap().simplify().intersectDomain(edge.getDomain().copy());
+            this.addEdgeConstraints(edge.getSource().getName(), edge.getDest().getName(), function);
+          }
+        }
       }
     }
+    InputOutput.<String>println(("Reductions: " + this.reductionMappings));
     this.space = ISLBasicMap.buildUniverse(ISLSpace.alloc(0, 0, 0));
     int muIndex = 0;
     Set<Map.Entry<String, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>>> _entrySet = this.variables.entrySet();
     for (final Map.Entry<String, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> entry : _entrySet) {
       {
-        final Function1<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String> _function = (Pair<String, HashMap<String, Pair<Integer, Integer>>> x) -> {
+        final Function1<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String> _function_5 = (Pair<String, HashMap<String, Pair<Integer, Integer>>> x) -> {
           return x.getKey();
         };
-        this.space = this.space.<ISLBasicMap>addOutputs(ListExtensions.<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String>map(entry.getValue(), _function));
+        this.space = this.space.<ISLBasicMap>addOutputs(ListExtensions.<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String>map(entry.getValue(), _function_5));
         List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _value = entry.getValue();
         for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> pair : _value) {
           {
@@ -98,10 +176,10 @@ public class FeasibleSpace {
     Set<Map.Entry<Pair<String, String>, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>>> _entrySet_1 = this.dependenceMappings.entrySet();
     for (final Map.Entry<Pair<String, String>, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> entry_1 : _entrySet_1) {
       {
-        final Function1<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String> _function = (Pair<String, HashMap<String, Pair<Integer, Integer>>> x) -> {
+        final Function1<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String> _function_5 = (Pair<String, HashMap<String, Pair<Integer, Integer>>> x) -> {
           return x.getKey();
         };
-        this.space = this.space.<ISLBasicMap>addInputs(ListExtensions.<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String>map(entry_1.getValue(), _function));
+        this.space = this.space.<ISLBasicMap>addInputs(ListExtensions.<Pair<String, HashMap<String, Pair<Integer, Integer>>>, String>map(entry_1.getValue(), _function_5));
         List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _value = entry_1.getValue();
         for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> pair : _value) {
           {
@@ -125,7 +203,73 @@ public class FeasibleSpace {
         this.interVariableConstraint(entry_2.getKey(), entry_2.getValue());
       }
     }
+    final BiConsumer<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> _function_5 = (String reductionNode, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>> value) -> {
+      final Consumer<Pair<String, ISLMultiAff>> _function_6 = (Pair<String, ISLMultiAff> dependence) -> {
+        ISLConstraint constantConstraint = ISLConstraint.buildInequality(this.space.getSpace());
+        constantConstraint = this.updateConstraint(constantConstraint, value.getKey().getKey(), 1, "constant", 1);
+        InputOutput.<String>println(("Constant Constraint: " + constantConstraint));
+        constantConstraint = this.updateConstraint(constantConstraint, dependence.getKey(), (-1), "constant", 1);
+        InputOutput.<String>println(("Constant Constraint: " + constantConstraint));
+        final List<ISLAff> projections = value.getKey().getValue().copy().getAffs();
+        final List<ISLAff> reads = dependence.getValue().copy().getAffs();
+        final Consumer<ISLAff> _function_7 = (ISLAff x) -> {
+          InputOutput.<ISLAff>println(x);
+        };
+        reads.forEach(_function_7);
+        int _size = projections.size();
+        final Consumer<Integer> _function_8 = (Integer leftIndex) -> {
+          int _size_1 = reads.size();
+          final Consumer<Integer> _function_9 = (Integer rightIndex) -> {
+            int _nbInputs = dependence.getValue().copy().getNbInputs();
+            final Consumer<Integer> _function_10 = (Integer index) -> {
+              ISLConstraint constraint = ISLConstraint.buildInequality(this.space.getSpace());
+              ISLAff _get = projections.get((leftIndex).intValue());
+              String _plus = ("projection: " + _get);
+              InputOutput.<String>println(_plus);
+              ISLAff _get_1 = reads.get((rightIndex).intValue());
+              String _plus_1 = ("Reads: " + _get_1);
+              InputOutput.<String>println(_plus_1);
+              constraint = this.updateConstraint(constraint, value.getKey().getKey(), 1, 
+                this.variableIndices.get(value.getKey().getKey()).get((leftIndex).intValue()), 
+                Long.valueOf(projections.get((leftIndex).intValue()).getCoefficientVal(ISLDimType.isl_dim_in, (index).intValue()).copy().asLong()).intValue());
+              constraint = this.updateConstraint(constraint, dependence.getKey(), (-1), 
+                this.variableIndices.get(dependence.getKey()).get((rightIndex).intValue()), 
+                Long.valueOf(reads.get((rightIndex).intValue()).getCoefficientVal(ISLDimType.isl_dim_in, (index).intValue()).copy().asLong()).intValue());
+              ISLVal _coefficientVal = projections.get((rightIndex).intValue()).getCoefficientVal(ISLDimType.isl_dim_in, (index).intValue());
+              String _plus_2 = ((("Index: " + index) + ", Projection coefficient: ") + _coefficientVal);
+              InputOutput.<String>println(_plus_2);
+              ISLVal _coefficientVal_1 = reads.get((rightIndex).intValue()).getCoefficientVal(ISLDimType.isl_dim_in, (index).intValue());
+              String _plus_3 = ((("Index: " + index) + ", Read coefficient: ") + _coefficientVal_1);
+              InputOutput.<String>println(_plus_3);
+              InputOutput.<String>println(("Constraint: " + constraint));
+            };
+            new ExclusiveRange(0, _nbInputs, true).forEach(_function_10);
+          };
+          new ExclusiveRange(0, _size_1, true).forEach(_function_9);
+        };
+        new ExclusiveRange(0, _size, true).forEach(_function_8);
+      };
+      value.getValue().forEach(_function_6);
+    };
+    this.reductionMappings.forEach(_function_5);
     this.space.copy().removeRedundancies();
+  }
+
+  private ISLConstraint updateConstraint(final ISLConstraint constraint, final String variable, final int direction, final String index, final int coefficient) {
+    final Function2<ISLConstraint, Pair<String, HashMap<String, Pair<Integer, Integer>>>, ISLConstraint> _function = (ISLConstraint c, Pair<String, HashMap<String, Pair<Integer, Integer>>> map) -> {
+      ISLConstraint _xblockexpression = null;
+      {
+        int old = Long.valueOf(c.getCoefficient(ISLDimType.isl_dim_out, (this.indexMappings.get(map.getKey())).intValue())).intValue();
+        ISLConstraint _copy = c.copy();
+        Integer _get = this.indexMappings.get(map.getKey());
+        Integer _value = map.getValue().get(index).getValue();
+        int _multiply = ((direction * coefficient) * (_value).intValue());
+        int _plus = (old + _multiply);
+        _xblockexpression = _copy.setCoefficient(ISLDimType.isl_dim_out, (_get).intValue(), _plus);
+      }
+      return _xblockexpression;
+    };
+    return IterableExtensions.<Pair<String, HashMap<String, Pair<Integer, Integer>>>, ISLConstraint>fold(this.variables.get(variable), constraint.copy(), _function);
   }
 
   private ISLBasicMap selfDependenceConstraint(final String variable, final List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> dependences) {
@@ -215,27 +359,37 @@ public class FeasibleSpace {
             (this.indexMappings.get(constraint_3.getKey())).intValue(), 
             (constraint_3.getValue().get(index).getValue()).intValue());
         }
-        List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _get_6 = this.variables.get(sourceDest.getValue());
-        for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint_4 : _get_6) {
-          List<Pair<String, HashMap<String, Integer>>> _get_7 = this.functionMappings.get(sourceDest);
-          for (final Pair<String, HashMap<String, Integer>> mapping : _get_7) {
+        boolean _contains = this.variableIndices.get(sourceDest.getValue()).contains(index);
+        if (_contains) {
+          List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _get_6 = this.variables.get(sourceDest.getValue());
+          for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint_4 : _get_6) {
+            Integer _get_7 = this.indexMappings.get(constraint_4.getKey());
+            Integer _value_2 = constraint_4.getValue().get(index).getValue();
+            int _minus_2 = (-(_value_2).intValue());
+            lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out, (_get_7).intValue(), _minus_2);
+          }
+        }
+        List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> _get_8 = this.variables.get(sourceDest.getValue());
+        for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint_5 : _get_8) {
+          List<Pair<String, HashMap<String, Integer>>> _get_9 = this.functionMappings.get(sourceDest);
+          for (final Pair<String, HashMap<String, Integer>> mapping : _get_9) {
             {
-              int value = Long.valueOf(lambdaConstraint.getCoefficient(ISLDimType.isl_dim_out, (this.indexMappings.get(constraint_4.getKey())).intValue())).intValue();
-              int _value_2 = value;
-              Integer _value_3 = constraint_4.getValue().get(mapping.getKey()).getValue();
-              Integer _get_8 = mapping.getValue().get(index);
-              int _multiply = ((_value_3).intValue() * (_get_8).intValue());
-              value = (_value_2 - _multiply);
+              int value = Long.valueOf(lambdaConstraint.getCoefficient(ISLDimType.isl_dim_out, (this.indexMappings.get(constraint_5.getKey())).intValue())).intValue();
+              int _value_3 = value;
+              Integer _value_4 = constraint_5.getValue().get(mapping.getKey()).getValue();
+              Integer _get_10 = mapping.getValue().get(index);
+              int _multiply = ((_value_4).intValue() * (_get_10).intValue());
+              value = (_value_3 - _multiply);
               lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out, 
-                (this.indexMappings.get(constraint_4.getKey())).intValue(), value);
+                (this.indexMappings.get(constraint_5.getKey())).intValue(), value);
             }
           }
         }
-        for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint_5 : dependences) {
-          Integer _get_8 = this.indexMappings.get(constraint_5.getKey());
-          Integer _value_2 = constraint_5.getValue().get(index).getValue();
-          int _minus_2 = (-(_value_2).intValue());
-          lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_in, (_get_8).intValue(), _minus_2);
+        for (final Pair<String, HashMap<String, Pair<Integer, Integer>>> constraint_6 : dependences) {
+          Integer _get_10 = this.indexMappings.get(constraint_6.getKey());
+          Integer _value_3 = constraint_6.getValue().get(index).getValue();
+          int _minus_3 = (-(_value_3).intValue());
+          lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_in, (_get_10).intValue(), _minus_3);
         }
         this.space = this.space.addConstraint(lambdaConstraint);
       }
@@ -282,6 +436,7 @@ public class FeasibleSpace {
   public int addEdgeConstraints(final String source, final String target, final ISLMap f) {
     int _xblockexpression = (int) 0;
     {
+      InputOutput.<String>println(((("Source: " + source) + ", Target: ") + target));
       Pair<String, String> sourceTarget = new Pair<String, String>(source, target);
       ISLMap function = f.copy();
       function = function.<ISLMap>renameInputs(this.variableIndices.get(source));
@@ -399,6 +554,11 @@ public class FeasibleSpace {
   @Pure
   public HashMap<String, Integer> getIndexMappings() {
     return this.indexMappings;
+  }
+
+  @Pure
+  public HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> getReductionMappings() {
+    return this.reductionMappings;
   }
 
   @Pure

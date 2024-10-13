@@ -12,6 +12,7 @@ import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap
 import java.util.stream.IntStream
 import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 
 class FeasibleSpace {
 	@Accessors(PUBLIC_GETTER)
@@ -20,6 +21,8 @@ class FeasibleSpace {
  	var HashMap<String, List<String>> variableIndices
  	@Accessors(PUBLIC_GETTER)
  	var HashMap<String, Integer> indexMappings
+ 	@Accessors(PUBLIC_GETTER)
+ 	var HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> reductionMappings
  	var ISLBasicMap space
  	var String variableName
  	var int variableCount
@@ -38,16 +41,39 @@ class FeasibleSpace {
 		dependenceMappings = newHashMap
 		functionMappings = newHashMap
 		indexMappings = newHashMap
+		reductionMappings = newHashMap
 		
 		for(node : prdg.nodes) {
-			var domain = node.domain.copy.coalesce
-			this.addDomain(domain, node.name)
+			if(!(node.name.contains("_body") || node.name.contains("_result"))) {
+				var domain = node.domain.copy.coalesce
+				this.addDomain(domain, node.name)
+			}
 		}
+		println("Variables: " + this.variables)
 
-		for(edge : prdg.edges) { 
-			var function = edge.function.copy.toMap.simplify.intersectDomain(edge.domain.copy)
-			this.addEdgeConstraints(edge.source.name, edge.dest.name, function)
+		for(edge : prdg.edges.reverse) { 
+			if(edge.source.name.contains("_body")) {
+				var array = new ArrayList()
+				array.add(new Pair(edge.dest.name, edge.function))
+				reductionMappings.merge(edge.source.name, new Pair(null, array),
+					[existing, n | 
+						var x = existing ?: n
+						new Pair(x.key, n.value)
+					])
+			} else if(edge.dest.name.contains("_result")) {
+				var body = prdg.edges.filter(x | x.source.name == edge.dest.name).head
+				reductionMappings.merge(body.dest.name, 
+					new Pair(new Pair(edge.source.name, body.function),
+					new ArrayList), [existing, n | 
+						var x = existing ?: n
+						new Pair(n.key, x.value)
+					])
+			} else if(!(edge.dest.name.contains("_body") || edge.source.name.contains("_result"))) {
+				var function = edge.function.copy.toMap.simplify.intersectDomain(edge.domain.copy)
+				this.addEdgeConstraints(edge.source.name, edge.dest.name, function)
+			}
 		}
+		println("Reductions: " + reductionMappings)
 
 		space = ISLBasicMap.buildUniverse(ISLSpace.alloc(0, 0, 0))
 		var muIndex = 0
@@ -56,7 +82,7 @@ class FeasibleSpace {
 			for(pair : entry.value) {
 				indexMappings.put(pair.key, muIndex)
 				space = space.addConstraint(singleGreaterThan(muIndex, 
-					space.copy.space, ISLDimType.isl_dim_out))
+				space.copy.space, ISLDimType.isl_dim_out))
 				muIndex++
 			}
 		}
@@ -82,8 +108,49 @@ class FeasibleSpace {
 				this.interVariableConstraint(entry.key, entry.value)
 			}
 		}	
+		
+		reductionMappings.forEach[reductionNode, value |
+ 			value.value.forEach[ dependence |
+ 				var constantConstraint = ISLConstraint.buildInequality(space.space)
+				constantConstraint = updateConstraint(constantConstraint, value.key.key, 1, "constant", 1)
+				println("Constant Constraint: " + constantConstraint)
+	 			constantConstraint = updateConstraint(constantConstraint, dependence.key, -1, "constant", 1)
+				println("Constant Constraint: " + constantConstraint)
+ 				val projections = value.key.value.copy.affs;
+ 				val reads = dependence.value.copy.affs;
+ 				reads.forEach[x | println(x)]
+ 				(0..<projections.size).forEach[leftIndex |
+ 					(0..<reads.size).forEach[rightIndex | 
+ 						(0..<dependence.value.copy.nbInputs).forEach[index |
+							var constraint = ISLConstraint.buildInequality(space.space)
+							println("projection: " + projections.get(leftIndex))
+							println("Reads: " + reads.get(rightIndex))
+							constraint = updateConstraint(constraint, value.key.key, 1, 
+								variableIndices.get(value.key.key).get(leftIndex), 
+								projections.get(leftIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
+							constraint = updateConstraint(constraint, dependence.key, -1, 
+								variableIndices.get(dependence.key).get(rightIndex), 
+								reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
+							println("Index: " + index + ", Projection coefficient: " + projections.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index))								
+							println("Index: " + index + ", Read coefficient: " + reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index))
+							println("Constraint: " + constraint)							
+	 					]
+ 					] 		
+ 				]
+ 			]
+ 		]
 		space.copy.removeRedundancies
 //		println(space)	
+ 	}
+ 	
+ 	def private ISLConstraint updateConstraint(ISLConstraint constraint, String variable, int direction, String index, int coefficient) {
+ 		variables.get(variable).fold(constraint.copy, 
+ 			[c, map |
+ 				var old = c.getCoefficient(ISLDimType.isl_dim_out, indexMappings.get(map.key)).intValue
+				c.copy.setCoefficient(ISLDimType.isl_dim_out,
+					indexMappings.get(map.key),
+ 					old + direction * coefficient * map.value.get(index).value)
+			])
  	}
  	
  	def private selfDependenceConstraint(String variable, List<Pair<String, 
@@ -115,9 +182,11 @@ class FeasibleSpace {
  					value.intValue + dependence.value.get(map.key).value)
 
  			}
+// 			println("Self Dependence Constraint: " + constraint)
 			this.space = this.space.addConstraint(constraint)
  		}
  		constantConstraint = constantConstraint.setConstant(-1)
+// 		println("Constant Constraint: " + constantConstraint)
  		this.space = this.space.addConstraint(constantConstraint)
  	}
  	
@@ -142,7 +211,8 @@ class FeasibleSpace {
 		}
 //		println(constantConstraint)
 		space = space.addConstraint(constantConstraint)
-//		println("Variables: " + variableIndices.get(sourceDest.key))
+//		println("Variables Source: " + variableIndices.get(sourceDest.key))
+//		println("Variables Dest: " + variableIndices.get(sourceDest.value))
 		for(index : variableIndices.get(sourceDest.key)) {
 			var lambdaConstraint = ISLConstraint.buildEquality(space.copy.space)
 			lambdaConstraint = (lambdaConstraint.constant = -1)
@@ -151,6 +221,15 @@ class FeasibleSpace {
 				lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out,
 					indexMappings.get(constraint.key),
 					constraint.value.get(index).value)
+			}
+			//This checks for parameters
+			if(variableIndices.get(sourceDest.value).contains(index)) {
+				for(constraint : variables.get(sourceDest.value)) {
+//				println("Constraint: " + constraint)
+					lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out,
+						indexMappings.get(constraint.key),
+						-constraint.value.get(index).value)
+				}
 			}
 //			println("Function Mappings: " + functionMappings)
 //			println("Updated Lambda: " + lambdaConstraint)
@@ -203,6 +282,7 @@ class FeasibleSpace {
  	}
  	
  	def addEdgeConstraints(String source, String target, ISLMap f) {
+ 		println("Source: " + source + ", Target: " + target)
  		var sourceTarget = new Pair(source, target)
  		var function = f.copy
 		function = function.renameInputs(variableIndices.get(source))

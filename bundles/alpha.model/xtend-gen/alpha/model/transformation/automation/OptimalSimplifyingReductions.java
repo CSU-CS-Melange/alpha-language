@@ -360,7 +360,7 @@ public class OptimalSimplifyingReductions {
     Normalize.apply(this.systemBody);
     this.prdg = PRDGGenerator.apply(this.system);
     this.debug("After preprocessing:");
-    this.debug(Show.<SystemBody>print(this.systemBody));
+    InputOutput.<String>println(Show.<SystemBody>print(this.systemBody));
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
     final OptimalSimplifyingReductions.State state = new OptimalSimplifyingReductions.State(this.systemBody, _newLinkedList);
     int _complexity = state.complexity();
@@ -573,6 +573,7 @@ public class OptimalSimplifyingReductions {
           InputOutput.println();
         };
         vectors.forEach(_function_2);
+        InputOutput.<String>println("BLAHS");
         final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function_3 = (long[] vec) -> {
           return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
         };

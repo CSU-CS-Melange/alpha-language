@@ -22,4 +22,5 @@ Require-Bundle: org.eclipse.core.runtime,
  alpha.model;bundle-version="0.1.0",
  fr.irisa.cairn.jnimap.barvinok;bundle-version="2.5.1",
  org.eclipse.xtend.lib;bundle-version="2.27.0"
+Eclipse-LazyStart: true
 Bundle-ActivationPolicy: lazy

@@ -36,4 +36,5 @@ Require-Bundle: org.eclipse.core.runtime;visibility:=reexport,
  org.eclipse.xtend.typesystem.emf;visibility:=reexport,
  fr.irisa.cairn.jnimap.polylib;resolution:=optional,
  fr.irisa.cairn.jnimap.barvinok;resolution:=optional
+Eclipse-LazyStart: true
 Bundle-ActivationPolicy: lazy
