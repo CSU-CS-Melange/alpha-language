@@ -30,22 +30,32 @@ import alpha.codegen.isl.ASTConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
+import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
+import alpha.model.VariableExpression;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
+import com.google.common.base.Objects;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.EcoreUtil2;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -197,7 +207,11 @@ public class WriteC extends CodeGeneratorBase {
     indexNames.forEach(_function);
     final IfStmt flagCheckingBlock = this.getFlagCheckingBlock(equation);
     evalBuilder.addComment("Check the flags.").addStatement(flagCheckingBlock).addEmptyLine().addReturn(this.identityAccess(equation, false));
-    this.program.addFunction(evalBuilder.getInstance());
+    Boolean _involvesFractalReduction = this.involvesFractalReduction(equation.getVariable());
+    boolean _not = (!(_involvesFractalReduction).booleanValue());
+    if (_not) {
+      this.program.addFunction(evalBuilder.getInstance());
+    }
   }
 
   /**
@@ -313,17 +327,87 @@ public class WriteC extends CodeGeneratorBase {
     return PolynomialConverter.convert(cardinalityPolynomial);
   }
 
+  protected Boolean involvesFractalReduction(final Variable variable) {
+    Boolean _xblockexpression = null;
+    {
+      final Function1<StandardEquation, Boolean> _function = (StandardEquation eq) -> {
+        Variable _variable = eq.getVariable();
+        return Boolean.valueOf(Objects.equal(_variable, variable));
+      };
+      final StandardEquation equation = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function);
+      if ((equation == null)) {
+        return Boolean.valueOf(false);
+      }
+      final AlphaExpression expr = equation.getExpr();
+      if ((!(expr instanceof ReduceExpression))) {
+        return Boolean.valueOf(false);
+      }
+      final ReduceExpression re = ((ReduceExpression) expr);
+      _xblockexpression = re.getFractalSimplify();
+    }
+    return _xblockexpression;
+  }
+
   /**
    * Generates the loops of the entry point that evaluate all points of each output.
    */
   @Override
   public void performEvaluations() {
-    this.entryPoint.addComment("Evaluate all the outputs.");
-    final Consumer<Variable> _function = (Variable it) -> {
+    final Function1<Variable, Boolean> _function = (Variable it) -> {
+      return this.involvesFractalReduction(it);
+    };
+    final Iterable<Variable> fractalOutputs = IterableExtensions.<Variable>filter(this.systemBody.getSystem().getOutputs(), _function);
+    final Function1<Variable, Boolean> _function_1 = (Variable it) -> {
+      return this.involvesFractalReduction(it);
+    };
+    final Iterable<Variable> nonFractalOutputs = IterableExtensions.<Variable>reject(this.systemBody.getSystem().getOutputs(), _function_1);
+    final Consumer<Variable> _function_2 = (Variable it) -> {
+      this.evaluateFractalPoints(it);
+    };
+    fractalOutputs.forEach(_function_2);
+    final Consumer<Variable> _function_3 = (Variable it) -> {
       this.evaluateAllPoints(it);
     };
-    this.systemBody.getSystem().getOutputs().forEach(_function);
+    nonFractalOutputs.forEach(_function_3);
     this.entryPoint.addEmptyLine();
+  }
+
+  protected FunctionBuilder evaluateFractalPoints(final Variable variable) {
+    try {
+      FunctionBuilder _xblockexpression = null;
+      {
+        this.entryPoint.addComment("Evaluate fractal reduction outputs");
+        final String fractalReduceName = this.getFractalReduceFunctionName(variable);
+        final Function1<StandardEquation, Boolean> _function = (StandardEquation eq) -> {
+          Variable _variable = eq.getVariable();
+          return Boolean.valueOf(Objects.equal(_variable, variable));
+        };
+        final StandardEquation eq = IterableExtensions.<StandardEquation>findFirst(this.systemBody.getStandardEquations(), _function);
+        final List<VariableExpression> varExprs = EcoreUtil2.<VariableExpression>getAllContentsOfType(eq.getExpr(), VariableExpression.class);
+        int _size = varExprs.size();
+        boolean _notEquals = (_size != 1);
+        if (_notEquals) {
+          throw new Exception("This implementation only supports a single variable expression in the reduction body");
+        }
+        final String rhsVar = varExprs.get(0).getVariable().getName();
+        final List<String> params = this.systemBody.getSystem().getParameterDomain().getParamNames();
+        final String lhsVar = variable.getName();
+        String _name = variable.getName();
+        final String lhsVarCopy = (_name + "_copy");
+        Iterable<String> _plus = Iterables.<String>concat(params, Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList(lhsVar, lhsVarCopy, rhsVar)));
+        final CallExpr callFractalReduce = Factory.callExpr(fractalReduceName, ((String[])Conversions.unwrapArray(_plus, String.class)));
+        final ExpressionStmt exprStmt = Factory.expressionStmt(callFractalReduce);
+        _xblockexpression = this.entryPoint.addStatement(exprStmt);
+      }
+      return _xblockexpression;
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  protected String getFractalReduceFunctionName(final Variable variable) {
+    String _name = variable.getName();
+    return ("freduce_" + _name);
   }
 
   /**
@@ -332,6 +416,7 @@ public class WriteC extends CodeGeneratorBase {
   protected FunctionBuilder evaluateAllPoints(final Variable variable) {
     FunctionBuilder _xblockexpression = null;
     {
+      this.entryPoint.addComment("Evaluate all non fractal reduction outputs.");
       String macroName = null;
       do {
         {
@@ -354,5 +439,148 @@ public class WriteC extends CodeGeneratorBase {
       _xblockexpression = this.entryPoint.addStatement(Factory.undefStmt(macroName));
     }
     return _xblockexpression;
+  }
+
+  @Override
+  public void addEntryPoint() {
+    final AlphaSystem system = this.systemBody.getSystem();
+    final List<String> parameters = system.getParameterDomain().getParamNames();
+    final Consumer<String> _function = (String it) -> {
+      this.declareSystemParameterArgument(it);
+    };
+    parameters.forEach(_function);
+    final Consumer<Variable> _function_1 = (Variable it) -> {
+      this.declareSystemVariableArgument(it);
+    };
+    system.getInputs().forEach(_function_1);
+    final Consumer<Variable> _function_2 = (Variable it) -> {
+      this.declareSystemVariableArgument(it);
+    };
+    system.getOutputs().forEach(_function_2);
+    this.entryPoint.addComment("Copy arguments to the global variables.");
+    final Consumer<String> _function_3 = (String it) -> {
+      this.copySystemParameter(it);
+    };
+    parameters.forEach(_function_3);
+    final Consumer<Variable> _function_4 = (Variable it) -> {
+      this.copySystemVariable(it);
+    };
+    system.getInputs().forEach(_function_4);
+    final Consumer<Variable> _function_5 = (Variable it) -> {
+      this.copySystemVariable(it);
+    };
+    system.getOutputs().forEach(_function_5);
+    this.entryPoint.addEmptyLine();
+    this.checkParameters();
+    this.entryPoint.addComment("Allocate memory for local storage.");
+    final Consumer<Variable> _function_6 = (Variable it) -> {
+      this.allocateVariable(it);
+    };
+    system.getLocals().forEach(_function_6);
+    final Function1<Variable, Boolean> _function_7 = (Variable it) -> {
+      return this.involvesFractalReduction(it);
+    };
+    final Function1<Variable, Variable> _function_8 = (Variable it) -> {
+      return AlphaUtil.<Variable>copyAE(it);
+    };
+    final Function1<Variable, Variable> _function_9 = (Variable v) -> {
+      Variable _xblockexpression = null;
+      {
+        String _name = v.getName();
+        String _plus = (_name + "_copy");
+        v.setName(_plus);
+        _xblockexpression = v;
+      }
+      return _xblockexpression;
+    };
+    final Consumer<Variable> _function_10 = (Variable it) -> {
+      this.allocateVariable(it);
+    };
+    IterableExtensions.<Variable, Variable>map(IterableExtensions.<Variable, Variable>map(IterableExtensions.<Variable>filter(this.systemBody.getSystem().getVariables(), _function_7), _function_8), _function_9).forEach(_function_10);
+    this.entryPoint.addEmptyLine();
+    this.entryPoint.addComment("Allocate and initialize flag variables.");
+    if (this.cycleDetection) {
+      final Consumer<Variable> _function_11 = (Variable it) -> {
+        this.allocateFlagsVariable(it);
+      };
+      system.getOutputs().forEach(_function_11);
+      final Consumer<Variable> _function_12 = (Variable it) -> {
+        this.allocateFlagsVariable(it);
+      };
+      system.getLocals().forEach(_function_12);
+    }
+    this.entryPoint.addEmptyLine();
+    this.performEvaluations();
+    this.freeAllocatedVariables();
+    this.program.addFunction(this.entryPoint.getInstance());
+  }
+
+  @Override
+  public Program convertSystemBody() throws UnsupportedOperationException {
+    this.preprocess();
+    this.addDefaultHeaderComment();
+    this.addDefaultIncludes();
+    this.addDefaultFunctionMacros();
+    final AlphaSystem system = this.systemBody.getSystem();
+    final List<String> parameters = system.getParameterDomain().getParamNames();
+    final Function1<Variable, Boolean> _function = (Variable it) -> {
+      return this.involvesFractalReduction(it);
+    };
+    final Function1<Variable, Variable> _function_1 = (Variable it) -> {
+      return AlphaUtil.<Variable>copyAE(it);
+    };
+    final Function1<Variable, Variable> _function_2 = (Variable v) -> {
+      Variable _xblockexpression = null;
+      {
+        String _name = v.getName();
+        String _plus = (_name + "_copy");
+        v.setName(_plus);
+        _xblockexpression = v;
+      }
+      return _xblockexpression;
+    };
+    final Iterable<Variable> fractalVars = IterableExtensions.<Variable, Variable>map(IterableExtensions.<Variable, Variable>map(IterableExtensions.<Variable>filter(system.getVariables(), _function), _function_1), _function_2);
+    final Consumer<String> _function_3 = (String it) -> {
+      this.declareParameter(it);
+    };
+    parameters.forEach(_function_3);
+    EList<Variable> _variables = system.getVariables();
+    final Consumer<Variable> _function_4 = (Variable it) -> {
+      this.declareGlobalVariable(it);
+    };
+    Iterables.<Variable>concat(_variables, fractalVars).forEach(_function_4);
+    EList<Variable> _variables_1 = system.getVariables();
+    final Consumer<Variable> _function_5 = (Variable it) -> {
+      this.declareMemoryMacro(it);
+    };
+    Iterables.<Variable>concat(_variables_1, fractalVars).forEach(_function_5);
+    if (this.cycleDetection) {
+      final Consumer<Variable> _function_6 = (Variable it) -> {
+        this.declareFlagVariable(it);
+      };
+      system.getOutputs().forEach(_function_6);
+      final Consumer<Variable> _function_7 = (Variable it) -> {
+        this.declareFlagMemoryMacro(it);
+      };
+      system.getOutputs().forEach(_function_7);
+      final Consumer<Variable> _function_8 = (Variable it) -> {
+        this.declareFlagVariable(it);
+      };
+      system.getLocals().forEach(_function_8);
+      final Consumer<Variable> _function_9 = (Variable it) -> {
+        this.declareFlagMemoryMacro(it);
+      };
+      system.getLocals().forEach(_function_9);
+    }
+    final Consumer<StandardEquation> _function_10 = (StandardEquation it) -> {
+      this.declareEvaluation(it);
+    };
+    this.systemBody.getStandardEquations().forEach(_function_10);
+    final Consumer<UseEquation> _function_11 = (UseEquation it) -> {
+      this.declareEvaluation(it);
+    };
+    this.systemBody.getUseEquations().forEach(_function_11);
+    this.addEntryPoint();
+    return this.program.getInstance();
   }
 }

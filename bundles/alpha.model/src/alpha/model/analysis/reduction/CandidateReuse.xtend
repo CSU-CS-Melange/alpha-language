@@ -15,6 +15,7 @@ import static alpha.model.transformation.reduction.SimplifyingReductions.testLeg
 import static alpha.model.util.Face.enumerateAllPossibleLabelings
 
 import static extension alpha.model.util.AffineFunctionOperations.createUniformFunction
+import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.DomainOperations.toBasicSetFromKernel
 import static extension alpha.model.util.ISLUtil.dimensionality
@@ -100,12 +101,16 @@ class CandidateReuse {
 		val labelings = enumerateAllPossibleLabelings(facets.size, true).toList
 		
 		// find the labelings that have none-empty domains
-		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
-		                                       .reject[ld | ld.value.isTrivial]
-		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
-		                                       .reject[ld | ld.value.isTrivial]
+		val a = labelings.map[l | face.getLabelingDomain(l)].toArrayList
+		val b = a.reject[ld | ld.value.isTrivial].toArrayList
+		val c = b.map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)].toArrayList
+		val d = c.reject[ld | ld.value.isTrivial].toArrayList
 		                                       .toList
-		
+		val labelingInducingDomains = d //.map[ld | ld.key -> ld.value.subtract()]
+//		labelingInducingDomains.forEach[ld | 
+//			println(ld.key.map[toString] + ' ' + ld.value)
+//		]
+//		println
 		// select the reuse vector for each labeling domain (closest to the origin)
 		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin]
 		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]
@@ -131,6 +136,7 @@ class CandidateReuse {
 			}
 			vectors.add(reuseVector)
 		}
+//		println
 	}
 	
 	/**
@@ -146,9 +152,9 @@ class CandidateReuse {
 
 		val emptyDomain = ISLSet.buildEmpty(accumulationSpace.space)
 
-		debug('---')
-		debug('accumulation ' + accumulationSpace)
-		debug('---')
+//		debug('---')
+//		debug('accumulation ' + accumulationSpace)
+//		debug('---')
 		
 		// get all POS- and NEG-faces in the given labeling
 		val nonZeroFacets = facets.zipWith(labeling)

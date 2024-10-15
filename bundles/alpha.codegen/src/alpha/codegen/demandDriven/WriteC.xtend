@@ -23,6 +23,10 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import alpha.model.ReduceExpression
+import alpha.model.VariableExpression
+import org.eclipse.xtext.EcoreUtil2
+import alpha.codegen.Program
 
 /**
  * Generates demand-driven code that performs cycle detection.
@@ -158,6 +162,7 @@ class WriteC extends CodeGeneratorBase {
 	
 	/** Declares the "eval" function used to evaluate each variable per the given equation. */
 	override declareEvaluation(StandardEquation equation) {
+		
 		// Start building a static, non-inlined function.
 		val returnType = typeGenerator.getAlphaValueType(equation.variable)
 		val evalName = nameChecker.getVariableReadName(equation.variable)
@@ -175,7 +180,10 @@ class WriteC extends CodeGeneratorBase {
 			.addEmptyLine
 			.addReturn(equation.identityAccess(false))
 		
-		program.addFunction(evalBuilder.instance)
+		// Fractal simplifications are handled specially
+		if (!equation.variable.involvesFractalReduction) {
+			program.addFunction(evalBuilder.instance)
+		}
 	}
 	
 	/**
@@ -289,17 +297,55 @@ class WriteC extends CodeGeneratorBase {
 	// Entry Point's Main Loops
 	/////////////////////////////////////////////////////////////
 	
+	def protected involvesFractalReduction(Variable variable) {
+		val equation = systemBody.standardEquations.findFirst[eq | eq.variable == variable]
+		if (equation === null)
+			return false
+		val expr = equation.expr
+		if (!(expr instanceof ReduceExpression))
+			return false
+		val re = expr as ReduceExpression
+		re.fractalSimplify
+	}
+	
 	/**
 	 * Generates the loops of the entry point that evaluate all points of each output.
 	 */
 	override performEvaluations() {
-		entryPoint.addComment("Evaluate all the outputs.")
-		systemBody.system.outputs.forEach[evaluateAllPoints]
+		val fractalOutputs = systemBody.system.outputs.filter[involvesFractalReduction]
+		val nonFractalOutputs = systemBody.system.outputs.reject[involvesFractalReduction]
+		fractalOutputs.forEach[evaluateFractalPoints]
+		nonFractalOutputs.forEach[evaluateAllPoints]
 		entryPoint.addEmptyLine
+	}
+	
+	def protected evaluateFractalPoints(Variable variable) {
+		entryPoint.addComment('Evaluate fractal reduction outputs')
+		// Add a statement that simply calls the "freduce" function.
+		val fractalReduceName = getFractalReduceFunctionName(variable)
+		
+		val eq = systemBody.standardEquations.findFirst[eq | eq.variable == variable]
+		val varExprs = EcoreUtil2.getAllContentsOfType(eq.expr, VariableExpression)
+		if (varExprs.size != 1)
+			throw new Exception('This implementation only supports a single variable expression in the reduction body') 
+		val rhsVar = varExprs.get(0).variable.name 
+		val params = systemBody.system.parameterDomain.paramNames
+		
+		val lhsVar = variable.name
+		val lhsVarCopy = variable.name + '_copy'
+		
+		val callFractalReduce = Factory.callExpr(fractalReduceName, params + #[lhsVar, lhsVarCopy, rhsVar])
+		val exprStmt = Factory.expressionStmt(callFractalReduce)
+		entryPoint.addStatement(exprStmt)
+	}
+	
+	def protected getFractalReduceFunctionName(Variable variable) {
+		'freduce_' + variable.name
 	}
 	
 	/** Evaluates all the points within an output variable. */
 	def protected evaluateAllPoints(Variable variable) {
+		entryPoint.addComment("Evaluate all non fractal reduction outputs.")
 		// Get a unique name for the macro that is called inside the loop.
 		var String macroName
 		do {
@@ -327,5 +373,98 @@ class WriteC extends CodeGeneratorBase {
 		
 		// Undefine the macro now that we're done with it.
 		entryPoint.addStatement(Factory.undefStmt(macroName))
+	}
+	
+	override void addEntryPoint() {
+		// For all Alpha parameters and variables provided by the wrapper
+		// program (i.e., inputs and outputs), declare an argument for it
+		// and add a statement that copies it to the global variable.
+		val system = systemBody.system
+		val parameters = system.parameterDomain.paramNames
+		parameters.forEach[declareSystemParameterArgument]		
+		system.inputs.forEach[declareSystemVariableArgument]
+		system.outputs.forEach[declareSystemVariableArgument]
+		
+		entryPoint.addComment("Copy arguments to the global variables.")
+		parameters.forEach[copySystemParameter]
+		system.inputs.forEach[copySystemVariable]
+		system.outputs.forEach[copySystemVariable]
+		entryPoint.addEmptyLine
+		
+		// Add statements to verify that the Alpha system parameters
+		// are valid for the system body.
+		checkParameters
+		
+		// Add statements to allocate memory for local variables.
+		// If cycle detection is being done, also allocate the flags variables
+		// for all variables computed by the system body (i.e., outputs and locals).
+		entryPoint.addComment("Allocate memory for local storage.")
+		system.locals.forEach[allocateVariable]
+		systemBody.system.variables.filter[involvesFractalReduction]
+			.map[copyAE]
+			.map[v | 
+				v.name = v.name + '_copy'
+				v
+			]
+			.forEach[allocateVariable]
+		entryPoint.addEmptyLine
+		
+		entryPoint.addComment("Allocate and initialize flag variables.")
+		if (cycleDetection) {
+			system.outputs.forEach[allocateFlagsVariable]
+			system.locals.forEach[allocateFlagsVariable]
+		}
+		entryPoint.addEmptyLine
+		
+		// Add the statements that cause all necessary evaluation to occur.
+		performEvaluations
+		
+		// Finally, free all allocated variables and add the entry point to the program.
+		freeAllocatedVariables
+		program.addFunction(entryPoint.instance)
+	} 
+	
+	override Program convertSystemBody() throws UnsupportedOperationException {
+		// Preprocess the system body so it can be converted to a simpleC AST,
+		// then extract all the variables from the equations.
+		preprocess
+
+		// Add the defaults to the program.
+		addDefaultHeaderComment
+		addDefaultIncludes
+		addDefaultFunctionMacros
+		
+		// Declare memory macros for all Alpha variables.
+		val system = systemBody.system
+		val parameters = system.parameterDomain.paramNames
+		val fractalVars = system.variables.filter[involvesFractalReduction]
+			.map[copyAE]
+			.map[v | 
+				v.name = v.name + '_copy'
+				v
+			]
+		// Declare global variables for all Alpha parameters and variables.
+		parameters.forEach[declareParameter]
+		(system.variables + fractalVars).forEach[declareGlobalVariable]
+		(system.variables + fractalVars).forEach[declareMemoryMacro]
+		
+		// If cycle detection is being performed, generate the flag variables
+		// and memory macros for the Alpha variables being computed.
+		// That is, outputs and locals.
+		if (cycleDetection) {
+			system.outputs.forEach[declareFlagVariable]
+			system.outputs.forEach[declareFlagMemoryMacro]
+			
+			system.locals.forEach[declareFlagVariable]
+			system.locals.forEach[declareFlagMemoryMacro]
+		}
+		
+		// Declare how to evaluate each equation.
+		systemBody.standardEquations.forEach[declareEvaluation]
+		systemBody.useEquations.forEach[declareEvaluation]
+		
+		// Add the entry point to the program, then we're done!
+		addEntryPoint
+		return program.instance
 	}
 }

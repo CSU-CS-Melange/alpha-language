@@ -216,12 +216,21 @@ public class Face {
       return child.getNormalVector(this);
     };
     final Function1<Pair<ISLAff, Face.Label>, ISLConstraint> _function_1 = (Pair<ISLAff, Face.Label> pair) -> {
-      return this.toLabelInducingConstraint(pair.getKey(), pair.getValue());
+      ISLConstraint _xblockexpression = null;
+      {
+        final ISLConstraint c = this.toLabelInducingConstraint(pair.getKey(), pair.getValue()).setCoefficient(ISLDimType.isl_dim_param, 0, 0);
+        _xblockexpression = c;
+      }
+      return _xblockexpression;
     };
     final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
       return s.addConstraint(c);
     };
-    final ISLBasicSet domain = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<Pair<ISLAff, Face.Label>, ISLConstraint>map(CommonExtensions.<ISLAff, Face.Label>zipWith(ListExtensions.<Face, ISLAff>map(facets, _function), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function_1), this.toLinearSpace(), _function_2).dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).removeRedundancies();
+    final ISLBasicSet domain = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(CommonExtensions.<ISLConstraint>toArrayList(ListExtensions.<Pair<ISLAff, Face.Label>, ISLConstraint>map(CommonExtensions.<ISLAff, Face.Label>zipWith(ListExtensions.<Face, ISLAff>map(facets, _function), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function_1)), this.toLinearSpace(), _function_2).dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).removeRedundancies();
+    final Function1<Face.Label, String> _function_3 = (Face.Label it) -> {
+      return it.toString();
+    };
+    final String LL = ListExtensions.<Face.Label, String>map(((List<Face.Label>)Conversions.doWrapArray(labeling)), _function_3).toString();
     return Pair.<Face.Label[], ISLBasicSet>of(labeling, domain);
   }
 
@@ -288,7 +297,7 @@ public class Face {
     try {
       ISLConstraint _xblockexpression = null;
       {
-        final ISLAff vectorInAffineSpace = AlphaUtil.renameDims(vector.copy().addDims(ISLDimType.isl_dim_param, this.space.getNbParams()), ISLDimType.isl_dim_param, ((String[])Conversions.unwrapArray(this.space.getParamNames(), String.class)));
+        final ISLAff vectorInAffineSpace = AlphaUtil.renameDims(vector.copy(), ISLDimType.isl_dim_param, ((String[])Conversions.unwrapArray(this.space.getParamNames(), String.class)));
         ISLConstraint _switchResult = null;
         if (label != null) {
           switch (label) {
@@ -320,12 +329,16 @@ public class Face {
    * of the inequality characterizing this face in the context of its parent.
    */
   public ISLAff getNormalVector(final Face parent) {
-    final Function1<Integer, Boolean> _function = (Integer idx) -> {
-      return Boolean.valueOf(this.unsaturatedConstraints.containsKey(idx));
-    };
-    final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
-    final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
-    return ISLUtil.toISLConstraint(characteristicInequality.copy().getAff().dropDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).setConstant(0).toEqualityConstraint().toString()).getAff();
+    ISLAff _xblockexpression = null;
+    {
+      final Function1<Integer, Boolean> _function = (Integer idx) -> {
+        return Boolean.valueOf(this.unsaturatedConstraints.containsKey(idx));
+      };
+      final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
+      final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
+      _xblockexpression = characteristicInequality.copy().getAff().setConstant(0);
+    }
+    return _xblockexpression;
   }
 
   /**

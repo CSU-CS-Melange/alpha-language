@@ -588,10 +588,6 @@ public class OptimalSimplifyingReductions {
     if (_hasInverse) {
       return null;
     }
-    boolean _equals = Objects.equal(varName, "Y_NR4");
-    if (_equals) {
-      InputOutput.println();
-    }
     final Function1<Map.Entry<AbstractReduceExpression, Face>, Boolean> _function = (Map.Entry<AbstractReduceExpression, Face> es) -> {
       return Boolean.valueOf(ReductionUtil.isSimilar(are, es.getKey()));
     };
@@ -618,18 +614,10 @@ public class OptimalSimplifyingReductions {
     final boolean shouldSimplify = this.shouldSimplify(targetRE);
     if (shouldSimplify) {
       final CandidateReuse candidateReuse = new CandidateReuse(targetRE, SSAR);
-      boolean _isHasIdenticalAnswers = candidateReuse.isHasIdenticalAnswers();
-      if (_isHasIdenticalAnswers) {
-        final ISLMultiAff maff = candidateReuse.identicalAnswerBasis();
-        final ISLSet domain = candidateReuse.getIdenticalAnswerDomain();
-        OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, maff, domain);
-        return Collections.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>newArrayList(_stepRemoveIndenticalAnswers));
-      } else {
-        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
-          return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
-        };
-        candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
-      }
+      final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
+        return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
+      };
+      candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
     }
     final AbstractReduceExpression largerRE = this.fractalSimplification(targetRE);
     if ((largerRE != null)) {

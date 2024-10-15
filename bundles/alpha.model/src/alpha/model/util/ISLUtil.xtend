@@ -187,18 +187,14 @@ class ISLUtil {
 	 * the first non-zero value is guaranteed to be positive
 	 */
 	def static long[] toLinearUnitVector(ISLAff aff) {
+		val nbParams = aff.space.dim(ISLDimType.isl_dim_param)
+		val nbDimsTotal = aff.space.dim(ISLDimType.isl_dim_in) + nbParams
 		val constantCol = aff.nbParams + aff.nbInputs
 		val vec = aff.copy.toEqualityConstraint.toBasicSet.toISLEqualityMatrix
 			.dropCols(constantCol, 1)
 			.toLongMatrix.get(0)
 		
-		// I'm not sure if/why we need these lines below
-//		val nonZeros = vec.reject[v|v==0]
-//		if (nonZeros.size >0 && nonZeros.toList.get(0) < 0) {
-//			return vec.scalarMultiplication(-1)
-//		}
-		
-		return vec
+		return (nbParams..<nbDimsTotal).map[i | vec.get(i)]
 	}
 	
 	/**

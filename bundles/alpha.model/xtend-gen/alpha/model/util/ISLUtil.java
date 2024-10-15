@@ -286,11 +286,17 @@ public class ISLUtil {
    * the first non-zero value is guaranteed to be positive
    */
   public static long[] toLinearUnitVector(final ISLAff aff) {
+    final int nbParams = aff.getSpace().dim(ISLDimType.isl_dim_param);
+    int _dim = aff.getSpace().dim(ISLDimType.isl_dim_in);
+    final int nbDimsTotal = (_dim + nbParams);
     int _nbParams = aff.getNbParams();
     int _nbInputs = aff.getNbInputs();
     final int constantCol = (_nbParams + _nbInputs);
     final long[] vec = DomainOperations.toISLEqualityMatrix(aff.copy().toEqualityConstraint().toBasicSet()).dropCols(constantCol, 1).toLongMatrix()[0];
-    return vec;
+    final Function1<Integer, Long> _function = (Integer i) -> {
+      return Long.valueOf(vec[(i).intValue()]);
+    };
+    return ((long[])Conversions.unwrapArray(IterableExtensions.<Integer, Long>map(new ExclusiveRange(nbParams, nbDimsTotal, true), _function), long.class));
   }
 
   /**

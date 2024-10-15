@@ -126,7 +126,6 @@ public class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
         EcoreUtil.replace(re, depExpr);
         AlphaInternalStateConstructor.recomputeContextDomain(depExpr);
       } else {
-        this.warning("Scalar Reduction with multiple pieces detected. It is not simplified with the current implementation.");
       }
     }
   }

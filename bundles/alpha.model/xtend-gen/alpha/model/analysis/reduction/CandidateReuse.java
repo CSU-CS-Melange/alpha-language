@@ -111,18 +111,22 @@ public class CandidateReuse {
     final Function1<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>> _function = (ArrayList<Face.Label> l) -> {
       return face.getLabelingDomain(((Face.Label[])Conversions.unwrapArray(l, Face.Label.class)));
     };
+    final ArrayList<Pair<Face.Label[], ISLBasicSet>> a = CommonExtensions.<Pair<Face.Label[], ISLBasicSet>>toArrayList(ListExtensions.<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>>map(labelings, _function));
     final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_1 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
       return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
     };
+    final ArrayList<Pair<Face.Label[], ISLBasicSet>> b = CommonExtensions.<Pair<Face.Label[], ISLBasicSet>>toArrayList(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(a, _function_1));
     final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>> _function_2 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
       Face.Label[] _key = ld.getKey();
       ISLBasicSet _intersect = ld.getValue().intersect(reuseSpace.copy());
       return Pair.<Face.Label[], ISLBasicSet>of(_key, _intersect);
     };
+    final ArrayList<Pair<Face.Label[], ISLBasicSet>> c = CommonExtensions.<Pair<Face.Label[], ISLBasicSet>>toArrayList(ListExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>>map(b, _function_2));
     final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_3 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
       return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
     };
-    final List<Pair<Face.Label[], ISLBasicSet>> labelingInducingDomains = IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>toList(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>>map(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(ListExtensions.<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>>map(labelings, _function), _function_1), _function_2), _function_3));
+    final List<Pair<Face.Label[], ISLBasicSet>> d = IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>toList(CommonExtensions.<Pair<Face.Label[], ISLBasicSet>>toArrayList(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(c, _function_3)));
+    final List<Pair<Face.Label[], ISLBasicSet>> labelingInducingDomains = d;
     final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>> _function_4 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
       Face.Label[] _key = ld.getKey();
       long[] _integerPointClosestToOrigin = ISLUtil.integerPointClosestToOrigin(ld.getValue());
@@ -178,9 +182,6 @@ public class CandidateReuse {
    */
   public static ISLSet computeIdenticalAnswerDomain(final Face.Label[] labeling, final Face[] facets, final ISLSet accumulationSpace) {
     final ISLSet emptyDomain = ISLSet.buildEmpty(accumulationSpace.getSpace());
-    CandidateReuse.debug("---");
-    CandidateReuse.debug(("accumulation " + accumulationSpace));
-    CandidateReuse.debug("---");
     final Function1<Pair<Face, Face.Label>, Boolean> _function = (Pair<Face, Face.Label> faceLabel) -> {
       Face.Label _value = faceLabel.getValue();
       return Boolean.valueOf(Objects.equal(_value, Face.Label.ZERO));

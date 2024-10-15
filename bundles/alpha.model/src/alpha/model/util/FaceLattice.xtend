@@ -77,4 +77,22 @@ class FaceLattice {
 	def getVertices() {
 		return getFaces(0)
 	}
+	
+	def prettyPrint() {
+		val root = getRoot
+		val d = root.dimensionality
+		val ret = newArrayList
+		ret += 'Lattice:'
+		lattice.reverse.forEach[faces,i | 
+			ret += '''  «d-i»-faces: «faces.join(', ')»'''
+		]
+		ret += 'Constraints:'
+		ret += root.unsaturatedConstraints.entrySet.map['''  «key»: «value»''']
+		ret += 'Faces:'
+		ret += lattice.flatten.map['''  «toString»: «toBasicSet»''']
+		
+		ret.join('\n')
+	}
 }
+
+

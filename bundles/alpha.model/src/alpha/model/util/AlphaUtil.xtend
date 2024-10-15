@@ -270,6 +270,17 @@ class AlphaUtil {
 		}
 	}
 	
+	static def renameParams(ISLBasicSet set, List<String> names) {
+		val n = set.getNbParams()
+		var res = set;
+		if (n > names.length) throw new RuntimeException("Need n or more index names to rename n-d space.");
+		for (i : 0..<n) {
+			res = res.setDimName(ISLDimType.isl_dim_param, i, names.get(i))
+		}
+		
+		return res
+	}
+	
 	/**
 	 * Renames all the indices of the given set to the default names,
 	 * replacing any which may be present.
@@ -357,7 +368,6 @@ class AlphaUtil {
 	static def renameInputs(ISLMultiAff maff, List<String> names) {
 		val nbDims = maff.getNbInputs
 		if (nbDims > names.length) {
-			println()
 			throw new RuntimeException("Need n or more index names to rename n-d space.")
 		}
 		return (0..<nbDims).fold(maff, [_maff, dim | _maff.setDimName(ISLDimType.isl_dim_in,  dim, names.get(dim))])
@@ -365,7 +375,6 @@ class AlphaUtil {
 	static def renameOutputs(ISLMultiAff maff, List<String> names) {
 		val nbDims = maff.getNbOutputs
 		if (nbDims > names.length) {
-			println()
 			throw new RuntimeException("Need n or more index names to rename n-d space.")
 		}
 		

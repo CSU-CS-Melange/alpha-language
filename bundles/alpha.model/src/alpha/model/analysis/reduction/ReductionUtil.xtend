@@ -5,10 +5,13 @@ import java.util.Arrays
 
 import static extension alpha.model.util.CommonExtensions.zipWith
 import static extension alpha.model.util.ISLUtil.toLinearUnitVector
+import static extension alpha.model.util.ISLUtil.toISLConstraint
+import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import alpha.model.util.Face
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import alpha.model.util.FaceLattice
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 
 class ReductionUtil {
 	
@@ -18,7 +21,11 @@ class ReductionUtil {
 	 * all facets have the same linear space
 	 */
 	def static boolean isSimilar(AbstractReduceExpression re1, AbstractReduceExpression re2) {
-		re1.facet.isSimilar(re2.facet)
+		val var1 = re1.getContainerEquation.name
+		val var2 = re2.getContainerEquation.name
+		val differentNames = (var1 != var2)
+		
+		differentNames && re1.facet.isSimilar(re2.facet)
 	}
 	
 	def static boolean isSimilar(ISLSet set1, ISLSet set2) {
@@ -30,13 +37,21 @@ class ReductionUtil {
 	}
 	
 	def static boolean isSimilar(Face face1, Face face2) {
-			
-		val vecs1 = face1.generateChildren.map[getNormalVector(face1)].map[toLinearUnitVector]
-		val vecs2 = face2.generateChildren.map[getNormalVector(face2)].map[toLinearUnitVector]
+		
+		// drop dims is needed to treat both i<N and 2i<N as [-1]
+		
+		val vecs1 = face1.generateChildren.map[getNormalVector(face1)]
+			.map[dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)]   // this and...
+			.map[toEqualityConstraint.toString.toISLConstraint.aff]       // ...this needed
+			.map[toLinearUnitVector]
+		val vecs2 = face2.generateChildren.map[getNormalVector(face2)]
+			.map[dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)]   // this and...
+			.map[toEqualityConstraint.toString.toISLConstraint.aff]       // ...this needed
+			.map[dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)].map[toLinearUnitVector]
 		
 		if (vecs1.size != vecs2.size) 
 			return false;
-		
+	
 		vecs1.zipWith(vecs2).forall[Arrays.equals(key, value)]
 	}
 	

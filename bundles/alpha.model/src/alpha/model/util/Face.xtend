@@ -180,17 +180,34 @@ class Face {
 			throw new IllegalArgumentException("Must specify a label for every facet to get a labeling domain.")
 		}
 		
+//		facets.forEach[f,i | 
+//			println(i + ':  ' + f.toSet)
+//			println('    ' + f.getNormalVector(this))
+//			println
+//		]
+//		println
 		// For each child facet, build the constraint that induces its desired labeling.
 		// Then, take the linear space of this face, add all those constraints,
 		// drop any constraints involving parameters, and remove redundancies.
 		val domain = facets
 			.map[child | child.getNormalVector(this)]
 			.zipWith(labeling)
-			.map[pair | pair.key.toLabelInducingConstraint(pair.value)]
+			.map[pair | 
+				val c = pair.key.toLabelInducingConstraint(pair.value)
+					.setCoefficient(ISLDimType.isl_dim_param, 0, 0)
+//				println(c)
+				c
+			].toArrayList
 			.fold(toLinearSpace, [s, c | s.addConstraint(c)])
 			.dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+//			.projectOut(ISLDimType.isl_dim_param, 0, space.nbParams)
 			.removeRedundancies
-			
+		val LL = labeling.map[toString].toString
+//		println(LL)
+//		println('domain: ' + domain)
+//		if (LL == '[NEG, POS, ZERO, ZERO]')
+//			println
+//		val retDomain = AlphaUtil.renameParams(domain.addDims(ISLDimType.isl_dim_param, space.nbParams), space.paramNames)
 		return labeling -> domain
 	}
 	
@@ -224,7 +241,7 @@ class Face {
 		// so that must be added back in here.
 		val vectorInAffineSpace = vector
 			.copy
-			.addDims(ISLDimType.isl_dim_param, space.nbParams)
+//			.addDims(ISLDimType.isl_dim_param, space.nbParams)
 		    .renameDims(ISLDimType.isl_dim_param, space.paramNames)
 		
 		// POS- and NEG-constraints must be strictly greater than or less than zero so the constant
@@ -251,10 +268,10 @@ class Face {
 		val characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex)
 		
 		// Convert it to an affine expression, then drop any parameters and constants.
-		return characteristicInequality
+		characteristicInequality
 			.copy
 			.aff
-			.dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
+//			.dropDims(ISLDimType.isl_dim_param, 0, space.nbParams)
 			.setConstant(0)
 			/*
 			 * At this point, some index coefficients may not have the same meaning in isolation
@@ -268,7 +285,7 @@ class Face {
 			 * and consequently the underlying ISLAff has the coefficients [2,0], which does not
 			 * correctly represent the coefficients of the normal vector, which should be [1,0].
 			 */
-			.toEqualityConstraint.toString.toISLConstraint.aff
+//			.toEqualityConstraint.toString.toISLConstraint.aff
 			/*
 			 * Parsing the constraint from the string '{[i] : 2i=0}' recognizes
 			 * that the 2 is unecessary and results in the desired constraint of the form:

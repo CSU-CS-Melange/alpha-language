@@ -31,6 +31,7 @@ import alpha.model.util.Face
 import static extension alpha.model.util.CommonExtensions.dot
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.toLinearUnitVector
+import alpha.model.matrix.MatrixOperations
 
 /**
  * This class carries out the analysis required for splitting from the max 
@@ -148,6 +149,15 @@ class SplitReduction {
 		val edgePairs = (0..<edges.size).flatMap[i | (i+1..<edges.size).map[j | edges.get(i)->edges.get(j)]]
 			.toArrayList
 		val fp = are.projection.toMap
+		try {
+			val rho = are.body.getReuseMaff.construct1DBasis.getConstantVectorNoParams
+		} catch (Exception e) {
+			println
+		}
+		val a = are.body.getReuseMaff
+		val b = a.copy.construct1DBasis
+		val c = b.copy.getConstantVectorNoParams
+		
 		val rho = are.body.getReuseMaff.construct1DBasis.getConstantVectorNoParams
 
 		val vertices = face.getVertices.fold(
@@ -360,16 +370,23 @@ class SplitReduction {
 		val nbOut = maff.dim(ISLDimType.isl_dim_out)
 		val nbParam = maff.dim(ISLDimType.isl_dim_param)
 		
-		if (nbIn - nbOut != 1) {
-			return null
-		}
+//		if (nbIn - nbOut != 1) {
+//			return null
+//		}
 		
-		val kernel = maff.copy
+		val fullKernel = maff.copy
 			.dropDims(ISLDimType.isl_dim_param, 0, nbParam)
 			.computeKernel
 			
-		if (kernel.transpose.length != 1)
-			throw new Exception("Input maff does not have a 1D null space.")
+//		if (fullKernel.transpose.length != 1)
+//			throw new Exception("Input maff does not have a 1D null space.")
+
+		// This is a heuristic at this moment, in general ther are multiple choices of basis vectors 
+		// for the reuse space. However, at a particular face of our simplex-domain, some of the
+		// facets are weak boundaries, some are weak invariant. The residual reuse space after this
+		// characterization is guaranteed to 1D. The current implementation doesn't construct
+		// this however.   
+		val kernel = MatrixOperations.submatrixColumn(fullKernel, 0, 0)
 		
 		val mat = columnBind(columnBindToFront(createIdentity(nbIn, nbIn), nbParam), kernel)
 		

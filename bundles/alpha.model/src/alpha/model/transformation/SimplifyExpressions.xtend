@@ -101,7 +101,7 @@ class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
 				
 				AlphaInternalStateConstructor.recomputeContextDomain(depExpr)
 			} else {
-				warning("Scalar Reduction with multiple pieces detected. It is not simplified with the current implementation.")
+//				warning("Scalar Reduction with multiple pieces detected. It is not simplified with the current implementation.")
 			}
 		}
 	}

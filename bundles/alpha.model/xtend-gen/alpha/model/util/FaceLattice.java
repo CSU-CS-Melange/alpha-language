@@ -1,12 +1,16 @@
 package alpha.model.util;
 
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
+import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -14,6 +18,8 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Procedures.Procedure2;
 import org.eclipse.xtext.xbase.lib.Pure;
 
 /**
@@ -107,6 +113,54 @@ public class FaceLattice {
    */
   public List<Face> getVertices() {
     return this.getFaces(0);
+  }
+
+  public String prettyPrint() {
+    String _xblockexpression = null;
+    {
+      final Face root = this.getRoot();
+      final int d = root.getDimensionality();
+      final ArrayList<String> ret = CollectionLiterals.<String>newArrayList();
+      ret.add("Lattice:");
+      final Procedure2<ArrayList<Face>, Integer> _function = (ArrayList<Face> faces, Integer i) -> {
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("  ");
+        _builder.append((d - (i).intValue()), "  ");
+        _builder.append("-faces: ");
+        String _join = IterableExtensions.join(faces, ", ");
+        _builder.append(_join, "  ");
+        ret.add(_builder.toString());
+      };
+      IterableExtensions.<ArrayList<Face>>forEach(ListExtensions.<ArrayList<Face>>reverse(this.lattice), _function);
+      ret.add("Constraints:");
+      final Function1<Map.Entry<Integer, ISLConstraint>, String> _function_1 = (Map.Entry<Integer, ISLConstraint> it) -> {
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("  ");
+        Integer _key = it.getKey();
+        _builder.append(_key, "  ");
+        _builder.append(": ");
+        ISLConstraint _value = it.getValue();
+        _builder.append(_value, "  ");
+        return _builder.toString();
+      };
+      Iterable<String> _map = IterableExtensions.<Map.Entry<Integer, ISLConstraint>, String>map(root.getUnsaturatedConstraints().entrySet(), _function_1);
+      Iterables.<String>addAll(ret, _map);
+      ret.add("Faces:");
+      final Function1<Face, String> _function_2 = (Face it) -> {
+        StringConcatenation _builder = new StringConcatenation();
+        _builder.append("  ");
+        String _string = it.toString();
+        _builder.append(_string, "  ");
+        _builder.append(": ");
+        ISLBasicSet _basicSet = it.toBasicSet();
+        _builder.append(_basicSet, "  ");
+        return _builder.toString();
+      };
+      Iterable<String> _map_1 = IterableExtensions.<Face, String>map(Iterables.<Face>concat(this.lattice), _function_2);
+      Iterables.<String>addAll(ret, _map_1);
+      _xblockexpression = IterableExtensions.join(ret, "\n");
+    }
+    return _xblockexpression;
   }
 
   @Pure

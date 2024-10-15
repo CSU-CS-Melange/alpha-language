@@ -46,7 +46,6 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.Functions.Function3;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.IteratorExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
@@ -350,6 +349,21 @@ public class AlphaUtil {
     }
   }
 
+  public static ISLBasicSet renameParams(final ISLBasicSet set, final List<String> names) {
+    final int n = set.getNbParams();
+    ISLBasicSet res = set;
+    int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
+    boolean _greaterThan = (n > _length);
+    if (_greaterThan) {
+      throw new RuntimeException("Need n or more index names to rename n-d space.");
+    }
+    ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, n, true);
+    for (final Integer i : _doubleDotLessThan) {
+      res = res.setDimName(ISLDimType.isl_dim_param, (i).intValue(), names.get((i).intValue()));
+    }
+    return res;
+  }
+
   /**
    * Renames all the indices of the given set to the default names,
    * replacing any which may be present.
@@ -473,7 +487,6 @@ public class AlphaUtil {
     int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
     boolean _greaterThan = (nbDims > _length);
     if (_greaterThan) {
-      InputOutput.println();
       throw new RuntimeException("Need n or more index names to rename n-d space.");
     }
     final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
@@ -487,7 +500,6 @@ public class AlphaUtil {
     int _length = ((Object[])Conversions.unwrapArray(names, Object.class)).length;
     boolean _greaterThan = (nbDims > _length);
     if (_greaterThan) {
-      InputOutput.println();
       throw new RuntimeException("Need n or more index names to rename n-d space.");
     }
     final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {

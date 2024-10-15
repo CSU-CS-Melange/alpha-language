@@ -182,6 +182,18 @@ public class SplitReduction {
     };
     final ArrayList<Pair<Face, Face>> edgePairs = CommonExtensions.<Pair<Face, Face>>toArrayList(IterableExtensions.<Integer, Pair<Face, Face>>flatMap(new ExclusiveRange(0, _size, true), _function));
     final ISLMap fp = are.getProjection().toMap();
+    try {
+      final List<Long> rho = AffineFunctionOperations.getConstantVectorNoParams(SplitReduction.construct1DBasis(SplitReduction.getReuseMaff(are.getBody())));
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.println();
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+    final ISLMultiAff a = SplitReduction.getReuseMaff(are.getBody());
+    final ISLMultiAff b = SplitReduction.construct1DBasis(a.copy());
+    final List<Long> c = AffineFunctionOperations.getConstantVectorNoParams(b.copy());
     final List<Long> rho = AffineFunctionOperations.getConstantVectorNoParams(SplitReduction.construct1DBasis(SplitReduction.getReuseMaff(are.getBody())));
     final Function2<ISLSet, Face, ISLSet> _function_1 = (ISLSet ret, Face v) -> {
       return ret.union(v.toSet());
@@ -461,25 +473,14 @@ public class SplitReduction {
    * dimensions.
    */
   public static ISLMultiAff construct1DBasis(final ISLMultiAff maff) {
-    try {
-      final int nbIn = maff.dim(ISLDimType.isl_dim_in);
-      final int nbOut = maff.dim(ISLDimType.isl_dim_out);
-      final int nbParam = maff.dim(ISLDimType.isl_dim_param);
-      if (((nbIn - nbOut) != 1)) {
-        return null;
-      }
-      final long[][] kernel = AffineFunctionOperations.computeKernel(maff.copy().dropDims(ISLDimType.isl_dim_param, 0, nbParam));
-      int _length = MatrixOperations.transpose(kernel).length;
-      boolean _notEquals = (_length != 1);
-      if (_notEquals) {
-        throw new Exception("Input maff does not have a 1D null space.");
-      }
-      final long[][] mat = MatrixOperations.columnBind(MatrixOperations.columnBindToFront(MatrixOperations.createIdentity(nbIn, nbIn), nbParam), kernel);
-      final ISLMultiAff outMaff = MatrixOperations.toMatrix(mat, maff.getSpace().getParamNames(), maff.getSpace().getInputNames(), false, true).toMultiAff();
-      return outMaff;
-    } catch (Throwable _e) {
-      throw Exceptions.sneakyThrow(_e);
-    }
+    final int nbIn = maff.dim(ISLDimType.isl_dim_in);
+    final int nbOut = maff.dim(ISLDimType.isl_dim_out);
+    final int nbParam = maff.dim(ISLDimType.isl_dim_param);
+    final long[][] fullKernel = AffineFunctionOperations.computeKernel(maff.copy().dropDims(ISLDimType.isl_dim_param, 0, nbParam));
+    final long[][] kernel = MatrixOperations.submatrixColumn(fullKernel, 0, 0);
+    final long[][] mat = MatrixOperations.columnBind(MatrixOperations.columnBindToFront(MatrixOperations.createIdentity(nbIn, nbIn), nbParam), kernel);
+    final ISLMultiAff outMaff = MatrixOperations.toMatrix(mat, maff.getSpace().getParamNames(), maff.getSpace().getInputNames(), false, true).toMultiAff();
+    return outMaff;
   }
 
   /**

@@ -313,8 +313,6 @@ class OptimalSimplifyingReductions {
 		if (are.operator.hasInverse) 
 			return null
 		
-		if (varName == 'Y_NR4')
-			println
 		// check if we have encountered a "similar" 2D reduction body before
 		val similarExplored2Face = explored2Faces.entrySet.findFirst[es | 
 			are.isSimilar(es.key)
@@ -346,18 +344,18 @@ class OptimalSimplifyingReductions {
 		val shouldSimplify = targetRE.shouldSimplify
 		if (shouldSimplify) {
 			val candidateReuse = new CandidateReuse(targetRE, SSAR)
-			if (candidateReuse.hasIdenticalAnswers) {
-				/*
-				 * If identical answers are found, then do not continue processing other DP steps. 
-				 * This is a special case of simplification.Add single step to remove the identical 
-				 * answers and return.
-				 */
-				val maff = candidateReuse.identicalAnswerBasis
-				val domain = candidateReuse.identicalAnswerDomain
-				return #[new StepRemoveIndenticalAnswers(targetRE, maff, domain)]
-			} else {
+//			if (candidateReuse.hasIdenticalAnswers) {
+//				/*
+//				 * If identical answers are found, then do not continue processing other DP steps. 
+//				 * This is a special case of simplification.Add single step to remove the identical 
+//				 * answers and return.
+//				 */
+//				val maff = candidateReuse.identicalAnswerBasis
+//				val domain = candidateReuse.identicalAnswerDomain
+//				return #[new StepRemoveIndenticalAnswers(targetRE, maff, domain)]
+//			} else {
 				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
-			}
+//			}
 		}
 		
 		// Fractal Simplification
