@@ -188,8 +188,8 @@ public class InsertChecksums {
       _outputs_3.add(C_C_i_1);
       EList<Variable> _outputs_4 = system.getOutputs();
       _outputs_4.add(C_C_j_0);
-      EList<Variable> _locals = system.getLocals();
-      _locals.add(C_C_j_1);
+      EList<Variable> _outputs_5 = system.getOutputs();
+      _outputs_5.add(C_C_j_1);
       final Function1<Variable, Boolean> _function_3 = (Variable v) -> {
         String _name_1 = v.getName();
         return Boolean.valueOf(Objects.equal(_name_1, "C"));

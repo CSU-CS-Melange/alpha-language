@@ -252,7 +252,7 @@ class InsertChecksums {
 		system.outputs += C_C_i_0
 		system.outputs += C_C_i_1
 		system.outputs += C_C_j_0
-		system.locals += C_C_j_1
+		system.outputs += C_C_j_1
 		
 		
 		// Generate equations for checksums
