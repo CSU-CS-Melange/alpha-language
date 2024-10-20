@@ -6,7 +6,7 @@ outputs
 	Inv_C_i : {[i] : 0<=i<N}
 	Inv_C_j : {[j] : 0<=j<N}
 	
-locals
+//locals
 	C_C_i_0, C_C_i_1: {[i] : 0<=i<N}
 	C_C_j_0, C_C_j_1: {[j] : 0<=j<N}
 	
@@ -22,5 +22,6 @@ let
 	C_C_j_1[j] = reduce(+, [i,k], A[i,k]*B[k,j]);
   
   	Inv_C_i[i] = (C_C_i_0 - C_C_i_1) / C_C_i_0;
+  	
   	Inv_C_j[j] = (C_C_j_0 - C_C_j_1) / C_C_j_0;
 .

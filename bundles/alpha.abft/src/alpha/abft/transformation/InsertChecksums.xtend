@@ -20,6 +20,8 @@ import alpha.model.AlphaInternalStateConstructor
 import alpha.model.REDUCTION_OP
 import alpha.model.AlphaExpression
 import alpha.model.Variable
+import alpha.model.BINARY_OP
+import alpha.model.AlphaModelSaver
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -108,6 +110,18 @@ class InsertChecksums {
 		return red_exp
 	}
 	
+	static def AlphaExpression createInvariantExpression(Variable v_0, Variable v_1){
+		val c_prod = createVariableExpression(v_0)
+		
+		val c_val = createVariableExpression(v_1)
+		
+		val diff = createBinaryExpression(BINARY_OP.SUB, c_prod.copyAE, c_val)
+		
+		val quot = createBinaryExpression(BINARY_OP.DIV, diff, c_prod)
+		
+		return quot
+	}
+	
 	
 	static def void main(String[] args) {
 		
@@ -120,7 +134,11 @@ class InsertChecksums {
 		 * On success, this returns an AlphaRoot object.
 		 * See alpha.model > model > alpha.xcore for the IR structure.
 		 */
-		val root = AlphaLoader.loadAlpha('resources/blas/matmult.alpha')
+		val in_dir   = 'resources/blas/'
+		val out_dir  = 'resources/auto/'
+		val sys_name = 'matmult.alpha'		
+		 
+		val root = AlphaLoader.loadAlpha(in_dir+sys_name)
 		
 		/* A root contains a list of AlphaSystem objects */
 		val system = root.systems.get(0)
@@ -231,9 +249,9 @@ class InsertChecksums {
 		val C_C_j_1 = createVariable("C_C_j_1", col_domain)
 		
 		// Add checksum variables to system locals
-		system.locals += C_C_i_0
-		system.locals += C_C_i_1
-		system.locals += C_C_j_0
+		system.outputs += C_C_i_0
+		system.outputs += C_C_i_1
+		system.outputs += C_C_j_0
 		system.locals += C_C_j_1
 		
 		
@@ -272,7 +290,21 @@ class InsertChecksums {
 		SubstituteByDef.apply(system, ccj1_eq, c)
 		
 		
+		// Define row checksum invariant
+		val c_i_inv_exp = createInvariantExpression(C_C_i_0, C_C_i_1)
+		val c_inv_i = createStandardEquation(Inv_C_i, c_i_inv_exp)
 		
+		
+		// Define column checksum invariant
+		val c_j_inv_exp = createInvariantExpression(C_C_j_0, C_C_j_1)
+		val c_inv_j = createStandardEquation(Inv_C_j, c_j_inv_exp)
+		
+		
+		// Add checksum invariants to system equations
+		systemBody.equations += c_inv_i
+		systemBody.equations += c_inv_j
+		
+		println("-------------------\nBase system:\n")
 		println(Show.print(system))
 		
 		Normalize.apply(system)
@@ -280,11 +312,16 @@ class InsertChecksums {
 		ReductionComposition.apply(system)
 		AlphaInternalStateConstructor.recomputeContextDomain(system)
 //		system.runOSR	
-			
+		println("-------------------\nNormalized system:\n")	
 		println(Show.print(system))
-		println("-------------------")
+		println("-------------------\nAShow, normalized:\n")
 		println(AShow.print(system))
 		
+		// Save new alpha program
+		println("Saving model to "+out_dir+sys_name)
+//		AlphaModelSaver.writeToFile(out_dir+sys_name, AShow.print(system))
+		AlphaModelSaver.ASave(root, out_dir+sys_name)
+		println("Done")
 //		system.runOSR	
 		
 		
