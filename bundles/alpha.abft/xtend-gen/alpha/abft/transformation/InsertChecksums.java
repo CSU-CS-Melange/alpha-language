@@ -2,19 +2,39 @@ package alpha.abft.transformation;
 
 import alpha.loader.AlphaLoader;
 import alpha.model.AlphaExpression;
+import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
+import alpha.model.DependenceExpression;
+import alpha.model.Equation;
+import alpha.model.REDUCTION_OP;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.Variable;
+import alpha.model.VariableExpression;
 import alpha.model.factory.AlphaUserFactory;
+import alpha.model.transformation.Normalize;
+import alpha.model.transformation.SubstituteByDef;
+import alpha.model.transformation.automation.OptimalSimplifyingReductions;
+import alpha.model.transformation.reduction.ReductionComposition;
+import alpha.model.util.AShow;
+import alpha.model.util.AlphaUtil;
 import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
+import com.google.common.base.Objects;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -62,6 +82,36 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
  */
 @SuppressWarnings("all")
 public class InsertChecksums {
+  public static void runOSR(final AlphaSystem system) {
+    final int limit = 1;
+    final int targetComplexity = 2;
+    final boolean debug = true;
+    final boolean trySplit = false;
+    final Map<Integer, List<OptimalSimplifyingReductions.State>> opts = OptimalSimplifyingReductions.apply(system, limit, targetComplexity, trySplit, debug).optimizations;
+    final List<OptimalSimplifyingReductions.State> states = opts.get(Integer.valueOf(targetComplexity));
+    InputOutput.<String>println("\n\n\nSimplifications:\n");
+    final Function1<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>> _function = (OptimalSimplifyingReductions.State s) -> {
+      int _indexOf = states.indexOf(s);
+      return Pair.<Integer, OptimalSimplifyingReductions.State>of(Integer.valueOf(_indexOf), s);
+    };
+    final Consumer<Pair<Integer, OptimalSimplifyingReductions.State>> _function_1 = (Pair<Integer, OptimalSimplifyingReductions.State> pair) -> {
+      final OptimalSimplifyingReductions.State state = pair.getValue();
+      final AlphaSystem stateSystem = state.root().getSystems().get(0);
+      InputOutput.println();
+      InputOutput.<CharSequence>println(state.show());
+    };
+    ListExtensions.<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>>map(states, _function).forEach(_function_1);
+  }
+
+  public static AlphaExpression createChecksumExpression(final Variable v, final String maff_str, final String fp_str) {
+    final ISLMultiAff maff = ISLUtil.toISLMultiAff(maff_str);
+    final VariableExpression var_exp = AlphaUserFactory.createVariableExpression(v);
+    final DependenceExpression dep_exp = AlphaUserFactory.createDependenceExpression(maff, var_exp);
+    final ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(fp_str);
+    ReduceExpression red_exp = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp);
+    return red_exp;
+  }
+
   public static void main(final String[] args) {
     try {
       final AlphaRoot root = AlphaLoader.loadAlpha("resources/blas/matmult.alpha");
@@ -103,11 +153,57 @@ public class InsertChecksums {
       String _print = Show.<AlphaExpression>print(expr);
       String _plus_1 = ("equation expr: " + _print);
       InputOutput.<String>println(_plus_1);
-      final ISLSet domain = ISLUtil.toISLSet("[N] -> {[i,j,k] : 0<=k<=j<=i<=N}");
-      final Variable myNewVarName = AlphaUserFactory.createVariable("newVar", domain);
+      final ISLSet row_domain = ISLUtil.toISLSet("[N] -> {[i]: 0<=i<N}");
+      final ISLSet col_domain = ISLUtil.toISLSet("[N] -> {[j]: 0<=j<N}");
+      final String c_maff = "[N] -> {[i,j] -> [i,j]}";
+      final String fp_maff_i = "[N] -> {[i,j] -> [i]}";
+      final String fp_maff_j = "[N] -> {[i,j] -> [j]}";
+      final Variable Inv_C_i = AlphaUserFactory.createVariable("Inv_C_i", row_domain);
+      final Variable Inv_C_j = AlphaUserFactory.createVariable("Inv_C_j", col_domain);
+      EList<Variable> _outputs = system.getOutputs();
+      _outputs.add(Inv_C_i);
+      EList<Variable> _outputs_1 = system.getOutputs();
+      _outputs_1.add(Inv_C_j);
+      final Variable C_C_i_0 = AlphaUserFactory.createVariable("C_C_i_0", row_domain);
+      final Variable C_C_i_1 = AlphaUserFactory.createVariable("C_C_i_1", row_domain);
+      final Variable C_C_j_0 = AlphaUserFactory.createVariable("C_C_j_0", col_domain);
+      final Variable C_C_j_1 = AlphaUserFactory.createVariable("C_C_j_1", col_domain);
       EList<Variable> _locals = system.getLocals();
-      _locals.add(myNewVarName);
+      _locals.add(C_C_i_0);
+      EList<Variable> _locals_1 = system.getLocals();
+      _locals_1.add(C_C_i_1);
+      EList<Variable> _locals_2 = system.getLocals();
+      _locals_2.add(C_C_j_0);
+      EList<Variable> _locals_3 = system.getLocals();
+      _locals_3.add(C_C_j_1);
+      final Function1<Variable, Boolean> _function_3 = (Variable v) -> {
+        String _name_1 = v.getName();
+        return Boolean.valueOf(Objects.equal(_name_1, "C"));
+      };
+      final Variable c = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function_3);
+      final AlphaExpression c_red_exp_i = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_i);
+      final StandardEquation cci0_eq = AlphaUserFactory.createStandardEquation(C_C_i_0, c_red_exp_i);
+      final StandardEquation cci1_eq = AlphaUserFactory.createStandardEquation(C_C_i_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_i));
+      EList<Equation> _equations = systemBody.getEquations();
+      _equations.add(cci0_eq);
+      EList<Equation> _equations_1 = systemBody.getEquations();
+      _equations_1.add(cci1_eq);
+      SubstituteByDef.apply(system, cci1_eq, c);
+      final AlphaExpression c_red_exp_j = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_j);
+      final StandardEquation ccj0_eq = AlphaUserFactory.createStandardEquation(C_C_j_0, c_red_exp_j);
+      final StandardEquation ccj1_eq = AlphaUserFactory.createStandardEquation(C_C_j_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_j));
+      EList<Equation> _equations_2 = systemBody.getEquations();
+      _equations_2.add(ccj0_eq);
+      EList<Equation> _equations_3 = systemBody.getEquations();
+      _equations_3.add(ccj1_eq);
+      SubstituteByDef.apply(system, ccj1_eq, c);
       InputOutput.<String>println(Show.<AlphaSystem>print(system));
+      Normalize.apply(system);
+      ReductionComposition.apply(system);
+      AlphaInternalStateConstructor.recomputeContextDomain(system);
+      InputOutput.<String>println(Show.<AlphaSystem>print(system));
+      InputOutput.<String>println("-------------------");
+      InputOutput.<String>println(AShow.print(system));
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }

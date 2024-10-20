@@ -1,10 +1,25 @@
 package alpha.abft.transformation
 
 import alpha.loader.AlphaLoader
-import alpha.model.util.Show
 
-import static extension alpha.model.util.ISLUtil.toISLSet
-import static extension alpha.model.factory.AlphaUserFactory.createVariable
+import alpha.model.util.Show
+import alpha.model.util.AShow
+
+import static extension alpha.model.util.ISLUtil.*
+import static extension alpha.model.factory.AlphaUserFactory.*
+import static extension alpha.model.util.AlphaUtil.*
+
+import alpha.model.transformation.SubstituteByDef
+import alpha.model.transformation.Normalize
+
+import alpha.model.transformation.reduction.ReductionComposition
+import alpha.model.transformation.automation.OptimalSimplifyingReductions
+
+import alpha.model.AlphaSystem
+import alpha.model.AlphaInternalStateConstructor
+import alpha.model.REDUCTION_OP
+import alpha.model.AlphaExpression
+import alpha.model.Variable
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -53,6 +68,46 @@ import static extension alpha.model.factory.AlphaUserFactory.createVariable
  */
 
 class InsertChecksums {
+	static def void runOSR(AlphaSystem system) {
+		val limit = 1
+		val targetComplexity = 2
+		val debug = true
+		val trySplit = false
+		val opts = OptimalSimplifyingReductions.apply(system, limit, targetComplexity, trySplit, debug).optimizations
+		val states = opts.get(targetComplexity)
+	
+		println('\n\n\nSimplifications:\n')
+	
+		states.map[s | states.indexOf(s) -> s].forEach[pair |
+			val state = pair.value
+			val stateSystem = state.root.systems.get(0)
+			println()
+			println(state.show)
+//	      val simplificationOutDir = '''«outDir»/«system.name»/simplifications/v«pair.key»'''
+//	      stateSystem.generateWriteC(simplificationOutDir)
+//	      AlphaModelSaver.writeToFile('''«simplificationOutDir»/«system.name».alpha''', state.show.toString)
+		]
+	}
+		
+	static def AlphaExpression createChecksumExpression(Variable v, String maff_str, String fp_str){
+		// Generate MultiAff
+		val maff = maff_str.toISLMultiAff
+		
+		// Create variable expression from variable
+		val var_exp = createVariableExpression(v)
+		
+		// Create dependence expression
+		val dep_exp = createDependenceExpression(maff, var_exp)
+		
+		// Create projection MultiAff
+		val fp_maff = fp_str.toISLMultiAff
+		
+		// Create base reduction expression
+		var red_exp = createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp)
+		
+		return red_exp
+	}
+	
 	
 	static def void main(String[] args) {
 		
@@ -138,8 +193,19 @@ class InsertChecksums {
 		 * class type, we can just use the "val" keyword.
 		 */
 		
-		val domain = '[N] -> {[i,j,k] : 0<=k<=j<=i<=N}'.toISLSet
-		val myNewVarName = createVariable("newVar", domain)
+		// Insert checksum variables into program
+		
+		// Define variable domains
+		val row_domain = '[N] -> {[i]: 0<=i<N}'.toISLSet
+		val col_domain = '[N] -> {[j]: 0<=j<N}'.toISLSet
+		
+		val c_maff = "[N] -> {[i,j] -> [i,j]}"
+		val fp_maff_i = "[N] -> {[i,j] -> [i]}"
+		val fp_maff_j = "[N] -> {[i,j] -> [j]}"
+		
+		// Define checksum invariants
+		val Inv_C_i = createVariable("Inv_C_i", row_domain)
+		val Inv_C_j = createVariable("Inv_C_j", col_domain)
 		
 		/*
 		 * Now we can put this variable in the system, as a local for example. Another note 
@@ -150,9 +216,77 @@ class InsertChecksums {
 		 * ".add(...)", you can just use "+=". This is achieved under the hooldby xtend's type
 		 * inference mechanism.
 		 */
-		system.locals += myNewVarName
+		
+		// Add checksum invariant variabls to system outputs
+		system.outputs += Inv_C_i
+		system.outputs += Inv_C_j
+		
+		
+		// Define column checksums
+		val C_C_i_0 = createVariable("C_C_i_0", row_domain)
+		val C_C_i_1 = createVariable("C_C_i_1", row_domain)
+		
+		// Define row checksums
+		val C_C_j_0 = createVariable("C_C_j_0", col_domain)
+		val C_C_j_1 = createVariable("C_C_j_1", col_domain)
+		
+		// Add checksum variables to system locals
+		system.locals += C_C_i_0
+		system.locals += C_C_i_1
+		system.locals += C_C_j_0
+		system.locals += C_C_j_1
+		
+		
+		// Generate equations for checksums
+
+		// Get product matrix from system
+		val c = system.outputs.findFirst[v | v.name == 'C']
+				
+		// Get reduction expression for row checksums
+		val c_red_exp_i = createChecksumExpression(c, c_maff, fp_maff_i)
+		
+		// Generate equations for row checksum (two copies)
+		val cci0_eq = createStandardEquation(C_C_i_0, c_red_exp_i)
+		val cci1_eq = createStandardEquation(C_C_i_1, c_red_exp_i.copyAE)						
+			
+		// Add row checksum equations to system body
+		systemBody.equations += cci0_eq
+		systemBody.equations += cci1_eq
+		
+		// Substitute validation row checksum equation with definition
+		SubstituteByDef.apply(system, cci1_eq, c)
+		
+		
+		// Get reduction expression for column checksums
+		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j)
+		
+		// Generate equations for column checksum (two copies)
+		val ccj0_eq = createStandardEquation(C_C_j_0, c_red_exp_j)
+		val ccj1_eq = createStandardEquation(C_C_j_1, c_red_exp_j.copyAE)						
+			
+		// Add column checksum equations to system body
+		systemBody.equations += ccj0_eq
+		systemBody.equations += ccj1_eq
+		
+		// Substitute validation column checksum equation with definition
+		SubstituteByDef.apply(system, ccj1_eq, c)
+		
+		
 		
 		println(Show.print(system))
+		
+		Normalize.apply(system)
+		
+		ReductionComposition.apply(system)
+		AlphaInternalStateConstructor.recomputeContextDomain(system)
+//		system.runOSR	
+			
+		println(Show.print(system))
+		println("-------------------")
+		println(AShow.print(system))
+		
+//		system.runOSR	
+		
 		
 		/*
 		 * You would create and insert new equations in the same way on the system body 
@@ -160,16 +294,5 @@ class InsertChecksums {
 		 * any expressions you may need. Take a look at the call signatures for more info.
 		 */
 		
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	}	
 }

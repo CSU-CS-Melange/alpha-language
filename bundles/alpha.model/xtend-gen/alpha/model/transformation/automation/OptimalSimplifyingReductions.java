@@ -35,7 +35,6 @@ import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -447,7 +446,7 @@ public class OptimalSimplifyingReductions {
       return;
     }
     AlphaExpression _expr = targetEq.getExpr();
-    final List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
+    final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
     final Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep> _function = (OptimalSimplifyingReductions.DynamicProgrammingStep c) -> {
       String _description = c.description();
       String _plus = ("candidate: " + _description);
@@ -528,25 +527,17 @@ public class OptimalSimplifyingReductions {
   /**
    * Creates a list of possible transformations that are valid steps in the DP
    */
-  protected List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
+  protected LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> enumerateCandidates(final AbstractReduceExpression targetRE) {
     final int nbParams = targetRE.getExpressionDomain().getNbParams();
     final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetRE);
     final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = new LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep>();
     final boolean shouldSimplify = this.shouldSimplify(targetRE);
     if (shouldSimplify) {
       final CandidateReuse candidateReuse = new CandidateReuse(targetRE, SSAR);
-      boolean _isHasIdenticalAnswers = candidateReuse.isHasIdenticalAnswers();
-      if (_isHasIdenticalAnswers) {
-        ISLMultiAff _identicalAnswerBasis = candidateReuse.identicalAnswerBasis();
-        ISLSet _identicalAnswerDomain = candidateReuse.getIdenticalAnswerDomain();
-        OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, _identicalAnswerBasis, _identicalAnswerDomain);
-        return Collections.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>newArrayList(_stepRemoveIndenticalAnswers));
-      } else {
-        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
-          return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
-        };
-        candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
-      }
+      final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
+        return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
+      };
+      candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
     }
     boolean _shouldSplit = this.shouldSplit(targetRE, shouldSimplify);
     if (_shouldSplit) {

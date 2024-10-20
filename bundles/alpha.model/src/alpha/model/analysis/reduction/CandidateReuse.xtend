@@ -123,12 +123,12 @@ class CandidateReuse {
 			debug('labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
 			val accumulationSpace = are.projection.nullSpace
 			identicalAnswerDomain = labeling.computeIdenticalAnswerDomain(facets, accumulationSpace)
-			if (!identicalAnswerDomain.isEmpty) {
-				debug('results in identical answers')
-				hasIdenticalAnswers = true
-				reuseVectorWithIdenticalAnswers = reuseVector
-				return
-			}
+//			if (!identicalAnswerDomain.isEmpty) {
+//				debug('results in identical answers')
+//				hasIdenticalAnswers = true
+//				reuseVectorWithIdenticalAnswers = reuseVector
+//				return
+//			}
 			vectors.add(reuseVector)
 		}
 	}

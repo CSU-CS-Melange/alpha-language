@@ -155,14 +155,6 @@ public class CandidateReuse {
         CandidateReuse.debug(_plus_6);
         final ISLSet accumulationSpace = ISLUtil.nullSpace(this.are.getProjection());
         this.identicalAnswerDomain = CandidateReuse.computeIdenticalAnswerDomain(labeling, ((Face[])Conversions.unwrapArray(facets, Face.class)), accumulationSpace);
-        boolean _isEmpty = this.identicalAnswerDomain.isEmpty();
-        boolean _not = (!_isEmpty);
-        if (_not) {
-          CandidateReuse.debug("results in identical answers");
-          this.hasIdenticalAnswers = true;
-          this.reuseVectorWithIdenticalAnswers = reuseVector;
-          return;
-        }
         this.vectors.add(reuseVector);
       }
     }

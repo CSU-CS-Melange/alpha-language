@@ -289,20 +289,20 @@ class OptimalSimplifyingReductions {
 		val shouldSimplify = targetRE.shouldSimplify
 		if (shouldSimplify) {
 			val candidateReuse = new CandidateReuse(targetRE, SSAR)
-			if (candidateReuse.hasIdenticalAnswers) {
-				/*
-				 * If identical answers are found, then do not continue processing other DP steps. 
-				 * This is a special case of simplification.Add single step to remove the identical 
-				 * answers and return.
-				 */
-				return #[new StepRemoveIndenticalAnswers(
-					targetRE,
-					candidateReuse.identicalAnswerBasis,
-					candidateReuse.identicalAnswerDomain
-				)]
-			} else {
+//			if (candidateReuse.hasIdenticalAnswers) {
+//				/*
+//				 * If identical answers are found, then do not continue processing other DP steps. 
+//				 * This is a special case of simplification.Add single step to remove the identical 
+//				 * answers and return.
+//				 */
+//				return #[new StepRemoveIndenticalAnswers(
+//					targetRE,
+//					candidateReuse.identicalAnswerBasis,
+//					candidateReuse.identicalAnswerDomain
+//				)]
+//			} else {
 				candidates.addAll(candidateReuse.vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)])
-			}
+//			}
 		}
 		
 		// Splitting
