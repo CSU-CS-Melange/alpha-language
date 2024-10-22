@@ -22,6 +22,9 @@ import alpha.model.AlphaExpression
 import alpha.model.Variable
 import alpha.model.BINARY_OP
 import alpha.model.AlphaModelSaver
+import alpha.codegen.demandDriven.WriteC
+import alpha.codegen.BaseDataType
+import alpha.codegen.ProgramPrinter
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -236,24 +239,24 @@ class InsertChecksums {
 		 * inference mechanism.
 		 */
 		
-		// Add checksum invariant variabls to system outputs
-		system.outputs += Inv_C_i
+		// Add checksum invariant variables to system outputs
+//		system.outputs += Inv_C_i
 //		system.outputs += Inv_C_j
 		
 		
 		// Define column checksums
-		val C_C_i_0 = createVariable("C_C_i_0", row_domain)
-		val C_C_i_1 = createVariable("C_C_i_1", row_domain)
+//		val C_C_i_0 = createVariable("C_C_i_0", row_domain)
+//		val C_C_i_1 = createVariable("C_C_i_1", row_domain)
 		
 		// Define row checksums
 		val C_C_j_0 = createVariable("C_C_j_0", col_domain)
 		val C_C_j_1 = createVariable("C_C_j_1", col_domain)
 		
 		// Add checksum variables to system locals
-		system.outputs += C_C_i_0
-		system.outputs += C_C_i_1
+//		system.outputs += C_C_i_0
+//		system.outputs += C_C_i_1
 		system.outputs += C_C_j_0
-		system.outputs += C_C_j_1
+//		system.outputs += C_C_j_1
 		
 		
 		// Generate equations for checksums
@@ -262,39 +265,39 @@ class InsertChecksums {
 		val c = system.outputs.findFirst[v | v.name == 'C']
 				
 		// Get reduction expression for row checksums
-		val c_red_exp_i = createChecksumExpression(c, c_maff, fp_maff_i)
+//		val c_red_exp_i = createChecksumExpression(c, c_maff, fp_maff_i)
 		
 		// Generate equations for row checksum (two copies)
-		val cci0_eq = createStandardEquation(C_C_i_0, c_red_exp_i)
-		val cci1_eq = createStandardEquation(C_C_i_1, c_red_exp_i.copyAE)						
+//		val cci0_eq = createStandardEquation(C_C_i_0, c_red_exp_i)
+//		val cci1_eq = createStandardEquation(C_C_i_1, c_red_exp_i.copyAE)						
 			
 		// Add row checksum equations to system body
-		systemBody.equations += cci0_eq
-		systemBody.equations += cci1_eq
-		
+//		systemBody.equations += cci0_eq
+//		systemBody.equations += cci1_eq
+//		
 		// Substitute validation row checksum equation with definition
-		SubstituteByDef.apply(system, cci1_eq, c)
+//		SubstituteByDef.apply(system, cci1_eq, c)
 		
 		
 		// Get reduction expression for column checksums
-		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j2)
+		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j)
 		
 		// Generate equations for column checksum (two copies)
 		val ccj0_eq = createStandardEquation(C_C_j_0, c_red_exp_j)
-		val ccj1_eq = createStandardEquation(C_C_j_1, c_red_exp_j.copyAE)						
+//		val ccj1_eq = createStandardEquation(C_C_j_1, c_red_exp_j.copyAE)						
 			
 		// Add column checksum equations to system body
 		systemBody.equations += ccj0_eq
-		systemBody.equations += ccj1_eq
+//		systemBody.equations += ccj1_eq
 		
-		// Substitute validation column checksum equation with definition
-		SubstituteByDef.apply(system, ccj1_eq, c)
+		// Substitute "validation" column checksum equation with definition
+//		SubstituteByDef.apply(system, ccj1_eq, c)
 		
 		
 		// Define row checksum invariant
-		val c_i_inv_exp = createInvariantExpression(C_C_i_0, C_C_i_1)
-		val c_inv_i = createStandardEquation(Inv_C_i, c_i_inv_exp)
-		
+//		val c_i_inv_exp = createInvariantExpression(C_C_i_0, C_C_i_1)
+//		val c_inv_i = createStandardEquation(Inv_C_i, c_i_inv_exp)
+//		
 		
 //		// Define column checksum invariant
 //		val c_j_inv_exp = createInvariantExpression(C_C_j_0, C_C_j_1)
@@ -302,7 +305,7 @@ class InsertChecksums {
 		
 		
 		// Add checksum invariants to system equations
-		systemBody.equations += c_inv_i
+//		systemBody.equations += c_inv_i
 //		systemBody.equations += c_inv_j
 		
 		println("-------------------\nBase system:\n")
@@ -323,6 +326,14 @@ class InsertChecksums {
 //		AlphaModelSaver.writeToFile(out_dir+sys_name, AShow.print(system))
 		AlphaModelSaver.ASave(root, out_dir+sys_name)
 		println("Done")
+		
+		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
+		
+		val code = ProgramPrinter.print(program).toString
+ 
+		println(code)
+ 
+ 
 //		system.runOSR	
 		
 		

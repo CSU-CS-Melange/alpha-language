@@ -170,6 +170,7 @@ abstract class CodeGeneratorBase {
 		Normalize.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 //		StandardizeNames.apply(systemBody)
+		println
 	}
 	
 	/** Adds the header comment lines to add to the program. */

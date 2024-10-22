@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -209,6 +210,7 @@ public abstract class CodeGeneratorBase {
   public void preprocess() {
     Normalize.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
+    InputOutput.println();
   }
 
   /**

@@ -1,5 +1,9 @@
 package alpha.abft.transformation;
 
+import alpha.codegen.BaseDataType;
+import alpha.codegen.Program;
+import alpha.codegen.ProgramPrinter;
+import alpha.codegen.demandDriven.WriteC;
 import alpha.loader.AlphaLoader;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaInternalStateConstructor;
@@ -18,7 +22,6 @@ import alpha.model.Variable;
 import alpha.model.VariableExpression;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.transformation.Normalize;
-import alpha.model.transformation.SubstituteByDef;
 import alpha.model.transformation.automation.OptimalSimplifyingReductions;
 import alpha.model.transformation.reduction.ReductionComposition;
 import alpha.model.util.AShow;
@@ -175,45 +178,19 @@ public class InsertChecksums {
       final String fp_maff_j2 = "[N] -> {[a,b] -> [b]}";
       final Variable Inv_C_i = AlphaUserFactory.createVariable("Inv_C_i", row_domain);
       final Variable Inv_C_j = AlphaUserFactory.createVariable("Inv_C_j", col_domain);
-      EList<Variable> _outputs = system.getOutputs();
-      _outputs.add(Inv_C_i);
-      final Variable C_C_i_0 = AlphaUserFactory.createVariable("C_C_i_0", row_domain);
-      final Variable C_C_i_1 = AlphaUserFactory.createVariable("C_C_i_1", row_domain);
       final Variable C_C_j_0 = AlphaUserFactory.createVariable("C_C_j_0", col_domain);
       final Variable C_C_j_1 = AlphaUserFactory.createVariable("C_C_j_1", col_domain);
-      EList<Variable> _outputs_1 = system.getOutputs();
-      _outputs_1.add(C_C_i_0);
-      EList<Variable> _outputs_2 = system.getOutputs();
-      _outputs_2.add(C_C_i_1);
-      EList<Variable> _outputs_3 = system.getOutputs();
-      _outputs_3.add(C_C_j_0);
-      EList<Variable> _outputs_4 = system.getOutputs();
-      _outputs_4.add(C_C_j_1);
+      EList<Variable> _outputs = system.getOutputs();
+      _outputs.add(C_C_j_0);
       final Function1<Variable, Boolean> _function_3 = (Variable v) -> {
         String _name_1 = v.getName();
         return Boolean.valueOf(Objects.equal(_name_1, "C"));
       };
       final Variable c = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function_3);
-      final AlphaExpression c_red_exp_i = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_i);
-      final StandardEquation cci0_eq = AlphaUserFactory.createStandardEquation(C_C_i_0, c_red_exp_i);
-      final StandardEquation cci1_eq = AlphaUserFactory.createStandardEquation(C_C_i_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_i));
-      EList<Equation> _equations = systemBody.getEquations();
-      _equations.add(cci0_eq);
-      EList<Equation> _equations_1 = systemBody.getEquations();
-      _equations_1.add(cci1_eq);
-      SubstituteByDef.apply(system, cci1_eq, c);
-      final AlphaExpression c_red_exp_j = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_j2);
+      final AlphaExpression c_red_exp_j = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_j);
       final StandardEquation ccj0_eq = AlphaUserFactory.createStandardEquation(C_C_j_0, c_red_exp_j);
-      final StandardEquation ccj1_eq = AlphaUserFactory.createStandardEquation(C_C_j_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_j));
-      EList<Equation> _equations_2 = systemBody.getEquations();
-      _equations_2.add(ccj0_eq);
-      EList<Equation> _equations_3 = systemBody.getEquations();
-      _equations_3.add(ccj1_eq);
-      SubstituteByDef.apply(system, ccj1_eq, c);
-      final AlphaExpression c_i_inv_exp = InsertChecksums.createInvariantExpression(C_C_i_0, C_C_i_1);
-      final StandardEquation c_inv_i = AlphaUserFactory.createStandardEquation(Inv_C_i, c_i_inv_exp);
-      EList<Equation> _equations_4 = systemBody.getEquations();
-      _equations_4.add(c_inv_i);
+      EList<Equation> _equations = systemBody.getEquations();
+      _equations.add(ccj0_eq);
       InputOutput.<String>println("-------------------\nBase system:\n");
       InputOutput.<String>println(Show.<AlphaSystem>print(system));
       Normalize.apply(system);
@@ -226,6 +203,9 @@ public class InsertChecksums {
       InputOutput.<String>println((("Saving model to " + out_dir) + sys_name));
       AlphaModelSaver.ASave(root, (out_dir + sys_name));
       InputOutput.<String>println("Done");
+      final Program program = WriteC.convert(system, BaseDataType.FLOAT, true);
+      final String code = ProgramPrinter.print(program).toString();
+      InputOutput.<String>println(code);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }

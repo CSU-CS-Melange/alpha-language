@@ -9,4 +9,5 @@ Require-Bundle: alpha.model;bundle-version="0.1.0",
  alpha.commands;bundle-version="0.1.0",
  alpha.loader;bundle-version="0.1.0",
  alpha.model.xtext;bundle-version="0.1.0",
- alpha.targetmapping.xtext;bundle-version="0.1.0"
+ alpha.targetmapping.xtext;bundle-version="0.1.0",
+ alpha.codegen;bundle-version="1.0.0"
