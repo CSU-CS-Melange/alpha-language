@@ -1,0 +1,28 @@
+
+affine matmult [N] -> {  : N > 0 }
+	inputs
+		A : {[i, j]: 0 <= i < N and 0 <= j < N }
+		B : {[i, j]: 0 <= i < N and 0 <= j < N }
+	outputs
+		C : {[i, j]: 0 <= i < N and 0 <= j < N }
+		Inv_C_i : {[i]: 0 <= i < N }
+		Inv_C_j : {[j]: 0 <= j < N }
+		C_C_i_0 : {[i]: 0 <= i < N }
+		C_C_i_1 : {[i]: 0 <= i < N }
+		C_C_j_0 : {[j]: 0 <= j < N }
+		C_C_j_1 : {[j]: 0 <= j < N }
+	when {  : N > 0 } let
+		C[i,j] = reduce(+, (i,j,k->i,j), (A[i,k] * B[k,j]));
+		
+		C_C_i_0[i] = reduce(+, (i,j->i), C);
+		
+		C_C_i_1[i] = reduce(+, (i,j,k->i), (A[i,k] * B[k,j]));
+		
+		C_C_j_0[j] = reduce(+, (i,j->j), C);
+		
+		C_C_j_1[j] = reduce(+, (i,j,k->j), (A[i,k] * B[k,j]));
+		
+		Inv_C_i[i] = ((C_C_i_0 - C_C_i_1) / C_C_i_0);
+		
+		Inv_C_j[j] = ((C_C_j_0 - C_C_j_1) / C_C_j_0);
+.
