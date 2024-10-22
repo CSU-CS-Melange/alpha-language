@@ -220,6 +220,7 @@ class InsertChecksums {
 		val c_maff = "[N] -> {[i,j] -> [i,j]}"
 		val fp_maff_i = "[N] -> {[i,j] -> [i]}"
 		val fp_maff_j = "[N] -> {[i,j] -> [j]}"
+		val fp_maff_j2 = "[N] -> {[a,b] -> [b]}"
 		
 		// Define checksum invariants
 		val Inv_C_i = createVariable("Inv_C_i", row_domain)
@@ -237,7 +238,7 @@ class InsertChecksums {
 		
 		// Add checksum invariant variabls to system outputs
 		system.outputs += Inv_C_i
-		system.outputs += Inv_C_j
+//		system.outputs += Inv_C_j
 		
 		
 		// Define column checksums
@@ -276,7 +277,7 @@ class InsertChecksums {
 		
 		
 		// Get reduction expression for column checksums
-		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j)
+		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j2)
 		
 		// Generate equations for column checksum (two copies)
 		val ccj0_eq = createStandardEquation(C_C_j_0, c_red_exp_j)
@@ -295,14 +296,14 @@ class InsertChecksums {
 		val c_inv_i = createStandardEquation(Inv_C_i, c_i_inv_exp)
 		
 		
-		// Define column checksum invariant
-		val c_j_inv_exp = createInvariantExpression(C_C_j_0, C_C_j_1)
-		val c_inv_j = createStandardEquation(Inv_C_j, c_j_inv_exp)
+//		// Define column checksum invariant
+//		val c_j_inv_exp = createInvariantExpression(C_C_j_0, C_C_j_1)
+//		val c_inv_j = createStandardEquation(Inv_C_j, c_j_inv_exp)
 		
 		
 		// Add checksum invariants to system equations
 		systemBody.equations += c_inv_i
-		systemBody.equations += c_inv_j
+//		systemBody.equations += c_inv_j
 		
 		println("-------------------\nBase system:\n")
 		println(Show.print(system))

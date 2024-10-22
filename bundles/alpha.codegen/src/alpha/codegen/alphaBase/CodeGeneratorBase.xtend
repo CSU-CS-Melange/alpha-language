@@ -169,7 +169,7 @@ abstract class CodeGeneratorBase {
 	def void preprocess() {
 		Normalize.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
-		StandardizeNames.apply(systemBody)
+//		StandardizeNames.apply(systemBody)
 	}
 	
 	/** Adds the header comment lines to add to the program. */

@@ -22,7 +22,6 @@ import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
 import alpha.model.transformation.Normalize;
-import alpha.model.transformation.StandardizeNames;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import java.util.ArrayList;
@@ -210,7 +209,6 @@ public abstract class CodeGeneratorBase {
   public void preprocess() {
     Normalize.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
-    StandardizeNames.apply(this.systemBody);
   }
 
   /**
