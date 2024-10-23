@@ -1,35 +1,35 @@
 package alpha.model.prdg
 
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import java.util.HashMap
-import java.util.ArrayList
-import java.util.List
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import org.eclipse.xtend.lib.annotations.Accessors
+import fr.irisa.cairn.jnimap.isl.ISLBasicMap
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
-import fr.irisa.cairn.jnimap.isl.ISLBasicMap
-import java.util.stream.IntStream
-import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import org.eclipse.xtend.lib.annotations.Accessors
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
+import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
+import alpha.model.util.AffineFunctionOperations
+import fr.irisa.cairn.jnimap.polylib.PolyLibVector
 
 class FeasibleSpace {
-	@Accessors(PUBLIC_GETTER)
-	var HashMap<String, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> variables 
+ 	@Accessors(PUBLIC_GETTER)
+	var HashMap<String, HashMap<String, String>> variables 
  	@Accessors(PUBLIC_GETTER)
  	var HashMap<String, List<String>> variableIndices
  	@Accessors(PUBLIC_GETTER)
  	var HashMap<String, Integer> indexMappings
  	@Accessors(PUBLIC_GETTER)
- 	var HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, ISLMultiAff>>>> reductionMappings
+ 	var HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>>> mappings
  	var ISLBasicMap space
  	var String variableName
  	var int variableCount
  	var int muCount
- 	@Accessors(PUBLIC_GETTER)
-	var HashMap<Pair<String, String>, List<Pair<String, HashMap<String, Pair<Integer, Integer>>>>> dependenceMappings
-	var HashMap<Pair<String, String>, List<Pair<String, HashMap<String, Integer>>>> functionMappings
 	var int lambdaCount
  	
  	new(PRDG prdg) {
@@ -38,233 +38,186 @@ class FeasibleSpace {
 		muCount = 0
 		variableCount = 0
 		variableName = "i"
-		dependenceMappings = newHashMap
-		functionMappings = newHashMap
 		indexMappings = newHashMap
-		reductionMappings = newHashMap
+		mappings = newHashMap
 		
+		var dom = PolyLibMatrix.createFromLongMatrix(prdg.nodes.get(0).domain.copy.basicSets.get(0).toPolyLibArray)
+		println("Domain: \n" + dom)
+		println("Map: "+ prdg.edges.get(0).function.copy.toBasicMap.toBasicSet)
+		var map = PolyLibMatrix.createFromLongMatrix(
+			AffineFunctionOperations.toMatrix(prdg.edges.get(0).function.copy).toArray
+		)
+		println("Map: \n" + map)
+//		println("Map * Domain: \n" + )
 		for(node : prdg.nodes) {
 			if(!(node.name.contains("_body") || node.name.contains("_result"))) {
 				var domain = node.domain.copy.coalesce
 				this.addDomain(domain, node.name)
 			}
 		}
-		println("Variables: " + this.variables)
 
-		for(edge : prdg.edges.reverse) { 
+		for(edge : prdg.edges) { 
 			if(edge.source.name.contains("_body")) {
+				var fun = edge.function.copy.toMap.intersectDomain(edge.source.domain.copy)
+				var constant = "l" + lambdaCount
+				lambdaCount++
+				var dependencies = newArrayList
+				for(piece : fun.copy.toPWMultiAff.pieces) {
+					for(set : piece.set.basicSets) {
+						for(constraint : set.constraints) {
+							var lambda = "l" + lambdaCount
+							lambdaCount++
+							dependencies.add(new Pair(lambda, constraint))
+						}
+					}
+				}
+				
 				var array = new ArrayList()
-				array.add(new Pair(edge.dest.name, edge.function))
-				reductionMappings.merge(edge.source.name, new Pair(null, array),
-					[existing, n | 
-						var x = existing ?: n
-						new Pair(x.key, n.value)
+				array.add(new Pair(edge.dest.name, new Dependence(edge.function, constant, dependencies)))
+				mappings.merge(edge.source.name, new Pair(null, array),
+					[ existing, n | 
+						var arr = n.value;
+						arr.addAll(existing.value)
+						new Pair(existing.key, arr)
 					])
 			} else if(edge.dest.name.contains("_result")) {
 				var body = prdg.edges.filter(x | x.source.name == edge.dest.name).head
-				reductionMappings.merge(body.dest.name, 
+				mappings.merge(body.dest.name, 
 					new Pair(new Pair(edge.source.name, body.function),
 					new ArrayList), [existing, n | 
 						var x = existing ?: n
 						new Pair(n.key, x.value)
 					])
 			} else if(!(edge.dest.name.contains("_body") || edge.source.name.contains("_result"))) {
-				var function = edge.function.copy.toMap.simplify.intersectDomain(edge.domain.copy)
-				this.addEdgeConstraints(edge.source.name, edge.dest.name, function)
+				var fun = edge.function.copy.toMap.intersectDomain(edge.source.domain.copy)
+				var constant = "l" + lambdaCount
+				lambdaCount++
+				var dependencies = newArrayList
+				for(piece : fun.copy.toPWMultiAff.pieces) {
+					for(set : piece.set.basicSets) {
+						for(constraint : set.constraints) {
+							var lambda = "l" + lambdaCount
+							lambdaCount++
+							dependencies.add(new Pair(lambda, constraint.copy))
+						}
+					}
+				}
+				var array = new ArrayList()
+				array.add(new Pair(edge.dest.name, new Dependence(edge.function.copy, constant, dependencies)))
+				mappings.merge(edge.source.name, 
+					new Pair(new Pair(edge.dest.name, 
+						ISLMultiAff.buildIdentity(edge.function.copy.space)
+					), array),
+					[ existing, n | 
+						var arr = n.value;
+						arr.addAll(existing.value)
+						new Pair(n.key, arr)
+					])
 			}
 		}
-		println("Reductions: " + reductionMappings)
-
 		space = ISLBasicMap.buildUniverse(ISLSpace.alloc(0, 0, 0))
 		var muIndex = 0
+		
 		for(entry : variables.entrySet) {
-			space = space.addOutputs(entry.value.map[x | x.key])
-			for(pair : entry.value) {
-				indexMappings.put(pair.key, muIndex)
-				space = space.addConstraint(singleGreaterThan(muIndex, 
-				space.copy.space, ISLDimType.isl_dim_out))
+			space = space.addOutputs(entry.value.values.toList)
+			for(key : entry.value.values) {
+				indexMappings.put(key, muIndex)
+				var constraint = ISLConstraint.buildInequality(space.space)
+				constraint = constraint.setCoefficient(ISLDimType.isl_dim_out, muIndex, 1)
+				space = space.addConstraint(constraint)
 				muIndex++
+				
 			}
 		}
-		
 		var lambdaIndex = 0
-		for(entry : dependenceMappings.entrySet) {
-			space = space.addInputs(entry.value.map[x | x.key])
-			for(pair : entry.value) {
-				indexMappings.put(pair.key, lambdaIndex)
-				space = space.addConstraint(singleGreaterThan(lambdaIndex, 
-					space.copy.space, ISLDimType.isl_dim_in))
-				lambdaIndex++
+		for(variable : mappings.keySet) {
+			for(dependence : mappings.get(variable).value){
+				var lambdas = new ArrayList()
+				lambdas.add(dependence.value.constantLambda)
+				lambdas.addAll(dependence.value.lambdas.map[pair | pair.key ])
+				space = space.addInputs(lambdas)
+				for(key : lambdas) {
+					indexMappings.put(key, lambdaIndex)
+					lambdaIndex++
+					var constraint = ISLConstraint.buildInequality(space.space)
+					constraint = constraint.setCoefficient(ISLDimType.isl_dim_in, indexMappings.get(key), 1)
+					space = space.addConstraint(constraint)
+				}
 			}
 		}
-//		println("Variables: ")
-//		variables.forEach[x, y | println(x + ": "); y.forEach[z | println(z)]]
-//		println("Lambas: ")
-//		dependenceMappings.forEach[x, y | println(x + ":"); y.forEach[z | println(z)]]
-		for(entry : dependenceMappings.entrySet) {
-			if(entry.key.key == entry.key.value) {
-				this.selfDependenceConstraint(entry.key.key, entry.value)
-			} else {
-				this.interVariableConstraint(entry.key, entry.value)
-			}
-		}	
-		
-		reductionMappings.forEach[reductionNode, value |
+			
+		val universeConstraint = ISLConstraint.buildInequality(space.space)
+		mappings.forEach[reductionNode, value |
  			value.value.forEach[ dependence |
  				var constantConstraint = ISLConstraint.buildInequality(space.space)
-				constantConstraint = updateConstraint(constantConstraint, value.key.key, 1, "constant", 1)
-				println("Constant Constraint: " + constantConstraint)
-	 			constantConstraint = updateConstraint(constantConstraint, dependence.key, -1, "constant", 1)
-				println("Constant Constraint: " + constantConstraint)
+				constantConstraint = constantConstraint.updateConstraint(value.key.key, 1, "constant", 1)
+	 			constantConstraint = updateConstraint(constantConstraint.copy, dependence.key, -1, "constant", 1)
  				val projections = value.key.value.copy.affs;
- 				val reads = dependence.value.copy.affs;
- 				reads.forEach[x | println(x)]
- 				(0..<projections.size).forEach[leftIndex |
- 					(0..<reads.size).forEach[rightIndex | 
- 						(0..<dependence.value.copy.nbInputs).forEach[index |
-							var constraint = ISLConstraint.buildInequality(space.space)
-							println("projection: " + projections.get(leftIndex))
-							println("Reads: " + reads.get(rightIndex))
-							constraint = updateConstraint(constraint, value.key.key, 1, 
-								variableIndices.get(value.key.key).get(leftIndex), 
-								projections.get(leftIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
-							constraint = updateConstraint(constraint, dependence.key, -1, 
-								variableIndices.get(dependence.key).get(rightIndex), 
-								reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
-							println("Index: " + index + ", Projection coefficient: " + projections.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index))								
-							println("Index: " + index + ", Read coefficient: " + reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index))
-							println("Constraint: " + constraint)							
-	 					]
- 					] 		
- 				]
- 			]
+ 				val reads = dependence.value.dependence.copy.affs;
+ 				constantConstraint = (0..<projections.size).fold(constantConstraint, [constraint, leftIndex |
+					updateConstraint(constraint, value.key.key, 1, 
+									variableIndices.get(value.key.key).get(leftIndex), 
+									projections.get(leftIndex)
+										.constantVal.copy.asLong.intValue)
+					])
+ 				constantConstraint = (0..<reads.size).fold(constantConstraint, [constraint, rightIndex | 
+					updateConstraint(constraint, dependence.key, -1, 
+						variableIndices.get(dependence.key).get(rightIndex), 
+						reads.get(rightIndex).constantVal.copy.asLong.intValue)
+ 					])
+ 				
+ 				if(!constantConstraint.isEqual(universeConstraint)) {
+ 					constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_in, 
+ 						indexMappings.get(dependence.value.constantLambda), -1)
+ 					constantConstraint = (constantConstraint.constant = -1)
+ 					space = space.addConstraint(constantConstraint)
+ 				}
+
+ 				space = (0..<dependence.value.dependence.copy.nbInputs).fold(space, [localSpace, index |
+ 					var constraint = ISLConstraint.buildInequality(localSpace.space)
+ 					constraint = (0..<projections.size).fold(constraint, [localConstraint, leftIndex |
+ 						updateConstraint(localConstraint, value.key.key, 1, 
+										variableIndices.get(value.key.key).get(leftIndex), 
+										projections.get(leftIndex)
+											.getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
+					])
+					
+					constraint = (0..<reads.size).fold(constraint, [localConstraint, rightIndex |
+						updateConstraint(localConstraint, dependence.key, -1, 
+							variableIndices.get(dependence.key).get(rightIndex), 
+							reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
+					])
+					
+					constraint = dependence.value.lambdas.fold(constraint, [localConstraint, mapping |
+						localConstraint.setCoefficient(ISLDimType.isl_dim_in, indexMappings.get(mapping.key), 
+							mapping.value.getCoefficient(ISLDimType.isl_dim_out, index).intValue)
+					])
+	 				var output = localSpace
+	 				if(!constraint.isEqual(universeConstraint)) {
+ 						constraint = (constraint.constant = -1)
+ 						output = localSpace.addConstraint(constraint)
+ 					} 
+					output
+ 				])
+			]
  		]
-		space.copy.removeRedundancies
-//		println(space)	
+		space = space.copy.removeRedundancies
+//		println(space.copy.range()	)	
  	}
  	
  	def private ISLConstraint updateConstraint(ISLConstraint constraint, String variable, int direction, String index, int coefficient) {
- 		variables.get(variable).fold(constraint.copy, 
- 			[c, map |
- 				var old = c.getCoefficient(ISLDimType.isl_dim_out, indexMappings.get(map.key)).intValue
-				c.copy.setCoefficient(ISLDimType.isl_dim_out,
-					indexMappings.get(map.key),
- 					old + direction * coefficient * map.value.get(index).value)
-			])
+		var old = constraint.copy.getCoefficient(ISLDimType.isl_dim_out, 
+			indexMappings.get(variables.get(variable).get(index))
+		).intValue
+		constraint.copy.setCoefficient(ISLDimType.isl_dim_out,
+			indexMappings.get(variables.get(variable).get(index)),
+ 			old + direction * coefficient)
  	}
- 	
- 	def private selfDependenceConstraint(String variable, List<Pair<String, 
- 		HashMap<String, Pair<Integer, Integer>>>> dependences) {
- 		
- 		var selfDependence = variables.get(variable)
- 		var mapping = functionMappings.get(new Pair(variable, variable))
-		var constantConstraint = ISLConstraint.buildInequality(this.space.space)
- 		for(map : mapping) {
- 			var constraint = ISLConstraint.buildInequality(this.space.space)
- 			for(dependence : selfDependence) {
- 				if(map.value.get("constant") != 0 && dependence.value.get(map.key) != 0) {
-	 				var value = constantConstraint.copy.getCoefficient(ISLDimType.isl_dim_out,
-	 					indexMappings.get(dependence.key))
-					constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_out,
-						indexMappings.get(dependence.key),
-						value.intValue - (dependence.value.get(map.key).value *
-						map.value.get("constant")))
- 				}
- 				for(index : variableIndices.get(variable)) {
- 					var value = constraint.getCoefficient(ISLDimType.isl_dim_out, indexMappings.get(dependence.key))
- 					constraint = constraint.setCoefficient(ISLDimType.isl_dim_out, 
- 						indexMappings.get(dependence.key),
- 						(value.intValue - (dependence.value.get(index).value * map.value.get(index))))	 				
- 				}
- 				var value = constraint.getCoefficient(ISLDimType.isl_dim_out, indexMappings.get(dependence.key))
- 				constraint = constraint.setCoefficient(ISLDimType.isl_dim_out, 
-	 				indexMappings.get(dependence.key),
- 					value.intValue + dependence.value.get(map.key).value)
-
- 			}
-// 			println("Self Dependence Constraint: " + constraint)
-			this.space = this.space.addConstraint(constraint)
- 		}
- 		constantConstraint = constantConstraint.setConstant(-1)
-// 		println("Constant Constraint: " + constantConstraint)
- 		this.space = this.space.addConstraint(constantConstraint)
- 	}
- 	
- 	def private interVariableConstraint(Pair<String, String> sourceDest, List<Pair<String, 
- 		HashMap<String, Pair<Integer, Integer>>>> dependences) {
- 		var constantConstraint = ISLConstraint.buildEquality(space.copy.space)
-		constantConstraint = constantConstraint.setConstant(-1)
-		for(constraint : dependences) {
-			constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_in,
-				indexMappings.get(constraint.key),
-				-constraint.value.get("constant").value)
-		}
-		for(constraint : variables.get(sourceDest.key)) {
-			constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_out,
-				indexMappings.get(constraint.key),
-				constraint.value.get("constant").value)
-		}
-		for(constraint : variables.get(sourceDest.value)) {
-			constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_out,
-				indexMappings.get(constraint.key),
-				-constraint.value.get("constant").value)
-		}
-//		println(constantConstraint)
-		space = space.addConstraint(constantConstraint)
-//		println("Variables Source: " + variableIndices.get(sourceDest.key))
-//		println("Variables Dest: " + variableIndices.get(sourceDest.value))
-		for(index : variableIndices.get(sourceDest.key)) {
-			var lambdaConstraint = ISLConstraint.buildEquality(space.copy.space)
-			lambdaConstraint = (lambdaConstraint.constant = -1)
-			for(constraint : variables.get(sourceDest.key)) {
-//				println("Constraint: " + constraint)
-				lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out,
-					indexMappings.get(constraint.key),
-					constraint.value.get(index).value)
-			}
-			//This checks for parameters
-			if(variableIndices.get(sourceDest.value).contains(index)) {
-				for(constraint : variables.get(sourceDest.value)) {
-//				println("Constraint: " + constraint)
-					lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out,
-						indexMappings.get(constraint.key),
-						-constraint.value.get(index).value)
-				}
-			}
-//			println("Function Mappings: " + functionMappings)
-//			println("Updated Lambda: " + lambdaConstraint)
-			for(constraint : variables.get(sourceDest.value)) {
-//				println("Constraint: " + constraint)
-				for(mapping : functionMappings.get(sourceDest)) {
-//					println("Map: " + mapping)
-					var value = lambdaConstraint
-						.getCoefficient(ISLDimType.isl_dim_out, indexMappings.get(constraint.key)).intValue
-					value -= constraint.value.get(mapping.key).value * mapping.value.get(index)
-					lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_out,
-						indexMappings.get(constraint.key),
-						value)
-				}
-			}
-			for(constraint : dependences) {
-				lambdaConstraint = lambdaConstraint.setCoefficient(ISLDimType.isl_dim_in,
-					indexMappings.get(constraint.key),
-					-constraint.value.get(index).value)
-			}
-//			println("Final Constraint: " + lambdaConstraint)
-			space = space.addConstraint(lambdaConstraint)
-		}
-	}
  	
  	def ISLBasicSet getSpace() {
  		space.copy.getRange
  	}
 
-	def private static ISLConstraint singleGreaterThan(Integer index, ISLSpace space, ISLDimType dim) {
-		var constraint = ISLConstraint.buildInequality(space)
-		constraint = constraint.setCoefficient(dim, index, 1)
-		constraint
-	}
-	
  	def addDomain(ISLSet domain, String variable) {
  		var indexCount = domain.nbIndices
 		var indices = newArrayList
@@ -281,73 +234,50 @@ class FeasibleSpace {
 		variableIndices.put(variable, updatedDomain.indexNames)
  	}
  	
- 	def addEdgeConstraints(String source, String target, ISLMap f) {
- 		println("Source: " + source + ", Target: " + target)
- 		var sourceTarget = new Pair(source, target)
- 		var function = f.copy
-		function = function.renameInputs(variableIndices.get(source))
-		function = function.renameOutputs(variableIndices.get(target))
- 		function = function.moveParamsToInputs
-		var functionCoefficients = buildFunctionCoefficients(function.copy, variableIndices.get(target))
-		functionMappings.put(sourceTarget, functionCoefficients)
-		var domain = function.copy.toSet
-		domain = domain.moveParametersToIndices
-		var dependenceCoefficients = buildDomainCoefficients(domain, "l", lambdaCount)
-		dependenceMappings.put(sourceTarget, dependenceCoefficients)
-		lambdaCount += dependenceCoefficients.size
- 	}
- 	
- 	def private List<Pair<String, HashMap<String, Integer>>> buildFunctionCoefficients(ISLMap function, 
-		List<String> output_indices
-	) {
-		var function_coefficients = new ArrayList
-		var output_index = 0
-		for(map : function.copy.toPWMultiAff.pieces) {
-			for(piece : map.maff.affs) {
-//				println("Piece: " + piece)
-				var function_coefficient = newHashMap 
-				var params = piece.paramNames 
-				for(var i = 0; i < piece.nbParams; i++) {
-					var Integer value = piece.getCoefficientVal(ISLDimType.isl_dim_param, i).asLong.intValue  
-					function_coefficient.put(params.get(i), value)
-				}
-				var inputs = piece.inputNames
-				for(var i = 0; i < piece.nbInputs; i++) {
-					var Integer value = piece.getCoefficientVal(ISLDimType.isl_dim_in, i).asLong.intValue  
-					function_coefficient.put(inputs.get(i), value)
-				}
-				function_coefficient.put("constant", piece.getConstant().intValue)	
-				function_coefficients.add(new Pair(output_indices.get(output_index), function_coefficient))
-				output_index++
-			}
-		}
-		function_coefficients
-	}
-	
- 	def private List<Pair<String, HashMap<String, Pair<Integer, Integer>>>> buildDomainCoefficients(ISLSet domain, String label, Integer count) {
-		var constraints = new ArrayList
-		var label_count = count		
-		for(basic_set : domain.basicSets) {
-			var indices = basic_set.copy.indexNames
-			var constant_coefficients = newHashMap
-			for(var i = 0; i < indices.size; i++) {
-				constant_coefficients.put(indices.get(i), new Pair(i, 0))
-			}
-			constant_coefficients.put("constant", new Pair(0, 1))
-			constraints.add(new Pair(label + label_count, constant_coefficients))
-			label_count++
-			for(constraint : basic_set.removeRedundancies.constraints) {
-				var coefficients = newHashMap
-				for(var i = 0; i < indices.size; i++) {
-					var coefficient = constraint.copy.getCoefficient(ISLDimType.isl_dim_out, i)
-					coefficients.put(indices.get(i), new Pair(i, coefficient.intValue))
-				}
-				coefficients.put("constant", new Pair(0, constraint.copy.getConstant().intValue))
-				constraints.add(new Pair(label + label_count, coefficients))
-				label_count++
-			}
+ 	def private HashMap<String, String> buildDomainCoefficients(ISLSet domain, String label, Integer count) {
+		var constraints = newHashMap
+		var labelCount = count		
+		constraints.put("constant", label + labelCount)
+		labelCount++
+		for(index : domain.indexNames) {
+			constraints.put(index, label + labelCount)
+			labelCount++
 		}
 		constraints
+	}
+	
+	def static PolyLibMatrix matMult(PolyLibMatrix x, PolyLibMatrix y) {
+		var n = x.nbRows
+		var m = y.nbColumns
+		var output = PolyLibMatrix.allocate(n, m)
+		for(var i = 0; i < n; i++) {
+			for(var j = 0; j < m; j++) {
+				for(var k = 0; k < y.nbRows; k++) {
+					println("i, j, k: " + i + ", " + j + ", " + k)
+					output.setAt(i, j, output.getAt(i, j) + x.getAt(i, k) * y.getAt(k, j))
+				}				
+			}
+		}
+		output
+	}
+}
+
+class Dependence {
+ 	@Accessors(PUBLIC_GETTER)
+	var ISLMultiAff dependence
+	@Accessors(PUBLIC_GETTER)
+	var String constantLambda
+	@Accessors(PUBLIC_GETTER)
+	var List<Pair<String, ISLConstraint>> lambdas
+	
+	new(ISLMultiAff dep, String const, List<Pair<String, ISLConstraint>> l) {
+		dependence = dep
+		constantLambda = const
+		lambdas = l
+	}
+	
+	override toString() {
+		println("Dep: " + dependence + ", Constant: " + constantLambda + ", Lambdas: " + lambdas)
 	}
 	
 }

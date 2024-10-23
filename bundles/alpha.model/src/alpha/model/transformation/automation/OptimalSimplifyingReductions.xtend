@@ -43,6 +43,7 @@ import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
 import alpha.model.prdg.PRDGGenerator
 import alpha.model.prdg.PRDG
+import alpha.model.prdg.FeasibleSpace
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -73,6 +74,7 @@ class OptimalSimplifyingReductions {
 	protected boolean trySplitting
 	protected boolean verbose
 	protected PRDG prdg
+	protected FeasibleSpace space
 	
 	/**
 	 * This maps contains the simplified versions of the program obtained
@@ -91,7 +93,7 @@ class OptimalSimplifyingReductions {
 		}
 		this.root = EcoreUtil.copy(AlphaUtil.getContainerRoot(system))
 		this.system = this.root.getSystem(system.fullyQualifiedName)
-		this.prdg = PRDGGenerator.apply(system)
+		this.prdg = null
 		this.systemBodyID = 0
 		this.systemBody = this.system.systemBodies.get(this.systemBodyID)
 		this.optimizations = newHashMap
@@ -132,6 +134,9 @@ class OptimalSimplifyingReductions {
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
 		this.prdg = PRDGGenerator.apply(system)
+		this.space = new FeasibleSpace(this.prdg)
+		
+		println("Space: " + this.space.space.copy)
 		
 		debug('After preprocessing:')
 		println(Show.print(systemBody))
@@ -311,9 +316,9 @@ class OptimalSimplifyingReductions {
 				candidateReuse.vectors.forEach[x | x.forEach[i | print(i + " ")] println()]
 				var vectors = candidateReuse.vectors
 					.filter[vec | this.prdg.respectsScheduleSpace(targetRE.containerEquation.name, vec)]
+				println("Number Possible Vectors: " + vectors.size)
 				println("Filtered Vectors:")
 				vectors.forEach[vec | vec.forEach[ i | print(i + " ")] println()]
-				println("BLAHS")
 				candidates.addAll(
 					vectors.map[vec | new StepSimplifyingReduction(targetRE, vec, nbParams)]
 				)

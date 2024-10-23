@@ -13,6 +13,7 @@ import alpha.model.analysis.reduction.CandidateReuse;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.matrix.MatrixOperations;
+import alpha.model.prdg.FeasibleSpace;
 import alpha.model.prdg.PRDG;
 import alpha.model.prdg.PRDGGenerator;
 import alpha.model.transformation.Normalize;
@@ -34,6 +35,7 @@ import alpha.model.util.ISLUtil;
 import alpha.model.util.Show;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
@@ -299,6 +301,8 @@ public class OptimalSimplifyingReductions {
 
   protected PRDG prdg;
 
+  protected FeasibleSpace space;
+
   /**
    * This maps contains the simplified versions of the program obtained
    * during exploration. Simplified versions are grouped by complexity.
@@ -318,7 +322,7 @@ public class OptimalSimplifyingReductions {
     }
     this.root = EcoreUtil.<AlphaRoot>copy(AlphaUtil.getContainerRoot(system));
     this.system = this.root.getSystem(system.getFullyQualifiedName());
-    this.prdg = PRDGGenerator.apply(system);
+    this.prdg = null;
     this.systemBodyID = 0;
     this.systemBody = this.system.getSystemBodies().get(this.systemBodyID);
     this.optimizations = CollectionLiterals.<Integer, List<OptimalSimplifyingReductions.State>>newHashMap();
@@ -359,6 +363,11 @@ public class OptimalSimplifyingReductions {
     NormalizeReduction.apply(this.systemBody);
     Normalize.apply(this.systemBody);
     this.prdg = PRDGGenerator.apply(this.system);
+    FeasibleSpace _feasibleSpace = new FeasibleSpace(this.prdg);
+    this.space = _feasibleSpace;
+    ISLBasicSet _copy = this.space.getSpace().copy();
+    String _plus = ("Space: " + _copy);
+    InputOutput.<String>println(_plus);
     this.debug("After preprocessing:");
     InputOutput.<String>println(Show.<SystemBody>print(this.systemBody));
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
@@ -563,17 +572,19 @@ public class OptimalSimplifyingReductions {
           return Boolean.valueOf(this.prdg.respectsScheduleSpace(AlphaUtil.getContainerEquation(targetRE).getName(), vec));
         };
         Iterable<long[]> vectors = IterableExtensions.<long[]>filter(candidateReuse.getVectors(), _function_1);
+        int _size = IterableExtensions.size(vectors);
+        String _plus = ("Number Possible Vectors: " + Integer.valueOf(_size));
+        InputOutput.<String>println(_plus);
         InputOutput.<String>println("Filtered Vectors:");
         final Consumer<long[]> _function_2 = (long[] vec) -> {
           final Consumer<Long> _function_3 = (Long i) -> {
-            String _plus = (i + " ");
-            InputOutput.<String>print(_plus);
+            String _plus_1 = (i + " ");
+            InputOutput.<String>print(_plus_1);
           };
           ((List<Long>)Conversions.doWrapArray(vec)).forEach(_function_3);
           InputOutput.println();
         };
         vectors.forEach(_function_2);
-        InputOutput.<String>println("BLAHS");
         final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function_3 = (long[] vec) -> {
           return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
         };
