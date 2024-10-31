@@ -77,14 +77,18 @@ class HigherOrderOperator {
 		}
 		
 		val areSS = SSAR.getShareSpace(are.body)
-		if (areSS === null)
-			return false;
+		if (areSS === null) {
+			return false
+		}
 		
 		val kerFp = MatrixOperations.transpose(AffineFunctionOperations.computeKernel(are.projection))
 		val kerFc = MatrixOperations.kernelIntersection(kerFp, areSS)
 		
-		if (kerFc === null)
-			return false;
+		if (kerFc === null) {
+			return false
+		}
+			
+		return true
 	}
 	
 	private static def transform(AbstractReduceExpression are) {

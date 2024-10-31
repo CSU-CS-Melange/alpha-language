@@ -13,11 +13,11 @@ env:
 jobs:
 
   build-plugin:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     container: ghcr.io/csu-cs-melange/alpha-language-image:latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: prepare code coverage instrumentation
       run: cc-test-reporter before-build
@@ -100,3 +100,10 @@ jobs:
         cc-test-reporter format-coverage -t jacoco "${JACOCO_PREFIX}/coverage/cc-${GITHUB_SHA}.xml" --output "codeclimate.json"
         cc-test-reporter upload-coverage --input "codeclimate.json"
 
+    - name: save the plugin as an artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: plugin-artifact
+        path: |
+          ./releng/alpha.language.update/target/repository/
+          ./scripts/
