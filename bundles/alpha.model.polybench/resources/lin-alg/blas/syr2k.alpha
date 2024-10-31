@@ -29,6 +29,3 @@ affine syr2k [N, M] -> {: N, M > 0}
 				  + alpha[] * reduce(+, [k], B[i,k] * A[j,k]) 
 				  + beta[] *Cin[i,j];
 .
-
-
-
