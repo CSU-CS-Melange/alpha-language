@@ -75,6 +75,9 @@ void inject_errors(int count);
 // Error detection
 void locate_errors();
 
+// Error correction
+void correct_error(long i, long j);
+
 static float reduce0(long N, long ip, long jp) {
 	float reduceVar;
 	long k;
@@ -325,7 +328,7 @@ void matmult_abft_full(long _local_N, float** _local_A, float** _local_B, float*
 	#undef S0
 
 	// Inject random error into C
-	inject_errors(2);
+	inject_errors(1);
 
 	#define S1(i) eval_Inv_C_i(i)
 	for (i = 0; i < N; i += 1) {
@@ -397,8 +400,8 @@ void inject_errors(int count){
 }
 
 void locate_errors(){
-	bool* errors_i = (bool*)(malloc((sizeof(bool)) * (((-1 + N >= 0) ? (N) : 0))));
-	bool* errors_j = (bool*)(malloc((sizeof(bool)) * (((-1 + N >= 0) ? (N) : 0))));
+	long* errors_i = (long*)(malloc((sizeof(long)) * (((-1 + N >= 0) ? (N) : 0))));
+	long* errors_j = (long*)(malloc((sizeof(long)) * (((-1 + N >= 0) ? (N) : 0))));
 	
 	float i0, i1, j0, j1;
 	long i_count = 0;
@@ -410,16 +413,14 @@ void locate_errors(){
 		i1 = C_C_i_1(i);
 
 		if(i0 != i1){
-			errors_i[i]=true;
-			i_count++;
+			errors_i[i_count++]=i;
 		}
 
 		j0 = C_C_j_0(i);
 		j1 = C_C_j_1(i);
 
 		if(j0 != j1){
-			errors_j[i]=true;
-			j_count++;
+			errors_j[j_count++]=i;
 		}
 
 		printf("C_C_i_0(%ld): %.2f | C_C_i_1(%ld): %.2f\n", i, i0, i, i1);
@@ -428,19 +429,28 @@ void locate_errors(){
 	printf("------\n");
 
 	printf("Errors, i (%ld): ", i_count);
-	for(long k=0; k<N; k++){
-		printf("%ld:%s, ", k, errors_i[k] ? "T" : "F");
+	for(long k=0; k<i_count; k++){
+		printf("%ld:%ld, ", k, errors_i[k]);
 	}
 	printf("\n");
 
 	printf("Errors, j (%ld): ", j_count);
-	for(long k=0; k<N; k++){
-		printf("%ld:%s, ", k, errors_j[k] ? "T" : "F");
+	for(long k=0; k<j_count; k++){
+		printf("%ld:%ld, ", k, errors_j[k]);
 	}
 	printf("\n");
 
-	if(i_count != j_count){
+	if(i_count == 0 && j_count == 0){
+		printf("No errors detected.\n");
+	}
+	else if(i_count != j_count){
 		printf("Overlapping errors detected, cannot automatically correct.\n");
+	}
+	else if(i_count > 1 || j_count > 1){
+		printf("More than 1 error detected. Cannot determine overlaps.\n");
+	}
+	else{
+		correct_error(errors_i[0], errors_j[0]);
 	}
 
 	printf("-----END TEST DETECTION-----\n");
@@ -449,6 +459,9 @@ void locate_errors(){
 	free(errors_j);
 }
 
+void correct_error(long i, long j){
+	
+}
 
 
 
