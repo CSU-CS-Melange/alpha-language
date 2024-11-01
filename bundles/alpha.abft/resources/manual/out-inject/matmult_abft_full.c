@@ -397,18 +397,56 @@ void inject_errors(int count){
 }
 
 void locate_errors(){
+	bool* errors_i = (bool*)(malloc((sizeof(bool)) * (((-1 + N >= 0) ? (N) : 0))));
+	bool* errors_j = (bool*)(malloc((sizeof(bool)) * (((-1 + N >= 0) ? (N) : 0))));
+	
+	float i0, i1, j0, j1;
+	long i_count = 0;
+	long j_count = 0;
+	
 	printf("-------TEST DETECTION-------\n");
 	for(long i=0; i<N; i++){
-		printf("C_C_i_0(%ld): %.2f | C_C_i_1(%ld): %.2f\n", i, C_C_i_0(i), i, C_C_i_1(i));
+		i0 = C_C_i_0(i);
+		i1 = C_C_i_1(i);
+
+		if(i0 != i1){
+			errors_i[i]=true;
+			i_count++;
+		}
+
+		j0 = C_C_j_0(i);
+		j1 = C_C_j_1(i);
+
+		if(j0 != j1){
+			errors_j[i]=true;
+			j_count++;
+		}
+
+		printf("C_C_i_0(%ld): %.2f | C_C_i_1(%ld): %.2f\n", i, i0, i, i1);
+		printf("C_C_j_0(%ld): %.2f | C_C_j_1(%ld): %.2f\n", i, j0, i, j1);
 	}
 	printf("------\n");
 
-	for(long j=0; j<N; j++){
-		printf("C_C_j_0(%ld): %.2f | C_C_j_1(%ld): %.2f\n", j, C_C_j_0(j), j, C_C_j_1(j));
+	printf("Errors, i (%ld): ", i_count);
+	for(long k=0; k<N; k++){
+		printf("%ld:%s, ", k, errors_i[k] ? "T" : "F");
+	}
+	printf("\n");
+
+	printf("Errors, j (%ld): ", j_count);
+	for(long k=0; k<N; k++){
+		printf("%ld:%s, ", k, errors_j[k] ? "T" : "F");
+	}
+	printf("\n");
+
+	if(i_count != j_count){
+		printf("Overlapping errors detected, cannot automatically correct.\n");
 	}
 
-
 	printf("-----END TEST DETECTION-----\n");
+
+	free(errors_i);
+	free(errors_j);
 }
 
 
