@@ -145,21 +145,21 @@ class PRDG {
 		var indexMappings = feasibleSpace.indexMappings
 //		println("Index Mappings: " + indexMappings)
 		var variableIndices = feasibleSpace.variableIndices.get(variable)
-		var matrix = PolyLibMatrix.createFromLongMatrix(set.toPolyLibArray)
-		var rays = PolyLibPolyhedron.buildFromConstraints(matrix, 10).builRaysVertices
+		var matrix = set
+		var rays = set.builRaysVertices
 //		println("Rays: \n" + rays)
 		var b_row = new ArrayList()
 //		println(feasibleSpace.mappings)
-		var function = feasibleSpace.mappings.filter[key, value | value.key.key == variable].entrySet.head.value
+//		var function = feasibleSpace.mappings.filter[key, value | value.key.key == variable].entrySet.head.value
 //		println("Function: " + function)
-		for(aff : function.key.value.affs) {
-			var long value = 0
-			for(var i = 0; i < ls.length; i++) {
-				value += ls.get(i) * aff.getCoefficientVal(ISLDimType.isl_dim_in, i).asLong
-			}
-			value += aff.getConstant
-			b_row.add(value)
-		}
+//		for(aff : function.key.value.affs) {
+//			var long value = 0
+//			for(var i = 0; i < ls.length; i++) {
+//				value += ls.get(i) * aff.getCoefficientVal(ISLDimType.isl_dim_in, i).asLong
+//			}
+//			value += aff.getConstant
+//			b_row.add(value)
+//		}
 //		println("Mappings: " + indexMappings)
 //		println("Vector: ")
 //		ls.forEach[i | print(i + " ")]
@@ -178,7 +178,7 @@ class PRDG {
 //					println("Index: " + (indexMappings.get(variables.get(variable).get(variableIndices.get(i))) + 1))
 					var exact = rays.getAt(row, indexMappings.get(variables.get(variable).get(variableIndices.get(i))) + 1)
 //					println("Exact: " + exact)
-					value += b_row.get(i) * exact
+//					value += b_row.get(i) * exact
 					if(exact != 0) hasVariable = true			
 				}
 				if(value != 0){

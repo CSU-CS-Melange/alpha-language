@@ -1,21 +1,16 @@
 package alpha.model.prdg
 
-import fr.irisa.cairn.jnimap.isl.ISLBasicMap
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet
-import fr.irisa.cairn.jnimap.isl.ISLConstraint
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
+import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
+import fr.irisa.cairn.jnimap.polylib.PolylibPrettyPrinter
 import java.util.ArrayList
+import java.util.Collections
 import java.util.HashMap
 import java.util.List
 import org.eclipse.xtend.lib.annotations.Accessors
-import fr.irisa.cairn.jnimap.isl.ISLAff
-import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
-import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
-import alpha.model.util.AffineFunctionOperations
-import fr.irisa.cairn.jnimap.polylib.PolyLibVector
+
+import static alpha.model.util.AffineFunctionOperations.*
+import static alpha.model.util.ISLUtil.*
 
 class FeasibleSpace {
  	@Accessors(PUBLIC_GETTER)
@@ -25,259 +20,178 @@ class FeasibleSpace {
  	@Accessors(PUBLIC_GETTER)
  	var HashMap<String, Integer> indexMappings
  	@Accessors(PUBLIC_GETTER)
- 	var HashMap<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>>> mappings
- 	var ISLBasicMap space
- 	var String variableName
- 	var int variableCount
- 	var int muCount
-	var int lambdaCount
- 	
+ 	var HashMap<String, Pair<Pair<String, Pair<PolyLibPolyhedron, PolyLibMatrix>>, List<Pair<String, PolyLibMatrix>>>> mappings
+ 	var PolyLibPolyhedron space
+ 	//WE PUT PARAMS LAST IN THE POLYLIBMATRIX!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  	new(PRDG prdg) {
  		variables = newHashMap
 		variableIndices = newHashMap
-		muCount = 0
-		variableCount = 0
-		variableName = "i"
 		indexMappings = newHashMap
 		mappings = newHashMap
-		
-		var dom = PolyLibMatrix.createFromLongMatrix(prdg.nodes.get(0).domain.copy.basicSets.get(0).toPolyLibArray)
-		println("Domain: \n" + dom)
-		println("Map: "+ prdg.edges.get(0).function.copy.toBasicMap.toBasicSet)
-		var map = PolyLibMatrix.createFromLongMatrix(
-			AffineFunctionOperations.toMatrix(prdg.edges.get(0).function.copy).toArray
-		)
-		println("Map: \n" + map)
-//		println("Map * Domain: \n" + )
-		for(node : prdg.nodes) {
-			if(!(node.name.contains("_body") || node.name.contains("_result"))) {
-				var domain = node.domain.copy.coalesce
-				this.addDomain(domain, node.name)
-			}
-		}
 
-		for(edge : prdg.edges) { 
-			if(edge.source.name.contains("_body")) {
-				var fun = edge.function.copy.toMap.intersectDomain(edge.source.domain.copy)
-				var constant = "l" + lambdaCount
-				lambdaCount++
-				var dependencies = newArrayList
-				for(piece : fun.copy.toPWMultiAff.pieces) {
-					for(set : piece.set.basicSets) {
-						for(constraint : set.constraints) {
-							var lambda = "l" + lambdaCount
-							lambdaCount++
-							dependencies.add(new Pair(lambda, constraint))
-						}
-					}
-				}
-				
-				var array = new ArrayList()
-				array.add(new Pair(edge.dest.name, new Dependence(edge.function, constant, dependencies)))
-				mappings.merge(edge.source.name, new Pair(null, array),
-					[ existing, n | 
-						var arr = n.value;
-						arr.addAll(existing.value)
-						new Pair(existing.key, arr)
-					])
-			} else if(edge.dest.name.contains("_result")) {
-				var body = prdg.edges.filter(x | x.source.name == edge.dest.name).head
-				mappings.merge(body.dest.name, 
-					new Pair(new Pair(edge.source.name, body.function),
-					new ArrayList), [existing, n | 
-						var x = existing ?: n
-						new Pair(n.key, x.value)
-					])
-			} else if(!(edge.dest.name.contains("_body") || edge.source.name.contains("_result"))) {
-				var fun = edge.function.copy.toMap.intersectDomain(edge.source.domain.copy)
-				var constant = "l" + lambdaCount
-				lambdaCount++
-				var dependencies = newArrayList
-				for(piece : fun.copy.toPWMultiAff.pieces) {
-					for(set : piece.set.basicSets) {
-						for(constraint : set.constraints) {
-							var lambda = "l" + lambdaCount
-							lambdaCount++
-							dependencies.add(new Pair(lambda, constraint.copy))
-						}
-					}
-				}
-				var array = new ArrayList()
-				array.add(new Pair(edge.dest.name, new Dependence(edge.function.copy, constant, dependencies)))
-				mappings.merge(edge.source.name, 
-					new Pair(new Pair(edge.dest.name, 
-						ISLMultiAff.buildIdentity(edge.function.copy.space)
-					), array),
-					[ existing, n | 
-						var arr = n.value;
-						arr.addAll(existing.value)
-						new Pair(n.key, arr)
-					])
-			}
-		}
-		space = ISLBasicMap.buildUniverse(ISLSpace.alloc(0, 0, 0))
-		var muIndex = 0
-		
-		for(entry : variables.entrySet) {
-			space = space.addOutputs(entry.value.values.toList)
-			for(key : entry.value.values) {
-				indexMappings.put(key, muIndex)
-				var constraint = ISLConstraint.buildInequality(space.space)
-				constraint = constraint.setCoefficient(ISLDimType.isl_dim_out, muIndex, 1)
-				space = space.addConstraint(constraint)
-				muIndex++
-				
-			}
-		}
-		var lambdaIndex = 0
-		for(variable : mappings.keySet) {
-			for(dependence : mappings.get(variable).value){
-				var lambdas = new ArrayList()
-				lambdas.add(dependence.value.constantLambda)
-				lambdas.addAll(dependence.value.lambdas.map[pair | pair.key ])
-				space = space.addInputs(lambdas)
-				for(key : lambdas) {
-					indexMappings.put(key, lambdaIndex)
-					lambdaIndex++
-					var constraint = ISLConstraint.buildInequality(space.space)
-					constraint = constraint.setCoefficient(ISLDimType.isl_dim_in, indexMappings.get(key), 1)
-					space = space.addConstraint(constraint)
-				}
-			}
-		}
-			
-		val universeConstraint = ISLConstraint.buildInequality(space.space)
-		mappings.forEach[reductionNode, value |
- 			value.value.forEach[ dependence |
- 				var constantConstraint = ISLConstraint.buildInequality(space.space)
-				constantConstraint = constantConstraint.updateConstraint(value.key.key, 1, "constant", 1)
-	 			constantConstraint = updateConstraint(constantConstraint.copy, dependence.key, -1, "constant", 1)
- 				val projections = value.key.value.copy.affs;
- 				val reads = dependence.value.dependence.copy.affs;
- 				constantConstraint = (0..<projections.size).fold(constantConstraint, [constraint, leftIndex |
-					updateConstraint(constraint, value.key.key, 1, 
-									variableIndices.get(value.key.key).get(leftIndex), 
-									projections.get(leftIndex)
-										.constantVal.copy.asLong.intValue)
-					])
- 				constantConstraint = (0..<reads.size).fold(constantConstraint, [constraint, rightIndex | 
-					updateConstraint(constraint, dependence.key, -1, 
-						variableIndices.get(dependence.key).get(rightIndex), 
-						reads.get(rightIndex).constantVal.copy.asLong.intValue)
- 					])
- 				
- 				if(!constantConstraint.isEqual(universeConstraint)) {
- 					constantConstraint = constantConstraint.setCoefficient(ISLDimType.isl_dim_in, 
- 						indexMappings.get(dependence.value.constantLambda), -1)
- 					constantConstraint = (constantConstraint.constant = -1)
- 					space = space.addConstraint(constantConstraint)
- 				}
+		var numberDimensions = prdg.nodes
+			.filter[node | !(node.name.contains("_body") || node.name.contains("_result"))]
+			.fold(0, [dims, node | dims + node.domain.copy.nbIndices + node.domain.copy.nbParams + 1])
 
- 				space = (0..<dependence.value.dependence.copy.nbInputs).fold(space, [localSpace, index |
- 					var constraint = ISLConstraint.buildInequality(localSpace.space)
- 					constraint = (0..<projections.size).fold(constraint, [localConstraint, leftIndex |
- 						updateConstraint(localConstraint, value.key.key, 1, 
-										variableIndices.get(value.key.key).get(leftIndex), 
-										projections.get(leftIndex)
-											.getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
-					])
-					
-					constraint = (0..<reads.size).fold(constraint, [localConstraint, rightIndex |
-						updateConstraint(localConstraint, dependence.key, -1, 
-							variableIndices.get(dependence.key).get(rightIndex), 
-							reads.get(rightIndex).getCoefficientVal(ISLDimType.isl_dim_in, index).copy.asLong.intValue)
-					])
-					
-					constraint = dependence.value.lambdas.fold(constraint, [localConstraint, mapping |
-						localConstraint.setCoefficient(ISLDimType.isl_dim_in, indexMappings.get(mapping.key), 
-							mapping.value.getCoefficient(ISLDimType.isl_dim_out, index).intValue)
-					])
-	 				var output = localSpace
-	 				if(!constraint.isEqual(universeConstraint)) {
- 						constraint = (constraint.constant = -1)
- 						output = localSpace.addConstraint(constraint)
- 					} 
-					output
- 				])
-			]
- 		]
-		space = space.copy.removeRedundancies
-//		println(space.copy.range()	)	
- 	}
- 	
- 	def private ISLConstraint updateConstraint(ISLConstraint constraint, String variable, int direction, String index, int coefficient) {
-		var old = constraint.copy.getCoefficient(ISLDimType.isl_dim_out, 
-			indexMappings.get(variables.get(variable).get(index))
-		).intValue
-		constraint.copy.setCoefficient(ISLDimType.isl_dim_out,
-			indexMappings.get(variables.get(variable).get(index)),
- 			old + direction * coefficient)
- 	}
- 	
- 	def ISLBasicSet getSpace() {
- 		space.copy.getRange
+		indexMappings = prdg.nodes
+			.filter[node | !(node.name.contains("_body") || node.name.contains("_result"))]
+			.map[node | new Pair(node.name, node.domain.copy.nbIndices + node.domain.copy.nbParams + 1)]
+			.fold(new Pair(newHashMap(), 0), [map, dep | 
+				map.key.put(dep.key, map.value); 
+				new Pair(map.key, map.value + dep.value)
+			]).key
+		println("Number of dimensions: " + numberDimensions)
+		println("Variables: " + indexMappings)
+		space = PolyLibPolyhedron.buildUniversePolyedron(numberDimensions)
+		println("Edges: " + prdg.edges)
+		var dependences = prdg.edges.filter[edge | edge.source.name.contains("_body")]
+			.flatMap[edge | Dependence.buildReductionDependence(edge, 
+				prdg.edges.filter(x | x.dest.name == prdg.edges.findFirst[n | n.dest.name == edge.source.name].source.name).toList,
+				prdg.edges.filter(x | x.dest.name == edge.source.name).toList)].toList
+		
+		dependences = prdg.edges.filter[edge | !isReductionEdge(edge)]
+			.fold(dependences, [dependenceList, edge | dependenceList.add(Dependence.buildNormalDependence(edge)); dependenceList])
+
+		println("Space Dims: ")
+		space = dependences.fold(space, [intermediateSpace, dependence | 
+			intermediateSpace.domainAddConstraints(dependence.buildConstraint(intermediateSpace, indexMappings), 10)
+		])
+		
+		println("Self Dependences: " + dependences)
+		space = space.simplify(10)
+		println("Rays: ")
+		println(PolylibPrettyPrinter.asString(space.builRaysVertices))
+		space.print
  	}
 
- 	def addDomain(ISLSet domain, String variable) {
- 		var indexCount = domain.nbIndices
-		var indices = newArrayList
-		for(var i = 0; i < indexCount; i++) {
-			indices.add(variableName + variableCount)
-			variableCount++
-		}
-		
-		var updatedDomain = domain.renameIndices(indices)
-		updatedDomain = updatedDomain.moveParametersToIndices
-		val coefficients = this.buildDomainCoefficients(updatedDomain.copy, "m", muCount)
-		muCount += coefficients.size
-		variables.put(variable, coefficients)
-		variableIndices.put(variable, updatedDomain.indexNames)
- 	}
- 	
- 	def private HashMap<String, String> buildDomainCoefficients(ISLSet domain, String label, Integer count) {
-		var constraints = newHashMap
-		var labelCount = count		
-		constraints.put("constant", label + labelCount)
-		labelCount++
-		for(index : domain.indexNames) {
-			constraints.put(index, label + labelCount)
-			labelCount++
-		}
-		constraints
+	def private static isReductionEdge(PRDGEdge edge) {
+		(edge.source.name.contains("_body") || edge.source.name.contains("_result")
+			|| edge.dest.name.contains("_body") || edge.dest.name.contains("_result"))
 	}
-	
-	def static PolyLibMatrix matMult(PolyLibMatrix x, PolyLibMatrix y) {
-		var n = x.nbRows
-		var m = y.nbColumns
-		var output = PolyLibMatrix.allocate(n, m)
-		for(var i = 0; i < n; i++) {
-			for(var j = 0; j < m; j++) {
-				for(var k = 0; k < y.nbRows; k++) {
-					println("i, j, k: " + i + ", " + j + ", " + k)
-					output.setAt(i, j, output.getAt(i, j) + x.getAt(i, k) * y.getAt(k, j))
-				}				
-			}
-		}
-		output
-	}
+ 	def PolyLibPolyhedron getSpace() {
+ 		space
+ 	}
+
 }
 
 class Dependence {
- 	@Accessors(PUBLIC_GETTER)
-	var ISLMultiAff dependence
+	val PolyLibMatrix sourceMapping
 	@Accessors(PUBLIC_GETTER)
-	var String constantLambda
+	val PolyLibMatrix destinationMapping
 	@Accessors(PUBLIC_GETTER)
-	var List<Pair<String, ISLConstraint>> lambdas
+	val PolyLibMatrix domain
+	@Accessors(PUBLIC_GETTER)
+	var String source
+	@Accessors(PUBLIC_GETTER)
+	var String destination
 	
-	new(ISLMultiAff dep, String const, List<Pair<String, ISLConstraint>> l) {
-		dependence = dep
-		constantLambda = const
-		lambdas = l
+	new(String src, String dest, PolyLibMatrix srcMapping, PolyLibMatrix destMapping, PolyLibMatrix dom) {
+		source = src
+		destination = dest
+		sourceMapping = srcMapping
+		destinationMapping = destMapping
+		domain = dom
 	}
 	
 	override toString() {
-		println("Dep: " + dependence + ", Constant: " + constantLambda + ", Lambdas: " + lambdas)
+		source + " -> " + destination + "\nSource Mapping:\n" + sourceMapping + "\nDestination Mapping:\n" 
+		+ destinationMapping + "\nOver Domain:\n" + domain + "\n"
 	}
 	
+	def static Dependence buildNormalDependence(PRDGEdge edge) {
+		println("Edge Function: " + edge.function.copy)
+		var dom = edge.domain.copy
+		dom = dom.moveIndicesToParameters
+		var sourceMap = PolyLibMatrix.createFromLongMatrix(toMatrix(toMultiAff(edge.domain.toIdentityMap)).toArray)
+		var domain = PolyLibMatrix.createFromLongMatrix(dom.basicSets.get(0).toPolyLibArray)
+		var destMap = PolyLibMatrix.createFromLongMatrix(toMatrix(edge.function.copy).toArray)
+		println("As PolyLib: \n" + destMap)
+		new Dependence(edge.source.name, edge.dest.name, sourceMap, destMap, domain)
+	}
+	
+	def static List<Dependence> buildReductionDependence(PRDGEdge sourceEdge, List<PRDGEdge> reductions, List<PRDGEdge> targets) {
+		var dom = sourceEdge.domain.copy
+		dom = dom.moveIndicesToParameters
+		println("Domain: " + sourceEdge.domain.copy)
+		println("Dom: " + dom)
+		val domain = PolyLibMatrix.createFromLongMatrix(dom.copy.basicSets.get(0).toPolyLibArray)
+		reductions.flatMap[edge | targets.filter[target | target.source == edge.dest]
+					.map[target | new Dependence(sourceEdge.dest.name, edge.source.name, 
+						PolyLibMatrix.createFromLongMatrix(toMatrix(edge.function.copy.pullback(target.function.copy)).toArray),
+						PolyLibMatrix.createFromLongMatrix(toMatrix(sourceEdge.function.copy).toArray),
+						domain)]].toList
+	}
+	
+	def PolyLibMatrix buildConstraint(PolyLibPolyhedron space, HashMap<String, Integer> indexMappings) {
+		println(this.source + " -> " + this.destination)
+		println("Domain:\n" + domain)
+		val rays = PolyLibPolyhedron.buildFromConstraints(domain, 10).builRaysVertices
+		println("Rays:\n" + PolylibPrettyPrinter.asString(rays)) 
+		var long[][] scheduleConstraint = (0..<rays.nbRows).fold(new ArrayList(),
+			[constraintMatrix, row | 
+				constraintMatrix.add(buildSingleConstraint(rays, row, space.dimension, indexMappings.get(source)));
+				constraintMatrix.add(buildIntervariableConstraint(rays, row, space.dimension, indexMappings)); 
+				constraintMatrix])
+
+		println("Constraint: ")
+		scheduleConstraint.forEach[row | row.forEach[item | print(item + " ")] println()]
+		PolyLibMatrix.createFromLongMatrix(scheduleConstraint)
+	}
+	
+	def long[] buildIntervariableConstraint(PolyLibMatrix rays, Integer row, Integer size, HashMap<String, Integer> indices) {
+		var long[] output = new ArrayList(Collections.nCopies(size + 2, 0L))
+		output.set(0, 1L)
+		println("Row: " + row)
+		println("Rays: \n" + rays)
+		println("Source Map: \n" + sourceMapping)
+		println("Dest Map: \n" + destinationMapping)
+		
+		output = (0..<sourceMapping.nbRows).fold(output, [current, index |
+			var loc = indices.get(source) + index + 1
+			current.set(loc, (0..<sourceMapping.nbColumns).fold(0L, [value, column |
+				value + sourceMapping.getAt(index, column) * rays.getAt(row, column + 1)
+			]))
+			current
+		])
+		output.set(indices.get(source) + sourceMapping.nbRows + 1, rays.getAt(row, rays.nbColumns - 1))
+		println("Indices: " + indices.get(destination))
+		output = (0..<destinationMapping.nbRows).fold(output, [current, index |
+			var loc = indices.get(destination) + index + 1
+			current.set(loc, (0..<destinationMapping.nbColumns)
+				.fold(current.get(loc), [value, column |
+					value - destinationMapping.getAt(index, column) * rays.getAt(row, column + 1)
+			]))
+			current
+		])
+		var constLoc = indices.get(destination) + destinationMapping.nbRows + 1
+		output.set(constLoc, output.get(constLoc) - rays.getAt(row, rays.nbColumns - 1))
+		output.set(output.size - 1, -rays.getAt(row, rays.nbColumns - 1))
+		println("Output: ")
+		output.forEach[x | print(x + ", ")]
+		println()
+		output
+	}
+	
+	def long[] buildSingleConstraint(PolyLibMatrix rays, Integer row, Integer size, Integer varOneIndex) {
+		var long[] output = new ArrayList(Collections.nCopies(size + 2, 0L))
+		output.set(0, 1L)
+		println("SELF")
+		println("Row: " + row)
+		println("Rays: \n" + rays)
+		println("Map: \n" + sourceMapping)
+		println("columns: " + sourceMapping.nbRows)
+		output = (0..<sourceMapping.nbRows).fold(output, [current, index |
+			var loc = varOneIndex + index + 1
+//			var loc = varOneIndex + sourceMapping.nbRows - index
+			current.set(loc, (0..<sourceMapping.nbColumns).fold(0L, [value, column |
+				value + sourceMapping.getAt(index, column) * rays.getAt(row, column + 1)
+			]))
+			current
+		])
+		output.set(varOneIndex + sourceMapping.nbRows + 1, rays.getAt(row, rays.nbColumns - 1))
+		println("Output: ")
+		output.forEach[x | print(x + ", ")]
+		println()
+		output
+	}
 }

@@ -1,8 +1,5 @@
 package alpha.model.prdg;
 
-import com.google.common.base.Objects;
-import fr.irisa.cairn.jnimap.isl.ISLAff;
-import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
@@ -17,15 +14,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
-import org.eclipse.xtext.xbase.lib.MapExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
@@ -184,35 +178,13 @@ public class PRDG {
     boolean _xblockexpression = false;
     {
       FeasibleSpace feasibleSpace = new FeasibleSpace(this);
-      ISLBasicSet set = feasibleSpace.getSpace().copy();
+      PolyLibPolyhedron set = feasibleSpace.getSpace().copy();
       HashMap<String, HashMap<String, String>> variables = feasibleSpace.getVariables();
       HashMap<String, Integer> indexMappings = feasibleSpace.getIndexMappings();
       List<String> variableIndices = feasibleSpace.getVariableIndices().get(variable);
-      PolyLibMatrix matrix = PolyLibMatrix.createFromLongMatrix(set.toPolyLibArray());
-      PolyLibMatrix rays = PolyLibPolyhedron.buildFromConstraints(matrix, 10).builRaysVertices();
-      ArrayList<Long> b_row = new ArrayList<Long>();
-      final Function2<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>>, Boolean> _function = (String key, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>> value) -> {
-        String _key = value.getKey().getKey();
-        return Boolean.valueOf(Objects.equal(_key, variable));
-      };
-      Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>> function = IterableExtensions.<Map.Entry<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>>>>head(MapExtensions.<String, Pair<Pair<String, ISLMultiAff>, List<Pair<String, Dependence>>>>filter(feasibleSpace.getMappings(), _function).entrySet()).getValue();
-      List<ISLAff> _affs = function.getKey().getValue().getAffs();
-      for (final ISLAff aff : _affs) {
-        {
-          long value = 0;
-          for (int i = 0; (i < ls.length); i++) {
-            long _value = value;
-            long _get = ls[i];
-            long _asLong = aff.getCoefficientVal(ISLDimType.isl_dim_in, i).asLong();
-            long _multiply = (_get * _asLong);
-            value = (_value + _multiply);
-          }
-          long _value = value;
-          long _constant = aff.getConstant();
-          value = (_value + _constant);
-          b_row.add(Long.valueOf(value));
-        }
-      }
+      PolyLibPolyhedron matrix = set;
+      PolyLibMatrix rays = set.builRaysVertices();
+      ArrayList<Object> b_row = new ArrayList<Object>();
       InputOutput.<String>println(("Variables: " + variables));
       for (int row = 0; (row < rays.getNbRows()); row++) {
         if (((rays.getAt(row, (rays.getNbColumns() - 1)) == 0) && (rays.getAt(row, 0) == 1))) {
@@ -223,10 +195,6 @@ public class PRDG {
               Integer _get = indexMappings.get(variables.get(variable).get(variableIndices.get(i)));
               int _plus = ((_get).intValue() + 1);
               long exact = rays.getAt(row, _plus);
-              long _value = value;
-              Long _get_1 = b_row.get(i);
-              long _multiply = ((_get_1).longValue() * exact);
-              value = (_value + _multiply);
               if ((exact != 0)) {
                 hasVariable = true;
               }
@@ -234,11 +202,11 @@ public class PRDG {
           }
           if ((value != 0)) {
             InputOutput.<String>print("Reuse: ");
-            final Consumer<Long> _function_1 = (Long x) -> {
+            final Consumer<Long> _function = (Long x) -> {
               String _plus = (x + " ");
               InputOutput.<String>print(_plus);
             };
-            ((List<Long>)Conversions.doWrapArray(ls)).forEach(_function_1);
+            ((List<Long>)Conversions.doWrapArray(ls)).forEach(_function);
             InputOutput.println();
             InputOutput.<String>println(("Value: " + Long.valueOf(value)));
           }
