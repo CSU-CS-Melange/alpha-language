@@ -16,9 +16,14 @@ class FoutrierScheduler implements Scheduler {
 	}
 	
 	def generateSchedule() {
-		var ISLUnionSet domains = this.prdg.generateDomains
-		var islPRDG = this.prdg.generateISLPRDG
-		this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+		if(schedule !== null) {
+			schedule
+		} else {
+			var ISLUnionSet domains = this.prdg.generateDomains
+			var islPRDG = this.prdg.generateISLPRDG
+			schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+			schedule
+		}
 	}
 	
 	override getScheduleDomain(String variable) {

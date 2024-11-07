@@ -6,8 +6,6 @@ import alpha.codegen.Factory;
 import alpha.codegen.NameChecker;
 import alpha.codegen.NameConflictException;
 import alpha.codegen.VariableDecl;
-import com.google.common.base.Objects;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -44,19 +42,23 @@ public class NameCheckerTest {
   public void checkAddGlobal_02() {
     final NameChecker checker = new NameChecker();
     checker.checkAddGlobal("a");
-    final ThrowingRunnable _function = () -> {
-      checker.checkAddGlobal("a");
+    final ThrowingRunnable _function = new ThrowingRunnable() {
+      public void run() throws Throwable {
+        checker.checkAddGlobal("a");
+      }
     };
-    Assert.<NameConflictException>assertThrows(NameConflictException.class, _function);
+    Assert.<Throwable>assertThrows(NameConflictException.class, _function);
   }
 
   @Test
   public void checkAddGlobal_03() {
     final NameChecker checker = new NameChecker();
-    final ThrowingRunnable _function = () -> {
-      checker.checkAddGlobal("a", "a");
+    final ThrowingRunnable _function = new ThrowingRunnable() {
+      public void run() throws Throwable {
+        checker.checkAddGlobal("a", "a");
+      }
     };
-    Assert.<NameConflictException>assertThrows(NameConflictException.class, _function);
+    Assert.<Throwable>assertThrows(NameConflictException.class, _function);
   }
 
   @Test
@@ -72,10 +74,12 @@ public class NameCheckerTest {
     checker.checkAddGlobal("a");
     final DataType dataType = Factory.dataType(BaseDataType.LONG);
     final VariableDecl variable = Factory.variableDecl(dataType, "a");
-    final ThrowingRunnable _function = () -> {
-      checker.checkAddLocal(variable, CollectionLiterals.<VariableDecl>newArrayList());
+    final ThrowingRunnable _function = new ThrowingRunnable() {
+      public void run() throws Throwable {
+        checker.checkAddLocal(variable, CollectionLiterals.<Object>newArrayList());
+      }
     };
-    Assert.<NameConflictException>assertThrows(NameConflictException.class, _function);
+    Assert.<Throwable>assertThrows(NameConflictException.class, _function);
   }
 
   @Test
@@ -84,20 +88,14 @@ public class NameCheckerTest {
     checker.checkAddGlobal("a");
     final DataType dataType = Factory.dataType(BaseDataType.LONG);
     final VariableDecl variable = Factory.variableDecl(dataType, "a");
-    checker.checkAddLocal(variable, CollectionLiterals.<VariableDecl>newArrayList());
+    checker.checkAddLocal(variable, CollectionLiterals.<Object>newArrayList());
   }
 
   @Test
   public void checkAddLocal_01() {
-    final NameChecker checker = new NameChecker();
-    final DataType dataType = Factory.dataType(BaseDataType.LONG);
-    final VariableDecl variable = Factory.variableDecl(dataType, "a");
-    final ArrayList<VariableDecl> localsList = CollectionLiterals.<VariableDecl>newArrayList();
-    checker.checkAddLocal(variable, localsList);
-    Assert.assertEquals(1, localsList.size());
-    String _name = localsList.get(0).getName();
-    boolean _equals = Objects.equal(_name, "a");
-    Assert.assertTrue(_equals);
+    throw new Error("Unresolved compilation problems:"
+      + "\nThe method or field name is undefined for the type Object"
+      + "\n== cannot be resolved");
   }
 
   @Test
