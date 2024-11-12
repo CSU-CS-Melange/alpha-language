@@ -1,0 +1,15 @@
+affine fsub [N]->{: N>0}
+ inputs
+ 	L : {[i,j] : 0<=j<=i<N}
+ 	b : {[j]   : 0<=j<N}
+ 	
+ outputs
+ 	x : {[i]   : 0<=i<N}
+ 	
+ let
+ 	x[i] = case {
+ 		{: 0 = i} :  b[i] / L[i,i];
+ 		{: 0 < i} : (b[i] - reduce(+, [j], {: 0<=j<i} : L[i,j] * x[j])) / L[i,i];
+ 	};
+ 	
+.

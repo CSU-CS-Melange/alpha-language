@@ -462,12 +462,14 @@ void locate_errors(){
 void correct_error(long i, long j){
 	printf("-------TEST CORRECTION------\n");
 	float diff = C_C_i_1(i) - C_C_i_0(i);
+	float diff_j = C_C_j_1(j) - C_C_j_0(j);
 	float error = C((i),(j));
 	float corrected = error + diff;
 
 	C((i),(j)) = corrected;
 
 	printf("Error: %.2f | Diff: %.2f | Corrected: %.2f\n", error, diff, corrected);
+	printf("diff_j: %.2f\n", diff_j);
 	printf("-----END TEST CORRECTION----\n");
 }
 

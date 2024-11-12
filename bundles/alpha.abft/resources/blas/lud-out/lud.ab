@@ -1,0 +1,17 @@
+affine lud { N | -1 + N >= 0  }
+	input
+		float A { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float L { i,j |  -1 + N - i >= 0  &&  j >= 0  &&  -1 + i - j >= 0  };
+		float U { i,j |  i >= 0  &&  -i + j >= 0  &&  -1 + N - j >= 0  };
+	let
+		U = case 
+			{ i,j |  i == 0  &&  -1 + N >= 0  } : (i,j->i,j)@(A);
+			{ i,j |  -1 + N >= 0  &&  -1 + i >= 0  &&  -i + j >= 0  } : ((i,j->i,j)@(A) - reduce(+, (i,j,k->i,j), { i,j,k |  -1 + N >= 0  &&  k >= 0  &&  -1 + j - k >= 0  } : ((i,j,k->i,k)@(L) * (i,j,k->k,j)@(U))));
+		esac;
+		
+		L = case 
+			{ i,j |  j == 0  &&  -1 + N >= 0  } : ((i,j->i,j)@(A) / (i,j->j,j)@(U));
+			{ i,j |  -1 + N >= 0  &&  -1 + j >= 0  } : (((i,j->i,j)@(A) - reduce(+, (i,j,k->i,j), ((i,j,k->i,k)@(L) * (i,j,k->k,j)@(U)))) / (i,j->j,j)@(U));
+		esac;
+.

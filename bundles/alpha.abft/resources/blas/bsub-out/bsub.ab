@@ -1,0 +1,12 @@
+affine bsub { N | -1 + N >= 0  }
+	input
+		float U { i,j |  i >= 0  &&  -i + j >= 0  &&  -1 + N - j >= 0  };
+		float b { j |  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float x { i |  i >= 0  &&  -1 + N - i >= 0  };
+	let
+		x = case 
+			{ i |  1 - N + i == 0  &&  -1 + N >= 0  } : ((i->i)@(b) / (i->i,i)@(U));
+			{ i |  -1 + N >= 0  &&  -2 + N - i >= 0  } : (((i->i)@(b) - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  -1 - i + j >= 0  &&  -1 + N - j >= 0  } : ((i,j->i,j)@(U) * (i,j->j)@(x)))) / (i->i,i)@(U));
+		esac;
+.
