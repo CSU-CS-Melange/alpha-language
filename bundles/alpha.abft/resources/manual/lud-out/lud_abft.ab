@@ -1,0 +1,38 @@
+affine lud_abft { N | -1 + N >= 0  }
+	input
+		float A { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float L { i,j |  -1 + N - i >= 0  &&  j >= 0  &&  i - j >= 0  };
+		float U { i,j |  i >= 0  &&  -i + j >= 0  &&  -1 + N - j >= 0  };
+	local
+		float L_c { j |  j >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float U_r { i |  i >= 0  &&  -1 + N - i >= 0  &&  -1 + N >= 0  };
+		float A_c { j |  j >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float A_r { i |  i >= 0  &&  -1 + N - i >= 0  &&  -1 + N >= 0  };
+		float A_f { i,j |  -1 + N >= 0  &&  i >= 0  &&  N - i >= 0  &&  j >= 0  &&  N - j >= 0  };
+	let
+		U = case 
+			{ i,j |  i == 0  &&  -1 + N >= 0  } : (i,j->i,j)@(A_f);
+			{ i,j |  -1 + N >= 0  &&  -1 + i >= 0  &&  -i + j >= 0  } : ((i,j->i,j)@(A_f) - reduce(+, (i,j,k->i,j), { i,j,k |  -1 + N >= 0  &&  k >= 0  &&  -1 + i - k >= 0  } : ((i,j,k->i,k)@(L) * (i,j,k->k,j)@(U))));
+		esac;
+		
+		L = case 
+			{ i,j |  j == 0  &&  -1 + N >= 0  } : ((i,j->i,j)@(A_f) / (i,j->j,j)@(U));
+			{ i,j |  -1 + N >= 0  &&  -1 + j >= 0  } : (((i,j->i,j)@(A_f) - reduce(+, (i,j,k->i,j), { i,j,k |  -1 + N >= 0  &&  k >= 0  &&  -1 + j - k >= 0  } : ((i,j,k->i,k)@(L) * (i,j,k->k,j)@(U)))) / (i,j->j,j)@(U));
+		esac;
+		
+		L_c = reduce(+, (j,i->j), (j,i->i,j)@(L));
+		
+		U_r = reduce(+, (i,j->i), (i,j->i,j)@(U));
+		
+		A_c = reduce(+, (j,i->j), (j,i->i,j)@(A));
+		
+		A_r = reduce(+, (i,j->i), (i,j->i,j)@(A));
+		
+		A_f = case 
+			{ i,j |  -N + i == 0  &&  -1 + N >= 0  } : reduce(+, (i,j,k->i,j), (i,j,k->k,j)@(A));
+			{ i,j |  -N + j == 0  &&  -1 + N >= 0  } : reduce(+, (i,j,k->i,j), (i,j,k->i,k)@(A));
+			{ i,j |  -1 + N >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  } : (i,j->i,j)@(A);
+			{ i,j |  -N + j == 0  &&  -N + i == 0  &&  -1 + N >= 0  } : (i,j->N-i,N-j)@(A);
+		esac;
+.
