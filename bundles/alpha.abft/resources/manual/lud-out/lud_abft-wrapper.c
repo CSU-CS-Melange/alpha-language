@@ -39,39 +39,31 @@
 
 //Memory Macros
 #define A(i,j) A[i][j]
+#define L_c_0(j) L_c_0[j]
+#define L_c_1(j) L_c_1[j]
+#define U_r_0(i) U_r_0[i]
+#define U_r_1(i) U_r_1[i]
 #define L(i,j) L[i][j]
 #define U(i,j) U[i][j]
-#define L_c_0(j) L_c_0[j]
-#define U_r_0(i) U_r_0[i]
-#define A_c(j) A_c[j]
-#define A_r(i) A_r[i]
-#define A_f(i,j) A_f[i][j]
+#define Inv_L_c(j) Inv_L_c[j]
+#define Inv_U_r(i) Inv_U_r[i]
 
 #define L_verify(i,j) L_verify[i][j]
 #define U_verify(i,j) U_verify[i][j]
-#define L_c_0_verify(j) L_c_0_verify[j]
-#define U_r_0_verify(i) U_r_0_verify[i]
-#define A_c_verify(j) A_c_verify[j]
-#define A_r_verify(i) A_r_verify[i]
-#define A_f_verify(i,j) A_f_verify[i][j]
+#define Inv_L_c_verify(j) Inv_L_c_verify[j]
+#define Inv_U_r_verify(i) Inv_U_r_verify[i]
 #define var_L(i,j) L(i,j)
 #define var_L_verify(i,j) L_verify(i,j)
 #define var_U(i,j) U(i,j)
 #define var_U_verify(i,j) U_verify(i,j)
-#define var_L_c_0(j) L_c_0(j)
-#define var_L_c_0_verify(j) L_c_0_verify(j)
-#define var_U_r_0(i) U_r_0(i)
-#define var_U_r_0_verify(i) U_r_0_verify(i)
-#define var_A_c(j) A_c(j)
-#define var_A_c_verify(j) A_c_verify(j)
-#define var_A_r(i) A_r(i)
-#define var_A_r_verify(i) A_r_verify(i)
-#define var_A_f(i,j) A_f(i,j)
-#define var_A_f_verify(i,j) A_f_verify(i,j)
+#define var_Inv_L_c(j) Inv_L_c(j)
+#define var_Inv_L_c_verify(j) Inv_L_c_verify(j)
+#define var_Inv_U_r(i) Inv_U_r(i)
+#define var_Inv_U_r_verify(i) Inv_U_r_verify(i)
 
 //function prototypes
-void lud_abft(long, float**, float**, float**, float*, float*, float*, float*, float**);
-void lud_abft_verify(long, float**, float**, float**, float*, float*, float*, float*, float**);
+void lud_abft(long, float**, float**, float**, float*, float*);
+void lud_abft_verify(long, float**, float**, float**, float*, float*);
 
 //main
 int main(int argc, char** argv) {
@@ -134,21 +126,10 @@ int main(int argc, char** argv) {
 	for (mz1=0;mz1 < N; mz1++) {
 		U[mz1] = &_lin_U[(mz1*(N))];
 	}
-	float* L_c_0 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(L_c_0, (N), float);
-	float* U_r_0 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(U_r_0, (N), float);
-	float* A_c = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(A_c, (N), float);
-	float* A_r = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(A_r, (N), float);
-	float* _lin_A_f = (float*)malloc(sizeof(float)*((N+1) * (N+1)));
-	mallocCheck(_lin_A_f, ((N+1) * (N+1)), float);
-	float** A_f = (float**)malloc(sizeof(float*)*(N+1));
-	mallocCheck(A_f, (N+1), float*);
-	for (mz1=0;mz1 < N+1; mz1++) {
-		A_f[mz1] = &_lin_A_f[(mz1*(N+1))];
-	}
+	float* Inv_L_c = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(Inv_L_c, (N), float);
+	float* Inv_U_r = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(Inv_U_r, (N), float);
 	#ifdef VERIFY
 		float* _lin_L_verify = (float*)malloc(sizeof(float)*((N) * (N)));
 		mallocCheck(_lin_L_verify, ((N) * (N)), float);
@@ -164,21 +145,10 @@ int main(int argc, char** argv) {
 		for (mz1=0;mz1 < N; mz1++) {
 			U_verify[mz1] = &_lin_U_verify[(mz1*(N))];
 		}
-		float* L_c_0_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(L_c_0_verify, (N), float);
-		float* U_r_0_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(U_r_0_verify, (N), float);
-		float* A_c_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(A_c_verify, (N), float);
-		float* A_r_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(A_r_verify, (N), float);
-		float* _lin_A_f_verify = (float*)malloc(sizeof(float)*((N+1) * (N+1)));
-		mallocCheck(_lin_A_f_verify, ((N+1) * (N+1)), float);
-		float** A_f_verify = (float**)malloc(sizeof(float*)*(N+1));
-		mallocCheck(A_f_verify, (N+1), float*);
-		for (mz1=0;mz1 < N+1; mz1++) {
-			A_f_verify[mz1] = &_lin_A_f_verify[(mz1*(N+1))];
-		}
+		float* Inv_L_c_verify = (float*)malloc(sizeof(float)*(N));
+		mallocCheck(Inv_L_c_verify, (N), float);
+		float* Inv_U_r_verify = (float*)malloc(sizeof(float)*(N));
+		mallocCheck(Inv_U_r_verify, (N), float);
 	#endif
 
 	//Initialization of rand
@@ -218,7 +188,7 @@ int main(int argc, char** argv) {
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 	
-	lud_abft(N, A, L, U, L_c_0, U_r_0, A_c, A_r, A_f);
+	lud_abft(N, A, L, U, Inv_L_c, Inv_U_r);
 
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -242,7 +212,7 @@ int main(int argc, char** argv) {
 			gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 		#endif
-    	lud_abft_verify(N, A, L_verify, U_verify, L_c_0_verify, U_r_0_verify, A_c_verify, A_r_verify, A_f_verify);
+    	lud_abft_verify(N, A, L_verify, U_verify, Inv_L_c_verify, Inv_U_r_verify);
     	#ifdef TIMING
     		gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -296,9 +266,9 @@ int main(int argc, char** argv) {
 		
 		{
 			#ifdef NO_PROMPT
-				#define S0(j) printf("%0.2f\n",var_L_c_0(j))
+				#define S0(j) printf("%0.2f\n",var_Inv_L_c(j))
 			#else
-				#define S0(j) printf("L_c_0(%ld)=",(long) j);printf("%0.2f\n",var_L_c_0(j))
+				#define S0(j) printf("Inv_L_c(%ld)=",(long) j);printf("%0.2f\n",var_Inv_L_c(j))
 			#endif
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
@@ -310,59 +280,14 @@ int main(int argc, char** argv) {
 		
 		{
 			#ifdef NO_PROMPT
-				#define S0(i) printf("%0.2f\n",var_U_r_0(i))
+				#define S0(i) printf("%0.2f\n",var_Inv_U_r(i))
 			#else
-				#define S0(i) printf("U_r_0(%ld)=",(long) i);printf("%0.2f\n",var_U_r_0(i))
+				#define S0(i) printf("Inv_U_r(%ld)=",(long) i);printf("%0.2f\n",var_Inv_U_r(i))
 			#endif
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
 			 {
 			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(j) printf("%0.2f\n",var_A_c(j))
-			#else
-				#define S0(j) printf("A_c(%ld)=",(long) j);printf("%0.2f\n",var_A_c(j))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(i) printf("%0.2f\n",var_A_r(i))
-			#else
-				#define S0(i) printf("A_r(%ld)=",(long) i);printf("%0.2f\n",var_A_r(i))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(i,j) printf("%0.2f\n",var_A_f(i,j))
-			#else
-				#define S0(i,j) printf("A_f(%ld,%ld)=",(long) i,(long) j);printf("%0.2f\n",var_A_f(i,j))
-			#endif
-			int c1,c2;
-			for(c1=0;c1 <= N;c1+=1)
-			 {
-			 	for(c2=0;c2 <= N;c2+=1)
-			 	 {
-			 	 	S0((c1),(c2));
-			 	 }
 			 }
 			#undef S0
 		}
@@ -409,7 +334,7 @@ int main(int argc, char** argv) {
 		{
 			//Error Counter
 			int _errors_ = 0;
-			#define S0(j) if (fabsf(1.0f - var_L_c_0_verify(j)/var_L_c_0(j)) > EPSILON) _errors_++;
+			#define S0(j) if (fabsf(1.0f - var_Inv_L_c_verify(j)/var_Inv_L_c(j)) > EPSILON) _errors_++;
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
 			 {
@@ -417,15 +342,15 @@ int main(int argc, char** argv) {
 			 }
 			#undef S0
 			if(_errors_ == 0){
-				printf("TEST for L_c_0 PASSED\n");
+				printf("TEST for Inv_L_c PASSED\n");
 			}else{
-				printf("TEST for L_c_0 FAILED. #Errors: %d\n", _errors_);
+				printf("TEST for Inv_L_c FAILED. #Errors: %d\n", _errors_);
 			}
 		}
 		{
 			//Error Counter
 			int _errors_ = 0;
-			#define S0(i) if (fabsf(1.0f - var_U_r_0_verify(i)/var_U_r_0(i)) > EPSILON) _errors_++;
+			#define S0(i) if (fabsf(1.0f - var_Inv_U_r_verify(i)/var_Inv_U_r(i)) > EPSILON) _errors_++;
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
 			 {
@@ -433,60 +358,9 @@ int main(int argc, char** argv) {
 			 }
 			#undef S0
 			if(_errors_ == 0){
-				printf("TEST for U_r_0 PASSED\n");
+				printf("TEST for Inv_U_r PASSED\n");
 			}else{
-				printf("TEST for U_r_0 FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(j) if (fabsf(1.0f - var_A_c_verify(j)/var_A_c(j)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for A_c PASSED\n");
-			}else{
-				printf("TEST for A_c FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(i) if (fabsf(1.0f - var_A_r_verify(i)/var_A_r(i)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for A_r PASSED\n");
-			}else{
-				printf("TEST for A_r FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(i,j) if (fabsf(1.0f - var_A_f_verify(i,j)/var_A_f(i,j)) > EPSILON) _errors_++;
-			int c1,c2;
-			for(c1=0;c1 <= N;c1+=1)
-			 {
-			 	for(c2=0;c2 <= N;c2+=1)
-			 	 {
-			 	 	S0((c1),(c2));
-			 	 }
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for A_f PASSED\n");
-			}else{
-				printf("TEST for A_f FAILED. #Errors: %d\n", _errors_);
+				printf("TEST for Inv_U_r FAILED. #Errors: %d\n", _errors_);
 			}
 		}
     #endif
@@ -498,23 +372,15 @@ int main(int argc, char** argv) {
 	free(L);
 	free(_lin_U);
 	free(U);
-	free(L_c_0);
-	free(U_r_0);
-	free(A_c);
-	free(A_r);
-	free(_lin_A_f);
-	free(A_f);
+	free(Inv_L_c);
+	free(Inv_U_r);
 	#ifdef VERIFY
 		free(_lin_L_verify);
 		free(L_verify);
 		free(_lin_U_verify);
 		free(U_verify);
-		free(L_c_0_verify);
-		free(U_r_0_verify);
-		free(A_c_verify);
-		free(A_r_verify);
-		free(_lin_A_f_verify);
-		free(A_f_verify);
+		free(Inv_L_c_verify);
+		free(Inv_U_r_verify);
 	#endif
 	
 	return EXIT_SUCCESS;
@@ -522,13 +388,14 @@ int main(int argc, char** argv) {
 
 //Memory Macros
 #undef A
+#undef L_c_0
+#undef L_c_1
+#undef U_r_0
+#undef U_r_1
 #undef L
 #undef U
-#undef L_c_0
-#undef U_r_0
-#undef A_c
-#undef A_r
-#undef A_f
+#undef Inv_L_c
+#undef Inv_U_r
 
 
 //Common Macro undefs
