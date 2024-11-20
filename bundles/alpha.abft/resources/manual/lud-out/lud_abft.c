@@ -21,19 +21,19 @@ static long N;
 static float** A;
 static float** L;
 static float** U;
-static float* L_c;
-static float* U_r;
+static float* L_c_0;
+static float* U_r_0;
 static float* A_c;
 static float* A_r;
-static float* A_f;
+static float** A_f;
 static float* U_NR;
 static float* L_NR;
 static float* A_f_NR;
 static float* A_f_NR2;
 static char* _flag_L;
 static char* _flag_U;
-static char* _flag_L_c;
-static char* _flag_U_r;
+static char* _flag_L_c_0;
+static char* _flag_U_r_0;
 static char* _flag_A_c;
 static char* _flag_A_r;
 static char* _flag_A_f;
@@ -46,19 +46,19 @@ static char* _flag_A_f_NR2;
 #define A(i,j) A[i][j]
 #define L(i,j) L[i][j]
 #define U(i,j) U[i][j]
-#define L_c(j) L_c[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
-#define U_r(i) U_r[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
-#define A_c(j) A_c[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
-#define A_r(i) A_r[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
-#define A_f(i,j) A_f[((-1 + i >= 0 && N - i >= 0 && -1 + j >= 0 && N - j >= 0) ? (((1 + N) * i + j)) : (j == 0 && -1 + i >= 0 && N - i >= 0 && N >= 0) ? ((1 + N) * i) : (i == 0 && N - j >= 0 && N >= 0 && -1 + j >= 0) ? (j) : 0)]
+#define L_c_0(j) L_c_0[j]
+#define U_r_0(i) U_r_0[i]
+#define A_c(j) A_c[j]
+#define A_r(i) A_r[i]
+#define A_f(i,j) A_f[i][j]
 #define U_NR(i,j) U_NR[((-2 + i >= 0 && -1 - i + j >= 0 && -1 + N - j >= 0) ? ((((-2 * N + (-1 + 2 * N) * i - i*i) + 2 * j))/2) : (-i + j == 0 && -2 + i >= 0 && -1 + N - i >= 0) ? (((-2 * N + (1 + 2 * N) * i - i*i))/2) : (-1 + i == 0 && -1 + N - j >= 0 && -2 + j >= 0) ? ((-i + j)) : 0)]
 #define L_NR(i,j) L_NR[((-2 + i >= 0 && -1 + N - i >= 0 && -2 + j >= 0 && i - j >= 0) ? ((((-2 - i + i*i) + 2 * j))/2) : (-1 + j == 0 && -2 + i >= 0 && -1 + N - i >= 0) ? (((-i + i*i))/2) : 0)]
 #define A_f_NR(i,j) A_f_NR[((-N + i == 0 && -1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define A_f_NR2(i,j) A_f_NR2[((-N + j == 0 && -1 + i >= 0 && -1 + N - i >= 0) ? (i) : 0)]
 #define _flag_L(i,j) _flag_L[((-1 + i >= 0 && -1 + N - i >= 0 && -1 + j >= 0 && i - j >= 0) ? ((((i + i*i) + 2 * j))/2) : (j == 0 && -1 + i >= 0 && -1 + N - i >= 0) ? (((i + i*i))/2) : 0)]
 #define _flag_U(i,j) _flag_U[((-1 + i >= 0 && -1 - i + j >= 0 && -1 + N - j >= 0) ? (((((-1 + 2 * N) * i - i*i) + 2 * j))/2) : (-i + j == 0 && -1 + i >= 0 && -1 + N - i >= 0) ? ((((1 + 2 * N) * i - i*i))/2) : (i == 0 && -1 + N - j >= 0 && -1 + j >= 0) ? ((-i + j)) : 0)]
-#define _flag_L_c(j) _flag_L_c[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
-#define _flag_U_r(i) _flag_U_r[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define _flag_L_c_0(j) _flag_L_c_0[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
+#define _flag_U_r_0(i) _flag_U_r_0[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define _flag_A_c(j) _flag_A_c[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define _flag_A_r(i) _flag_A_r[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define _flag_A_f(i,j) _flag_A_f[((-1 + i >= 0 && N - i >= 0 && -1 + j >= 0 && N - j >= 0) ? (((1 + N) * i + j)) : (j == 0 && -1 + i >= 0 && N - i >= 0 && N >= 0) ? ((1 + N) * i) : (i == 0 && N - j >= 0 && N >= 0 && -1 + j >= 0) ? (j) : 0)]
@@ -71,9 +71,9 @@ static char* _flag_A_f_NR2;
 static float eval_U(long i, long j);
 static float eval_L(long i, long j);
 static float reduce0(long N, long jp);
-static float eval_L_c(long j);
+static float eval_L_c_0(long j);
 static float reduce1(long N, long i);
-static float eval_U_r(long i);
+static float eval_U_r_0(long i);
 static float reduce2(long N, long jp);
 static float eval_A_c(long j);
 static float reduce3(long N, long i);
@@ -87,14 +87,14 @@ static float reduce6(long N, long ip, long jp);
 static float eval_A_f_NR(long i, long j);
 static float reduce7(long N, long ip, long jp);
 static float eval_A_f_NR2(long i, long j);
-void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_U);
+void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_U, float* _local_L_c_0, float* _local_U_r_0, float* _local_A_c, float* _local_A_r, float** _local_A_f);
 
 static float eval_U(long i, long j) {
 	
 	// Check the flags.
 	if ((_flag_U(i,j)) == ('N')) {
 		_flag_U(i,j) = 'I';
-		U(i,j) = (((i) == (0)) && ((-1 + N) >= (0))) ? (eval_A_f(i,j)) : ((eval_A_f(i,j)) - (eval_U_NR(i,j)));
+		U(i,j) = (((i) == (0)) && ((-1 + N) >= (0))) ? (A(i,j)) : ((A(i,j)) - (eval_U_NR(i,j)));
 		_flag_U(i,j) = 'F';
 	}
 	else if ((_flag_U(i,j)) == ('I')) {
@@ -110,7 +110,7 @@ static float eval_L(long i, long j) {
 	// Check the flags.
 	if ((_flag_L(i,j)) == ('N')) {
 		_flag_L(i,j) = 'I';
-		L(i,j) = (((j) == (0)) && ((-1 + N) >= (0))) ? ((eval_A_f(i,j)) / (eval_U(((j)),((j))))) : (((eval_A_f(i,j)) - (eval_L_NR(i,j))) / (eval_U(((j)),((j)))));
+		L(i,j) = (((j) == (0)) && ((-1 + N) >= (0))) ? ((A(i,j)) / (eval_U(((j)),((j))))) : (((A(i,j)) - (eval_L_NR(i,j))) / (eval_U(((j)),((j)))));
 		_flag_L(i,j) = 'F';
 	}
 	else if ((_flag_L(i,j)) == ('I')) {
@@ -136,20 +136,20 @@ static float reduce0(long N, long jp) {
 	return reduceVar;
 }
 
-static float eval_L_c(long j) {
+static float eval_L_c_0(long j) {
 	
 	// Check the flags.
-	if ((_flag_L_c(j)) == ('N')) {
-		_flag_L_c(j) = 'I';
-		L_c(j) = reduce0(N,j);
-		_flag_L_c(j) = 'F';
+	if ((_flag_L_c_0(j)) == ('N')) {
+		_flag_L_c_0(j) = 'I';
+		L_c_0(j) = reduce0(N,j);
+		_flag_L_c_0(j) = 'F';
 	}
-	else if ((_flag_L_c(j)) == ('I')) {
-		printf("There is a self dependence on L_c at (%ld)\n",j);
+	else if ((_flag_L_c_0(j)) == ('I')) {
+		printf("There is a self dependence on L_c_0 at (%ld)\n",j);
 		exit(-1);
 	}
 	
-	return L_c(j);
+	return L_c_0(j);
 }
 
 static float reduce1(long N, long i) {
@@ -167,20 +167,20 @@ static float reduce1(long N, long i) {
 	return reduceVar;
 }
 
-static float eval_U_r(long i) {
+static float eval_U_r_0(long i) {
 	
 	// Check the flags.
-	if ((_flag_U_r(i)) == ('N')) {
-		_flag_U_r(i) = 'I';
-		U_r(i) = reduce1(N,i);
-		_flag_U_r(i) = 'F';
+	if ((_flag_U_r_0(i)) == ('N')) {
+		_flag_U_r_0(i) = 'I';
+		U_r_0(i) = reduce1(N,i);
+		_flag_U_r_0(i) = 'F';
 	}
-	else if ((_flag_U_r(i)) == ('I')) {
-		printf("There is a self dependence on U_r at (%ld)\n",i);
+	else if ((_flag_U_r_0(i)) == ('I')) {
+		printf("There is a self dependence on U_r_0 at (%ld)\n",i);
 		exit(-1);
 	}
 	
-	return U_r(i);
+	return U_r_0(i);
 }
 
 static float reduce2(long N, long jp) {
@@ -385,7 +385,7 @@ static float eval_A_f_NR2(long i, long j) {
 	return A_f_NR2(i,j);
 }
 
-void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_U) {
+void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_U, float* _local_L_c_0, float* _local_U_r_0, float* _local_A_c, float* _local_A_r, float** _local_A_f) {
 	long i;
 	long j;
 	
@@ -394,6 +394,11 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 	A = _local_A;
 	L = _local_L;
 	U = _local_U;
+	L_c_0 = _local_L_c_0;
+	U_r_0 = _local_U_r_0;
+	A_c = _local_A_c;
+	A_r = _local_A_r;
+	A_f = _local_A_f;
 	
 	// Check parameter validity.
 	if (!((-1 + N) >= (0))) {
@@ -402,16 +407,6 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 	}
 	
 	// Allocate memory for local storage.
-	L_c = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(L_c,"L_c");
-	U_r = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(U_r,"U_r");
-	A_c = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(A_c,"A_c");
-	A_r = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(A_r,"A_r");
-	A_f = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? ((1 + 2 * N + N*N)) : 0))));
-	mallocCheck(A_f,"A_f");
 	U_NR = (float*)(malloc((sizeof(float)) * (((-2 + N >= 0) ? (((-N + N*N))/2) : 0))));
 	mallocCheck(U_NR,"U_NR");
 	L_NR = (float*)(malloc((sizeof(float)) * (((-2 + N >= 0) ? (((-N + N*N))/2) : 0))));
@@ -428,12 +423,12 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 	_flag_U = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (((N + N*N))/2) : 0))));
 	mallocCheck(_flag_U,"_flag_U");
 	memset(_flag_U,'N',((-1 + N >= 0) ? (((N + N*N))/2) : 0));
-	_flag_L_c = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(_flag_L_c,"_flag_L_c");
-	memset(_flag_L_c,'N',((-1 + N >= 0) ? (N) : 0));
-	_flag_U_r = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(_flag_U_r,"_flag_U_r");
-	memset(_flag_U_r,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_L_c_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_L_c_0,"_flag_L_c_0");
+	memset(_flag_L_c_0,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_U_r_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_U_r_0,"_flag_U_r_0");
+	memset(_flag_U_r_0,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_A_c = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_A_c,"_flag_A_c");
 	memset(_flag_A_c,'N',((-1 + N >= 0) ? (N) : 0));
@@ -471,21 +466,43 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 		}
 	}
 	#undef S1
+	#define S2(j) eval_L_c_0(j)
+	for (j = 0; j < N; j += 1) {
+		S2(j);
+	}
+	#undef S2
+	#define S3(i) eval_U_r_0(i)
+	for (i = 0; i < N; i += 1) {
+		S3(i);
+	}
+	#undef S3
+	#define S4(j) eval_A_c(j)
+	for (j = 0; j < N; j += 1) {
+		S4(j);
+	}
+	#undef S4
+	#define S5(i) eval_A_r(i)
+	for (i = 0; i < N; i += 1) {
+		S5(i);
+	}
+	#undef S5
+	#define S6(i,j) eval_A_f(i,j)
+	for (i = 0; i <= N; i += 1) {
+		for (j = 0; j <= N; j += 1) {
+			S6(i, j);
+		}
+	}
+	#undef S6
 	
 	// Free all allocated memory.
-	free(L_c);
-	free(U_r);
-	free(A_c);
-	free(A_r);
-	free(A_f);
 	free(U_NR);
 	free(L_NR);
 	free(A_f_NR);
 	free(A_f_NR2);
 	free(_flag_L);
 	free(_flag_U);
-	free(_flag_L_c);
-	free(_flag_U_r);
+	free(_flag_L_c_0);
+	free(_flag_U_r_0);
 	free(_flag_A_c);
 	free(_flag_A_r);
 	free(_flag_A_f);
@@ -500,8 +517,8 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 #undef A
 #undef L
 #undef U
-#undef L_c
-#undef U_r
+#undef L_c_0
+#undef U_r_0
 #undef A_c
 #undef A_r
 #undef A_f
@@ -511,8 +528,8 @@ void lud_abft(long _local_N, float** _local_A, float** _local_L, float** _local_
 #undef A_f_NR2
 #undef _flag_L
 #undef _flag_U
-#undef _flag_L_c
-#undef _flag_U_r
+#undef _flag_L_c_0
+#undef _flag_U_r_0
 #undef _flag_A_c
 #undef _flag_A_r
 #undef _flag_A_f

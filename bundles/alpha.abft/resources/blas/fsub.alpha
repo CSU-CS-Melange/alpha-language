@@ -1,8 +1,7 @@
 affine fsub [N]->{: N>0}
  inputs
  	L : {[i,j] : 0<=j<=i<N}
- 	b : {[j]   : 0<=j<N}
- 	
+ 	b : {[i]   : 0<=i<N}
  outputs
  	x : {[i]   : 0<=i<N}
  	

@@ -1,0 +1,8 @@
+affine scalar { N | -1 + N >= 0  }
+	input
+		float a { i |  i >= 0  &&  -1 + N - i >= 0  };
+	output
+		float a_c {|};
+	let
+		a_c = reduce(+, (i->), (i->i)@(a));
+.

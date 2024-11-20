@@ -4,9 +4,9 @@ affine lud_abft [N]->{:N>0}
  outputs
 	L   	 : {[i,j] : 0<=i<N and 0<=j<=i}
 	U		 : {[i,j] : 0<=j<N and 0<=i<=j}
- locals
-	L_c		 : {[j]   : 0<=j<N}
-	U_r		 : {[i]   : 0<=i<N}
+// locals
+	L_c_0	 : {[j]   : 0<=j<N}
+	U_r_0	 : {[i]   : 0<=i<N}
 	
 	A_c 	 : {[j]   : 0<=j<N}
 	A_r 	 : {[i]   : 0<=i<N}
@@ -15,18 +15,22 @@ affine lud_abft [N]->{:N>0}
 	
  let
 	U[i,j] = case {
-		{: 0 = i}      : A_f[i,j];
-		{: 0 < i <= j} : A_f[i,j] - reduce(+, [k], {: 0<=k<i} : L[i,k]*U[k,j]);
+		{: 0 = i}      : A[i,j];
+		{: 0 < i <= j} : A[i,j] - reduce(+, [k], {: 0<=k<i} : L[i,k]*U[k,j]);
 	};
 	
 	L[i,j] = case {
-		{: 0 = j} : (A_f[i,j] / U[j,j]);
-   		{: 0 < j} : (A_f[i,j] - reduce(+, [k], {: 0<=k<j} : L[i,k]*U[k,j])) / U[j,j];
+		{: 0 = j} : (A[i,j] / U[j,j]);
+   		{: 0 < j} : (A[i,j] - reduce(+, [k], {: 0<=k<j} : L[i,k]*U[k,j])) / U[j,j];
 	};
 	
-	L_c[j] = reduce(+, [i], L[i,j]);
+	L_c_0[j] = reduce(+, [i], L[i,j]);
 	
-	U_r[i] = reduce(+, [j], U[i,j]); 
+//	L_c_1[j] = reduce(+, [i,k], )
+	
+	
+	U_r_0[i] = reduce(+, [j], U[i,j]); 
+	
 	
 	A_c[j] = reduce(+, [i], A[i,j]);
 

@@ -1,7 +1,7 @@
 affine bsub [N]->{: N>0}
  inputs
  	U : {[i,j] : 0<=i<=j<N}
- 	b : {[j]   : 0<=j<N}
+ 	b : {[i]   : 0<=i<N}
  outputs
  	x : {[i]   : 0<=i<N}
  	
