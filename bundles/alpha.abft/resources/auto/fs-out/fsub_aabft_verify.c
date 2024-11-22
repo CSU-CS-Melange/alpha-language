@@ -108,12 +108,12 @@ static char* _flag_x_c_1;
 
 
 //Local Function Declarations
-float reduce_fsub_abft_verify_x_1(long, int);
+float reduce_fsub_aabft_verify_x_1(long, int);
 float eval_verify_x(long, int);
-float reduce_fsub_abft_verify_x_c_0_1(long, int);
+float reduce_fsub_aabft_verify_x_c_0_1(long, int);
 float eval_verify_x_c_0(long, int);
-float reduce_fsub_abft_verify_x_c_1_2(long, int, int);
-float reduce_fsub_abft_verify_x_c_1_1(long, int);
+float reduce_fsub_aabft_verify_x_c_1_2(long, int, int);
+float reduce_fsub_aabft_verify_x_c_1_1(long, int);
 float eval_verify_x_c_1(long, int);
 float eval_verify_Inv_x_c(long, int);
 
@@ -129,7 +129,7 @@ float eval_verify_Inv_x_c(long, int);
 #define _flag_x_c_0(s) _flag_x_c_0[s]
 #define _flag_x_c_1(s) _flag_x_c_1[s]
 
-void fsub_abft_verify(long N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c){
+void fsub_aabft_verify(long N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c){
 	///Parameter checking
 	if (!((N >= 1))) {
 		printf("The value of parameters are not valid.\n");
@@ -192,7 +192,7 @@ void fsub_abft_verify(long N, float** _local_L, float* _local_b, float* _local_x
 	free(_flag_x_c_0);
 	free(_flag_x_c_1);
 }
-float reduce_fsub_abft_verify_x_1(long N, int ip){
+float reduce_fsub_aabft_verify_x_1(long N, int ip){
 	float reduceVar = 0;
 	#define S0(i,j) reduceVar = (reduceVar)+((L(i,j))*(eval_verify_x(N,j)))
 	{
@@ -211,7 +211,7 @@ float eval_verify_x(long N, int i){
 	if ( _flag_x(i) == 'N' ) {
 		_flag_x(i) = 'I';
 	//Body for x
-		x(i) = (((i == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_abft_verify_x_1(N,i)))/(L(i,i))));
+		x(i) = (((i == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_aabft_verify_x_1(N,i)))/(L(i,i))));
 		_flag_x(i) = 'F';
 	} else if ( _flag_x(i) == 'I' ) {
 		printf("There is a self dependence on x at (%d) \n",i);
@@ -219,17 +219,13 @@ float eval_verify_x(long N, int i){
 	}
 	return x(i);
 }
-float reduce_fsub_abft_verify_x_c_0_1(long N, int sp){
+float reduce_fsub_aabft_verify_x_c_0_1(long N, int ip){
 	float reduceVar = 0;
-	#define S0(s,i) reduceVar = (reduceVar)+(eval_verify_x(N,i))
+	#define S0(i) reduceVar = (reduceVar)+(eval_verify_x(N,i))
 	{
 		//Domain
-		//{s,i|s==0 && sp==0 && N>=1 && i>=0 && N>=i+1 && sp==s}
-		int c2;
-		for(c2=0;c2 <= N-1;c2+=1)
-		 {
-		 	S0((0),(c2));
-		 }
+		//{i|i==0 && ip==0 && N>=1 && ip==i}
+		S0((0));
 	}
 	#undef S0
 	return reduceVar;
@@ -238,7 +234,7 @@ float eval_verify_x_c_0(long N, int s){
 	if ( _flag_x_c_0(s) == 'N' ) {
 		_flag_x_c_0(s) = 'I';
 	//Body for x_c_0
-		x_c_0(s) = reduce_fsub_abft_verify_x_c_0_1(N,s);
+		x_c_0(s) = reduce_fsub_aabft_verify_x_c_0_1(N,s);
 		_flag_x_c_0(s) = 'F';
 	} else if ( _flag_x_c_0(s) == 'I' ) {
 		printf("There is a self dependence on x_c_0 at (%d) \n",s);
@@ -246,7 +242,7 @@ float eval_verify_x_c_0(long N, int s){
 	}
 	return x_c_0(s);
 }
-float reduce_fsub_abft_verify_x_c_1_2(long N, int sp, int ip){
+float reduce_fsub_aabft_verify_x_c_1_2(long N, int sp, int ip){
 	float reduceVar = 0;
 	#define S0(s,i,j) reduceVar = (reduceVar)+((L(i,j))*(eval_verify_x(N,j)))
 	{
@@ -261,9 +257,9 @@ float reduce_fsub_abft_verify_x_c_1_2(long N, int sp, int ip){
 	#undef S0
 	return reduceVar;
 }
-float reduce_fsub_abft_verify_x_c_1_1(long N, int sp){
+float reduce_fsub_aabft_verify_x_c_1_1(long N, int sp){
 	float reduceVar = 0;
-	#define S0(s,i) reduceVar = (reduceVar)+((((i == 0 && s == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_abft_verify_x_c_1_2(N,s,i)))/(L(i,i)))))
+	#define S0(s,i) reduceVar = (reduceVar)+((((i == 0 && s == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_aabft_verify_x_c_1_2(N,s,i)))/(L(i,i)))))
 	{
 		//Domain
 		//{s,i|s==0 && sp==0 && N>=1 && i>=0 && N>=i+1 && sp==s}
@@ -280,7 +276,7 @@ float eval_verify_x_c_1(long N, int s){
 	if ( _flag_x_c_1(s) == 'N' ) {
 		_flag_x_c_1(s) = 'I';
 	//Body for x_c_1
-		x_c_1(s) = reduce_fsub_abft_verify_x_c_1_1(N,s);
+		x_c_1(s) = reduce_fsub_aabft_verify_x_c_1_1(N,s);
 		_flag_x_c_1(s) = 'F';
 	} else if ( _flag_x_c_1(s) == 'I' ) {
 		printf("There is a self dependence on x_c_1 at (%d) \n",s);

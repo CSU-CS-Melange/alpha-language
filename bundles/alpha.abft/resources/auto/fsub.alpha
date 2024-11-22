@@ -1,0 +1,27 @@
+
+affine fsub_aabft [N] -> {  : N > 0 }
+	inputs
+		L : {[i, j]: i < N and 0 <= j <= i }
+		b : {[i]: 0 <= i < N }
+	outputs
+		x : {[i]: 0 <= i < N }
+		Inv_x_c : {[s]: s = 0 }
+	locals
+		x_c_0 : {[s]: s = 0 }
+		x_c_1 : {[s]: s = 0 }
+	when {  : N > 0 } let
+		x[i] = case  {
+			{: i = 0 } : (b / L[i,i]);
+			{: i > 0 } : ((b - reduce(+, (i,j->i), {: 0 <= j < i } : (L * x[j]))) / L[i,i]);
+		};
+		
+//		Produces different result than `x_c_0[s]   = reduce (+, [i], x[i]);`
+		x_c_0[s] = reduce(+, (i->i), x);
+// 		ACC problem with nested reductions in x->x form		
+		x_c_1[s] = reduce(+, (i->i), case  {
+			{: i = 0 } : (b / L[i,i]);
+			((b - reduce(+, (i,j->i), {: 0 <= j < i } : (L * x[j]))) / L[i,i]);
+		});
+		
+		Inv_x_c[s] = ((x_c_0 - x_c_1) / x_c_0);
+.

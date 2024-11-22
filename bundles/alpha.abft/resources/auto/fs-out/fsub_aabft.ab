@@ -1,4 +1,4 @@
-affine fsub_abft { N | -1 + N >= 0  }
+affine fsub_aabft { N | -1 + N >= 0  }
 	input
 		float L { i,j |  -1 + N - i >= 0  &&  j >= 0  &&  i - j >= 0  };
 		float b { i |  i >= 0  &&  -1 + N - i >= 0  };
@@ -14,11 +14,11 @@ affine fsub_abft { N | -1 + N >= 0  }
 			{ i |  -1 + N >= 0  &&  -1 + i >= 0  } : ((b - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  j >= 0  &&  -1 + i - j >= 0  } : (L * (i,j->j)@(x)))) / (i->i,i)@(L));
 		esac;
 		
-		x_c_0 = reduce(+, (s,i->s), (s,i->i)@(x));
+		x_c_0 = reduce(+, (i->i), x);
 		
 		x_c_1 = reduce(+, (s,i->s), case 
 			{ s,i |  i == 0  &&  -1 + N >= 0  } : ((s,i->i)@(b) / (s,i->i,i)@(L));
-			{ s,i |  -1 + N >= 0  &&  -1 + i >= 0  } : (((s,i->i)@(b) - reduce(+, (s,i,j->s,i), { s,i,j |  -1 + N >= 0  &&  j >= 0  &&  -1 + i - j >= 0  } : ((s,i,j->i,j)@(L) * (s,i,j->j)@(x)))) / (s,i->i,i)@(L));
+			(((s,i->i)@(b) - reduce(+, (s,i,j->s,i), { s,i,j |  -1 + N >= 0  &&  j >= 0  &&  -1 + i - j >= 0  } : ((s,i,j->i,j)@(L) * (s,i,j->j)@(x)))) / (s,i->i,i)@(L));
 		esac);
 		
 		Inv_x_c = ((x_c_0 - x_c_1) / x_c_0);

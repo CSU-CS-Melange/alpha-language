@@ -51,7 +51,7 @@ static char* _flag_x_c_1_NR;
 
 // Function Declarations
 static float eval_x(long i);
-static float reduce0(long N, long sp);
+static float reduce0(long N, long s);
 static float eval_x_c_0(long s);
 static float reduce1(long N, long sp);
 static float eval_x_c_1(long s);
@@ -60,7 +60,7 @@ static float reduce2(long N, long ip);
 static float eval_x_NR(long i);
 static float reduce3(long N, long sp, long ip);
 static float eval_x_c_1_NR(long s, long i);
-void fsub_abft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c);
+void fsub_aabft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c);
 
 static float eval_x(long i) {
 	
@@ -78,16 +78,13 @@ static float eval_x(long i) {
 	return x(i);
 }
 
-static float reduce0(long N, long sp) {
+static float reduce0(long N, long s) {
 	float reduceVar;
-	long i;
 	
 	reduceVar = 0.0f;
-	#define RP0(s,i) eval_x(((i)))
-	#define R0(s,i) reduceVar = (reduceVar) + (RP0((s),(i)))
-	for (i = 0; i < N; i += 1) {
-		R0(0, i);
-	}
+	#define RP0(i) eval_x(i)
+	#define R0(i) reduceVar = (reduceVar) + (RP0((i)))
+	R0(0);
 	#undef RP0
 	#undef R0
 	return reduceVar;
@@ -218,7 +215,7 @@ static float eval_x_c_1_NR(long s, long i) {
 	return x_c_1_NR(s,i);
 }
 
-void fsub_abft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c) {
+void fsub_aabft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c) {
 	long i;
 	
 	// Copy arguments to the global variables.

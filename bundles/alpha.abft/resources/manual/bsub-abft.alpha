@@ -4,26 +4,25 @@ affine bsub_abft [N]->{: N>0}
  	b 			 : {[i]   : 0<=i<N}
  outputs
  	x 			 : {[i]   : 0<=i<N}
- 	Inv_b_c 	 : {[s]   : 0<=s<1}
+ 	Inv_x_c 	 : {[s]   : 0<=s<1}
  	
  locals
- 	b_c_0, b_c_1 : {[s]	 : 0<=s<1}	
-//	U_c 		 : {[j]   : 0<=j<N}
+ 	x_c_0, x_c_1 : {[s]	 : 0<=s<1}	
  	
  let
  	x[i] = case {
- 		{: i = N-1} : b[i] / U[i,i];
- 		{: i < N-1} : (b[i] -  reduce(+, [j], {: i<j<N} : U[i,j]*x[j])) / U[i,i];
+ 		{: i = N-1} :  b[i] / U[i,i];
+ 		{: i < N-1} : (b[i] - reduce(+, [j], {: i<j<N}  : U[i,j] * x[j])) / U[i,i];
  	};
- 	
-// 	U_c[j] = reduce(+, [i], U[i,j]);
 
-	Inv_b_c[s] = (b_c_0 - b_c_1)/b_c_0;
+	Inv_x_c[s] = (x_c_0 - x_c_1)/x_c_0;
  	
- 	b_c_0[s] = reduce (+, [i], b[i]);
+ 	x_c_0[s] = reduce (+, [i], b[i]);
  	
- 	b_c_1[s] = reduce (+, [i], case{
-		{: 0 = i} : x[i];
- 		{: 0 < i} : reduce(+, [k], U[i,k]*x[k]);
- 	});
+ 	x_c_1[s] = reduce (+, [i], 
+ 		case {
+	 		{: i = N-1} :  b[i] / U[i,i];
+	 		{: i < N-1} : (b[i] - reduce(+, [j], {: i<j<N}  : U[i,j] * x[j])) / U[i,i];
+	 	}
+ 	);
 .

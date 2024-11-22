@@ -1,4 +1,4 @@
-affine matmult_abft_full [N]->{: N>0}
+affine matmult_abft_full_old [N]->{: N>0}
 inputs
 	A, B : {[i,j] : 0<=i,j<N}
 outputs

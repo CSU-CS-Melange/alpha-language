@@ -1,4 +1,4 @@
-affine matmult_abft_full [N]->{: N>0}
+affine matmult_abft [N]->{: N>0}
 inputs
 	A, B : {[i,j] : 0<=i,j<N}
 outputs
@@ -6,7 +6,7 @@ outputs
 	Inv_C_r : {[i] : 0<=i<N}
 	Inv_C_c : {[j] : 0<=j<N}
 	
-//locals
+locals
 	C_r_0, C_r_1: {[i] : 0<=i<N} // C_C_i_0, C_C_i_1
 	C_c_0, C_c_1: {[j] : 0<=j<N}
 	

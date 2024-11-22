@@ -25,6 +25,8 @@ import alpha.model.AlphaModelSaver
 import alpha.codegen.demandDriven.WriteC
 import alpha.codegen.BaseDataType
 import alpha.codegen.ProgramPrinter
+import java.util.Scanner
+import java.io.File
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -85,7 +87,7 @@ class InsertChecksums {
 	
 		states.map[s | states.indexOf(s) -> s].forEach[pair |
 			val state = pair.value
-			val stateSystem = state.root.systems.get(0)
+//			val stateSystem = state.root.systems.get(0)
 			println()
 			println(state.show)
 //	      val simplificationOutDir = '''«outDir»/«system.name»/simplifications/v«pair.key»'''
@@ -125,38 +127,9 @@ class InsertChecksums {
 		return quot
 	}
 	
-	
-	static def void main(String[] args) {
-		
-		/////////////////////////////////////////////////////////////
-		// Reading and inspecting an Alpha program
-		/////////////////////////////////////////////////////////////
-		
-		/*
-		 * You can read alpha programs from source files with AlphaLoader.
-		 * On success, this returns an AlphaRoot object.
-		 * See alpha.model > model > alpha.xcore for the IR structure.
-		 */
-		val in_dir   = 'resources/blas/'
-		val out_dir  = 'resources/auto/'
-		val sys_name = 'matmult.alpha'		
-		 
-		val root = AlphaLoader.loadAlpha(in_dir+sys_name)
-		
-		/* A root contains a list of AlphaSystem objects */
-		val system = root.systems.get(0)
-		println(system.name)
-		
-		/* 
-		 * The system holds input/output/local variables Variable domains are 
-		 * ISLSet objects, see the isl bindings for all of the available functions 
-		 * and/or entry points (the package is called fr.irisa.cairn.jnimap.isl).
-		 */ 
-		system.inputs.forEach[v  | println('input: '  + v.name + ' : ' + v.domain)]
-		system.outputs.forEach[v | println('output: ' + v.name + ' : ' + v.domain)]
-		system.locals.forEach[v | println('local: ' + v.name + ' : ' + v.domain)]
-		
+	static def void ABFT_matmult(AlphaSystem system){
 		/* The system contains a list of SystemBody objects */
+		
 		val systemBody = system.systemBodies.get(0)
 		
 		/* 
@@ -165,20 +138,20 @@ class InsertChecksums {
 		 * You only need to worry about StandardEquations where the LHS and RHS
 		 * are regular alpha expressions. UseEquations are used to call other systems.
 		 */
-		val equation = systemBody.standardEquations.get(0)
+//		val equation = systemBody.standardEquations.get(0)
 		
 		/* 
 		 * A standard equation contains a variable refenence (for the LHS) and an
 		 * AlphaExpression object.
 		 */
-		println('equation var: ' + equation.variable.name)
-		val expr = equation.expr
+//		println('equation var: ' + equation.variable.name)
+//		val expr = equation.expr
 		
 		/* 
 		 * Note that if you want to pretty print nodes in the AST, you should use the
 		 * alpha.model.util.Show class
 		 */ 
-		println('equation expr: ' + Show.print(expr))
+//		println('equation expr: ' + Show.print(expr))
 		
 		
 		/////////////////////////////////////////////////////////////
@@ -213,7 +186,7 @@ class InsertChecksums {
 		 * Also note that xtend does type inference, so we don't need to explicitly write the
 		 * class type, we can just use the "val" keyword.
 		 */
-		
+
 		// Insert checksum variables into program
 		
 		// Define variable domains
@@ -221,13 +194,12 @@ class InsertChecksums {
 		val col_domain = '[N] -> {[j]: 0<=j<N}'.toISLSet
 		
 		val c_maff = "[N] -> {[i,j] -> [i,j]}"
-		val fp_maff_i = "[N] -> {[i,j] -> [i]}"
-		val fp_maff_j = "[N] -> {[i,j] -> [j]}"
-		val fp_maff_j2 = "[N] -> {[a,b] -> [b]}"
+		val fp_maff_r = "[N] -> {[i,j] -> [i]}"
+		val fp_maff_c = "[N] -> {[i,j] -> [j]}"
 		
 		// Define checksum invariants
-		val Inv_C_i = createVariable("Inv_C_i", row_domain)
-		val Inv_C_j = createVariable("Inv_C_j", col_domain)
+		val Inv_C_r = createVariable("Inv_C_r", row_domain)
+		val Inv_C_c = createVariable("Inv_C_c", col_domain)
 		
 		/*
 		 * Now we can put this variable in the system, as a local for example. Another note 
@@ -240,23 +212,23 @@ class InsertChecksums {
 		 */
 		
 		// Add checksum invariant variables to system outputs
-		system.outputs += Inv_C_i
-		system.outputs += Inv_C_j
+		system.outputs += Inv_C_r
+		system.outputs += Inv_C_c
 		
 		
 		// Define column checksums
-		val C_C_i_0 = createVariable("C_C_i_0", row_domain)
-		val C_C_i_1 = createVariable("C_C_i_1", row_domain)
+		val C_r_0 = createVariable("C_r_0", row_domain)
+		val C_r_1 = createVariable("C_r_1", row_domain)
 		
 		// Define row checksums
-		val C_C_j_0 = createVariable("C_C_j_0", col_domain)
-		val C_C_j_1 = createVariable("C_C_j_1", col_domain)
+		val C_c_0 = createVariable("C_c_0", col_domain)
+		val C_c_1 = createVariable("C_c_1", col_domain)
 		
 		// Add checksum variables to system locals
-		system.outputs += C_C_i_0
-		system.outputs += C_C_i_1
-		system.outputs += C_C_j_0
-		system.outputs += C_C_j_1
+		system.locals += C_r_0
+		system.locals += C_r_1
+		system.locals += C_c_0
+		system.locals += C_c_1
 		
 		
 		// Generate equations for checksums
@@ -265,48 +237,167 @@ class InsertChecksums {
 		val c = system.outputs.findFirst[v | v.name == 'C']
 				
 		// Get reduction expression for row checksums
-		val c_red_exp_i = createChecksumExpression(c, c_maff, fp_maff_i)
+		val c_red_exp_r = createChecksumExpression(c, c_maff, fp_maff_r)
 		
 		// Generate equations for row checksum (two copies)
-		val cci0_eq = createStandardEquation(C_C_i_0, c_red_exp_i)
-		val cci1_eq = createStandardEquation(C_C_i_1, c_red_exp_i.copyAE)						
+		val cr0_eq = createStandardEquation(C_r_0, c_red_exp_r)
+		val cr1_eq = createStandardEquation(C_r_1, c_red_exp_r.copyAE)						
 			
 		// Add row checksum equations to system body
-		systemBody.equations += cci0_eq
-		systemBody.equations += cci1_eq
+		systemBody.equations += cr0_eq
+		systemBody.equations += cr1_eq
 		
 		// Substitute validation row checksum equation with definition
-		SubstituteByDef.apply(system, cci1_eq, c)
+		SubstituteByDef.apply(system, cr1_eq, c)
 		
 		
 		// Get reduction expression for column checksums
-		val c_red_exp_j = createChecksumExpression(c, c_maff, fp_maff_j)
+		val c_red_exp_c = createChecksumExpression(c, c_maff, fp_maff_c)
 		
 		// Generate equations for column checksum (two copies)
-		val ccj0_eq = createStandardEquation(C_C_j_0, c_red_exp_j)
-		val ccj1_eq = createStandardEquation(C_C_j_1, c_red_exp_j.copyAE)						
+		val cc0_eq = createStandardEquation(C_c_0, c_red_exp_c)
+		val cc1_eq = createStandardEquation(C_c_1, c_red_exp_c.copyAE)						
 			
 		// Add column checksum equations to system body
-		systemBody.equations += ccj0_eq
-		systemBody.equations += ccj1_eq
+		systemBody.equations += cc0_eq
+		systemBody.equations += cc1_eq
 		
 		// Substitute "validation" column checksum equation with definition
-		SubstituteByDef.apply(system, ccj1_eq, c)
+		SubstituteByDef.apply(system, cc1_eq, c)
 		
 		
 		// Define row checksum invariant
-		val c_i_inv_exp = createInvariantExpression(C_C_i_0, C_C_i_1)
-		val c_inv_i = createStandardEquation(Inv_C_i, c_i_inv_exp)
+		val c_r_inv_exp = createInvariantExpression(C_r_0, C_r_1)
+		val c_inv_r = createStandardEquation(Inv_C_r, c_r_inv_exp)
 		
 		
 		// Define column checksum invariant
-		val c_j_inv_exp = createInvariantExpression(C_C_j_0, C_C_j_1)
-		val c_inv_j = createStandardEquation(Inv_C_j, c_j_inv_exp)
+		val c_c_inv_exp = createInvariantExpression(C_c_0, C_c_1)
+		val c_inv_c = createStandardEquation(Inv_C_c, c_c_inv_exp)
 		
 		
 		// Add checksum invariants to system equations
-		systemBody.equations += c_inv_i
-		systemBody.equations += c_inv_j
+		systemBody.equations += c_inv_r
+		systemBody.equations += c_inv_c
+	}
+	
+	static def void ABFT_fsub(AlphaSystem system){
+		val systemBody = system.systemBodies.get(0)
+		
+		// Define variable domains
+		val s_domain = '{[s]: 0<=s<1}'.toISLSet
+		val x_maff = "{[i] -> [i]}"
+		
+		// Define checksum invariant
+		val Inv_x_c = createVariable("Inv_x_c", s_domain)
+		
+		// Add checksum invariant variable to system outputs
+		system.outputs += Inv_x_c
+		
+		// Define column checksums
+		val x_c_0 = createVariable("x_c_0", s_domain)
+		val x_c_1 = createVariable("x_c_1", s_domain)
+		
+		// Add checksum variables to system locals
+		system.locals += x_c_0
+		system.locals += x_c_1
+		
+		// Generate equations for checksums
+
+		// Get product vector from system
+		val x = system.outputs.findFirst[v | v.name == 'x']
+		
+		// Get reduction expression for column checksums
+		val x_red_exp_c = createChecksumExpression(x, x_maff, x_maff)
+		
+		// Generate equations for column checksum (two copies)
+		val xc0_eq = createStandardEquation(x_c_0, x_red_exp_c)
+		val xc1_eq = createStandardEquation(x_c_1, x_red_exp_c.copyAE)
+		
+		// Add column checksum equations to system body
+		systemBody.equations += xc0_eq
+		systemBody.equations += xc1_eq	
+		
+		// Substitute "validation" column checksum equation with definition
+		SubstituteByDef.apply(system, xc1_eq, x)
+		
+		// Define column checksum invariant
+		val x_c_inv_exp = createInvariantExpression(x_c_0, x_c_1)
+		val x_inv_c = createStandardEquation(Inv_x_c, x_c_inv_exp)
+				
+		// Add checksum invariant to system equations
+		systemBody.equations += x_inv_c
+		
+	}
+	
+	static def void main(String[] args) {
+		
+		/////////////////////////////////////////////////////////////
+		// Reading and inspecting an Alpha program
+		/////////////////////////////////////////////////////////////
+		
+		/*
+		 * You can read alpha programs from source files with AlphaLoader.
+		 * On success, this returns an AlphaRoot object.
+		 * See alpha.model > model > alpha.xcore for the IR structure.
+		 */
+		val in_dir   = 'resources/blas/'
+		val out_dir  = 'resources/auto/'
+		 
+		// Prompt user for input file
+		val scanner = new Scanner(System.in)
+		print("Enter input alpha file in \'" + in_dir + "\': ")
+		var sys_name = scanner.nextLine()
+		scanner.close()
+		
+		if(!sys_name.endsWith('.alpha')){
+			sys_name = sys_name.concat('.alpha')
+		}
+		
+		// Define input/output files		
+		val in_file = in_dir + sys_name
+		val out_file = out_dir + sys_name
+		
+		println("Reading \'" + in_file + "\'")
+		
+		// Check if input file exists
+		val file = new File(in_file)
+		if(!file.exists() || file.isDirectory()){
+			println("ERROR:  \'" + in_file + "\' does not exist. Exiting...")
+			System.exit(1)
+		}
+		println()
+		
+				 
+		val root = AlphaLoader.loadAlpha(in_file)
+		
+		/* A root contains a list of AlphaSystem objects */
+		val system = root.systems.get(0)
+		
+		// Update system name
+		system.name = system.name + '_aabft'
+		println(system.name)
+		
+		/* 
+		 * The system holds input/output/local variables Variable domains are 
+		 * ISLSet objects, see the isl bindings for all of the available functions 
+		 * and/or entry points (the package is called fr.irisa.cairn.jnimap.isl).
+		 */ 
+		system.inputs.forEach[v  | println('input: '  + v.name + ' : ' + v.domain)]
+		system.outputs.forEach[v | println('output: ' + v.name + ' : ' + v.domain)]
+		system.locals.forEach[v | println('local: ' + v.name + ' : ' + v.domain)]
+		
+		// Apply ABFT to system based on name
+		if(system.name.contains('matmult')){
+			ABFT_matmult(system)	
+		}
+		else if(system.name.contains('fsub')){
+			ABFT_fsub(system)
+		}
+		else{
+			print("Unknown system")
+		}
+		
 		
 		println("-------------------\nBase system:\n")
 		println(Show.print(system))
@@ -317,21 +408,19 @@ class InsertChecksums {
 		AlphaInternalStateConstructor.recomputeContextDomain(system)
 //		system.runOSR	
 		println("-------------------\nNormalized system:\n")	
-		println(Show.print(system))
-		println("-------------------\nAShow, normalized:\n")
 		println(AShow.print(system))
 		
 		// Save new alpha program
-		println("Saving model to "+out_dir+sys_name)
-//		AlphaModelSaver.writeToFile(out_dir+sys_name, AShow.print(system))
-		AlphaModelSaver.ASave(root, out_dir+sys_name)
+		println("Saving model to "+out_file)
+//		AlphaModelSaver.writeToFile(out_file, AShow.print(system))
+		AlphaModelSaver.ASave(root, out_file)
 		println("Done")
 		
-		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
+//		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
 		
-		val code = ProgramPrinter.print(program).toString
+//		val code = ProgramPrinter.print(program).toString
  
-		println(code)
+//		println(code)
  
  
 //		system.runOSR	

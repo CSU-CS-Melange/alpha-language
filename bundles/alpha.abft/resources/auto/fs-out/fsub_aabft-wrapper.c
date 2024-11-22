@@ -53,8 +53,8 @@
 #define var_Inv_x_c_verify(s) Inv_x_c_verify(s)
 
 //function prototypes
-void fsub_abft(long, float**, float*, float*, float*);
-void fsub_abft_verify(long, float**, float*, float*, float*);
+void fsub_aabft(long, float**, float*, float*, float*);
+void fsub_aabft_verify(long, float**, float*, float*, float*);
 
 //main
 int main(int argc, char** argv) {
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 	
-	fsub_abft(N, L, b, x, Inv_x_c);
+	fsub_aabft(N, L, b, x, Inv_x_c);
 
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
 			gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 		#endif
-    	fsub_abft_verify(N, L, b, x_verify, Inv_x_c_verify);
+    	fsub_aabft_verify(N, L, b, x_verify, Inv_x_c_verify);
     	#ifdef TIMING
     		gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
