@@ -40,17 +40,14 @@
 //Memory Macros
 #define L(i,j) L[i][j]
 #define b(i) b[i]
-#define x_c_0(s) x_c_0[s]
-#define x_c_1(s) x_c_1[s]
 #define x(i) x[i]
-#define Inv_x_c(s) Inv_x_c[s]
 
 #define x_verify(i) x_verify[i]
-#define Inv_x_c_verify(s) Inv_x_c_verify[s]
+#define Inv_x_c_verify() Inv_x_c_verify
 #define var_x(i) x(i)
 #define var_x_verify(i) x_verify(i)
-#define var_Inv_x_c(s) Inv_x_c(s)
-#define var_Inv_x_c_verify(s) Inv_x_c_verify(s)
+#define var_Inv_x_c() Inv_x_c
+#define var_Inv_x_c_verify() Inv_x_c_verify
 
 //function prototypes
 void fsub_aabft(long, float**, float*, float*, float*);
@@ -107,13 +104,11 @@ int main(int argc, char** argv) {
 	mallocCheck(b, (N), float);
 	float* x = (float*)malloc(sizeof(float)*(N));
 	mallocCheck(x, (N), float);
-	float* Inv_x_c = (float*)malloc(sizeof(float)*(1));
-	mallocCheck(Inv_x_c, (1), float);
+	float Inv_x_c;
 	#ifdef VERIFY
 		float* x_verify = (float*)malloc(sizeof(float)*(N));
 		mallocCheck(x_verify, (N), float);
-		float* Inv_x_c_verify = (float*)malloc(sizeof(float)*(1));
-		mallocCheck(Inv_x_c_verify, (1), float);
+		float Inv_x_c_verify;
 	#endif
 
 	//Initialization of rand
@@ -174,7 +169,7 @@ int main(int argc, char** argv) {
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 	
-	fsub_aabft(N, L, b, x, Inv_x_c);
+	fsub_aabft(N, L, b, x, &Inv_x_c);
 
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -198,7 +193,7 @@ int main(int argc, char** argv) {
 			gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 		#endif
-    	fsub_aabft_verify(N, L, b, x_verify, Inv_x_c_verify);
+    	fsub_aabft_verify(N, L, b, x_verify, &Inv_x_c_verify);
     	#ifdef TIMING
     		gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -232,11 +227,11 @@ int main(int argc, char** argv) {
 		
 		{
 			#ifdef NO_PROMPT
-				#define S0(s) printf("%0.2f\n",var_Inv_x_c(s))
+				#define S0() printf("%0.2f\n",var_Inv_x_c())
 			#else
-				#define S0(s) printf("Inv_x_c(%ld)=",(long) s);printf("%0.2f\n",var_Inv_x_c(s))
+				#define S0() printf("Inv_x_c=");printf("%0.2f\n",var_Inv_x_c())
 			#endif
-			S0((0));
+			S0();
 			#undef S0
 		}
 	#elif VERIFY
@@ -257,17 +252,10 @@ int main(int argc, char** argv) {
 				printf("TEST for x FAILED. #Errors: %d\n", _errors_);
 			}
 		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(s) if (fabsf(1.0f - var_Inv_x_c_verify(s)/var_Inv_x_c(s)) > EPSILON) _errors_++;
-			S0((0));
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for Inv_x_c PASSED\n");
-			}else{
-				printf("TEST for Inv_x_c FAILED. #Errors: %d\n", _errors_);
-			}
+		if (fabsf(1.0f - var_Inv_x_c_verify()/var_Inv_x_c()) > EPSILON) {
+			printf("TEST for Inv_x_c FAILED result: %f expected: %f\n",var_Inv_x_c(), var_Inv_x_c_verify());
+		} else {
+			printf("TEST for Inv_x_c PASSED\n");
 		}
     #endif
     
@@ -276,10 +264,8 @@ int main(int argc, char** argv) {
 	free(L);
 	free(b);
 	free(x);
-	free(Inv_x_c);
 	#ifdef VERIFY
 		free(x_verify);
-		free(Inv_x_c_verify);
 	#endif
 	
 	return EXIT_SUCCESS;
@@ -288,10 +274,7 @@ int main(int argc, char** argv) {
 //Memory Macros
 #undef L
 #undef b
-#undef x_c_0
-#undef x_c_1
 #undef x
-#undef Inv_x_c
 
 
 //Common Macro undefs

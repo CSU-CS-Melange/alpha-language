@@ -107,20 +107,30 @@ public class InsertChecksums {
     ListExtensions.<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>>map(states, _function).forEach(_function_1);
   }
 
-  public static AlphaExpression createChecksumExpression(final Variable v, final String maff_str, final String fp_str) {
-    final ISLMultiAff maff = ISLUtil.toISLMultiAff(maff_str);
-    final VariableExpression var_exp = AlphaUserFactory.createVariableExpression(v);
-    final DependenceExpression dep_exp = AlphaUserFactory.createDependenceExpression(maff, var_exp);
-    final ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(fp_str);
+  public static AlphaExpression createM2VChecksumExpression(final Variable v, final String maff_str, final String fp_str) {
+    ISLMultiAff maff = ISLUtil.toISLMultiAff(maff_str);
+    VariableExpression var_exp = AlphaUserFactory.createVariableExpression(v);
+    DependenceExpression dep_exp = AlphaUserFactory.createDependenceExpression(maff, var_exp);
+    ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(fp_str);
+    ReduceExpression red_exp = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp);
+    return red_exp;
+  }
+
+  public static AlphaExpression createV2SChecksumExpression(final Variable v, final String maff_str, final String fp_str) {
+    InputOutput.<String>println("--------------------------------------");
+    ISLMultiAff maff = ISLUtil.toISLMultiAff(maff_str);
+    VariableExpression var_exp = AlphaUserFactory.createVariableExpression(v);
+    DependenceExpression dep_exp = AlphaUserFactory.createDependenceExpression(maff, var_exp);
+    ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(fp_str);
     ReduceExpression red_exp = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp);
     return red_exp;
   }
 
   public static AlphaExpression createInvariantExpression(final Variable v_0, final Variable v_1) {
-    final VariableExpression c_prod = AlphaUserFactory.createVariableExpression(v_0);
-    final VariableExpression c_val = AlphaUserFactory.createVariableExpression(v_1);
-    final BinaryExpression diff = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<VariableExpression>copyAE(c_prod), c_val);
-    final BinaryExpression quot = AlphaUserFactory.createBinaryExpression(BINARY_OP.DIV, diff, c_prod);
+    VariableExpression c_prod = AlphaUserFactory.createVariableExpression(v_0);
+    VariableExpression c_val = AlphaUserFactory.createVariableExpression(v_1);
+    BinaryExpression diff = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<VariableExpression>copyAE(c_prod), c_val);
+    BinaryExpression quot = AlphaUserFactory.createBinaryExpression(BINARY_OP.DIV, diff, c_prod);
     return quot;
   }
 
@@ -154,7 +164,7 @@ public class InsertChecksums {
       return Boolean.valueOf(Objects.equal(_name, "C"));
     };
     final Variable c = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
-    final AlphaExpression c_red_exp_r = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_r);
+    final AlphaExpression c_red_exp_r = InsertChecksums.createM2VChecksumExpression(c, c_maff, fp_maff_r);
     final StandardEquation cr0_eq = AlphaUserFactory.createStandardEquation(C_r_0, c_red_exp_r);
     final StandardEquation cr1_eq = AlphaUserFactory.createStandardEquation(C_r_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_r));
     EList<Equation> _equations = systemBody.getEquations();
@@ -162,7 +172,7 @@ public class InsertChecksums {
     EList<Equation> _equations_1 = systemBody.getEquations();
     _equations_1.add(cr1_eq);
     SubstituteByDef.apply(system, cr1_eq, c);
-    final AlphaExpression c_red_exp_c = InsertChecksums.createChecksumExpression(c, c_maff, fp_maff_c);
+    final AlphaExpression c_red_exp_c = InsertChecksums.createM2VChecksumExpression(c, c_maff, fp_maff_c);
     final StandardEquation cc0_eq = AlphaUserFactory.createStandardEquation(C_c_0, c_red_exp_c);
     final StandardEquation cc1_eq = AlphaUserFactory.createStandardEquation(C_c_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_c));
     EList<Equation> _equations_2 = systemBody.getEquations();
@@ -182,8 +192,9 @@ public class InsertChecksums {
 
   public static void ABFT_fsub(final AlphaSystem system) {
     final SystemBody systemBody = system.getSystemBodies().get(0);
-    final ISLSet s_domain = ISLUtil.toISLSet("{[s]: 0<=s<1}");
+    final ISLSet s_domain = ISLUtil.toISLSet("{[]: }");
     final String x_maff = "{[i] -> [i]}";
+    final String s_maff = "{[i] -> []}";
     final Variable Inv_x_c = AlphaUserFactory.createVariable("Inv_x_c", s_domain);
     EList<Variable> _outputs = system.getOutputs();
     _outputs.add(Inv_x_c);
@@ -198,7 +209,7 @@ public class InsertChecksums {
       return Boolean.valueOf(Objects.equal(_name, "x"));
     };
     final Variable x = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
-    final AlphaExpression x_red_exp_c = InsertChecksums.createChecksumExpression(x, x_maff, x_maff);
+    final AlphaExpression x_red_exp_c = InsertChecksums.createV2SChecksumExpression(x, x_maff, s_maff);
     final StandardEquation xc0_eq = AlphaUserFactory.createStandardEquation(x_c_0, x_red_exp_c);
     final StandardEquation xc1_eq = AlphaUserFactory.createStandardEquation(x_c_1, AlphaUtil.<AlphaExpression>copyAE(x_red_exp_c));
     EList<Equation> _equations = systemBody.getEquations();
@@ -285,7 +296,7 @@ public class InsertChecksums {
       AlphaInternalStateConstructor.recomputeContextDomain(system);
       InputOutput.<String>println("-------------------\nNormalized system:\n");
       InputOutput.<String>println(AShow.print(system));
-      InputOutput.<String>println(("Saving model to " + out_file));
+      InputOutput.<String>println((("Saving model to \'" + out_file) + "\'"));
       AlphaModelSaver.ASave(root, out_file);
       InputOutput.<String>println("Done");
     } catch (Throwable _e) {

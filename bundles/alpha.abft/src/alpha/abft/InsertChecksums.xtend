@@ -22,9 +22,9 @@ import alpha.model.AlphaExpression
 import alpha.model.Variable
 import alpha.model.BINARY_OP
 import alpha.model.AlphaModelSaver
-import alpha.codegen.demandDriven.WriteC
-import alpha.codegen.BaseDataType
-import alpha.codegen.ProgramPrinter
+//import alpha.codegen.demandDriven.WriteC
+//import alpha.codegen.BaseDataType
+//import alpha.codegen.ProgramPrinter
 import java.util.Scanner
 import java.io.File
 
@@ -96,18 +96,18 @@ class InsertChecksums {
 		]
 	}
 		
-	static def AlphaExpression createChecksumExpression(Variable v, String maff_str, String fp_str){
+	static def AlphaExpression createM2VChecksumExpression(Variable v, String maff_str, String fp_str){
 		// Generate MultiAff
-		val maff = maff_str.toISLMultiAff
+		var maff = maff_str.toISLMultiAff
 		
 		// Create variable expression from variable
-		val var_exp = createVariableExpression(v)
+		var var_exp = createVariableExpression(v)
 		
 		// Create dependence expression
-		val dep_exp = createDependenceExpression(maff, var_exp)
+		var dep_exp = createDependenceExpression(maff, var_exp)
 		
 		// Create projection MultiAff
-		val fp_maff = fp_str.toISLMultiAff
+		var fp_maff = fp_str.toISLMultiAff
 		
 		// Create base reduction expression
 		var red_exp = createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp)
@@ -115,14 +115,39 @@ class InsertChecksums {
 		return red_exp
 	}
 	
+	static def AlphaExpression createV2SChecksumExpression(Variable v, String maff_str, String fp_str){
+		println("--------------------------------------")
+		// Generate MultiAff
+		var maff = maff_str.toISLMultiAff
+//		println("maff: " + maff)
+		
+		// Create variable expression from variable
+		var var_exp = createVariableExpression(v)
+//		println("var_exp: " + var_exp)
+		
+		// Create dependence expression
+		var dep_exp = createDependenceExpression(maff, var_exp)
+//		println("dep_exp: " + dep_exp)
+		
+		// Create projection MultiAff
+		var fp_maff = fp_str.toISLMultiAff
+//		println("fp_maff: " + fp_maff)
+		
+		// Create base reduction expression
+		var red_exp = createReduceExpression(REDUCTION_OP.SUM, fp_maff, dep_exp)
+//		println("red_exp: " + red_exp)
+		
+		return red_exp
+	}
+	
 	static def AlphaExpression createInvariantExpression(Variable v_0, Variable v_1){
-		val c_prod = createVariableExpression(v_0)
+		var c_prod = createVariableExpression(v_0)
 		
-		val c_val = createVariableExpression(v_1)
+		var c_val = createVariableExpression(v_1)
 		
-		val diff = createBinaryExpression(BINARY_OP.SUB, c_prod.copyAE, c_val)
+		var diff = createBinaryExpression(BINARY_OP.SUB, c_prod.copyAE, c_val)
 		
-		val quot = createBinaryExpression(BINARY_OP.DIV, diff, c_prod)
+		var quot = createBinaryExpression(BINARY_OP.DIV, diff, c_prod)
 		
 		return quot
 	}
@@ -237,7 +262,7 @@ class InsertChecksums {
 		val c = system.outputs.findFirst[v | v.name == 'C']
 				
 		// Get reduction expression for row checksums
-		val c_red_exp_r = createChecksumExpression(c, c_maff, fp_maff_r)
+		val c_red_exp_r = createM2VChecksumExpression(c, c_maff, fp_maff_r)
 		
 		// Generate equations for row checksum (two copies)
 		val cr0_eq = createStandardEquation(C_r_0, c_red_exp_r)
@@ -252,7 +277,7 @@ class InsertChecksums {
 		
 		
 		// Get reduction expression for column checksums
-		val c_red_exp_c = createChecksumExpression(c, c_maff, fp_maff_c)
+		val c_red_exp_c = createM2VChecksumExpression(c, c_maff, fp_maff_c)
 		
 		// Generate equations for column checksum (two copies)
 		val cc0_eq = createStandardEquation(C_c_0, c_red_exp_c)
@@ -285,8 +310,9 @@ class InsertChecksums {
 		val systemBody = system.systemBodies.get(0)
 		
 		// Define variable domains
-		val s_domain = '{[s]: 0<=s<1}'.toISLSet
-		val x_maff = "{[i] -> [i]}"
+		val s_domain = '{[]: }'.toISLSet
+		val x_maff = "{[i] -> [i]}" //this projection is the problem?
+		val	s_maff = "{[i] -> []}"
 		
 		// Define checksum invariant
 		val Inv_x_c = createVariable("Inv_x_c", s_domain)
@@ -308,7 +334,7 @@ class InsertChecksums {
 		val x = system.outputs.findFirst[v | v.name == 'x']
 		
 		// Get reduction expression for column checksums
-		val x_red_exp_c = createChecksumExpression(x, x_maff, x_maff)
+		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, s_maff)
 		
 		// Generate equations for column checksum (two copies)
 		val xc0_eq = createStandardEquation(x_c_0, x_red_exp_c)
@@ -411,7 +437,7 @@ class InsertChecksums {
 		println(AShow.print(system))
 		
 		// Save new alpha program
-		println("Saving model to "+out_file)
+		println("Saving model to \'" + out_file + "\'")
 //		AlphaModelSaver.writeToFile(out_file, AShow.print(system))
 		AlphaModelSaver.ASave(root, out_file)
 		println("Done")

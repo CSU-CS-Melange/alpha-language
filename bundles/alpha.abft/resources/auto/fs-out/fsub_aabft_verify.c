@@ -97,37 +97,31 @@ inline double __min_double(double x, double y){
 ///Global Variables
 static float** L;
 static float* b;
-static float* x_c_0;
-static float* x_c_1;
+static float x_c_0;
+static float x_c_1;
 static float* x;
-static float* Inv_x_c;
+static float Inv_x_c;
 static char* _flag_x;
-static char* _flag_Inv_x_c;
-static char* _flag_x_c_0;
-static char* _flag_x_c_1;
+static char _flag_Inv_x_c;
+static char _flag_x_c_0;
+static char _flag_x_c_1;
 
 
 //Local Function Declarations
 float reduce_fsub_aabft_verify_x_1(long, int);
 float eval_verify_x(long, int);
-float reduce_fsub_aabft_verify_x_c_0_1(long, int);
-float eval_verify_x_c_0(long, int);
-float reduce_fsub_aabft_verify_x_c_1_2(long, int, int);
-float reduce_fsub_aabft_verify_x_c_1_1(long, int);
-float eval_verify_x_c_1(long, int);
-float eval_verify_Inv_x_c(long, int);
+float reduce_fsub_aabft_verify_x_c_0_1(long);
+float eval_verify_x_c_0(long);
+float reduce_fsub_aabft_verify_x_c_1_2(long, int);
+float reduce_fsub_aabft_verify_x_c_1_1(long);
+float eval_verify_x_c_1(long);
+float eval_verify_Inv_x_c(long);
 
 //Memory Macros
 #define L(i,j) L[i][j]
 #define b(i) b[i]
-#define x_c_0(s) x_c_0[s]
-#define x_c_1(s) x_c_1[s]
 #define x(i) x[i]
-#define Inv_x_c(s) Inv_x_c[s]
 #define _flag_x(i) _flag_x[i]
-#define _flag_Inv_x_c(s) _flag_Inv_x_c[s]
-#define _flag_x_c_0(s) _flag_x_c_0[s]
-#define _flag_x_c_1(s) _flag_x_c_1[s]
 
 void fsub_aabft_verify(long N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c){
 	///Parameter checking
@@ -139,32 +133,22 @@ void fsub_aabft_verify(long N, float** _local_L, float* _local_b, float* _local_
 	L = _local_L;
 	b = _local_b;
 	x = _local_x;
-	Inv_x_c = _local_Inv_x_c;
+	
 	
 	//Memory Allocation
 	int mz1;
 	
-	x_c_0 = (float*)malloc(sizeof(float)*(1));
-	mallocCheck(x_c_0, (1), float);
 	
-	x_c_1 = (float*)malloc(sizeof(float)*(1));
-	mallocCheck(x_c_1, (1), float);
 	
 	_flag_x = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_x, (N), char);
 	memset(_flag_x, 'N', (N));
 	
-	_flag_Inv_x_c = (char*)malloc(sizeof(char)*(1));
-	mallocCheck(_flag_Inv_x_c, (1), char);
-	memset(_flag_Inv_x_c, 'N', (1));
+	_flag_Inv_x_c = 'N';
 	
-	_flag_x_c_0 = (char*)malloc(sizeof(char)*(1));
-	mallocCheck(_flag_x_c_0, (1), char);
-	memset(_flag_x_c_0, 'N', (1));
+	_flag_x_c_0 = 'N';
 	
-	_flag_x_c_1 = (char*)malloc(sizeof(char)*(1));
-	mallocCheck(_flag_x_c_1, (1), char);
-	memset(_flag_x_c_1, 'N', (1));
+	_flag_x_c_1 = 'N';
 	#define S0(i) eval_verify_x(N,i)
 	{
 		//Domain
@@ -176,21 +160,22 @@ void fsub_aabft_verify(long N, float** _local_L, float* _local_b, float* _local_
 		 }
 	}
 	#undef S0
-	#define S0(s) eval_verify_Inv_x_c(N,s)
+	#define S0() eval_verify_Inv_x_c(N)
 	{
 		//Domain
-		//{s|s==0 && N>=1}
-		S0((0));
+		//{|N>=1}
+		S0();
 	}
 	#undef S0
+	//Copy scalars to output
+	*_local_Inv_x_c = Inv_x_c;
 	
 	//Memory Free
-	free(x_c_0);
-	free(x_c_1);
+	
+	
 	free(_flag_x);
-	free(_flag_Inv_x_c);
-	free(_flag_x_c_0);
-	free(_flag_x_c_1);
+	
+	
 }
 float reduce_fsub_aabft_verify_x_1(long N, int ip){
 	float reduceVar = 0;
@@ -219,95 +204,93 @@ float eval_verify_x(long N, int i){
 	}
 	return x(i);
 }
-float reduce_fsub_aabft_verify_x_c_0_1(long N, int ip){
+float reduce_fsub_aabft_verify_x_c_0_1(long N){
 	float reduceVar = 0;
 	#define S0(i) reduceVar = (reduceVar)+(eval_verify_x(N,i))
 	{
 		//Domain
-		//{i|i==0 && ip==0 && N>=1 && ip==i}
-		S0((0));
+		//{i|i>=0 && N>=i+1 && N>=1}
+		int c1;
+		for(c1=0;c1 <= N-1;c1+=1)
+		 {
+		 	S0((c1));
+		 }
 	}
 	#undef S0
 	return reduceVar;
 }
-float eval_verify_x_c_0(long N, int s){
-	if ( _flag_x_c_0(s) == 'N' ) {
-		_flag_x_c_0(s) = 'I';
+float eval_verify_x_c_0(long N){
+	if ( _flag_x_c_0 == 'N' ) {
+		_flag_x_c_0 = 'I';
 	//Body for x_c_0
-		x_c_0(s) = reduce_fsub_aabft_verify_x_c_0_1(N,s);
-		_flag_x_c_0(s) = 'F';
-	} else if ( _flag_x_c_0(s) == 'I' ) {
-		printf("There is a self dependence on x_c_0 at (%d) \n",s);
+		x_c_0 = reduce_fsub_aabft_verify_x_c_0_1(N);
+		_flag_x_c_0 = 'F';
+	} else if ( _flag_x_c_0 == 'I' ) {
+		printf("There is a self dependence on x_c_0 at () \n");
 		exit(-1);
 	}
-	return x_c_0(s);
+	return x_c_0;
 }
-float reduce_fsub_aabft_verify_x_c_1_2(long N, int sp, int ip){
+float reduce_fsub_aabft_verify_x_c_1_2(long N, int ip){
 	float reduceVar = 0;
-	#define S0(s,i,j) reduceVar = (reduceVar)+((L(i,j))*(eval_verify_x(N,j)))
+	#define S0(i,j) reduceVar = (reduceVar)+((L(i,j))*(eval_verify_x(N,j)))
 	{
 		//Domain
-		//{s,i,j|s==0 && sp==0 && ip>=1 && N>=ip+1 && N>=1 && i>=1 && j>=0 && i>=j+1 && N>=i+1 && N>=j+1 && sp==s && ip==i}
-		int c3;
-		for(c3=0;c3 <= ip-1;c3+=1)
-		 {
-		 	S0((0),(ip),(c3));
-		 }
-	}
-	#undef S0
-	return reduceVar;
-}
-float reduce_fsub_aabft_verify_x_c_1_1(long N, int sp){
-	float reduceVar = 0;
-	#define S0(s,i) reduceVar = (reduceVar)+((((i == 0 && s == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_aabft_verify_x_c_1_2(N,s,i)))/(L(i,i)))))
-	{
-		//Domain
-		//{s,i|s==0 && sp==0 && N>=1 && i>=0 && N>=i+1 && sp==s}
+		//{i,j|ip>=1 && N>=ip+1 && N>=1 && i>=1 && j>=0 && i>=j+1 && N>=i+1 && N>=j+1 && ip==i}
 		int c2;
-		for(c2=0;c2 <= N-1;c2+=1)
+		for(c2=0;c2 <= ip-1;c2+=1)
 		 {
-		 	S0((0),(c2));
+		 	S0((ip),(c2));
 		 }
 	}
 	#undef S0
 	return reduceVar;
 }
-float eval_verify_x_c_1(long N, int s){
-	if ( _flag_x_c_1(s) == 'N' ) {
-		_flag_x_c_1(s) = 'I';
-	//Body for x_c_1
-		x_c_1(s) = reduce_fsub_aabft_verify_x_c_1_1(N,s);
-		_flag_x_c_1(s) = 'F';
-	} else if ( _flag_x_c_1(s) == 'I' ) {
-		printf("There is a self dependence on x_c_1 at (%d) \n",s);
-		exit(-1);
+float reduce_fsub_aabft_verify_x_c_1_1(long N){
+	float reduceVar = 0;
+	#define S0(i) reduceVar = (reduceVar)+((((i == 0))?(b(i))/(L(i,i)):(((b(i))-(reduce_fsub_aabft_verify_x_c_1_2(N,i)))/(L(i,i)))))
+	{
+		//Domain
+		//{i|i>=0 && N>=i+1 && N>=1}
+		int c1;
+		for(c1=0;c1 <= N-1;c1+=1)
+		 {
+		 	S0((c1));
+		 }
 	}
-	return x_c_1(s);
+	#undef S0
+	return reduceVar;
 }
-float eval_verify_Inv_x_c(long N, int s){
-	if ( _flag_Inv_x_c(s) == 'N' ) {
-		_flag_Inv_x_c(s) = 'I';
-	//Body for Inv_x_c
-		Inv_x_c(s) = ((eval_verify_x_c_0(N,s))-(eval_verify_x_c_1(N,s)))/(eval_verify_x_c_0(N,s));
-		_flag_Inv_x_c(s) = 'F';
-	} else if ( _flag_Inv_x_c(s) == 'I' ) {
-		printf("There is a self dependence on Inv_x_c at (%d) \n",s);
+float eval_verify_x_c_1(long N){
+	if ( _flag_x_c_1 == 'N' ) {
+		_flag_x_c_1 = 'I';
+	//Body for x_c_1
+		x_c_1 = reduce_fsub_aabft_verify_x_c_1_1(N);
+		_flag_x_c_1 = 'F';
+	} else if ( _flag_x_c_1 == 'I' ) {
+		printf("There is a self dependence on x_c_1 at () \n");
 		exit(-1);
 	}
-	return Inv_x_c(s);
+	return x_c_1;
+}
+float eval_verify_Inv_x_c(long N){
+	if ( _flag_Inv_x_c == 'N' ) {
+		_flag_Inv_x_c = 'I';
+	//Body for Inv_x_c
+		Inv_x_c = ((eval_verify_x_c_0(N))-(eval_verify_x_c_1(N)))/(eval_verify_x_c_0(N));
+		_flag_Inv_x_c = 'F';
+	} else if ( _flag_Inv_x_c == 'I' ) {
+		printf("There is a self dependence on Inv_x_c at () \n");
+		exit(-1);
+	}
+	return Inv_x_c;
 }
 
 //Memory Macros
 #undef L
 #undef b
-#undef x_c_0
-#undef x_c_1
 #undef x
-#undef Inv_x_c
 #undef _flag_x
-#undef _flag_Inv_x_c
-#undef _flag_x_c_0
-#undef _flag_x_c_1
 
 
 //Common Macro undefs

@@ -24,7 +24,7 @@ static char* _flag_a_c;
 
 // Memory Macros
 #define a(i) a[i]
-#define a_c() a_c
+#define a_c() a_c[0]
 #define _flag_a_c() _flag_a_c[(0)]
 
 // Function Declarations

@@ -37,29 +37,29 @@ static char* _flag_x_c_1_NR;
 #define L(i,j) L[i][j]
 #define b(i) b[i]
 #define x(i) x[i]
-#define Inv_x_c(s) Inv_x_c[s]
-#define x_c_0(s) x_c_0[(0)]
-#define x_c_1(s) x_c_1[(0)]
+#define Inv_x_c() Inv_x_c[0]
+#define x_c_0() x_c_0[0]
+#define x_c_1() x_c_1[0]
 #define x_NR(i) x_NR[((-1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
-#define x_c_1_NR(s,i) x_c_1_NR[((s == 0 && -1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
+#define x_c_1_NR(i) x_c_1_NR[((-1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
 #define _flag_x(i) _flag_x[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
-#define _flag_Inv_x_c(s) _flag_Inv_x_c[(0)]
-#define _flag_x_c_0(s) _flag_x_c_0[(0)]
-#define _flag_x_c_1(s) _flag_x_c_1[(0)]
+#define _flag_Inv_x_c() _flag_Inv_x_c[(0)]
+#define _flag_x_c_0() _flag_x_c_0[(0)]
+#define _flag_x_c_1() _flag_x_c_1[(0)]
 #define _flag_x_NR(i) _flag_x_NR[((-1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
-#define _flag_x_c_1_NR(s,i) _flag_x_c_1_NR[((s == 0 && -1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
+#define _flag_x_c_1_NR(i) _flag_x_c_1_NR[((-1 + N - i >= 0 && -2 + i >= 0) ? ((-1 + i)) : 0)]
 
 // Function Declarations
 static float eval_x(long i);
-static float reduce0(long N, long s);
-static float eval_x_c_0(long s);
-static float reduce1(long N, long sp);
-static float eval_x_c_1(long s);
-static float eval_Inv_x_c(long s);
+static float reduce0(long N);
+static float eval_x_c_0();
+static float reduce1(long N);
+static float eval_x_c_1();
+static float eval_Inv_x_c();
 static float reduce2(long N, long ip);
 static float eval_x_NR(long i);
-static float reduce3(long N, long sp, long ip);
-static float eval_x_c_1_NR(long s, long i);
+static float reduce3(long N, long ip);
+static float eval_x_c_1_NR(long i);
 void fsub_aabft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c);
 
 static float eval_x(long i) {
@@ -78,79 +78,82 @@ static float eval_x(long i) {
 	return x(i);
 }
 
-static float reduce0(long N, long s) {
+static float reduce0(long N) {
 	float reduceVar;
+	long i;
 	
 	reduceVar = 0.0f;
 	#define RP0(i) eval_x(i)
 	#define R0(i) reduceVar = (reduceVar) + (RP0((i)))
-	R0(0);
+	for (i = 0; i < N; i += 1) {
+		R0(i);
+	}
 	#undef RP0
 	#undef R0
 	return reduceVar;
 }
 
-static float eval_x_c_0(long s) {
+static float eval_x_c_0() {
 	
 	// Check the flags.
-	if ((_flag_x_c_0(s)) == ('N')) {
-		_flag_x_c_0(s) = 'I';
-		x_c_0(s) = reduce0(N,s);
-		_flag_x_c_0(s) = 'F';
+	if ((_flag_x_c_0()) == ('N')) {
+		_flag_x_c_0() = 'I';
+		x_c_0() = reduce0(N);
+		_flag_x_c_0() = 'F';
 	}
-	else if ((_flag_x_c_0(s)) == ('I')) {
-		printf("There is a self dependence on x_c_0 at (%ld)\n",s);
+	else if ((_flag_x_c_0()) == ('I')) {
+		printf("There is a self dependence on x_c_0 at ()\n");
 		exit(-1);
 	}
 	
-	return x_c_0(s);
+	return x_c_0();
 }
 
-static float reduce1(long N, long sp) {
+static float reduce1(long N) {
 	float reduceVar;
 	long i;
 	
 	reduceVar = 0.0f;
-	#define RP1(s,i) (((i) == (0)) && ((-1 + N) >= (0))) ? ((b(((i)))) / (L(((i)),((i))))) : (((b(((i)))) - (eval_x_c_1_NR(s,i))) / (L(((i)),((i)))))
-	#define R1(s,i) reduceVar = (reduceVar) + (RP1((s),(i)))
+	#define RP1(i) (((i) == (0)) && ((-1 + N) >= (0))) ? ((b(i)) / (L(((i)),((i))))) : (((b(i)) - (eval_x_c_1_NR(i))) / (L(((i)),((i)))))
+	#define R1(i) reduceVar = (reduceVar) + (RP1((i)))
 	for (i = 0; i < N; i += 1) {
-		R1(0, i);
+		R1(i);
 	}
 	#undef RP1
 	#undef R1
 	return reduceVar;
 }
 
-static float eval_x_c_1(long s) {
+static float eval_x_c_1() {
 	
 	// Check the flags.
-	if ((_flag_x_c_1(s)) == ('N')) {
-		_flag_x_c_1(s) = 'I';
-		x_c_1(s) = reduce1(N,s);
-		_flag_x_c_1(s) = 'F';
+	if ((_flag_x_c_1()) == ('N')) {
+		_flag_x_c_1() = 'I';
+		x_c_1() = reduce1(N);
+		_flag_x_c_1() = 'F';
 	}
-	else if ((_flag_x_c_1(s)) == ('I')) {
-		printf("There is a self dependence on x_c_1 at (%ld)\n",s);
+	else if ((_flag_x_c_1()) == ('I')) {
+		printf("There is a self dependence on x_c_1 at ()\n");
 		exit(-1);
 	}
 	
-	return x_c_1(s);
+	return x_c_1();
 }
 
-static float eval_Inv_x_c(long s) {
+static float eval_Inv_x_c() {
 	
 	// Check the flags.
-	if ((_flag_Inv_x_c(s)) == ('N')) {
-		_flag_Inv_x_c(s) = 'I';
-		Inv_x_c(s) = ((eval_x_c_0(s)) - (eval_x_c_1(s))) / (eval_x_c_0(s));
-		_flag_Inv_x_c(s) = 'F';
+	if ((_flag_Inv_x_c()) == ('N')) {
+		_flag_Inv_x_c() = 'I';
+		Inv_x_c() = ((eval_x_c_0()) - (eval_x_c_1())) / (eval_x_c_0());
+		_flag_Inv_x_c() = 'F';
 	}
-	else if ((_flag_Inv_x_c(s)) == ('I')) {
-		printf("There is a self dependence on Inv_x_c at (%ld)\n",s);
+	else if ((_flag_Inv_x_c()) == ('I')) {
+		printf("There is a self dependence on Inv_x_c at ()\n");
 		exit(-1);
 	}
 	
-	return Inv_x_c(s);
+	return Inv_x_c();
 }
 
 static float reduce2(long N, long ip) {
@@ -184,35 +187,35 @@ static float eval_x_NR(long i) {
 	return x_NR(i);
 }
 
-static float reduce3(long N, long sp, long ip) {
+static float reduce3(long N, long ip) {
 	float reduceVar;
 	long j;
 	
 	reduceVar = 0.0f;
-	#define RP3(s,i,j) (L(((i)),((j)))) * (eval_x(((j))))
-	#define R3(s,i,j) reduceVar = (reduceVar) + (RP3((s),(i),(j)))
+	#define RP3(i,j) (L(i,j)) * (eval_x(((j))))
+	#define R3(i,j) reduceVar = (reduceVar) + (RP3((i),(j)))
 	for (j = 0; j < ip; j += 1) {
-		R3(0, ip, j);
+		R3(ip, j);
 	}
 	#undef RP3
 	#undef R3
 	return reduceVar;
 }
 
-static float eval_x_c_1_NR(long s, long i) {
+static float eval_x_c_1_NR(long i) {
 	
 	// Check the flags.
-	if ((_flag_x_c_1_NR(s,i)) == ('N')) {
-		_flag_x_c_1_NR(s,i) = 'I';
-		x_c_1_NR(s,i) = reduce3(N,s,i);
-		_flag_x_c_1_NR(s,i) = 'F';
+	if ((_flag_x_c_1_NR(i)) == ('N')) {
+		_flag_x_c_1_NR(i) = 'I';
+		x_c_1_NR(i) = reduce3(N,i);
+		_flag_x_c_1_NR(i) = 'F';
 	}
-	else if ((_flag_x_c_1_NR(s,i)) == ('I')) {
-		printf("There is a self dependence on x_c_1_NR at (%ld,%ld)\n",s,i);
+	else if ((_flag_x_c_1_NR(i)) == ('I')) {
+		printf("There is a self dependence on x_c_1_NR at (%ld)\n",i);
 		exit(-1);
 	}
 	
-	return x_c_1_NR(s,i);
+	return x_c_1_NR(i);
 }
 
 void fsub_aabft(long _local_N, float** _local_L, float* _local_b, float* _local_x, float* _local_Inv_x_c) {
@@ -267,8 +270,8 @@ void fsub_aabft(long _local_N, float** _local_L, float* _local_b, float* _local_
 		S0(i);
 	}
 	#undef S0
-	#define S1(s) eval_Inv_x_c(s)
-	S1(0);
+	#define S1() eval_Inv_x_c()
+	S1();
 	#undef S1
 	
 	// Free all allocated memory.
