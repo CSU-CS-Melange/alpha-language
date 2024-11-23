@@ -27,6 +27,10 @@ import alpha.model.AlphaModelSaver
 //import alpha.codegen.ProgramPrinter
 import java.util.Scanner
 import java.io.File
+import java.util.ArrayList
+import alpha.codegen.demandDriven.WriteC
+import alpha.codegen.ProgramPrinter
+import alpha.codegen.BaseDataType
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -306,23 +310,23 @@ class InsertChecksums {
 		systemBody.equations += c_inv_c
 	}
 	
-	static def void ABFT_fsub(AlphaSystem system){
+	static def void ABFT_sub(AlphaSystem system){
 		val systemBody = system.systemBodies.get(0)
 		
 		// Define variable domains
-		val s_domain = '{[]: }'.toISLSet
-		val x_maff = "{[i] -> [i]}" //this projection is the problem?
-		val	s_maff = "{[i] -> []}"
+		val c_domain = '{[]: }'.toISLSet
+		val x_maff = "{[i] -> [i]}"
+		val	c_maff = "{[i] -> []}"
 		
 		// Define checksum invariant
-		val Inv_x_c = createVariable("Inv_x_c", s_domain)
+		val Inv_x_c = createVariable("Inv_x_c", c_domain)
 		
 		// Add checksum invariant variable to system outputs
 		system.outputs += Inv_x_c
 		
 		// Define column checksums
-		val x_c_0 = createVariable("x_c_0", s_domain)
-		val x_c_1 = createVariable("x_c_1", s_domain)
+		val x_c_0 = createVariable("x_c_0", c_domain)
+		val x_c_1 = createVariable("x_c_1", c_domain)
 		
 		// Add checksum variables to system locals
 		system.locals += x_c_0
@@ -334,7 +338,7 @@ class InsertChecksums {
 		val x = system.outputs.findFirst[v | v.name == 'x']
 		
 		// Get reduction expression for column checksums
-		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, s_maff)
+		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, c_maff)
 		
 		// Generate equations for column checksum (two copies)
 		val xc0_eq = createStandardEquation(x_c_0, x_red_exp_c)
@@ -352,8 +356,56 @@ class InsertChecksums {
 		val x_inv_c = createStandardEquation(Inv_x_c, x_c_inv_exp)
 				
 		// Add checksum invariant to system equations
-		systemBody.equations += x_inv_c
+		systemBody.equations += x_inv_c	
+	}
+	
+	static def void ABFT_lud(AlphaSystem system){
+		val systemBody = system.systemBodies.get(0)
 		
+		// Define variable domains
+		val c_domain = '{[]: }'.toISLSet
+		val x_maff = "{[i] -> [i]}"
+		val	c_maff = "{[i] -> []}"
+		
+		// Define checksum invariant
+		val Inv_x_c = createVariable("Inv_x_c", c_domain)
+		
+		// Add checksum invariant variable to system outputs
+		system.outputs += Inv_x_c
+		
+		// Define column checksums
+		val x_c_0 = createVariable("x_c_0", c_domain)
+		val x_c_1 = createVariable("x_c_1", c_domain)
+		
+		// Add checksum variables to system locals
+		system.locals += x_c_0
+		system.locals += x_c_1
+		
+		// Generate equations for checksums
+
+		// Get product vector from system
+		val x = system.outputs.findFirst[v | v.name == 'x']
+		
+		// Get reduction expression for column checksums
+		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, c_maff)
+		
+		// Generate equations for column checksum (two copies)
+		val xc0_eq = createStandardEquation(x_c_0, x_red_exp_c)
+		val xc1_eq = createStandardEquation(x_c_1, x_red_exp_c.copyAE)
+		
+		// Add column checksum equations to system body
+		systemBody.equations += xc0_eq
+		systemBody.equations += xc1_eq	
+		
+		// Substitute "validation" column checksum equation with definition
+		SubstituteByDef.apply(system, xc1_eq, x)
+		
+		// Define column checksum invariant
+		val x_c_inv_exp = createInvariantExpression(x_c_0, x_c_1)
+		val x_inv_c = createStandardEquation(Inv_x_c, x_c_inv_exp)
+				
+		// Add checksum invariant to system equations
+		systemBody.equations += x_inv_c	
 	}
 	
 	static def void main(String[] args) {
@@ -369,8 +421,12 @@ class InsertChecksums {
 		 */
 		val in_dir   = 'resources/blas/'
 		val out_dir  = 'resources/auto/'
-		 
-		// Prompt user for input file
+		
+		val mm_names = #['matmult', 'matrixmult', 'mat_mult', 'matrix_mult', 'matrix_multiplication']
+		val fb_names = #['fsub', 'bsub', 'forward_sub', 'back_sub', 'forward_substitution', 'back_substitution', 'fs', 'bs']
+		val lu_names = #['lud', 'lu_decomp', 'lu_decomposition', 'l_u_decomposition', 'l_u_d']
+		
+			// Prompt user for input file
 		val scanner = new Scanner(System.in)
 		print("Enter input alpha file in \'" + in_dir + "\': ")
 		var sys_name = scanner.nextLine()
@@ -384,13 +440,15 @@ class InsertChecksums {
 		val in_file = in_dir + sys_name
 		val out_file = out_dir + sys_name
 		
-		println("Reading \'" + in_file + "\'")
-		
+				
 		// Check if input file exists
 		val file = new File(in_file)
 		if(!file.exists() || file.isDirectory()){
 			println("ERROR:  \'" + in_file + "\' does not exist. Exiting...")
 			System.exit(1)
+		}
+		else{
+			println("Reading \'" + in_file + "\'")
 		}
 		println()
 		
@@ -401,7 +459,7 @@ class InsertChecksums {
 		val system = root.systems.get(0)
 		
 		// Update system name
-		system.name = system.name + '_aabft'
+		
 		println(system.name)
 		
 		/* 
@@ -414,16 +472,22 @@ class InsertChecksums {
 		system.locals.forEach[v | println('local: ' + v.name + ' : ' + v.domain)]
 		
 		// Apply ABFT to system based on name
-		if(system.name.contains('matmult')){
+		if(mm_names.contains(system.name)){
+			println("Applying ABFT to Matrix Multiplication...")
 			ABFT_matmult(system)	
 		}
-		else if(system.name.contains('fsub')){
-			ABFT_fsub(system)
+		else if(fb_names.contains(system.name)){
+			println("Applying ABFT to Forward/Back Substitution...")
+			ABFT_sub(system)
+		}
+		else if(lu_names.contains(system.name)){
+			println("Applying ABFT to LU Decomposition...")
 		}
 		else{
-			print("Unknown system")
+			print("Unknown system. Exiting...")
+			System.exit(2)
 		}
-		
+		system.name = system.name + '_aabft'
 		
 		println("-------------------\nBase system:\n")
 		println(Show.print(system))
@@ -437,16 +501,16 @@ class InsertChecksums {
 		println(AShow.print(system))
 		
 		// Save new alpha program
-		println("Saving model to \'" + out_file + "\'")
+		println("Model saved to \'" + out_file + "\'")
 //		AlphaModelSaver.writeToFile(out_file, AShow.print(system))
 		AlphaModelSaver.ASave(root, out_file)
 		println("Done")
 		
-//		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
+		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
 		
-//		val code = ProgramPrinter.print(program).toString
+		val code = ProgramPrinter.print(program).toString
  
-//		println(code)
+		println(code)
  
  
 //		system.runOSR	
