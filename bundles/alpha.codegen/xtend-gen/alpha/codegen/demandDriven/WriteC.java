@@ -36,7 +36,6 @@ import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
 import alpha.model.transformation.Normalize;
-import alpha.model.transformation.StandardizeNames;
 import alpha.model.transformation.reduction.NormalizeReduction;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
@@ -366,6 +365,5 @@ public class WriteC extends CodeGeneratorBase {
   public void preprocess() {
     Normalize.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
-    StandardizeNames.apply(this.systemBody);
   }
 }
