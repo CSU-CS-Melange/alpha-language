@@ -1,0 +1,25 @@
+affine bsub_aabft { N | -1 + N >= 0  }
+	input
+		float U { i,j |  i >= 0  &&  -i + j >= 0  &&  -1 + N - j >= 0  };
+		float b { i |  i >= 0  &&  -1 + N - i >= 0  };
+	output
+		float x { i |  i >= 0  &&  -1 + N - i >= 0  };
+		float Inv_x_c {|};
+	local
+		float x_c_0 {|};
+		float x_c_1 {|};
+	let
+		x = case 
+			{ i |  1 - N + i == 0  &&  -1 + N >= 0  } : (b / (i->i,i)@(U));
+			{ i |  -1 + N >= 0  &&  -2 + N - i >= 0  } : ((b - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  -1 - i + j >= 0  &&  -1 + N - j >= 0  } : (U * (i,j->j)@(x)))) / (i->i,i)@(U));
+		esac;
+		
+		x_c_0 = reduce(+, (i->), x);
+		
+		x_c_1 = reduce(+, (i->), case 
+			{ i |  1 - N + i == 0  &&  -1 + N >= 0  } : (b / (i->i,i)@(U));
+			((b - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  -1 - i + j >= 0  &&  -1 + N - j >= 0  } : (U * (i,j->j)@(x)))) / (i->i,i)@(U));
+		esac);
+		
+		Inv_x_c = ((x_c_0 - x_c_1) / x_c_0);
+.

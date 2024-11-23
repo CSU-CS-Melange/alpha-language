@@ -245,11 +245,11 @@ class InsertChecksums {
 		system.outputs += Inv_C_c
 		
 		
-		// Define column checksums
+		// Define row checksums
 		val C_r_0 = createVariable("C_r_0", row_domain)
 		val C_r_1 = createVariable("C_r_1", row_domain)
 		
-		// Define row checksums
+		// Define column checksums
 		val C_c_0 = createVariable("C_c_0", col_domain)
 		val C_c_1 = createVariable("C_c_1", col_domain)
 		
@@ -362,50 +362,82 @@ class InsertChecksums {
 	static def void ABFT_lud(AlphaSystem system){
 		val systemBody = system.systemBodies.get(0)
 		
-		// Define variable domains
-		val c_domain = '{[]: }'.toISLSet
-		val x_maff = "{[i] -> [i]}"
-		val	c_maff = "{[i] -> []}"
+		val row_domain = '[N] -> {[i]: 0<=i<N}'.toISLSet
+		val col_domain = '[N] -> {[j]: 0<=j<N}'.toISLSet
 		
-		// Define checksum invariant
-		val Inv_x_c = createVariable("Inv_x_c", c_domain)
+		val lu_maff = "[N] -> {[i,j] -> [i,j]}"
+		val fp_maff_r = "[N] -> {[i,j] -> [i]}"
+		val fp_maff_c = "[N] -> {[i,j] -> [j]}"
 		
-		// Add checksum invariant variable to system outputs
-		system.outputs += Inv_x_c
+		// Define checksum invariants
+		val Inv_L_c = createVariable("Inv_L_c", col_domain)
+		val Inv_U_r = createVariable("Inv_U_r", row_domain)
 		
+		// Add checksum invariant variables to system outputs
+		system.outputs += Inv_L_c
+		system.outputs += Inv_U_r
+				
 		// Define column checksums
-		val x_c_0 = createVariable("x_c_0", c_domain)
-		val x_c_1 = createVariable("x_c_1", c_domain)
+		val L_c_0 = createVariable("L_c_0", col_domain)
+		val L_c_1 = createVariable("L_c_1", col_domain)
+		
+		// Define row checksums
+		val U_r_0 = createVariable("U_r_0", row_domain)
+		val U_r_1 = createVariable("U_r_1", row_domain)
+		
 		
 		// Add checksum variables to system locals
-		system.locals += x_c_0
-		system.locals += x_c_1
+		system.locals += L_c_0
+		system.locals += L_c_1
+		system.locals += U_r_0
+		system.locals += U_r_1
+		
 		
 		// Generate equations for checksums
 
-		// Get product vector from system
-		val x = system.outputs.findFirst[v | v.name == 'x']
-		
+		// Get product matrix from system
+		val l = system.outputs.findFirst[v | v.name == 'L']
+		val u = system.outputs.findFirst[v | v.name == 'U']
+						
 		// Get reduction expression for column checksums
-		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, c_maff)
+		val l_red_exp_c = createM2VChecksumExpression(l, lu_maff, fp_maff_c)
 		
 		// Generate equations for column checksum (two copies)
-		val xc0_eq = createStandardEquation(x_c_0, x_red_exp_c)
-		val xc1_eq = createStandardEquation(x_c_1, x_red_exp_c.copyAE)
-		
+		val lc0_eq = createStandardEquation(L_c_0, l_red_exp_c)
+		val lc1_eq = createStandardEquation(L_c_1, l_red_exp_c.copyAE)						
+			
 		// Add column checksum equations to system body
-		systemBody.equations += xc0_eq
-		systemBody.equations += xc1_eq	
+		systemBody.equations += lc0_eq
+		systemBody.equations += lc1_eq
 		
 		// Substitute "validation" column checksum equation with definition
-		SubstituteByDef.apply(system, xc1_eq, x)
+		SubstituteByDef.apply(system, lc1_eq, l)
+		
+		// Get reduction expression for row checksums
+		val u_red_exp_r = createM2VChecksumExpression(u, lu_maff, fp_maff_r)
+		
+		// Generate equations for row checksum (two copies)
+		val ur0_eq = createStandardEquation(U_r_0, u_red_exp_r)
+		val ur1_eq = createStandardEquation(U_r_1, u_red_exp_r.copyAE)						
+			
+		// Add row checksum equations to system body
+		systemBody.equations += ur0_eq
+		systemBody.equations += ur1_eq
+		
+		// Substitute validation row checksum equation with definition
+		SubstituteByDef.apply(system, ur1_eq, u)
 		
 		// Define column checksum invariant
-		val x_c_inv_exp = createInvariantExpression(x_c_0, x_c_1)
-		val x_inv_c = createStandardEquation(Inv_x_c, x_c_inv_exp)
+		val l_c_inv_exp = createInvariantExpression(L_c_0, L_c_1)
+		val l_inv_c = createStandardEquation(Inv_L_c, l_c_inv_exp)
+		
+		// Define row checksum invariant
+		val u_r_inv_exp = createInvariantExpression(U_r_0, U_r_1)
+		val u_inv_r = createStandardEquation(Inv_U_r, u_r_inv_exp)
 				
-		// Add checksum invariant to system equations
-		systemBody.equations += x_inv_c	
+		// Add checksum invariants to system equations
+		systemBody.equations += l_inv_c
+		systemBody.equations += u_inv_r
 	}
 	
 	static def void main(String[] args) {
@@ -482,6 +514,7 @@ class InsertChecksums {
 		}
 		else if(lu_names.contains(system.name)){
 			println("Applying ABFT to LU Decomposition...")
+			ABFT_lud(system)
 		}
 		else{
 			print("Unknown system. Exiting...")
@@ -506,12 +539,12 @@ class InsertChecksums {
 		AlphaModelSaver.ASave(root, out_file)
 		println("Done")
 		
-		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
-		
-		val code = ProgramPrinter.print(program).toString
- 
-		println(code)
- 
+//		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
+//		
+//		val code = ProgramPrinter.print(program).toString
+// 
+//		println(code)
+// 
  
 //		system.runOSR	
 		

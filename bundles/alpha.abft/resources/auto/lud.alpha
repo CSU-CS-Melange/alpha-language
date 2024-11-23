@@ -1,0 +1,43 @@
+
+affine lud_aabft [N] -> {  : N > 0 }
+	inputs
+		A : {[i, j]: 0 <= i < N and 0 <= j < N }
+	outputs
+		L : {[i, j]: i < N and 0 <= j <= i }
+		U : {[i, j]: i >= 0 and i <= j < N }
+		Inv_L_c : {[j]: 0 <= j < N }
+		Inv_U_r : {[i]: 0 <= i < N }
+	locals
+		L_c_0 : {[j]: 0 <= j < N }
+		L_c_1 : {[j]: 0 <= j < N }
+		U_r_0 : {[i]: 0 <= i < N }
+		U_r_1 : {[i]: 0 <= i < N }
+	when {  : N > 0 } let
+		U[i,j] = case  {
+			{: i = 0 } : A;
+			{: i > 0 and j >= i } : (A - reduce(+, (i,j,k->i,j), {: 0 <= k < i } : (L[i,k] * U[k,j])));
+		};
+		
+		L[i,j] = case  {
+			{: j = 0 } : (A / U[j,j]);
+			{: j > 0 } : ((A - reduce(+, (i,j,k->i,j), {: 0 <= k < j } : (L[i,k] * U[k,j]))) / U[j,j]);
+		};
+		
+		L_c_0[j] = reduce(+, (i,j->j), L);
+		
+		L_c_1[j] = reduce(+, (i,j->j), case  {
+			{: j = 0 and 0 <= i < N } : (A / U[j,j]);
+			{: i < N and 0 <= j <= i } : ((A - reduce(+, (i,j,k->i,j), {: 0 <= k < j } : (L[i,k] * U[k,j]))) / U[j,j]);
+		});
+		
+		U_r_0[i] = reduce(+, (i,j->i), U);
+		
+		U_r_1[i] = reduce(+, (i,j->i), case  {
+			{: i = 0 and 0 <= j < N } : A;
+			{: i > 0 and i <= j < N } : (A - reduce(+, (i,j,k->i,j), {: 0 <= k < i } : (L[i,k] * U[k,j])));
+		});
+		
+		Inv_L_c[j] = ((L_c_0 - L_c_1) / L_c_0);
+		
+		Inv_U_r[i] = ((U_r_0 - U_r_1) / U_r_0);
+.

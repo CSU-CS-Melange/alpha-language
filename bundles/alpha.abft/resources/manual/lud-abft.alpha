@@ -4,7 +4,6 @@ affine lud_abft [N]->{:N>0}
  outputs
 	L   	 	 : {[i,j] : 0<=i<N and 0<=j<=i}
 	U		 	 : {[i,j] : 0<=j<N and 0<=i<=j}
-	
 	Inv_L_c		 : {[j]	  : 0<=j<N}
 	Inv_U_r		 : {[i]	  : 0<=i<N}
  locals

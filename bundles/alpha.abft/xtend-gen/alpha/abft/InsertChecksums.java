@@ -29,11 +29,13 @@ import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -190,16 +192,16 @@ public class InsertChecksums {
     _equations_5.add(c_inv_c);
   }
 
-  public static void ABFT_fsub(final AlphaSystem system) {
+  public static void ABFT_sub(final AlphaSystem system) {
     final SystemBody systemBody = system.getSystemBodies().get(0);
-    final ISLSet s_domain = ISLUtil.toISLSet("{[]: }");
+    final ISLSet c_domain = ISLUtil.toISLSet("{[]: }");
     final String x_maff = "{[i] -> [i]}";
-    final String s_maff = "{[i] -> []}";
-    final Variable Inv_x_c = AlphaUserFactory.createVariable("Inv_x_c", s_domain);
+    final String c_maff = "{[i] -> []}";
+    final Variable Inv_x_c = AlphaUserFactory.createVariable("Inv_x_c", c_domain);
     EList<Variable> _outputs = system.getOutputs();
     _outputs.add(Inv_x_c);
-    final Variable x_c_0 = AlphaUserFactory.createVariable("x_c_0", s_domain);
-    final Variable x_c_1 = AlphaUserFactory.createVariable("x_c_1", s_domain);
+    final Variable x_c_0 = AlphaUserFactory.createVariable("x_c_0", c_domain);
+    final Variable x_c_1 = AlphaUserFactory.createVariable("x_c_1", c_domain);
     EList<Variable> _locals = system.getLocals();
     _locals.add(x_c_0);
     EList<Variable> _locals_1 = system.getLocals();
@@ -209,7 +211,7 @@ public class InsertChecksums {
       return Boolean.valueOf(Objects.equal(_name, "x"));
     };
     final Variable x = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
-    final AlphaExpression x_red_exp_c = InsertChecksums.createV2SChecksumExpression(x, x_maff, s_maff);
+    final AlphaExpression x_red_exp_c = InsertChecksums.createV2SChecksumExpression(x, x_maff, c_maff);
     final StandardEquation xc0_eq = AlphaUserFactory.createStandardEquation(x_c_0, x_red_exp_c);
     final StandardEquation xc1_eq = AlphaUserFactory.createStandardEquation(x_c_1, AlphaUtil.<AlphaExpression>copyAE(x_red_exp_c));
     EList<Equation> _equations = systemBody.getEquations();
@@ -223,10 +225,74 @@ public class InsertChecksums {
     _equations_2.add(x_inv_c);
   }
 
+  public static void ABFT_lud(final AlphaSystem system) {
+    final SystemBody systemBody = system.getSystemBodies().get(0);
+    final ISLSet row_domain = ISLUtil.toISLSet("[N] -> {[i]: 0<=i<N}");
+    final ISLSet col_domain = ISLUtil.toISLSet("[N] -> {[j]: 0<=j<N}");
+    final String lu_maff = "[N] -> {[i,j] -> [i,j]}";
+    final String fp_maff_r = "[N] -> {[i,j] -> [i]}";
+    final String fp_maff_c = "[N] -> {[i,j] -> [j]}";
+    final Variable Inv_L_c = AlphaUserFactory.createVariable("Inv_L_c", col_domain);
+    final Variable Inv_U_r = AlphaUserFactory.createVariable("Inv_U_r", row_domain);
+    EList<Variable> _outputs = system.getOutputs();
+    _outputs.add(Inv_L_c);
+    EList<Variable> _outputs_1 = system.getOutputs();
+    _outputs_1.add(Inv_U_r);
+    final Variable L_c_0 = AlphaUserFactory.createVariable("L_c_0", col_domain);
+    final Variable L_c_1 = AlphaUserFactory.createVariable("L_c_1", col_domain);
+    final Variable U_r_0 = AlphaUserFactory.createVariable("U_r_0", row_domain);
+    final Variable U_r_1 = AlphaUserFactory.createVariable("U_r_1", row_domain);
+    EList<Variable> _locals = system.getLocals();
+    _locals.add(L_c_0);
+    EList<Variable> _locals_1 = system.getLocals();
+    _locals_1.add(L_c_1);
+    EList<Variable> _locals_2 = system.getLocals();
+    _locals_2.add(U_r_0);
+    EList<Variable> _locals_3 = system.getLocals();
+    _locals_3.add(U_r_1);
+    final Function1<Variable, Boolean> _function = (Variable v) -> {
+      String _name = v.getName();
+      return Boolean.valueOf(Objects.equal(_name, "L"));
+    };
+    final Variable l = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
+    final Function1<Variable, Boolean> _function_1 = (Variable v) -> {
+      String _name = v.getName();
+      return Boolean.valueOf(Objects.equal(_name, "U"));
+    };
+    final Variable u = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function_1);
+    final AlphaExpression l_red_exp_c = InsertChecksums.createM2VChecksumExpression(l, lu_maff, fp_maff_c);
+    final StandardEquation lc0_eq = AlphaUserFactory.createStandardEquation(L_c_0, l_red_exp_c);
+    final StandardEquation lc1_eq = AlphaUserFactory.createStandardEquation(L_c_1, AlphaUtil.<AlphaExpression>copyAE(l_red_exp_c));
+    EList<Equation> _equations = systemBody.getEquations();
+    _equations.add(lc0_eq);
+    EList<Equation> _equations_1 = systemBody.getEquations();
+    _equations_1.add(lc1_eq);
+    SubstituteByDef.apply(system, lc1_eq, l);
+    final AlphaExpression u_red_exp_r = InsertChecksums.createM2VChecksumExpression(u, lu_maff, fp_maff_r);
+    final StandardEquation ur0_eq = AlphaUserFactory.createStandardEquation(U_r_0, u_red_exp_r);
+    final StandardEquation ur1_eq = AlphaUserFactory.createStandardEquation(U_r_1, AlphaUtil.<AlphaExpression>copyAE(u_red_exp_r));
+    EList<Equation> _equations_2 = systemBody.getEquations();
+    _equations_2.add(ur0_eq);
+    EList<Equation> _equations_3 = systemBody.getEquations();
+    _equations_3.add(ur1_eq);
+    SubstituteByDef.apply(system, ur1_eq, u);
+    final AlphaExpression l_c_inv_exp = InsertChecksums.createInvariantExpression(L_c_0, L_c_1);
+    final StandardEquation l_inv_c = AlphaUserFactory.createStandardEquation(Inv_L_c, l_c_inv_exp);
+    final AlphaExpression u_r_inv_exp = InsertChecksums.createInvariantExpression(U_r_0, U_r_1);
+    final StandardEquation u_inv_r = AlphaUserFactory.createStandardEquation(Inv_U_r, u_r_inv_exp);
+    EList<Equation> _equations_4 = systemBody.getEquations();
+    _equations_4.add(l_inv_c);
+    EList<Equation> _equations_5 = systemBody.getEquations();
+    _equations_5.add(u_inv_r);
+  }
+
   public static void main(final String[] args) {
     try {
       final String in_dir = "resources/blas/";
       final String out_dir = "resources/auto/";
+      final List<String> mm_names = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("matmult", "matrixmult", "mat_mult", "matrix_mult", "matrix_multiplication"));
+      final List<String> fb_names = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("fsub", "bsub", "forward_sub", "back_sub", "forward_substitution", "back_substitution", "fs", "bs"));
+      final List<String> lu_names = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("lud", "lu_decomp", "lu_decomposition", "l_u_decomposition", "l_u_d"));
       final Scanner scanner = new Scanner(System.in);
       InputOutput.<String>print((("Enter input alpha file in \'" + in_dir) + "\': "));
       String sys_name = scanner.nextLine();
@@ -238,57 +304,67 @@ public class InsertChecksums {
       }
       final String in_file = (in_dir + sys_name);
       final String out_file = (out_dir + sys_name);
-      InputOutput.<String>println((("Reading \'" + in_file) + "\'"));
       final File file = new File(in_file);
       if (((!file.exists()) || file.isDirectory())) {
         InputOutput.<String>println((("ERROR:  \'" + in_file) + "\' does not exist. Exiting..."));
         System.exit(1);
+      } else {
+        InputOutput.<String>println((("Reading \'" + in_file) + "\'"));
       }
       InputOutput.println();
       final AlphaRoot root = AlphaLoader.loadAlpha(in_file);
       final AlphaSystem system = root.getSystems().get(0);
-      String _name = system.getName();
-      String _plus = (_name + "_aabft");
-      system.setName(_plus);
       InputOutput.<String>println(system.getName());
       final Consumer<Variable> _function = (Variable v) -> {
-        String _name_1 = v.getName();
-        String _plus_1 = ("input: " + _name_1);
-        String _plus_2 = (_plus_1 + " : ");
+        String _name = v.getName();
+        String _plus = ("input: " + _name);
+        String _plus_1 = (_plus + " : ");
         ISLSet _domain = v.getDomain();
-        String _plus_3 = (_plus_2 + _domain);
-        InputOutput.<String>println(_plus_3);
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
       };
       system.getInputs().forEach(_function);
       final Consumer<Variable> _function_1 = (Variable v) -> {
-        String _name_1 = v.getName();
-        String _plus_1 = ("output: " + _name_1);
-        String _plus_2 = (_plus_1 + " : ");
+        String _name = v.getName();
+        String _plus = ("output: " + _name);
+        String _plus_1 = (_plus + " : ");
         ISLSet _domain = v.getDomain();
-        String _plus_3 = (_plus_2 + _domain);
-        InputOutput.<String>println(_plus_3);
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
       };
       system.getOutputs().forEach(_function_1);
       final Consumer<Variable> _function_2 = (Variable v) -> {
-        String _name_1 = v.getName();
-        String _plus_1 = ("local: " + _name_1);
-        String _plus_2 = (_plus_1 + " : ");
+        String _name = v.getName();
+        String _plus = ("local: " + _name);
+        String _plus_1 = (_plus + " : ");
         ISLSet _domain = v.getDomain();
-        String _plus_3 = (_plus_2 + _domain);
-        InputOutput.<String>println(_plus_3);
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
       };
       system.getLocals().forEach(_function_2);
-      boolean _contains = system.getName().contains("matmult");
+      boolean _contains = mm_names.contains(system.getName());
       if (_contains) {
+        InputOutput.<String>println("Applying ABFT to Matrix Multiplication...");
         InsertChecksums.ABFT_matmult(system);
       } else {
-        boolean _contains_1 = system.getName().contains("fsub");
+        boolean _contains_1 = fb_names.contains(system.getName());
         if (_contains_1) {
-          InsertChecksums.ABFT_fsub(system);
+          InputOutput.<String>println("Applying ABFT to Forward/Back Substitution...");
+          InsertChecksums.ABFT_sub(system);
         } else {
-          InputOutput.<String>print("Unknown system");
+          boolean _contains_2 = lu_names.contains(system.getName());
+          if (_contains_2) {
+            InputOutput.<String>println("Applying ABFT to LU Decomposition...");
+            InsertChecksums.ABFT_lud(system);
+          } else {
+            InputOutput.<String>print("Unknown system. Exiting...");
+            System.exit(2);
+          }
         }
       }
+      String _name = system.getName();
+      String _plus = (_name + "_aabft");
+      system.setName(_plus);
       InputOutput.<String>println("-------------------\nBase system:\n");
       InputOutput.<String>println(Show.<AlphaSystem>print(system));
       Normalize.apply(system);
@@ -296,7 +372,7 @@ public class InsertChecksums {
       AlphaInternalStateConstructor.recomputeContextDomain(system);
       InputOutput.<String>println("-------------------\nNormalized system:\n");
       InputOutput.<String>println(AShow.print(system));
-      InputOutput.<String>println((("Saving model to \'" + out_file) + "\'"));
+      InputOutput.<String>println((("Model saved to \'" + out_file) + "\'"));
       AlphaModelSaver.ASave(root, out_file);
       InputOutput.<String>println("Done");
     } catch (Throwable _e) {
