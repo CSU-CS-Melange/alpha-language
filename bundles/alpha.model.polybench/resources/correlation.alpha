@@ -1,0 +1,28 @@
+// Author: Tomofumi Yuki
+//Translated to Alphas by Jonathon Yallop
+
+external sqrt(1)
+//correlation coefficient matrix
+//
+affine correlation [N, M] -> {: N, M > 0}
+	inputs
+		data: {[i,j]: 0 <= i < N and 0 <= j < M}; //NxM array, N data points with M properties
+	outputs
+		corr: {[x,y]: 0 <= x <= y < M};
+	locals
+		cov: {[x,y]: 0 <= x <= y < M}; //covariance matrix
+		mean: {[j]: 0 <= j < M};
+		stddev: {[j]: 0 <= j < M};
+	let
+		mean[j] = reduce(+, [i], data[i,j]) / val[N];
+		
+		//covariance between property x and y
+		cov[x,y] = reduce(+, [k], (data[k,x] - mean[x]) * (data[k,y] - mean[k])) / val[N];
+
+		//standard deviation for each property j
+		stddev[j] = sqrt(reduce(+, [i], (data[i,j] - mean[j]) * (data[i,j] - mean[j])) / val[N]);
+		
+		//correlation
+		corr[x,y] = cov[x,y] / stddev[x] * stddev[y];
+		
+.

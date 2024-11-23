@@ -596,19 +596,31 @@ public class ProgramPrinter {
   }
 
   protected static CharSequence _printExpr(final ArrayAccessExpr expr) {
-    StringConcatenation _builder = new StringConcatenation();
-    String _variableName = expr.getVariableName();
-    _builder.append(_variableName);
-    {
-      EList<Expression> _indexExpressions = expr.getIndexExpressions();
-      for(final Expression index : _indexExpressions) {
-        _builder.append("[");
-        CharSequence _printExpr = ProgramPrinter.printExpr(index);
-        _builder.append(_printExpr);
-        _builder.append("]");
+    CharSequence _xifexpression = null;
+    int _size = expr.getIndexExpressions().size();
+    boolean _equals = (_size == 0);
+    if (_equals) {
+      StringConcatenation _builder = new StringConcatenation();
+      String _variableName = expr.getVariableName();
+      _builder.append(_variableName);
+      _builder.append("[0]");
+      _xifexpression = _builder;
+    } else {
+      StringConcatenation _builder_1 = new StringConcatenation();
+      String _variableName_1 = expr.getVariableName();
+      _builder_1.append(_variableName_1);
+      {
+        EList<Expression> _indexExpressions = expr.getIndexExpressions();
+        for(final Expression index : _indexExpressions) {
+          _builder_1.append("[");
+          CharSequence _printExpr = ProgramPrinter.printExpr(index);
+          _builder_1.append(_printExpr);
+          _builder_1.append("]");
+        }
       }
+      _xifexpression = _builder_1;
     }
-    return _builder;
+    return _xifexpression;
   }
 
   protected static CharSequence _printExpr(final CallExpr expr) {

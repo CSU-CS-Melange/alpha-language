@@ -14,6 +14,11 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
+import java.util.List
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 
 class ISLUtil {
 	
@@ -31,6 +36,11 @@ class ISLUtil {
 	def static toISLBasicMap(String descriptor) {
 		ISLBasicMap.buildFromString(ISLContext.instance, descriptor)
 	}
+
+	/** Creates an ISLMap from a string */
+	def static toISLMap(String descriptor) {
+		ISLMap.buildFromString(ISLContext.instance, descriptor)
+	}
 	
 	/** Creates an ISLAff from a string */
 	def static toISLAff(String descriptor) {
@@ -41,6 +51,22 @@ class ISLUtil {
 	def static toISLMultiAff(String descriptor) {
 		ISLMultiAff.buildFromString(ISLContext.instance, descriptor)
 	}
+	
+	/** Creates an ISLUnionMap from a string */
+	def static toISLUnionMap(String descriptor) {
+		ISLUnionMap.buildFromString(ISLContext.instance, descriptor)
+	}
+	
+	/** Creates an ISLUnionSet from a string */
+	def static toISLUnionSet(String descriptor) {
+		ISLUnionSet.buildFromString(ISLContext.instance, descriptor)
+	}
+	
+	/** Creates an ISLSchedule from a string */
+	def static toISLSchedule(String descriptor) {
+		ISLSchedule.buildFromString(ISLContext.instance, descriptor)
+	}
+	
 	
 	/** Creates an ISLConstraint from a string */
 	def static toISLConstraint(String descriptor) {
@@ -194,6 +220,27 @@ class ISLUtil {
 	def static boolean isEmbedding(ISLSet set) {
 		val nbIndices = set.dim(ISLDimType.isl_dim_set)
 		set.dimensionality < nbIndices
+	}
+	
+	/**
+	 * Generates a union map out of a list of ISLMaps
+	 */
+	def static ISLUnionMap convertToUnionMap(List<ISLMap> maps) {
+		var ISLUnionMap unionMap
+		for(map : maps) {
+			unionMap = unionMap === null ? map.toUnionMap : unionMap.addMap(map)
+		}
+		unionMap
+	}
+	
+	/**
+	 * Converts an ISLMap to an ISLMultiAffine map as there is no default way
+	 */
+	def static ISLMultiAff toMultiAff(ISLMap map) {
+		val local = map.copy
+		val pma = local.toPWMultiAff
+		val piece = pma.getPiece(0)
+		piece.maff
 	}
 	 
 	 

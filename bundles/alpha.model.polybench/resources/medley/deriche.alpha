@@ -1,0 +1,93 @@
+//Original Author: Revathy R.
+//Alpha version: Jonathon Y.
+
+//Deriche Recursive Filter 2D
+
+//External function
+//exp(double);
+external exp(1)
+affine deriche [W, H] -> {: W > 0 and H > 0}
+
+	inputs
+		//Input image
+		Xin: {[i, j]: 0 <= i < W and 0 <= j < H};
+		//Filter coefficient
+		//double alpha;
+		
+	outputs
+		Yout: {[i, j]: 0 <= i < W and 0 <= j < H};
+		
+	locals
+		//Smoothing filter
+		K: {}
+	
+		//Filter parameters computed within code
+		alpha: {};
+		A1, A2, A3, A4, A5, A6, A7, A8: {};
+		B1, B2, C1, C2: {};
+		
+		//Intermediate arrays for horizontal pass
+		Y1: {[i, j]: 0 <= i < W and 0 <= j < H};
+		Y2: {[i, j]: 0 <= i < W and 0 <= j < H};
+		R:  {[i, j]: 0 <= i < W and 0 <= j < H};
+		
+		//Intermediate arrays for vertical pass
+		Z1: {[i, j]: 0 <= i < W and 0 <= j < H};
+		Z2: {[i,j]: 0 <= i < W and 0 <= j < H};
+
+	let
+		//Setting alpha to the value used in Polybench C
+		alpha = 0.25;
+	
+		//compute value of smoothing filter
+		K = (1 - exp(-1 * alpha) * 1 - exp(-1 * alpha)) / (1 + 2 * alpha * exp(-1 * alpha) - exp(-2 * alpha));
+	
+		//Compute all parameters from alpha
+		A1 = K;
+		A5 = K;
+		
+		A2 = K * exp(-1 * alpha) * (alpha - 1) ;
+		A6 = A2;
+		
+		A3 = K * exp(-1 * alpha) * (alpha + 1) ;
+		A7 = A3;
+		
+		A4 = -1 * K * exp(-2 * alpha);
+		A8 = A4;
+		
+		B1 = 2 * exp(-1 * alpha);
+		B2 = -1 * exp(-2 * alpha);
+		
+		C1 = 1;
+		C2 = 1;
+		
+		//Horizontal Pass
+		Y1[i,j] = case {
+			{[i, j]: j == 0}: A1 * Xin[i, j] + A2 * 0.0 + B1 * 0.0 + B2 * 0.0;
+			{[i, j]: j == 1}: A1 * Xin[i, j] + A2 * Xin[i, 0] + B1 * Y1[i,0];
+			{[i, j]: j > 1} : A1 * Xin[i,j] + A2 * Xin[i, j - 1] + B1 * Y1[i, j - 1] + B2 * Y1[i, j - 2];
+		 };
+		 
+		Y2[i,j] = case {
+			{[i, j]: j == H - 2} : A3 * Xin[i, j + 1] + A4 * 0.0 + B1 * Y2[i, j + 1] + B2 * 0.0;
+			{[i, j]: j == H - 1} : 0.0;
+			{[i, j]: 0 <= j < H - 2}: A3 * Xin[i, j + 1] + A4 * Xin[i, j + 2] + B1 * Y2[i, j + 1] + B2 * Y2[i, j + 2];
+		};
+		
+		R[i,j] = C1 * (Y1[i, j] + Y2[i, j]);
+		
+		//Vertical Pass
+		Z1[i,j] = case {
+			{[i, j]: i == 0} : A5 * R[i, j] + A6 * 0.0 + B1 * 0.0 + B2 * 0.0;
+			{[i, j]: i == 1} : A5 * R[i, j] + A6 * R[i - 1,j] + B1 * Y1[i - 1,j] + B2 * 0.0;
+			{[i, j]: i > 1}  : A5 * R[i, j] + A6 * R[i - 1,j] + B1 * Y1[i - 1,j] + B2 * Y1[i - 2,j];
+		};
+		
+		Z2[i,j] = case {
+			{[i, j]: i == W - 2}: A7 * R[i + 1, j] + A8 * 0.0 + B1 * Y1[i + 1, j] + B2 * 0.0;
+			{[i, j]: i == W - 1}: A7 * 0.0;
+			{[i, j]: 0 <= i < W - 2}: A7 * R[i + 1,j] + A8 * R[i + 2,j] + B1 * Y1[i + 1, j] + B2 * Y1[i + 2,j];
+		};
+		
+		Yout[i,j] = C2 * (Z1[i, j] + Z2[i, j]);
+.

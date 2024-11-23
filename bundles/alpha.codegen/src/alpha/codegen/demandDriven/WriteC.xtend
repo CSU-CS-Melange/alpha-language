@@ -18,6 +18,9 @@ import alpha.model.StandardEquation
 import alpha.model.SystemBody
 import alpha.model.UseEquation
 import alpha.model.Variable
+import alpha.model.transformation.Normalize
+import alpha.model.transformation.StandardizeNames
+import alpha.model.transformation.reduction.NormalizeReduction
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
@@ -328,4 +331,12 @@ class WriteC extends CodeGeneratorBase {
 		// Undefine the macro now that we're done with it.
 		entryPoint.addStatement(Factory.undefStmt(macroName))
 	}
+	
+	/** Normalizes the system body and standardizes all names prior to conversion. */
+	override preprocess() {
+		Normalize.apply(systemBody)
+		NormalizeReduction.apply(systemBody)
+		StandardizeNames.apply(systemBody)
+	}
+	
 }

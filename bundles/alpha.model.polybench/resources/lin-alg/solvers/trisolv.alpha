@@ -1,0 +1,19 @@
+// Author: Tomofumi Yuki
+// Alpha Author: Jonathon Y.
+
+//trisolv : Triangular matrix solver
+//
+// Given a lower triangular matrix L, and a vector b, find x such that Lx=b
+//
+affine trisolv [N] -> {: N > 0}
+	inputs
+		L: {[i, j]: 0 <= j <= i < N};
+		b: {[i]: 0 <= i < N};
+	outputs
+		x: {[i]: 0 <= i < N};
+	let
+		x[i] = case {
+				{: i == 0}: b[i] / L[i,i];
+				{: i > 0}: (b[i] - reduce(+, [j], {: j < i} : L[i, j] * x[j])) / L[i, i];
+		};
+.

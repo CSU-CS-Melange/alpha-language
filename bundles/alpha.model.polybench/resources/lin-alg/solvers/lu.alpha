@@ -1,0 +1,24 @@
+// Alphabets Author: Tomofumi Yuki
+// Alpha Author: Jonathon Y.
+
+//LU decomposition
+// Find lower triangular matrix L and upper triangular matrix U given matrix A such that A = LU
+//  - no pivoting
+affine lu [N] -> {: N > 1}
+	inputs
+		A: {[i,j]: 0 <= i, j < N}; 
+	outputs
+		//unit diagonal of L is implicit
+		L: {[i, j]: 0 < i < N and 0 <= j < i};
+		U: {[i, j]: 0 <= j < N and 0 <= i <= j};
+	let
+		U[i,j] = case {
+			{: i = 0 }: A[i,j];
+			{: i > 0}: A[i,j] - reduce(+, [k], {: 0 <= k < i}: L[i, k] * U[k, j]);
+		};
+		
+		L[i,j] = case {
+			{: j = 0} : A[i,j] / U[j,j];
+			{: j > 0} : (A[i,j] - reduce(+, [k], {: 0 <= k < j} : L[i, k] * U[k, j])) / U[j,j];
+		};
+.

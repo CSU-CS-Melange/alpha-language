@@ -264,8 +264,12 @@ class ProgramPrinter {
 	def static dispatch CharSequence printExpr(CastExpr expr)
 		'''(«expr.dataType.print»)(«expr.expression.printExpr»)'''
 		
-	def static dispatch CharSequence printExpr(ArrayAccessExpr expr)
-		'''«expr.variableName»«FOR index : expr.indexExpressions»[«index.printExpr»]«ENDFOR»'''
+	def static dispatch CharSequence printExpr(ArrayAccessExpr expr){
+		if(expr.indexExpressions.size == 0)
+			'''«expr.variableName»[0]'''
+		else
+			'''«expr.variableName»«FOR index : expr.indexExpressions»[«index.printExpr»]«ENDFOR»'''
+	}
 	
 	def static dispatch CharSequence printExpr(CallExpr expr)
 		'''«expr.functionName»(«expr.arguments.map[printExpr].join(',')»)'''

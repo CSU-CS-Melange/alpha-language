@@ -7,11 +7,17 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +54,13 @@ public class ISLUtil {
   }
 
   /**
+   * Creates an ISLMap from a string
+   */
+  public static ISLMap toISLMap(final String descriptor) {
+    return ISLMap.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
    * Creates an ISLAff from a string
    */
   public static ISLAff toISLAff(final String descriptor) {
@@ -59,6 +72,27 @@ public class ISLUtil {
    */
   public static ISLMultiAff toISLMultiAff(final String descriptor) {
     return ISLMultiAff.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLUnionMap from a string
+   */
+  public static ISLUnionMap toISLUnionMap(final String descriptor) {
+    return ISLUnionMap.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLUnionSet from a string
+   */
+  public static ISLUnionSet toISLUnionSet(final String descriptor) {
+    return ISLUnionSet.buildFromString(ISLContext.getInstance(), descriptor);
+  }
+
+  /**
+   * Creates an ISLSchedule from a string
+   */
+  public static ISLSchedule toISLSchedule(final String descriptor) {
+    return ISLSchedule.buildFromString(ISLContext.getInstance(), descriptor);
   }
 
   /**
@@ -267,6 +301,41 @@ public class ISLUtil {
       final int nbIndices = set.dim(ISLDimType.isl_dim_set);
       int _dimensionality = ISLUtil.dimensionality(set);
       _xblockexpression = (_dimensionality < nbIndices);
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Generates a union map out of a list of ISLMaps
+   */
+  public static ISLUnionMap convertToUnionMap(final List<ISLMap> maps) {
+    ISLUnionMap _xblockexpression = null;
+    {
+      ISLUnionMap unionMap = null;
+      for (final ISLMap map : maps) {
+        ISLUnionMap _xifexpression = null;
+        if ((unionMap == null)) {
+          _xifexpression = map.toUnionMap();
+        } else {
+          _xifexpression = unionMap.addMap(map);
+        }
+        unionMap = _xifexpression;
+      }
+      _xblockexpression = unionMap;
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Converts an ISLMap to an ISLMultiAffine map as there is no default way
+   */
+  public static ISLMultiAff toMultiAff(final ISLMap map) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      final ISLMap local = map.copy();
+      final ISLPWMultiAff pma = local.toPWMultiAff();
+      final ISLPWMultiAffPiece piece = pma.getPiece(0);
+      _xblockexpression = piece.getMaff();
     }
     return _xblockexpression;
   }
