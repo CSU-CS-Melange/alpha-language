@@ -156,6 +156,23 @@ class InsertChecksums {
 		return quot
 	}
 	
+	static def Variable getOutputVariable(AlphaSystem system, String name, int index) throws IndexOutOfBoundsException{
+		// gets a specified output variable from a given system 
+		var vbl = system.outputs.findFirst[v | v.name == name]
+		
+		// If output variable with specified labeled is not found,
+		// get variable at specified index, if not present, exit program with an error
+		if(vbl === null){
+			vbl = system.outputs.get(index)
+		}
+		return vbl
+	}
+	
+	static def Boolean varDomainContains(Variable v, String domainStr){
+		// Checks if variable's domain contains the given string
+		return v.domain.toString.replaceAll("\\s","").contains(domainStr)
+	}
+	
 	static def void ABFT_matmult(AlphaSystem system){
 		/* The system contains a list of SystemBody objects */
 		
@@ -262,8 +279,15 @@ class InsertChecksums {
 		
 		// Generate equations for checksums
 
-		// Get product matrix from system
-		val c = system.outputs.findFirst[v | v.name == 'C']
+		// Get output matrix from system
+		var Variable c
+		try{
+			c = getOutputVariable(system, 'C', 0)
+	 	}
+		catch(Exception e){
+			println("No output variable found. Exiting...")
+			System.exit(1)
+		}	
 				
 		// Get reduction expression for row checksums
 		val c_red_exp_r = createM2VChecksumExpression(c, c_maff, fp_maff_r)
@@ -309,7 +333,7 @@ class InsertChecksums {
 		systemBody.equations += c_inv_r
 		systemBody.equations += c_inv_c
 	}
-	
+		
 	static def void ABFT_sub(AlphaSystem system){
 		val systemBody = system.systemBodies.get(0)
 		
@@ -334,8 +358,15 @@ class InsertChecksums {
 		
 		// Generate equations for checksums
 
-		// Get product vector from system
-		val x = system.outputs.findFirst[v | v.name == 'x']
+		// Get output vector from system
+		var Variable x
+		 try{
+			x = getOutputVariable(system, 'x', 0)
+	 	}
+		catch(Exception e){
+			println("No output variable found. Exiting...")
+			System.exit(1)
+		}
 		
 		// Get reduction expression for column checksums
 		val x_red_exp_c = createV2SChecksumExpression(x, x_maff, c_maff)
@@ -395,9 +426,43 @@ class InsertChecksums {
 		
 		// Generate equations for checksums
 
-		// Get product matrix from system
-		val l = system.outputs.findFirst[v | v.name == 'L']
-		val u = system.outputs.findFirst[v | v.name == 'U']
+		// Get output matrix from system
+		var Variable l
+		var Variable u
+		
+		try{
+			l = getOutputVariable(system, 'L', 0)
+	 	}
+		catch(Exception e){
+			println("No output variable found. Exiting...")
+			System.exit(1)
+		}
+		
+		try{
+			u = getOutputVariable(system, 'U', 1)
+	 	}
+		catch(Exception e){
+			println("No output variable found. Exiting...")
+			System.exit(1)
+		}
+		
+		// If domain of 'L' is incorrect, swap L and U
+		if(!varDomainContains(l, "0<=j<=i") && varDomainContains(u, "0<=j<=i")){
+			var temp = u
+			u = l
+			l = temp
+		}
+		else{
+			println("No valid output variables found. Exiting...")
+			System.exit(1)
+		}
+		
+		println("L: " + l.domain)
+		println(l.domain.toString.replaceAll("\\s","").contains("0<=j<=i"))	
+		
+		
+		println("U: " + u.domain)
+		println(u.domain.toString.replaceAll("\\s","").contains("0<=j<=i"))		
 						
 		// Get reduction expression for column checksums
 		val l_red_exp_c = createM2VChecksumExpression(l, lu_maff, fp_maff_c)
@@ -458,7 +523,7 @@ class InsertChecksums {
 		val fb_names = #['fsub', 'bsub', 'forward_sub', 'back_sub', 'forward_substitution', 'back_substitution', 'fs', 'bs']
 		val lu_names = #['lud', 'lu_decomp', 'lu_decomposition', 'l_u_decomposition', 'l_u_d']
 		
-			// Prompt user for input file
+		// Prompt user for input file
 		val scanner = new Scanner(System.in)
 		print("Enter input alpha file in \'" + in_dir + "\': ")
 		var sys_name = scanner.nextLine()
@@ -471,8 +536,7 @@ class InsertChecksums {
 		// Define input/output files		
 		val in_file = in_dir + sys_name
 		val out_file = out_dir + sys_name
-		
-				
+			
 		// Check if input file exists
 		val file = new File(in_file)
 		if(!file.exists() || file.isDirectory()){
@@ -483,15 +547,10 @@ class InsertChecksums {
 			println("Reading \'" + in_file + "\'")
 		}
 		println()
-		
-				 
+			 
 		val root = AlphaLoader.loadAlpha(in_file)
-		
 		/* A root contains a list of AlphaSystem objects */
 		val system = root.systems.get(0)
-		
-		// Update system name
-		
 		println(system.name)
 		
 		/* 
@@ -520,6 +579,8 @@ class InsertChecksums {
 			print("Unknown system. Exiting...")
 			System.exit(2)
 		}
+		
+		// Update system name
 		system.name = system.name + '_aabft'
 		
 		println("-------------------\nBase system:\n")
@@ -539,21 +600,15 @@ class InsertChecksums {
 		AlphaModelSaver.ASave(root, out_file)
 		println("Done")
 		
+		
+		// C-code Writer testing
 //		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
 //		
 //		val code = ProgramPrinter.print(program).toString
 // 
 //		println(code)
 // 
- 
 //		system.runOSR	
-		
-		
-		/*
-		 * You would create and insert new equations in the same way on the system body 
-		 * (i.e., systemBody.equations += ...). There are factory methods for creating equations and
-		 * any expressions you may need. Take a look at the call signatures for more info.
-		 */
 		
 	}	
 }

@@ -136,6 +136,22 @@ public class InsertChecksums {
     return quot;
   }
 
+  public static Variable getOutputVariable(final AlphaSystem system, final String name, final int index) throws IndexOutOfBoundsException {
+    final Function1<Variable, Boolean> _function = (Variable v) -> {
+      String _name = v.getName();
+      return Boolean.valueOf(Objects.equal(_name, name));
+    };
+    Variable vbl = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
+    if ((vbl == null)) {
+      vbl = system.getOutputs().get(index);
+    }
+    return vbl;
+  }
+
+  public static Boolean varDomainContains(final Variable v, final String domainStr) {
+    return Boolean.valueOf(v.getDomain().toString().replaceAll("\\s", "").contains(domainStr));
+  }
+
   public static void ABFT_matmult(final AlphaSystem system) {
     final SystemBody systemBody = system.getSystemBodies().get(0);
     final ISLSet row_domain = ISLUtil.toISLSet("[N] -> {[i]: 0<=i<N}");
@@ -161,11 +177,17 @@ public class InsertChecksums {
     _locals_2.add(C_c_0);
     EList<Variable> _locals_3 = system.getLocals();
     _locals_3.add(C_c_1);
-    final Function1<Variable, Boolean> _function = (Variable v) -> {
-      String _name = v.getName();
-      return Boolean.valueOf(Objects.equal(_name, "C"));
-    };
-    final Variable c = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
+    Variable c = null;
+    try {
+      c = InsertChecksums.getOutputVariable(system, "C", 0);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.<String>println("No output variable found. Exiting...");
+        System.exit(1);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
     final AlphaExpression c_red_exp_r = InsertChecksums.createM2VChecksumExpression(c, c_maff, fp_maff_r);
     final StandardEquation cr0_eq = AlphaUserFactory.createStandardEquation(C_r_0, c_red_exp_r);
     final StandardEquation cr1_eq = AlphaUserFactory.createStandardEquation(C_r_1, AlphaUtil.<AlphaExpression>copyAE(c_red_exp_r));
@@ -206,11 +228,17 @@ public class InsertChecksums {
     _locals.add(x_c_0);
     EList<Variable> _locals_1 = system.getLocals();
     _locals_1.add(x_c_1);
-    final Function1<Variable, Boolean> _function = (Variable v) -> {
-      String _name = v.getName();
-      return Boolean.valueOf(Objects.equal(_name, "x"));
-    };
-    final Variable x = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
+    Variable x = null;
+    try {
+      x = InsertChecksums.getOutputVariable(system, "x", 0);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.<String>println("No output variable found. Exiting...");
+        System.exit(1);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
     final AlphaExpression x_red_exp_c = InsertChecksums.createV2SChecksumExpression(x, x_maff, c_maff);
     final StandardEquation xc0_eq = AlphaUserFactory.createStandardEquation(x_c_0, x_red_exp_c);
     final StandardEquation xc1_eq = AlphaUserFactory.createStandardEquation(x_c_1, AlphaUtil.<AlphaExpression>copyAE(x_red_exp_c));
@@ -250,16 +278,44 @@ public class InsertChecksums {
     _locals_2.add(U_r_0);
     EList<Variable> _locals_3 = system.getLocals();
     _locals_3.add(U_r_1);
-    final Function1<Variable, Boolean> _function = (Variable v) -> {
-      String _name = v.getName();
-      return Boolean.valueOf(Objects.equal(_name, "L"));
-    };
-    final Variable l = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
-    final Function1<Variable, Boolean> _function_1 = (Variable v) -> {
-      String _name = v.getName();
-      return Boolean.valueOf(Objects.equal(_name, "U"));
-    };
-    final Variable u = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function_1);
+    Variable l = null;
+    Variable u = null;
+    try {
+      l = InsertChecksums.getOutputVariable(system, "L", 0);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.<String>println("No output variable found. Exiting...");
+        System.exit(1);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+    try {
+      u = InsertChecksums.getOutputVariable(system, "U", 1);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        InputOutput.<String>println("No output variable found. Exiting...");
+        System.exit(1);
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+    if (((!(InsertChecksums.varDomainContains(l, "0<=j<=i")).booleanValue()) && (InsertChecksums.varDomainContains(u, "0<=j<=i")).booleanValue())) {
+      Variable temp = u;
+      u = l;
+      l = temp;
+    } else {
+      InputOutput.<String>println("No valid output variables found. Exiting...");
+      System.exit(1);
+    }
+    ISLSet _domain = l.getDomain();
+    String _plus = ("L: " + _domain);
+    InputOutput.<String>println(_plus);
+    InputOutput.<Boolean>println(Boolean.valueOf(l.getDomain().toString().replaceAll("\\s", "").contains("0<=j<=i")));
+    ISLSet _domain_1 = u.getDomain();
+    String _plus_1 = ("U: " + _domain_1);
+    InputOutput.<String>println(_plus_1);
+    InputOutput.<Boolean>println(Boolean.valueOf(u.getDomain().toString().replaceAll("\\s", "").contains("0<=j<=i")));
     final AlphaExpression l_red_exp_c = InsertChecksums.createM2VChecksumExpression(l, lu_maff, fp_maff_c);
     final StandardEquation lc0_eq = AlphaUserFactory.createStandardEquation(L_c_0, l_red_exp_c);
     final StandardEquation lc1_eq = AlphaUserFactory.createStandardEquation(L_c_1, AlphaUtil.<AlphaExpression>copyAE(l_red_exp_c));
