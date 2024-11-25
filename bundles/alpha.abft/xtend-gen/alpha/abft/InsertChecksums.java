@@ -300,13 +300,18 @@ public class InsertChecksums {
         throw Exceptions.sneakyThrow(_t);
       }
     }
-    if (((!(InsertChecksums.varDomainContains(l, "0<=j<=i")).booleanValue()) && (InsertChecksums.varDomainContains(u, "0<=j<=i")).booleanValue())) {
-      Variable temp = u;
-      u = l;
-      l = temp;
-    } else {
-      InputOutput.<String>println("No valid output variables found. Exiting...");
-      System.exit(1);
+    Boolean _varDomainContains = InsertChecksums.varDomainContains(l, "0<=j<=i");
+    boolean _not = (!(_varDomainContains).booleanValue());
+    if (_not) {
+      Boolean _varDomainContains_1 = InsertChecksums.varDomainContains(u, "0<=j<=i");
+      if ((_varDomainContains_1).booleanValue()) {
+        Variable temp = u;
+        u = l;
+        l = temp;
+      } else {
+        InputOutput.<String>println("No valid output variables found. Exiting...");
+        System.exit(1);
+      }
     }
     ISLSet _domain = l.getDomain();
     String _plus = ("L: " + _domain);

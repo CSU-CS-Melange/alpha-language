@@ -447,15 +447,18 @@ class InsertChecksums {
 		}
 		
 		// If domain of 'L' is incorrect, swap L and U
-		if(!varDomainContains(l, "0<=j<=i") && varDomainContains(u, "0<=j<=i")){
-			var temp = u
-			u = l
-			l = temp
+		if(!varDomainContains(l, "0<=j<=i")){
+			if(varDomainContains(u, "0<=j<=i")){
+				var temp = u
+				u = l
+				l = temp
+			}
+			else{
+				println("No valid output variables found. Exiting...")
+				System.exit(1)
+			}
 		}
-		else{
-			println("No valid output variables found. Exiting...")
-			System.exit(1)
-		}
+		
 		
 		println("L: " + l.domain)
 		println(l.domain.toString.replaceAll("\\s","").contains("0<=j<=i"))	
