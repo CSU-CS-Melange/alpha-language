@@ -1,0 +1,39 @@
+external sqrt(1)
+
+/*
+ * Algorithm:
+ * 
+ *	for (i = 0; i < dimensionSize; i++) {
+ * 		for (j = 0; j <= i; j++) {
+ *      	float sum = 0;
+ *       	for (k = 0; k < j; k++)
+ *          	sum += L[i][k] * L[j][k];
+ *			
+ * 			if (i == j)
+ *          	L[i][j] = sqrt(A[i][i] - sum);
+ *       	else
+ *          	L[i][j] = (1.0 / L[j][j] * (A[i][j] - sum));
+ *		}
+ *	}
+ * 
+ * 
+ */
+
+affine cholesky_banachiewicz [N] -> {: N>0}
+ inputs
+ 	A 	: {[i,j]: 0 <=i,j<N}
+ outputs
+ 	L 	: {[i,j]: 0<=j<=i<N}
+ 	L_T : {[i,j]: 0<=i<=j<N}
+// locals
+ 	x 	: {}
+ 	
+ let
+ 	L[i,j] = A[i,j];
+ 	
+ 	L_T[i,j] = L[j,i];
+ 	
+ 
+ 	x = sqrt(16);
+ 	
+.

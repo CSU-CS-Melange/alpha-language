@@ -19,10 +19,12 @@ import alpha.model.IfExpression;
 import alpha.model.IndexExpression;
 import alpha.model.MultiArgExpression;
 import alpha.model.PolynomialIndexExpression;
+import alpha.model.REDUCTION_OP;
 import alpha.model.RestrictExpression;
 import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.util.CommonExtensions;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT;
@@ -234,6 +236,11 @@ public class ExprConverter {
    * Multi-arg expressions are converted into a tree of nested binary expressions.
    */
   protected Expression _convertExpr(final MultiArgExpression expr) {
+    REDUCTION_OP _operator = expr.getOperator();
+    boolean _equals = Objects.equal(_operator, REDUCTION_OP.EX);
+    if (_equals) {
+      return Factory.customExpr(expr.toString().split("\\s+")[0]);
+    }
     final BinaryOperator op = AlphaBaseHelpers.getOperator(expr.getOperator());
     final Function1<AlphaExpression, Expression> _function = (AlphaExpression it) -> {
       return this.convertExpr(it);

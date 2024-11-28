@@ -23,6 +23,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import alpha.model.REDUCTION_OP
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -215,6 +216,11 @@ class ExprConverter {
 	
 	/** Multi-arg expressions are converted into a tree of nested binary expressions. */
 	def dispatch Expression convertExpr(MultiArgExpression expr) {
+		// If operator is an external function, return as is.
+		if(expr.operator == REDUCTION_OP.EX){
+			return Factory.customExpr(expr.toString.split('\\s+').get(0))
+		}
+		
 		val op = AlphaBaseHelpers.getOperator(expr.operator)
 		val children = expr.exprs.map[convertExpr]
 		return Factory.binaryExprTree(op, children)

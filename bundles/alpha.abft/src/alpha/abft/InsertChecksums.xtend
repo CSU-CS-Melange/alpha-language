@@ -31,6 +31,8 @@ import java.util.ArrayList
 import alpha.codegen.demandDriven.WriteC
 import alpha.codegen.ProgramPrinter
 import alpha.codegen.BaseDataType
+import java.io.FileWriter
+import java.io.BufferedWriter
 
 /**
  * This class augments the input program by inserting checksums over the
@@ -508,8 +510,32 @@ class InsertChecksums {
 		systemBody.equations += u_inv_r
 	}
 	
-	static def void main(String[] args) {
+	
+	static def void test(){
+		val root = AlphaLoader.loadAlpha('resources/algo/cbd.alpha')
+		val system = root.systems.get(0)
+		println(system.name)
+		system.inputs.forEach[v  | println('input: '  + v.name + ' : ' + v.domain)]
+		system.outputs.forEach[v | println('output: ' + v.name + ' : ' + v.domain)]
+		system.locals.forEach[v | println('local: ' + v.name + ' : ' + v.domain)]
 		
+		println("-------------------\nBase system:\n")
+		println(Show.print(system))
+		
+		
+		val program = WriteC.convert(system, BaseDataType.FLOAT, true)
+		
+		val code = ProgramPrinter.print(program).toString
+ 
+		println(code)		
+		System.exit(0)	
+		
+	} 
+	
+	
+	
+	static def void main(String[] args) {
+//		test()		
 		/////////////////////////////////////////////////////////////
 		// Reading and inspecting an Alpha program
 		/////////////////////////////////////////////////////////////

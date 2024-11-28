@@ -1,5 +1,9 @@
 package alpha.abft;
 
+import alpha.codegen.BaseDataType;
+import alpha.codegen.Program;
+import alpha.codegen.ProgramPrinter;
+import alpha.codegen.demandDriven.WriteC;
 import alpha.loader.AlphaLoader;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaInternalStateConstructor;
@@ -345,6 +349,49 @@ public class InsertChecksums {
     _equations_4.add(l_inv_c);
     EList<Equation> _equations_5 = systemBody.getEquations();
     _equations_5.add(u_inv_r);
+  }
+
+  public static void test() {
+    try {
+      final AlphaRoot root = AlphaLoader.loadAlpha("resources/algo/cbd.alpha");
+      final AlphaSystem system = root.getSystems().get(0);
+      InputOutput.<String>println(system.getName());
+      final Consumer<Variable> _function = (Variable v) -> {
+        String _name = v.getName();
+        String _plus = ("input: " + _name);
+        String _plus_1 = (_plus + " : ");
+        ISLSet _domain = v.getDomain();
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
+      };
+      system.getInputs().forEach(_function);
+      final Consumer<Variable> _function_1 = (Variable v) -> {
+        String _name = v.getName();
+        String _plus = ("output: " + _name);
+        String _plus_1 = (_plus + " : ");
+        ISLSet _domain = v.getDomain();
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
+      };
+      system.getOutputs().forEach(_function_1);
+      final Consumer<Variable> _function_2 = (Variable v) -> {
+        String _name = v.getName();
+        String _plus = ("local: " + _name);
+        String _plus_1 = (_plus + " : ");
+        ISLSet _domain = v.getDomain();
+        String _plus_2 = (_plus_1 + _domain);
+        InputOutput.<String>println(_plus_2);
+      };
+      system.getLocals().forEach(_function_2);
+      InputOutput.<String>println("-------------------\nBase system:\n");
+      InputOutput.<String>println(Show.<AlphaSystem>print(system));
+      final Program program = WriteC.convert(system, BaseDataType.FLOAT, true);
+      final String code = ProgramPrinter.print(program).toString();
+      InputOutput.<String>println(code);
+      System.exit(0);
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
 
   public static void main(final String[] args) {

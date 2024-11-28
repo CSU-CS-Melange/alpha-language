@@ -1,0 +1,14 @@
+affine cholesky_banachiewicz { N | -1 + N >= 0  }
+	input
+		float A { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float L { i,j |  -1 + N - i >= 0  &&  j >= 0  &&  i - j >= 0  };
+		float L_T { i,j |  i >= 0  &&  -i + j >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float x {|};
+	let
+		L = (i,j->i,j)@(A);
+		
+		L_T = (i,j->j,i)@(L);
+		
+		x = sqrt(9);
+.
