@@ -11,7 +11,7 @@ import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.AlphaUtil;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
-import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -64,7 +64,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
       ISLSet _copy = v.getDomain().copy();
       return new PRDGNode(_name, _copy);
     };
-    this.prdg.addNodes(IterableExtensions.<PRDGNode>toList(IterableExtensions.<Variable, PRDGNode>map(IterableExtensions.<Variable>filter(variables, _function), _function_1)));
+    this.prdg.setNodes(IterableExtensions.<PRDGNode>toSet(IterableExtensions.<Variable, PRDGNode>map(IterableExtensions.<Variable>filter(variables, _function), _function_1)));
   }
 
   @Override
@@ -128,7 +128,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     String _plus_3 = (_plus_2 + Integer.valueOf(this.numberReductions));
     final String bodyName = (_plus_3 + "_body");
     this.numberReductions++;
-    List<PRDGNode> _nodes = this.prdg.getNodes();
+    Set<PRDGNode> _nodes = this.prdg.getNodes();
     ISLSet _copy = reduceExpression.getContextDomain().copy();
     PRDGNode _pRDGNode = new PRDGNode(reductionName, _copy, true);
     _nodes.add(_pRDGNode);
@@ -146,7 +146,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     PRDGNode _node = this.prdg.getNode(reductionName);
     PRDGEdge _pRDGEdge = new PRDGEdge(_peek, _node, dom, useToRes);
     this.prdg.addEdge(_pRDGEdge);
-    List<PRDGNode> _nodes_1 = this.prdg.getNodes();
+    Set<PRDGNode> _nodes_1 = this.prdg.getNodes();
     ISLSet _copy_1 = reduceExpression.getBody().getContextDomain().copy();
     PRDGNode _pRDGNode_1 = new PRDGNode(bodyName, _copy_1, true);
     _nodes_1.add(_pRDGNode_1);

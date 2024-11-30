@@ -7,27 +7,29 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import java.util.Set
+import java.util.HashSet
 
 class PRDG {
-	List<PRDGNode> nodes
-	List<PRDGEdge> edges
+	Set<PRDGNode> nodes
+	Set<PRDGEdge> edges
 	ISLUnionSet domains
 	ISLUnionMap islPRDG
 	
 	new() {
-		nodes = new LinkedList()
-		edges = new LinkedList()
+		nodes = new HashSet()
+		edges = new HashSet()
 	}
 
 	def PRDGNode getNode(String name) {
 		nodes.filter[ node | node.name.equals(name) ].get(0)
 	}
 	
-	def List<PRDGNode> getNodes() {
+	def Set<PRDGNode> getNodes() {
 		this.nodes
 	}
 	
-	def List<PRDGEdge> getEdges() {
+	def Set<PRDGEdge> getEdges() {
 		this.edges
 	}
 	
@@ -38,12 +40,20 @@ class PRDG {
 		println(edges.map[ edge | edge.toString() ])
 	}
 	
-	def addNodes(List<PRDGNode> names) {
-		nodes = names
+	def addNode(PRDGNode node) {
+		if(!nodes.contains(node)) nodes.add(node)
+	}
+	
+	def setNodes(Set<PRDGNode> nodes) {
+		this.nodes = nodes
 	}
 	
 	def addEdge(PRDGEdge edge) {
-		edges.add(edge)
+		if(!edges.contains(edge)) edges.add(edge)
+	}
+	
+	def setEdges(Set<PRDGEdge> edges) {
+		this.edges = edges
 	}
 	
 	def ISLUnionSet generateDomains() {
@@ -101,4 +111,10 @@ class PRDG {
 		this.islPRDG
 	}
 	
+	override boolean equals(Object other) {
+		if(other instanceof PRDG) nodes.equals(other.getNodes) && edges.equals(other.getEdges)
+		else false
+	}
+	
+	override int hashCode() {nodes.hashCode() + 37 * edges.hashCode()}
 }

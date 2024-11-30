@@ -39,7 +39,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	
 	override void inAlphaSystem(AlphaSystem system) {
 		var variables = system.variables
-		prdg.addNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy)].toList)
+		prdg.setNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy)].toSet)
 	}
 
 	override void inStandardEquation(StandardEquation standardEquation) {		

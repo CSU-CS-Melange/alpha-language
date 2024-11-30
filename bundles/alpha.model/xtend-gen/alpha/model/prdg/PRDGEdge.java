@@ -21,11 +21,11 @@ public class PRDGEdge {
   }
 
   public ISLMultiAff getFunction() {
-    return this.function;
+    return this.function.copy();
   }
 
   public ISLSet getDomain() {
-    return this.domain;
+    return this.domain.copy();
   }
 
   public PRDGNode getSource() {
@@ -34,6 +34,10 @@ public class PRDGEdge {
 
   public PRDGNode getDest() {
     return this.dest;
+  }
+
+  public boolean isReductionEdge() {
+    return (this.dest.isReductionNode() && this.source.isReductionNode());
   }
 
   @Override
@@ -48,5 +52,23 @@ public class PRDGEdge {
     String _plus_4 = (_plus_3 + "@");
     String _string_1 = this.domain.toString();
     return (_plus_4 + _string_1);
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    boolean _xifexpression = false;
+    if ((other instanceof PRDGEdge)) {
+      _xifexpression = ((this.source.equals(((PRDGEdge)other).getSource()) && this.dest.equals(((PRDGEdge)other).getDest())) && this.domain.isPlainEqual(((PRDGEdge)other).getDomain()));
+    } else {
+      _xifexpression = false;
+    }
+    return _xifexpression;
+  }
+
+  @Override
+  public int hashCode() {
+    String _name = this.source.getName();
+    String _name_1 = this.dest.getName();
+    return (_name + _name_1).hashCode();
   }
 }

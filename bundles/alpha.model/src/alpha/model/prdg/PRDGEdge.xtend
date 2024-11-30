@@ -18,11 +18,11 @@ class PRDGEdge {
 	}
 	
 	def ISLMultiAff getFunction() {
-		this.function
+		this.function.copy
 	}
 	
 	def ISLSet getDomain() {
-		this.domain
+		this.domain.copy
 	}
 	
 	def PRDGNode getSource() {
@@ -33,7 +33,17 @@ class PRDGEdge {
 		this.dest
 	}
 	
+	//Whether this edge is from the result of a reduction to its body
+	def boolean isReductionEdge() {this.dest.isReductionNode && this.source.isReductionNode}
+	
 	override String toString() {
 		this.source.getName + " -> " + this.dest.getName + ": " + this.function.toString + "@" + this.domain.toString()
 	}
+	
+	override boolean equals(Object other) { 
+		if(other instanceof PRDGEdge) source.equals(other.getSource) && dest.equals(other.getDest) && domain.isPlainEqual(other.getDomain)
+		else false
+	}
+	
+	override int hashCode() {(source.getName + dest.getName).hashCode}
 }

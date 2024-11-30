@@ -21,6 +21,11 @@ class PRDGNode {
 	
 	def String getName() { name }
 	override String toString() { name + ", " + domain.toString() } 
-	def ISLSet getDomain() { domain }
+	def ISLSet getDomain() { domain.copy }
 	def boolean isReductionNode() { reductionNode }
+	override boolean equals(Object other) { 
+		if(other instanceof PRDGNode) name.equals(other.getName)
+		else false
+	}
+	override int hashCode() {name.hashCode()}
 }

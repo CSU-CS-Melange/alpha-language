@@ -33,10 +33,26 @@ public class PRDGNode {
   }
 
   public ISLSet getDomain() {
-    return this.domain;
+    return this.domain.copy();
   }
 
   public boolean isReductionNode() {
     return this.reductionNode;
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    boolean _xifexpression = false;
+    if ((other instanceof PRDGNode)) {
+      _xifexpression = this.name.equals(((PRDGNode)other).getName());
+    } else {
+      _xifexpression = false;
+    }
+    return _xifexpression;
+  }
+
+  @Override
+  public int hashCode() {
+    return this.name.hashCode();
   }
 }
