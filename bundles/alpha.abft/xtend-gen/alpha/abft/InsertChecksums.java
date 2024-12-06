@@ -396,6 +396,7 @@ public class InsertChecksums {
 
   public static void main(final String[] args) {
     try {
+      InsertChecksums.test();
       final String in_dir = "resources/blas/";
       final String out_dir = "resources/auto/";
       final List<String> mm_names = Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("matmult", "matrixmult", "mat_mult", "matrix_mult", "matrix_multiplication"));

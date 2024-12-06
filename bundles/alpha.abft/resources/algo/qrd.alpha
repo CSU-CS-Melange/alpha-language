@@ -1,0 +1,42 @@
+//external sqrt(1)
+
+/*
+ * Algorithm:
+ * 
+ *	for (j = 0; j < dimensionSize; j++) {
+ * 		float sum = 0;
+ *  	for (k = 0; k < j; k++) {
+ *      	sum += L[j][k] * L[j][k];
+ *		}
+ * 		L[j][j] = sqrt(A[j][j] - sum);
+ *
+ *		for (i = j + 1; i < dimensionSize; i++) {
+ *      	sum = 0;
+ *      	for (k = 0; k < j; k++) {
+ *          	sum += L[i][k] * L[j][k];
+ * 			}
+ *       	L[i][j] = (1.0 / L[j][j] * (A[i][j] - sum));
+ *		}
+ *	}
+ * 
+ * 
+ */
+
+affine qrd_gram_schmidt [N] -> {: N>0}
+ inputs
+ 	A 	: {[i,j]: 0 <=i,j<N}
+ outputs
+ 	Q 	: {[i,j]: 0 <=i,j<N}
+ 	R	: {[i,j]: 0<=i<=j<N}
+ locals
+ 	x 	: {}
+ 	
+ let
+ 	Q[i,j] = A[i,j];
+ 	
+ 	R[i,j] = Q[j,i];
+ 	
+ 
+ 	x = 4;
+ 	
+.

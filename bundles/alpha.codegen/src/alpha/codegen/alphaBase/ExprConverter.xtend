@@ -217,9 +217,14 @@ class ExprConverter {
 	/** Multi-arg expressions are converted into a tree of nested binary expressions. */
 	def dispatch Expression convertExpr(MultiArgExpression expr) {
 		// If operator is an external function, return as is.
-		if(expr.operator == REDUCTION_OP.EX){
-			return Factory.customExpr(expr.toString.split('\\s+').get(0))
-		}
+//		if(expr.operator == REDUCTION_OP.EX){
+//			var x = expr.toString
+//			var func = x.split('\\(').get(0)
+//			var value = x.split('\\(').get(1).split('\\)').get(0)
+////			println(func)
+////			println(value)
+//			return Factory.customExpr(func + '(' + value + ')')
+//		}
 		
 		val op = AlphaBaseHelpers.getOperator(expr.operator)
 		val children = expr.exprs.map[convertExpr]
