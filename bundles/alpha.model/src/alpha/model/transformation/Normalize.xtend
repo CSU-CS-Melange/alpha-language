@@ -36,8 +36,11 @@ import static alpha.model.factory.AlphaUserFactory.createJNIDomain
 import static alpha.model.factory.AlphaUserFactory.createJNIFunction
 import static alpha.model.factory.AlphaUserFactory.createRestrictExpression
 import static alpha.model.factory.AlphaUserFactory.createUnaryExpression
+import static alpha.model.factory.AlphaUserFactory.createVariableExpression
 
 import static extension alpha.model.util.ISLUtil.isNoneToNone
+import alpha.model.VariableExpression
+import alpha.model.util.ISLUtil
 
 /**
  * Normalization of Alpha programs.
@@ -45,6 +48,7 @@ import static extension alpha.model.util.ISLUtil.isNoneToNone
  * Each StandardEquation in an Alpha program should satisfy the following in its normal form:
  *   - the parent of CaseExpression should be StandardEquation or ReduceExpression
  *   - the parent of RestrictExpression should be StandarEquation, ReduceExpression, or CaseExpression
+ *   - the parent of VariableExpression should be DependenceExpression
  *   - the child of DependenceExpression should be VariableExpression or ConstantExpression
  *  
  * The same applies to each input expression in an UseEquation.
@@ -86,7 +90,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 
 	/*
 	 *  Rules collected from AlphaZ implementation using Tom/Gom
-	 *  Removal of identity functions and empty case branches were
+	 *  Removal/creation of identity functions and empty case branches were
 	 *  implemented separately.
 	 * 
 	 *  debug("rule1", "dep@(A op B) -> dep@A op dep@B", "");
@@ -132,6 +136,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 	 *  - remove restrict expression when it is redundant (expression domain is unchanged by the restrict)
 	 *  - remove branches of case expressions that have empty context domain
 	 *  - replaces case with its child if it only has a branch
+	 *  - inserts identity dependence expression where implied
 	 */
 
 	final boolean DEEP;
@@ -205,6 +210,9 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		// This is caused because the "isIdentity" function tries to build an identity function
 		// from the dependence function's space, but can't do so if there are no inputs or outputs.
 		if (de.function.isNoneToNone || de.function.isIdentity) {
+			// VariableExpressions must have a DependenceExpression parent
+			if (de.expr instanceof VariableExpression) return;
+			
 			debug("identity", "f @ E = E if f = I");
 			EcoreUtil.replace(de, de.expr);
 		}
@@ -803,5 +811,23 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 	}
 	private def dispatch wrapExpression(UnaryExpression wrapper, AlphaExpression expr) {
 		return createUnaryExpression(wrapper.operator, expr)
+	}
+	
+	override outVariableExpression(VariableExpression ve) {
+		// Every VariableExpression must have a DependenceExpression as a parent
+		if(!(ve.eContainer instanceof DependenceExpression)) {
+			debug("implicit DepExpr", "V -> I @ V")
+			val identityMaff = ISLUtil.toMultiAff(ve.getVariable.getDomain.copy.toIdentityMap)
+			
+			var newVe = createVariableExpression(ve.getVariable)
+			newVe.setContextDomain(ve.getContextDomain.copy)
+			newVe.setExpressionDomain(ve.getExpressionDomain.copy)
+			
+			var de = createDependenceExpression(identityMaff, newVe)
+			de.setContextDomain(ve.getContextDomain.copy)
+			de.setExpressionDomain(ve.getExpressionDomain.copy)
+			
+			EcoreUtil.replace(ve, de)
+		}
 	}
 }

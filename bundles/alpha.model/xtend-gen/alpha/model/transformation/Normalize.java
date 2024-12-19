@@ -18,6 +18,7 @@ import alpha.model.ModelPackage;
 import alpha.model.MultiArgExpression;
 import alpha.model.RestrictExpression;
 import alpha.model.UnaryExpression;
+import alpha.model.VariableExpression;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.issue.AlphaIssue;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
@@ -51,6 +52,7 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
  * Each StandardEquation in an Alpha program should satisfy the following in its normal form:
  *   - the parent of CaseExpression should be StandardEquation or ReduceExpression
  *   - the parent of RestrictExpression should be StandarEquation, ReduceExpression, or CaseExpression
+ *   - the parent of VariableExpression should be DependenceExpression
  *   - the child of DependenceExpression should be VariableExpression or ConstantExpression
  * 
  * The same applies to each input expression in an UseEquation.
@@ -91,7 +93,7 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
 public class Normalize extends AbstractAlphaCompleteVisitor {
   /**
    * Rules collected from AlphaZ implementation using Tom/Gom
-   *  Removal of identity functions and empty case branches were
+   *  Removal/creation of identity functions and empty case branches were
    *  implemented separately.
    * 
    *  debug("rule1", "dep@(A op B) -> dep@A op dep@B", "");
@@ -137,6 +139,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
    *  - remove restrict expression when it is redundant (expression domain is unchanged by the restrict)
    *  - remove branches of case expressions that have empty context domain
    *  - replaces case with its child if it only has a branch
+   *  - inserts identity dependence expression where implied
    */
   private final boolean DEEP;
 
@@ -225,6 +228,10 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     }
     this.dependenceExpressionRules(de, de.getExpr());
     if ((ISLUtil.isNoneToNone(de.getFunction()) || de.getFunction().isIdentity())) {
+      AlphaExpression _expr = de.getExpr();
+      if ((_expr instanceof VariableExpression)) {
+        return;
+      }
       this.debug("identity", "f @ E = E if f = I");
       EcoreUtil.replace(de, de.getExpr());
     }
@@ -897,6 +904,23 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
 
   private AlphaExpression _wrapExpression(final UnaryExpression wrapper, final AlphaExpression expr) {
     return AlphaUserFactory.createUnaryExpression(wrapper.getOperator(), expr);
+  }
+
+  @Override
+  public void outVariableExpression(final VariableExpression ve) {
+    EObject _eContainer = ve.eContainer();
+    boolean _not = (!(_eContainer instanceof DependenceExpression));
+    if (_not) {
+      this.debug("implicit DepExpr", "V -> I @ V");
+      final ISLMultiAff identityMaff = ISLUtil.toMultiAff(ve.getVariable().getDomain().copy().toIdentityMap());
+      VariableExpression newVe = AlphaUserFactory.createVariableExpression(ve.getVariable());
+      newVe.setContextDomain(ve.getContextDomain().copy());
+      newVe.setExpressionDomain(ve.getExpressionDomain().copy());
+      DependenceExpression de = AlphaUserFactory.createDependenceExpression(identityMaff, newVe);
+      de.setContextDomain(ve.getContextDomain().copy());
+      de.setExpressionDomain(ve.getExpressionDomain().copy());
+      EcoreUtil.replace(ve, de);
+    }
   }
 
   private void reapply(final AlphaCompleteVisitable aev) {
