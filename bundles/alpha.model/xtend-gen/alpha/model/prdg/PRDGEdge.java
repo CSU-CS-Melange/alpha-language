@@ -58,7 +58,7 @@ public class PRDGEdge {
   public boolean equals(final Object other) {
     boolean _xifexpression = false;
     if ((other instanceof PRDGEdge)) {
-      _xifexpression = ((this.source.equals(((PRDGEdge)other).getSource()) && this.dest.equals(((PRDGEdge)other).getDest())) && this.domain.isPlainEqual(((PRDGEdge)other).getDomain()));
+      return (((this.source.equals(((PRDGEdge)other).getSource()) && this.dest.equals(((PRDGEdge)other).getDest())) && this.domain.isPlainEqual(((PRDGEdge)other).getDomain())) && this.function.isPlainEqual(((PRDGEdge)other).function));
     } else {
       _xifexpression = false;
     }
