@@ -8,7 +8,6 @@ class PRDGEdge {
 	PRDGNode dest
 	ISLSet domain
 	ISLMultiAff function
-//	JNIFunction function
 	
 	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMultiAff func) {
 		this.source = source
@@ -41,7 +40,11 @@ class PRDGEdge {
 	}
 	
 	override boolean equals(Object other) { 
-		if(other instanceof PRDGEdge) source.equals(other.getSource) && dest.equals(other.getDest) && domain.isPlainEqual(other.getDomain)
+		if(other instanceof PRDGEdge) 
+			return source.equals(other.getSource) 
+				&& dest.equals(other.getDest) 
+				&& domain.isPlainEqual(other.getDomain)
+				&& function.isPlainEqual(other.function)
 		else false
 	}
 	
