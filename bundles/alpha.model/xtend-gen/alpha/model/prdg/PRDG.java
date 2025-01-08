@@ -8,6 +8,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -45,21 +46,21 @@ public class PRDG {
     return this.edges;
   }
 
-  public Iterable<String> show() {
-    Iterable<String> _xblockexpression = null;
-    {
-      InputOutput.<String>println("Nodes: ");
-      final Function1<PRDGNode, String> _function = (PRDGNode node) -> {
-        return node.toString();
-      };
-      InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGNode, String>map(this.nodes, _function));
-      InputOutput.<String>println("Edges: ");
-      final Function1<PRDGEdge, String> _function_1 = (PRDGEdge edge) -> {
-        return edge.toString();
-      };
-      _xblockexpression = InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGEdge, String>map(this.edges, _function_1));
-    }
-    return _xblockexpression;
+  public void show() {
+    InputOutput.<String>println("Nodes: ");
+    final Consumer<PRDGNode> _function = (PRDGNode node) -> {
+      String _string = node.toString();
+      String _plus = ("\t" + _string);
+      InputOutput.<String>println(_plus);
+    };
+    this.nodes.forEach(_function);
+    InputOutput.<String>println("Edges: ");
+    final Consumer<PRDGEdge> _function_1 = (PRDGEdge edge) -> {
+      String _string = edge.toString();
+      String _plus = ("\t" + _string);
+      InputOutput.<String>println(_plus);
+    };
+    this.edges.forEach(_function_1);
   }
 
   public boolean addNode(final PRDGNode node) {

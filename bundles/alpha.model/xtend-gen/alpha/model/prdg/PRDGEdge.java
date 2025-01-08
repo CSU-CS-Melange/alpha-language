@@ -49,22 +49,13 @@ public class PRDGEdge {
 
   @Override
   public String toString() {
-    String _xblockexpression = null;
-    {
-      String _name = this.source.getName();
-      String _plus = (_name + " -> ");
-      String _name_1 = this.dest.getName();
-      String _plus_1 = (_plus + _name_1);
-      String _plus_2 = (_plus_1 + ": ");
-      String _string = this.map.toString();
-      String _plus_3 = (_plus_2 + _string);
-      String _plus_4 = (_plus_3 + "@");
-      String _string_1 = this.getDomain().toString();
-      /* (_plus_4 + _string_1); */
-      String _string_2 = this.getRange().toString();
-      _xblockexpression = ("; " + _string_2);
-    }
-    return _xblockexpression;
+    String _name = this.source.getName();
+    String _plus = (_name + " -> ");
+    String _name_1 = this.dest.getName();
+    String _plus_1 = (_plus + _name_1);
+    String _plus_2 = (_plus_1 + ": ");
+    String _string = this.map.toString();
+    return (_plus_2 + _string);
   }
 
   @Override

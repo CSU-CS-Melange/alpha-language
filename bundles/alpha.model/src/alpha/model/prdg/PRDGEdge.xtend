@@ -45,7 +45,7 @@ class PRDGEdge {
 	def boolean isReductionEdge() {this.dest.isReductionNode && this.source.isReductionNode}
 	
 	override String toString() {
-		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString + "@" + this.domain.toString() "; " + this.range.toString 
+		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString
 	}
 	
 	override boolean equals(Object other) { 
