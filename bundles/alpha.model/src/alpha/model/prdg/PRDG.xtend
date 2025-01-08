@@ -33,9 +33,9 @@ class PRDG {
 	
 	def show() {
 		println("Nodes: ")
-		println(nodes.map[ node | node.toString() ])
+		nodes.forEach[ node | println("\t" + node.toString()) ]
 		println("Edges: ")
-		println(edges.map[ edge | edge.toString() ])
+		edges.forEach[ edge | println("\t" + edge.toString()) ]
 	}
 	
 	def addNode(PRDGNode node) {
