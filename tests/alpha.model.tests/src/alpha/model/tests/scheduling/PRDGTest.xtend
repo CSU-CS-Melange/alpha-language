@@ -51,7 +51,7 @@ class PRDGTest {
 	def void assertEdgeRangesInVariables() {
 		for(Variable variable : sys.getVariables) {
 			val Iterable<PRDGEdge> incoming = prdg.getEdges.filter[edge | edge.getDest.getName == variable.getName]
-			val Iterable<ISLSet> incomingDoms = incoming.map[edge | edge.getDomain.apply(edge.getFunction.toMap)]
+			val Iterable<ISLSet> incomingDoms = incoming.map[edge | edge.getDomain.apply(edge.getMap)]
 			
 			assertEdgeDomsInVariable(incomingDoms, variable)
 		}
@@ -74,8 +74,8 @@ class PRDGTest {
 				val int nSourceIdxs = sourceVar.getDomain.dim(ISLDimType.isl_dim_all) - nSourceParams
 				val int nEdgeDomParams = edge.getDomain.dim(ISLDimType.isl_dim_param)
 				val int nEdgeDomIdxs = edge.getDomain.dim(ISLDimType.isl_dim_all) - nEdgeDomParams
-				val int nEdgeFunParams = edge.getFunction.dim(ISLDimType.isl_dim_param)
-				val int nEdgeFunIn = edge.getFunction.dim(ISLDimType.isl_dim_in)
+				val int nEdgeFunParams = edge.getMap.dim(ISLDimType.isl_dim_param)
+				val int nEdgeFunIn = edge.getMap.dim(ISLDimType.isl_dim_in)
 				
 				assertEquals(nSourceParams, nEdgeDomParams) 
 				assertEquals(nSourceIdxs, nEdgeDomIdxs) 
@@ -85,8 +85,8 @@ class PRDGTest {
 			if(destVar !== null) {
 				val int nDestParams = destVar.getDomain.dim(ISLDimType.isl_dim_param)
 				val int nDestIdxs = destVar.getDomain.dim(ISLDimType.isl_dim_all) - nDestParams
-				val int nEdgeFunParams = edge.getFunction.dim(ISLDimType.isl_dim_param)
-				val int nEdgeFunOut = edge.getFunction.dim(ISLDimType.isl_dim_out)
+				val int nEdgeFunParams = edge.getMap.dim(ISLDimType.isl_dim_param)
+				val int nEdgeFunOut = edge.getMap.dim(ISLDimType.isl_dim_out)
 				
 				assertEquals(nDestParams, nEdgeFunParams)
 				assertEquals(nDestIdxs, nEdgeFunOut)

@@ -89,9 +89,9 @@ class PRDG {
 		
 		this.islPRDG = ISLMap.buildEmpty(ISLSpace.copySpaceParamsForMap(domains.getSpace.copy)).toUnionMap
 		for (PRDGEdge edge : this.getEdges) {
-			var map1 = edge.function.copy
-			var set = edge.domain.copy
-			var map2 = map1.copy.toMap.simplify.intersectDomain(set.copy)			
+			var map1 = edge.getMap
+			var set = edge.getDomain
+			var map2 = map1.simplify.intersectDomain(set.copy)			
 			if (map2 === null) {
 				System.out.println("map1 = " + map1)
 				System.out.println("set = " + set)

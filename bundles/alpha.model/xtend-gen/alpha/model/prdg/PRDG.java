@@ -2,7 +2,6 @@ package alpha.model.prdg;
 
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
@@ -129,9 +128,9 @@ public class PRDG {
       Set<PRDGEdge> _edges = this.getEdges();
       for (final PRDGEdge edge : _edges) {
         {
-          ISLMultiAff map1 = edge.getFunction().copy();
-          ISLSet set = edge.getDomain().copy();
-          ISLMap map2 = map1.copy().toMap().simplify().intersectDomain(set.copy());
+          ISLMap map1 = edge.getMap();
+          ISLSet set = edge.getDomain();
+          ISLMap map2 = map1.simplify().intersectDomain(set.copy());
           if ((map2 == null)) {
             System.out.println(("map1 = " + map1));
             System.out.println(("set = " + set));
