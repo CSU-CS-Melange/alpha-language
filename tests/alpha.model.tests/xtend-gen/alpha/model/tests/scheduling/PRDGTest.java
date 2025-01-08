@@ -84,7 +84,7 @@ public class PRDGTest {
         };
         final Iterable<PRDGEdge> incoming = IterableExtensions.<PRDGEdge>filter(this.prdg.getEdges(), _function);
         final Function1<PRDGEdge, ISLSet> _function_1 = (PRDGEdge edge) -> {
-          return edge.getDomain().apply(edge.getFunction().toMap());
+          return edge.getDomain().apply(edge.getMap());
         };
         final Iterable<ISLSet> incomingDoms = IterableExtensions.<PRDGEdge, ISLSet>map(incoming, _function_1);
         this.assertEdgeDomsInVariable(incomingDoms, variable);
@@ -110,8 +110,8 @@ public class PRDGTest {
           final int nEdgeDomParams = edge.getDomain().dim(ISLDimType.isl_dim_param);
           int _dim_1 = edge.getDomain().dim(ISLDimType.isl_dim_all);
           final int nEdgeDomIdxs = (_dim_1 - nEdgeDomParams);
-          final int nEdgeFunParams = edge.getFunction().dim(ISLDimType.isl_dim_param);
-          final int nEdgeFunIn = edge.getFunction().dim(ISLDimType.isl_dim_in);
+          final int nEdgeFunParams = edge.getMap().dim(ISLDimType.isl_dim_param);
+          final int nEdgeFunIn = edge.getMap().dim(ISLDimType.isl_dim_in);
           Assert.assertEquals(nSourceParams, nEdgeDomParams);
           Assert.assertEquals(nSourceIdxs, nEdgeDomIdxs);
           Assert.assertEquals(nSourceParams, nEdgeFunParams);
@@ -121,8 +121,8 @@ public class PRDGTest {
           final int nDestParams = destVar.getDomain().dim(ISLDimType.isl_dim_param);
           int _dim_2 = destVar.getDomain().dim(ISLDimType.isl_dim_all);
           final int nDestIdxs = (_dim_2 - nDestParams);
-          final int nEdgeFunParams_1 = edge.getFunction().dim(ISLDimType.isl_dim_param);
-          final int nEdgeFunOut = edge.getFunction().dim(ISLDimType.isl_dim_out);
+          final int nEdgeFunParams_1 = edge.getMap().dim(ISLDimType.isl_dim_param);
+          final int nEdgeFunOut = edge.getMap().dim(ISLDimType.isl_dim_out);
           Assert.assertEquals(nDestParams, nEdgeFunParams_1);
           Assert.assertEquals(nDestIdxs, nEdgeFunOut);
         }

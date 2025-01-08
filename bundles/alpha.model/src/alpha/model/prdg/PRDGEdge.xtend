@@ -2,22 +2,24 @@ package alpha.model.prdg
 
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLMap
 
 class PRDGEdge {
 	PRDGNode source
 	PRDGNode dest
 	ISLSet domain
-	ISLMultiAff function
+	ISLMap map
+//	JNIFunction function
 	
-	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMultiAff func) {
+	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMap map) {
 		this.source = source
 		this.dest = dest
 		this.domain = domain
-		this.function = func
+		this.map = map
 	}
 	
-	def ISLMultiAff getFunction() {
-		this.function.copy
+	def ISLMap getMap() {
+		this.map.copy
 	}
 	
 	def ISLSet getDomain() {
@@ -36,7 +38,7 @@ class PRDGEdge {
 	def boolean isReductionEdge() {this.dest.isReductionNode && this.source.isReductionNode}
 	
 	override String toString() {
-		this.source.getName + " -> " + this.dest.getName + ": " + this.function.toString + "@" + this.domain.toString()
+		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString + "@" + this.domain.toString()
 	}
 	
 	override boolean equals(Object other) { 
@@ -44,7 +46,7 @@ class PRDGEdge {
 			return source.equals(other.getSource) 
 				&& dest.equals(other.getDest) 
 				&& domain.isPlainEqual(other.getDomain)
-				&& function.isPlainEqual(other.function)
+				&& map.isPlainEqual(other.map)
 		else false
 	}
 	

@@ -67,8 +67,8 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	override void visitVariableExpression(VariableExpression ve) {
 		var target = new PRDGNode(ve.variable.name, ve.variable.domain)
 		val dom = !this.domains.empty() ? this.domains.peek.copy : ve.contextDomain.copy
-		val fun = this.functions.peek.copy
-		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, fun)
+		val map = this.functions.peek.copy.toMap
+		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, map)
 		prdg.addEdge(edge)
 		
 	}
@@ -84,7 +84,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		this.prdg.nodes.add(new PRDGNode(reductionName, reduceExpression.contextDomain.copy, true))
 		
 		//Dependence from use to the result
-		val useToRes = this.functions.peek.copy
+		val useToRes = this.functions.peek.copy.toMap
 
 		//When the parent is a dependence expression, the context domain of that dependence is what we want
 		//otherwise, assume identity dependence and use the context domain of the variable
@@ -95,7 +95,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
 
 		//Dependence from result to body
-		val ISLMultiAff resToBody = reduceExpression.projection.copy
+		val ISLMap resToBody = reduceExpression.projection.copy.toMap
 		
 		prdg.addEdge(new PRDGEdge(prdg.getNode(reductionName), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
 

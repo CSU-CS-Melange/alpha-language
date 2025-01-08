@@ -9,6 +9,7 @@ import alpha.model.VariableExpression;
 import alpha.model.transformation.Normalize;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.AlphaUtil;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Set;
@@ -110,10 +111,10 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
       _xifexpression = ve.getContextDomain().copy();
     }
     final ISLSet dom = _xifexpression;
-    final ISLMultiAff fun = this.functions.peek().copy();
+    final ISLMap map = this.functions.peek().copy().toMap();
     PRDGNode _peek = this.sources.peek();
     ISLSet _copy = dom.copy();
-    final PRDGEdge edge = new PRDGEdge(_peek, target, _copy, fun);
+    final PRDGEdge edge = new PRDGEdge(_peek, target, _copy, map);
     this.prdg.addEdge(edge);
   }
 
@@ -132,7 +133,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     ISLSet _copy = reduceExpression.getContextDomain().copy();
     PRDGNode _pRDGNode = new PRDGNode(reductionName, _copy, true);
     _nodes.add(_pRDGNode);
-    final ISLMultiAff useToRes = this.functions.peek().copy();
+    final ISLMap useToRes = this.functions.peek().copy().toMap();
     ISLSet _xifexpression = null;
     boolean _empty = this.domains.empty();
     boolean _not = (!_empty);
@@ -150,7 +151,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     ISLSet _copy_1 = reduceExpression.getBody().getContextDomain().copy();
     PRDGNode _pRDGNode_1 = new PRDGNode(bodyName, _copy_1, true);
     _nodes_1.add(_pRDGNode_1);
-    final ISLMultiAff resToBody = reduceExpression.getProjection().copy();
+    final ISLMap resToBody = reduceExpression.getProjection().copy().toMap();
     PRDGNode _node_1 = this.prdg.getNode(reductionName);
     PRDGNode _node_2 = this.prdg.getNode(bodyName);
     ISLSet _copy_2 = reduceExpression.getBody().getContextDomain().copy();
