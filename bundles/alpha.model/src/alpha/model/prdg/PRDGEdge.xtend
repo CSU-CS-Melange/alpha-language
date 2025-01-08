@@ -1,20 +1,23 @@
 package alpha.model.prdg
 
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLMap
 
 class PRDGEdge {
 	PRDGNode source
 	PRDGNode dest
-	ISLSet domain
 	ISLMap map
 //	JNIFunction function
 	
 	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMap map) {
 		this.source = source
 		this.dest = dest
-		this.domain = domain
+		this.map = map.copy.intersectDomain(domain.copy)
+	}
+	
+	new(PRDGNode source, PRDGNode dest, ISLMap map) {
+		this.source = source
+		this.dest = dest
 		this.map = map
 	}
 	
@@ -23,7 +26,11 @@ class PRDGEdge {
 	}
 	
 	def ISLSet getDomain() {
-		this.domain.copy
+		this.map.getDomain.copy
+	}
+	
+	def ISLSet getRange() {
+		this.map.getRange.copy
 	}
 	
 	def PRDGNode getSource() {
@@ -38,14 +45,13 @@ class PRDGEdge {
 	def boolean isReductionEdge() {this.dest.isReductionNode && this.source.isReductionNode}
 	
 	override String toString() {
-		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString + "@" + this.domain.toString()
+		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString + "@" + this.domain.toString() "; " + this.range.toString 
 	}
 	
 	override boolean equals(Object other) { 
 		if(other instanceof PRDGEdge) 
 			return source.equals(other.getSource) 
-				&& dest.equals(other.getDest) 
-				&& domain.isPlainEqual(other.getDomain)
+				&& dest.equals(other.getDest)
 				&& map.isPlainEqual(other.map)
 		else false
 	}

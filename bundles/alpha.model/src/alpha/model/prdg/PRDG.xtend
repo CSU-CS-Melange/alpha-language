@@ -1,7 +1,5 @@
 package alpha.model.prdg
 
-import java.util.List
-import java.util.LinkedList
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLDimType
@@ -89,23 +87,16 @@ class PRDG {
 		
 		this.islPRDG = ISLMap.buildEmpty(ISLSpace.copySpaceParamsForMap(domains.getSpace.copy)).toUnionMap
 		for (PRDGEdge edge : this.getEdges) {
-			var map1 = edge.getMap
-			var set = edge.getDomain
-			var map2 = map1.simplify.intersectDomain(set.copy)			
-			if (map2 === null) {
-				System.out.println("map1 = " + map1)
-				System.out.println("set = " + set)
-				throw new RuntimeException("Problem while intersecting domain")
-			}
+			var map = edge.getMap
 			
 			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
-				map2 = map2.reverse
-
+				map = map.reverse
 			}	
-			map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
-			map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
+
+			map = map.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
+			map = map.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
 					
-			this.islPRDG = islPRDG.union(map2.copy.toUnionMap)
+			this.islPRDG = islPRDG.union(map.copy.toUnionMap)
 		}		
 		
 		this.islPRDG

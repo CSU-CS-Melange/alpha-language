@@ -128,20 +128,13 @@ public class PRDG {
       Set<PRDGEdge> _edges = this.getEdges();
       for (final PRDGEdge edge : _edges) {
         {
-          ISLMap map1 = edge.getMap();
-          ISLSet set = edge.getDomain();
-          ISLMap map2 = map1.simplify().intersectDomain(set.copy());
-          if ((map2 == null)) {
-            System.out.println(("map1 = " + map1));
-            System.out.println(("set = " + set));
-            throw new RuntimeException("Problem while intersecting domain");
-          }
+          ISLMap map = edge.getMap();
           if ((edge.getSource().isReductionNode() && edge.getDest().isReductionNode())) {
-            map2 = map2.reverse();
+            map = map.reverse();
           }
-          map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
-          map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.getSource().getName());
-          this.islPRDG = this.islPRDG.union(map2.copy().toUnionMap());
+          map = map.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
+          map = map.setTupleName(ISLDimType.isl_dim_in, edge.getSource().getName());
+          this.islPRDG = this.islPRDG.union(map.copy().toUnionMap());
         }
       }
       _xblockexpression = this.islPRDG;
