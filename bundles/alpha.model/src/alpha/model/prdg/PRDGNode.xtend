@@ -1,6 +1,8 @@
 package alpha.model.prdg
 
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace
 
 class PRDGNode {
 	String name
@@ -22,6 +24,8 @@ class PRDGNode {
 	def String getName() { name }
 	override String toString() { name + ", " + domain.toString() } 
 	def ISLSet getDomain() { domain.copy }
+	def ISLSpace getSpace() { getDomain.getSpace.copy }
+	def ISLLocalSpace getLocalSpace() { getSpace.copy.toLocalSpace }
 	def boolean isReductionNode() { reductionNode }
 	override boolean equals(Object other) { 
 		if(other instanceof PRDGNode) name.equals(other.getName)

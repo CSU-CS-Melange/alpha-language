@@ -1,6 +1,8 @@
 package alpha.model.prdg;
 
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
 
 @SuppressWarnings("all")
 public class PRDGNode {
@@ -34,6 +36,14 @@ public class PRDGNode {
 
   public ISLSet getDomain() {
     return this.domain.copy();
+  }
+
+  public ISLSpace getSpace() {
+    return this.getDomain().getSpace().copy();
+  }
+
+  public ISLLocalSpace getLocalSpace() {
+    return this.getSpace().copy().toLocalSpace();
   }
 
   public boolean isReductionNode() {
