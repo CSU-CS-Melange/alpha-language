@@ -130,9 +130,6 @@ public class PRDG {
       for (final PRDGEdge edge : _edges) {
         {
           ISLMap map = edge.getMap();
-          if ((edge.getSource().isReductionNode() && edge.getDest().isReductionNode())) {
-            map = map.reverse();
-          }
           map = map.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
           map = map.setTupleName(ISLDimType.isl_dim_in, edge.getSource().getName());
           this.islPRDG = this.islPRDG.union(map.copy().toUnionMap());

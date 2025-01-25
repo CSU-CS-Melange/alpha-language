@@ -42,7 +42,7 @@ class PRDGEdge {
 	}
 	
 	//Whether this edge is from the result of a reduction to its body
-	def boolean isReductionEdge() {this.dest.isReductionNode && this.source.isReductionNode}
+	def boolean isReductionEdge() {this.dest.isReductionNode}
 	
 	override String toString() {
 		this.source.getName + " -> " + this.dest.getName + ": " + this.map.toString
