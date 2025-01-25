@@ -44,7 +44,7 @@ public class PRDGEdge {
   }
 
   public boolean isReductionEdge() {
-    return (this.dest.isReductionNode() && this.source.isReductionNode());
+    return this.dest.isReductionNode();
   }
 
   @Override

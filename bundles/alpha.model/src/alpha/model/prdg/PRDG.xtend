@@ -89,10 +89,6 @@ class PRDG {
 		for (PRDGEdge edge : this.getEdges) {
 			var map = edge.getMap
 			
-			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
-				map = map.reverse
-			}	
-
 			map = map.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
 			map = map.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
 					

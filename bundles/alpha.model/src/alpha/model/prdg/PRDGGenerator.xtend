@@ -75,13 +75,8 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	
 	override void inReduceExpression(ReduceExpression reduceExpression) {
 
-		//Names for the new reduction nodes
-		var reductionName = this.sources.peek.name + "_reduce" + this.numberReductions + "_result"
-		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions + "_body"
+		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions
 		this.numberReductions++
-		
-		
-		this.prdg.nodes.add(new PRDGNode(reductionName, reduceExpression.contextDomain.copy, true))
 		
 		//Dependence from use to the result
 		val useToRes = this.functions.peek.copy.toMap
@@ -89,15 +84,17 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		//When the parent is a dependence expression, the context domain of that dependence is what we want
 		//otherwise, assume identity dependence and use the context domain of the variable
 		val dom = !this.domains.empty() ? this.domains.peek.copy : reduceExpression.contextDomain.copy
-		this.prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(reductionName), dom, useToRes))
 		
 		//Node for body
 		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
 
 		//Dependence from result to body
-		val ISLMap resToBody = reduceExpression.projection.copy.toMap
+		//We skip the 'result' node because it is functionally useless
+		val ISLMap resToBody = reduceExpression.projection.copy.toMap.reverse
+			.intersectRange(reduceExpression.body.contextDomain.copy)
+		val useToBody = useToRes.applyRange(resToBody).intersectDomain(dom)
 		
-		prdg.addEdge(new PRDGEdge(prdg.getNode(reductionName), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
+		prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(bodyName), useToBody))
 
 		//Inside the reduction, dependence is from the body
 		this.sources.push(this.prdg.getNode(bodyName))
