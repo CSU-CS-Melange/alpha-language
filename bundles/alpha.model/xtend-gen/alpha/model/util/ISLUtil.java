@@ -2,6 +2,7 @@ package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLAffList;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -306,6 +307,28 @@ public class ISLUtil {
   }
 
   /**
+   * Generates a union set out of a list of ISLSets
+   * The method in ISLUnionSet is bugged
+   */
+  public static ISLUnionSet convertToUnionSet(final List<ISLSet> sets) {
+    ISLUnionSet _xblockexpression = null;
+    {
+      ISLUnionSet unionSet = null;
+      for (final ISLSet set : sets) {
+        ISLUnionSet _xifexpression = null;
+        if ((unionSet == null)) {
+          _xifexpression = set.toUnionSet();
+        } else {
+          _xifexpression = unionSet.addSet(set);
+        }
+        unionSet = _xifexpression;
+      }
+      _xblockexpression = unionSet;
+    }
+    return _xblockexpression;
+  }
+
+  /**
    * Generates a union map out of a list of ISLMaps
    */
   public static ISLUnionMap convertToUnionMap(final List<ISLMap> maps) {
@@ -338,5 +361,42 @@ public class ISLUtil {
       _xblockexpression = piece.getMaff();
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Generates a MultiAff out of a list of ISLAffs
+   */
+  public static ISLMultiAff convertToMultiAff(final List<ISLAff> affs) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      ISLAffList affList = ISLAffList.build(ISLContext.getInstance(), 0);
+      ISLSpace _copy = affs.get(0).getSpace().copy();
+      int _size = affs.size();
+      int _minus = (_size - 1);
+      ISLSpace space = _copy.addDims(
+        ISLDimType.isl_dim_out, _minus);
+      for (final ISLAff aff : affs) {
+        affList = affList.add(aff);
+      }
+      _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
+    }
+    return _xblockexpression;
+  }
+
+  public static ISLSet buildLexEQSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    ISLSet set = null;
+    for (int i = 0; (i < aff1.getAffs().size()); i++) {
+      {
+        final ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        ISLSet _xifexpression = null;
+        if ((set == null)) {
+          _xifexpression = EQSet;
+        } else {
+          _xifexpression = set.intersect(EQSet);
+        }
+        set = _xifexpression;
+      }
+    }
+    return set;
   }
 }

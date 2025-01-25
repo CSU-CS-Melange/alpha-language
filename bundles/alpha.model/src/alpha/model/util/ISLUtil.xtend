@@ -19,6 +19,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
+import fr.irisa.cairn.jnimap.isl.ISLAffList
 
 class ISLUtil {
 	
@@ -223,6 +224,18 @@ class ISLUtil {
 	}
 	
 	/**
+	 * Generates a union set out of a list of ISLSets
+	 * The method in ISLUnionSet is bugged
+	 */
+	def static ISLUnionSet convertToUnionSet(List<ISLSet> sets) {
+		var ISLUnionSet unionSet
+		for(set : sets) {
+			unionSet = unionSet === null ? set.toUnionSet : unionSet.addSet(set)
+		}
+		unionSet
+	}
+	
+	/**
 	 * Generates a union map out of a list of ISLMaps
 	 */
 	def static ISLUnionMap convertToUnionMap(List<ISLMap> maps) {
@@ -242,8 +255,28 @@ class ISLUtil {
 		val piece = pma.getPiece(0)
 		piece.maff
 	}
-	 
-	 
-	 
-	 
+	
+	/**
+	 * Generates a MultiAff out of a list of ISLAffs 
+	 */
+	def static ISLMultiAff convertToMultiAff(List<ISLAff> affs) {
+		var ISLAffList affList = ISLAffList.build(ISLContext.getInstance, 0)
+		var space = affs.get(0).getSpace.copy.addDims(
+			ISLDimType.isl_dim_out,
+			affs.size()-1
+		)
+
+		for(aff : affs) {affList = affList.add(aff)}
+
+		ISLMultiAff.buildFromAffList(space, affList)
+	}
+	
+	def static ISLSet buildLexEQSet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		var ISLSet set
+		for(var i = 0; i < aff1.getAffs.size; i++) {
+			val ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs.get(i).copy, aff2.getAffs.get(i).copy)
+			set = set === null ? EQSet : set.intersect(EQSet)
+		}
+		return set
+	}
 }
