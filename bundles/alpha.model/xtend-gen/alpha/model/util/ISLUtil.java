@@ -8,18 +8,21 @@ import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLPoint;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -282,17 +285,6 @@ public class ISLUtil {
   }
 
   /**
-   * Returns the ISLBasicSet characterizing the null space of the multiAff
-   */
-  public static ISLSet nullSpace(final ISLMultiAff maff) {
-    final Function2<ISLBasicSet, ISLAff, ISLBasicSet> _function = (ISLBasicSet ret, ISLAff c) -> {
-      return ret.addConstraint(c.toEqualityConstraint());
-    };
-    return IterableExtensions.<ISLAff, ISLBasicSet>fold(maff.getAffs(), 
-      ISLBasicSet.buildUniverse(maff.getSpace().domain().copy()), _function).toSet();
-  }
-
-  /**
    * Returns true if the set is a lower dimensional polyhedron embedded in a higher
    * dimension space, or false otherwise
    */
@@ -304,6 +296,77 @@ public class ISLUtil {
       _xblockexpression = (_dimensionality < nbIndices);
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Returns the ISLBasicSet characterizing the null space of the multiAff
+   */
+  public static ISLSet nullSpace(final ISLMultiAff maff) {
+    final Function2<ISLBasicSet, ISLAff, ISLBasicSet> _function = (ISLBasicSet ret, ISLAff c) -> {
+      return ret.addConstraint(c.toEqualityConstraint());
+    };
+    return IterableExtensions.<ISLAff, ISLBasicSet>fold(maff.getAffs(), 
+      ISLBasicSet.buildUniverse(maff.getSpace().domain().copy()), _function).toSet();
+  }
+
+  /**
+   * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
+   * Basis vectors are given as ISLPoints
+   */
+  public static List<ISLPoint> getBasisVectors(final ISLSet set) {
+    ArrayList<ISLPoint> vectors = new ArrayList<ISLPoint>();
+    ISLSet workingSet = set.copy().affineHull().toSet();
+    final int dim = ISLUtil.dimensionality(workingSet);
+    for (int i = 0; (i < dim); i++) {
+      {
+        final ISLPoint basisVector = workingSet.copy().getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas().samplePoint();
+        vectors.add(basisVector);
+        workingSet = workingSet.intersect(ISLUtil.getOrthogonalPlane(basisVector.copy()));
+      }
+    }
+    return vectors;
+  }
+
+  /**
+   * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
+   * Vectors do not necessarily need to be linearly independent
+   * but should be zero in the parameters
+   */
+  public static ISLSet getSpan(final Iterable<ISLPoint> basisVectors) {
+    final Function1<ISLPoint, ISLSet> _function = (ISLPoint a) -> {
+      return a.toSet();
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet a, ISLSet b) -> {
+      return a.union(b);
+    };
+    final ISLSet basisSet = IterableExtensions.<ISLSet>reduce(IterableExtensions.<ISLPoint, ISLSet>map(basisVectors, _function), _function_1);
+    final ISLPoint zeroVector = ISLSet.buildUniverse(basisSet.getSpace().copy()).samplePoint();
+    return basisSet.union(zeroVector.toSet()).affineHull().toSet();
+  }
+
+  /**
+   * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
+   */
+  public static ISLSet getOrthogonalPlane(final ISLPoint vector) {
+    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
+    ISLAff projectAff = ISLAff.buildZero(localSpace.copy());
+    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
+      projectAff = projectAff.add(
+        ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, i).scale(
+          vector.getCoordinateVal(ISLDimType.isl_dim_out, i)));
+    }
+    final ISLConstraint constraint = projectAff.toEqualityConstraint();
+    return ISLSet.buildUniverse(vector.getSpace().copy()).addConstraint(constraint);
+  }
+
+  /**
+   * Returns a MultiAff that translates points along the given vector
+   */
+  public static ISLMultiAff buildTranslationMaff(final ISLPoint vector) {
+    return ISLUtil.toMultiAff(ISLMap.buildFromDomainAndRange(
+      ISLSet.buildUniverse(vector.getSpace().copy()), 
+      vector.copy().toSet())).add(
+      ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()));
   }
 
   /**
@@ -383,6 +446,9 @@ public class ISLUtil {
     return _xblockexpression;
   }
 
+  /**
+   * Builds the set of points where aff1 is lexicographically equal to aff2
+   */
   public static ISLSet buildLexEQSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
     ISLSet set = null;
     for (int i = 0; (i < aff1.getAffs().size()); i++) {
@@ -398,5 +464,54 @@ public class ISLUtil {
       }
     }
     return set;
+  }
+
+  public static ISLSet buildLexGTSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    ISLSet lexSet = null;
+    ISLSet set = null;
+    for (int i = 0; (i < aff1.getAffs().size()); i++) {
+      {
+        final ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        final ISLSet GTSet = ISLSet.buildGTSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        ISLSet _xifexpression = null;
+        if ((lexSet == null)) {
+          _xifexpression = GTSet;
+        } else {
+          _xifexpression = GTSet.intersect(lexSet.copy());
+        }
+        final ISLSet GESet = _xifexpression;
+        ISLSet _xifexpression_1 = null;
+        if ((set == null)) {
+          _xifexpression_1 = GESet;
+        } else {
+          _xifexpression_1 = set.union(GESet);
+        }
+        set = _xifexpression_1;
+        ISLSet _xifexpression_2 = null;
+        if ((lexSet == null)) {
+          _xifexpression_2 = EQSet;
+        } else {
+          _xifexpression_2 = lexSet.intersect(EQSet);
+        }
+        lexSet = _xifexpression_2;
+      }
+    }
+    return set.simplify();
+  }
+
+  public static ISLSet buildLexGESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexEQSet(aff1, aff2).union(ISLUtil.buildLexGTSet(aff1, aff2)).simplify();
+  }
+
+  public static ISLSet buildLexLTSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexGTSet(aff2, aff1);
+  }
+
+  public static ISLSet buildLexLESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexGESet(aff2, aff1);
+  }
+
+  public static ISLSet buildLexNESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexEQSet(aff1, aff2).complement().simplify();
   }
 }

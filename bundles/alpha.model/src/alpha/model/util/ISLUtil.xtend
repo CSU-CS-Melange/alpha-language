@@ -20,9 +20,15 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLAffList
+import java.util.Iterator
+import fr.irisa.cairn.jnimap.isl.ISLPoint
+import java.util.ArrayList
 
 class ISLUtil {
-	
+	/*************************************** 
+	 *	  String Instantiation Methods     * 
+	 ***************************************/
+	 
 	/** Creates an ISLBasicSet from a string */
 	def static toISLBasicSet(String descriptor) {
 		ISLBasicSet.buildFromString(ISLContext.instance, descriptor)
@@ -81,6 +87,11 @@ class ISLUtil {
 	def static toISLPWQPolynomial(String descriptor) {
 		ISLPWQPolynomial.buildFromString(ISLContext.instance, descriptor)
 	}
+	
+	
+	/*************************************** 
+	 *	     Linear Algebra Methods        * 
+	 ***************************************/
 	
 	/** Transposes an ISLMatrix */
 	def static transpose(ISLMatrix matrix) {
@@ -205,6 +216,15 @@ class ISLUtil {
 	}
 	
 	/**
+	 * Returns true if the set is a lower dimensional polyhedron embedded in a higher
+	 * dimension space, or false otherwise
+	 */
+	def static boolean isEmbedding(ISLSet set) {
+		val nbIndices = set.dim(ISLDimType.isl_dim_set)
+		set.dimensionality < nbIndices
+	}
+	
+	/**
 	 * Returns the ISLBasicSet characterizing the null space of the multiAff
 	 */
 	def static ISLSet nullSpace(ISLMultiAff maff) {
@@ -215,14 +235,67 @@ class ISLUtil {
 	}
 	
 	/**
-	 * Returns true if the set is a lower dimensional polyhedron embedded in a higher
-	 * dimension space, or false otherwise
+	 * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
+	 * Basis vectors are given as ISLPoints
 	 */
-	def static boolean isEmbedding(ISLSet set) {
-		val nbIndices = set.dim(ISLDimType.isl_dim_set)
-		set.dimensionality < nbIndices
+	def static List<ISLPoint> getBasisVectors(ISLSet set) {
+		var vectors = new ArrayList<ISLPoint>()
+		var ISLSet workingSet = set.copy.affineHull.toSet
+		val dim = workingSet.dimensionality
+		for(var i = 0; i < dim; i++) {
+			val ISLPoint basisVector = workingSet.copy.getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas.samplePoint
+			vectors += basisVector
+			workingSet = workingSet.intersect(basisVector.copy.getOrthogonalPlane)
+		}
+		return vectors
 	}
 	
+	/**
+	 * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
+	 * Vectors do not necessarily need to be linearly independent
+	 * but should be zero in the parameters
+	 */
+	def static ISLSet getSpan(Iterable<ISLPoint> basisVectors) {
+		val ISLSet basisSet = basisVectors.map[a | a.toSet].reduce[a, b | a.union(b)]
+		val zeroVector = ISLSet.buildUniverse(basisSet.getSpace.copy).samplePoint
+		return basisSet.union(zeroVector.toSet).affineHull.toSet
+	}
+	
+	/**
+	 * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
+	 */
+	def static ISLSet getOrthogonalPlane(ISLPoint vector) {
+		val localSpace = vector.getSpace.copy.toLocalSpace
+	 	var projectAff = ISLAff.buildZero(localSpace.copy)
+	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
+	 		projectAff = projectAff.add(
+	 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, i).scale(
+	 				vector.getCoordinateVal(ISLDimType.isl_dim_out, i)
+	 			)
+	 		)
+	 	}
+	 	
+		val ISLConstraint constraint = projectAff.toEqualityConstraint
+	 	return ISLSet.buildUniverse(vector.getSpace.copy).addConstraint(constraint)
+	}
+	
+	/**
+	 * Returns a MultiAff that translates points along the given vector
+	 */
+	def static ISLMultiAff buildTranslationMaff(ISLPoint vector) {
+		ISLMap.buildFromDomainAndRange(
+			ISLSet.buildUniverse(vector.getSpace.copy),
+			vector.copy.toSet
+		).toMultiAff.add(
+			ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
+		)
+	}
+	
+	
+	/*************************************** 
+	 *	         Conversion Methods        * 
+	 ***************************************/
+	 
 	/**
 	 * Generates a union set out of a list of ISLSets
 	 * The method in ISLUnionSet is bugged
@@ -271,6 +344,14 @@ class ISLUtil {
 		ISLMultiAff.buildFromAffList(space, affList)
 	}
 	
+	
+	/*************************************** 
+	 *	  Lexical Equality Set Methods     * 
+	 ***************************************/
+	 
+	/*
+	 * Builds the set of points where aff1 is lexicographically equal to aff2
+	 */
 	def static ISLSet buildLexEQSet(ISLMultiAff aff1, ISLMultiAff aff2) {
 		var ISLSet set
 		for(var i = 0; i < aff1.getAffs.size; i++) {
@@ -278,5 +359,34 @@ class ISLUtil {
 			set = set === null ? EQSet : set.intersect(EQSet)
 		}
 		return set
+	}
+	
+	def static ISLSet buildLexGTSet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		var ISLSet lexSet
+		var ISLSet set
+		for(var i = 0; i < aff1.getAffs.size; i++) {
+			val ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs.get(i).copy, aff2.getAffs.get(i).copy)
+			val ISLSet GTSet = ISLSet.buildGTSet(aff1.getAffs.get(i).copy, aff2.getAffs.get(i).copy)
+			val ISLSet GESet = lexSet === null ? GTSet : GTSet.intersect(lexSet.copy)
+			set = set === null ? GESet : set.union(GESet)
+			lexSet = lexSet === null ? EQSet : lexSet.intersect(EQSet)
+		}
+		return set.simplify
+	}
+	
+	def static ISLSet buildLexGESet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		return ISLUtil.buildLexEQSet(aff1, aff2).union(ISLUtil.buildLexGTSet(aff1, aff2)).simplify
+	}
+	
+	def static ISLSet buildLexLTSet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		return ISLUtil.buildLexGTSet(aff2, aff1)
+	}
+	
+	def static ISLSet buildLexLESet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		return ISLUtil.buildLexGESet(aff2, aff1)
+	}
+	
+	def static ISLSet buildLexNESet(ISLMultiAff aff1, ISLMultiAff aff2) {
+		return ISLUtil.buildLexEQSet(aff1, aff2).complement.simplify
 	}
 }
