@@ -22,13 +22,20 @@ public class FoutrierScheduler implements Scheduler {
   }
 
   public ISLSchedule generateSchedule() {
-    ISLSchedule _xblockexpression = null;
-    {
-      ISLUnionSet domains = this.prdg.generateDomains();
-      ISLUnionMap islPRDG = this.prdg.generateISLPRDG();
-      _xblockexpression = this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, ISLSchedule.JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER);
+    ISLSchedule _xifexpression = null;
+    if ((this.schedule != null)) {
+      _xifexpression = this.schedule;
+    } else {
+      ISLSchedule _xblockexpression = null;
+      {
+        ISLUnionSet domains = this.prdg.generateDomains();
+        ISLUnionMap islPRDG = this.prdg.generateISLPRDG();
+        this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, ISLSchedule.JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER);
+        _xblockexpression = this.schedule;
+      }
+      _xifexpression = _xblockexpression;
     }
-    return _xblockexpression;
+    return _xifexpression;
   }
 
   @Override
