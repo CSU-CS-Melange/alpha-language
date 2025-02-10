@@ -120,7 +120,7 @@ class ScheduledExprConverter extends ExprConverter {
 		val accumulateMacro = createAccumulationMacro(accumulateMacroName, expr, reducePointMacro)
 		function.addStatement(reducePointMacro, accumulateMacro)
 		
-		val reduceBodyName = variableName + "_reduce" + reductionTargetNumber + "_body"
+		val reduceBodyName = variableName + "_reduce" + reductionTargetNumber
 				
 		this.reductionTargetNumber++
 		

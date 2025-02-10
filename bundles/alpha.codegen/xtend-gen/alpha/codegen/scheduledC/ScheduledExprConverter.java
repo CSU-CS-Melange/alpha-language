@@ -161,7 +161,7 @@ public class ScheduledExprConverter extends ExprConverter {
     final MacroStmt reducePointMacro = this.createReducePointMacro(reducePointMacroName, program, expr);
     final MacroStmt accumulateMacro = this.createAccumulationMacro(accumulateMacroName, expr, reducePointMacro);
     function.addStatement(reducePointMacro, accumulateMacro);
-    final String reduceBodyName = (((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber)) + "_body");
+    final String reduceBodyName = ((variableName + "_reduce") + Integer.valueOf(this.reductionTargetNumber));
     this.reductionTargetNumber++;
     ISLSet generatedDomain = this.createReduceLoopDomain(expr);
     generatedDomain = generatedDomain.setTupleName(reduceBodyName);
