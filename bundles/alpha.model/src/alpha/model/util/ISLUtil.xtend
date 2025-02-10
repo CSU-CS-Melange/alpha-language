@@ -1,24 +1,28 @@
 package alpha.model.util
 
 import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLAffList
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLContext
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMatrix
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLPoint
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLVal
+import java.util.ArrayList
+import java.util.List
 
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
-import java.util.List
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
 
 class ISLUtil {
 	
@@ -223,6 +227,104 @@ class ISLUtil {
 	}
 	
 	/**
+	 * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
+	 * Basis vectors are given as ISLPoints
+	 */
+	def static List<ISLPoint> getBasisVectors(ISLSet set) {
+		var vectors = new ArrayList<ISLPoint>()
+		var ISLSet workingSet = set.copy.affineHull.toSet
+		val dim = workingSet.dimensionality
+		for(var i = 0; i < dim; i++) {
+			val ISLPoint basisVector = workingSet.copy.getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas.samplePoint
+			vectors += basisVector
+			workingSet = workingSet.intersect(basisVector.copy.getOrthogonalPlane)
+		}
+		return vectors
+	}
+	
+	/**
+	 * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
+	 * Vectors do not necessarily need to be linearly independent
+	 * but should be zero in the parameters
+	 */
+	def static ISLSet getSpan(Iterable<ISLPoint> basisVectors) {
+		val ISLSet basisSet = basisVectors.map[a | a.toSet].reduce[a, b | a.union(b)]
+		val zeroVector = ISLSet.buildUniverse(basisSet.getSpace.copy).samplePoint
+		return basisSet.union(zeroVector.toSet).affineHull.toSet
+	}
+	
+	/**
+	 * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
+	 */
+	def static ISLSet getOrthogonalPlane(ISLPoint vector) {
+		val localSpace = vector.getSpace.copy.toLocalSpace
+	 	var projectAff = ISLAff.buildZero(localSpace.copy)
+	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
+	 		projectAff = projectAff.add(
+	 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, i).scale(
+	 				vector.getCoordinateVal(ISLDimType.isl_dim_out, i)
+	 			)
+	 		)
+	 	}
+	 	
+		val ISLConstraint constraint = projectAff.toEqualityConstraint
+	 	return ISLSet.buildUniverse(vector.getSpace.copy).addConstraint(constraint)
+	}
+	
+	/**
+	 * Builds a maff that computes the vector projection along a vector
+	 */
+	def static ISLMultiAff buildProjectionMaff(ISLPoint vector) {
+		val localSpace = vector.getSpace.copy.toLocalSpace
+		var rejectAffList = new ArrayList<ISLAff>
+	 	
+	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
+	 		var rejectAff = ISLAff.buildZero(localSpace.copy)
+	 		
+		 	for(var j = 0; j < localSpace.dim(ISLDimType.isl_dim_out); j++) {
+		 		rejectAff = rejectAff.add(
+		 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, j).scale(
+		 				vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy
+		 			)
+		 		)
+		 	}
+		 	
+		 	rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy)
+		 	rejectAffList += rejectAff
+	 	}
+	 	
+	 	return rejectAffList.convertToMultiAff
+	}
+	
+	/**
+	 * Builds a maff that computes the vector rejection along a vector
+	 * The vector rejection is the projection onto a plane orthogonal to the
+	 * given vector.
+	 */
+	def static ISLMultiAff buildRejectionMaff(ISLPoint vector) {
+		return ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
+			.sub(vector.buildProjectionMaff)
+	}
+	
+	/**
+	 * Returns a MultiAff that translates points along the given vector
+	 */
+	def static ISLMultiAff buildTranslationMaff(ISLPoint vector) {
+		ISLMap.buildFromDomainAndRange(
+			ISLSet.buildUniverse(vector.getSpace.copy),
+			vector.copy.toSet
+		).toMultiAff.add(
+			ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
+		)
+	}
+	
+	
+	/*************************************** 
+	 *	         Conversion Methods        * 
+	 ***************************************/
+	 
+	
+	/**
 	 * Generates a union map out of a list of ISLMaps
 	 */
 	def static ISLUnionMap convertToUnionMap(List<ISLMap> maps) {
@@ -242,8 +344,25 @@ class ISLUtil {
 		val piece = pma.getPiece(0)
 		piece.maff
 	}
-	 
-	 
+	
+	/**
+	 * Generates a MultiAff out of a list of ISLAffs 
+	 */
+	def static ISLMultiAff convertToMultiAff(List<ISLAff> affs) {
+		var ISLAffList affList = ISLAffList.build(ISLContext.getInstance, 0)
+		var space = affs.get(0).getSpace.copy.addDims(
+			ISLDimType.isl_dim_out,
+			affs.size()-1
+		)
+
+		for(aff : affs) {affList = affList.add(aff)}
+
+		ISLMultiAff.buildFromAffList(space, affList)
+	}
+	
+	/*************************************** 
+	 *	  Lexical Equality Set Methods     * 
+	 ***************************************/
 	 
 	 
 }

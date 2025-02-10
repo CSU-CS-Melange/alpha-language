@@ -2,23 +2,27 @@ package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLAffList;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLPoint;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -306,6 +310,96 @@ public class ISLUtil {
   }
 
   /**
+   * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
+   * Basis vectors are given as ISLPoints
+   */
+  public static List<ISLPoint> getBasisVectors(final ISLSet set) {
+    ArrayList<ISLPoint> vectors = new ArrayList<ISLPoint>();
+    ISLSet workingSet = set.copy().affineHull().toSet();
+    final int dim = ISLUtil.dimensionality(workingSet);
+    for (int i = 0; (i < dim); i++) {
+      {
+        final ISLPoint basisVector = workingSet.copy().getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas().samplePoint();
+        vectors.add(basisVector);
+        workingSet = workingSet.intersect(ISLUtil.getOrthogonalPlane(basisVector.copy()));
+      }
+    }
+    return vectors;
+  }
+
+  /**
+   * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
+   * Vectors do not necessarily need to be linearly independent
+   * but should be zero in the parameters
+   */
+  public static ISLSet getSpan(final Iterable<ISLPoint> basisVectors) {
+    final Function1<ISLPoint, ISLSet> _function = (ISLPoint a) -> {
+      return a.toSet();
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet a, ISLSet b) -> {
+      return a.union(b);
+    };
+    final ISLSet basisSet = IterableExtensions.<ISLSet>reduce(IterableExtensions.<ISLPoint, ISLSet>map(basisVectors, _function), _function_1);
+    final ISLPoint zeroVector = ISLSet.buildUniverse(basisSet.getSpace().copy()).samplePoint();
+    return basisSet.union(zeroVector.toSet()).affineHull().toSet();
+  }
+
+  /**
+   * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
+   */
+  public static ISLSet getOrthogonalPlane(final ISLPoint vector) {
+    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
+    ISLAff projectAff = ISLAff.buildZero(localSpace.copy());
+    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
+      projectAff = projectAff.add(
+        ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, i).scale(
+          vector.getCoordinateVal(ISLDimType.isl_dim_out, i)));
+    }
+    final ISLConstraint constraint = projectAff.toEqualityConstraint();
+    return ISLSet.buildUniverse(vector.getSpace().copy()).addConstraint(constraint);
+  }
+
+  /**
+   * Builds a maff that computes the vector projection along a vector
+   */
+  public static ISLMultiAff buildProjectionMaff(final ISLPoint vector) {
+    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
+    ArrayList<ISLAff> rejectAffList = new ArrayList<ISLAff>();
+    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
+      {
+        ISLAff rejectAff = ISLAff.buildZero(localSpace.copy());
+        for (int j = 0; (j < localSpace.dim(ISLDimType.isl_dim_out)); j++) {
+          rejectAff = rejectAff.add(
+            ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, j).scale(
+              vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy()));
+        }
+        rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy());
+        rejectAffList.add(rejectAff);
+      }
+    }
+    return ISLUtil.convertToMultiAff(rejectAffList);
+  }
+
+  /**
+   * Builds a maff that computes the vector rejection along a vector
+   * The vector rejection is the projection onto a plane orthogonal to the
+   * given vector.
+   */
+  public static ISLMultiAff buildRejectionMaff(final ISLPoint vector) {
+    return ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()).sub(ISLUtil.buildProjectionMaff(vector));
+  }
+
+  /**
+   * Returns a MultiAff that translates points along the given vector
+   */
+  public static ISLMultiAff buildTranslationMaff(final ISLPoint vector) {
+    return ISLUtil.toMultiAff(ISLMap.buildFromDomainAndRange(
+      ISLSet.buildUniverse(vector.getSpace().copy()), 
+      vector.copy().toSet())).add(
+      ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()));
+  }
+
+  /**
    * Generates a union map out of a list of ISLMaps
    */
   public static ISLUnionMap convertToUnionMap(final List<ISLMap> maps) {
@@ -336,6 +430,26 @@ public class ISLUtil {
       final ISLPWMultiAff pma = local.toPWMultiAff();
       final ISLPWMultiAffPiece piece = pma.getPiece(0);
       _xblockexpression = piece.getMaff();
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Generates a MultiAff out of a list of ISLAffs
+   */
+  public static ISLMultiAff convertToMultiAff(final List<ISLAff> affs) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      ISLAffList affList = ISLAffList.build(ISLContext.getInstance(), 0);
+      ISLSpace _copy = affs.get(0).getSpace().copy();
+      int _size = affs.size();
+      int _minus = (_size - 1);
+      ISLSpace space = _copy.addDims(
+        ISLDimType.isl_dim_out, _minus);
+      for (final ISLAff aff : affs) {
+        affList = affList.add(aff);
+      }
+      _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
     }
     return _xblockexpression;
   }
