@@ -1,5 +1,6 @@
 package alpha.model.prdg;
 
+import alpha.model.AlphaNode;
 import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
@@ -12,20 +13,35 @@ public class PRDGNode {
 
   private boolean reductionNode;
 
+  private AlphaNode origin;
+
   public PRDGNode(final String name, final ISLSet domain) {
     this.name = name;
     this.domain = domain;
     this.reductionNode = false;
+    this.origin = null;
   }
 
   public PRDGNode(final String name, final ISLSet domain, final boolean reduction) {
     this.name = name;
     this.domain = domain;
     this.reductionNode = reduction;
+    this.origin = null;
+  }
+
+  public PRDGNode(final String name, final ISLSet domain, final boolean reduction, final AlphaNode origin) {
+    this.name = name;
+    this.domain = domain;
+    this.reductionNode = reduction;
+    this.origin = origin;
   }
 
   public String getName() {
     return this.name;
+  }
+
+  public AlphaNode getOrigin() {
+    return this.origin;
   }
 
   @Override
