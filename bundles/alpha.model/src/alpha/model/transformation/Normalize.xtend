@@ -141,7 +141,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 
 	final boolean DEEP;
 	
-	public static boolean DEBUG = true
+	public static boolean DEBUG = false
 	
 	protected def debug(String ruleID, String rule) {
 		if (DEBUG) println(ruleID + ": " + rule)
@@ -375,8 +375,6 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		// D : E -> E if expression domain ofD : E and E are the same (i.e., restrict has no effect)
 		if (re.expressionDomain.isEqual(re.expr.expressionDomain) 
 			&& !re.childOfCaseExpression && !re.childOfRestrictExpression) {
-			println(re.expressionDomain)
-			println(re.expr.expressionDomain)
 			debug("redundant restrict", "D : E -> E");
 			EcoreUtil.replace(re, re.expr);
 		}

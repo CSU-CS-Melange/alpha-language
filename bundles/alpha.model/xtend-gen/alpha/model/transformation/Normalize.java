@@ -143,7 +143,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
    */
   private final boolean DEEP;
 
-  public static boolean DEBUG = true;
+  public static boolean DEBUG = false;
 
   protected String debug(final String ruleID, final String rule) {
     String _xifexpression = null;
@@ -375,8 +375,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     }
     AlphaInternalStateConstructor.recomputeContextDomain(re);
     if (((re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re)))) {
-      InputOutput.<ISLSet>println(re.getExpressionDomain());
-      InputOutput.<ISLSet>println(re.getExpr().getExpressionDomain());
       this.debug("redundant restrict", "D : E -> E");
       EcoreUtil.replace(re, re.getExpr());
     }
