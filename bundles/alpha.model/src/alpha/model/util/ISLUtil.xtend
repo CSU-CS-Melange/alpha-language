@@ -23,6 +23,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAffList
 import java.util.Iterator
 import fr.irisa.cairn.jnimap.isl.ISLPoint
 import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLVal
 
 class ISLUtil {
 	/*************************************** 
@@ -280,6 +281,41 @@ class ISLUtil {
 	}
 	
 	/**
+	 * Builds a maff that computes the vector projection along a vector
+	 */
+	def static ISLMultiAff buildProjectionMaff(ISLPoint vector) {
+		val localSpace = vector.getSpace.copy.toLocalSpace
+		var rejectAffList = new ArrayList<ISLAff>
+	 	
+	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
+	 		var rejectAff = ISLAff.buildZero(localSpace.copy)
+	 		
+		 	for(var j = 0; j < localSpace.dim(ISLDimType.isl_dim_out); j++) {
+		 		rejectAff = rejectAff.add(
+		 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, j).scale(
+		 				vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy
+		 			)
+		 		)
+		 	}
+		 	
+		 	rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy)
+		 	rejectAffList += rejectAff
+	 	}
+	 	
+	 	return rejectAffList.convertToMultiAff
+	}
+	
+	/**
+	 * Builds a maff that computes the vector rejection along a vector
+	 * The vector rejection is the projection onto a plane orthogonal to the
+	 * given vector.
+	 */
+	def static ISLMultiAff buildRejectionMaff(ISLPoint vector) {
+		return ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
+			.sub(vector.buildProjectionMaff)
+	}
+	
+	/**
 	 * Returns a MultiAff that translates points along the given vector
 	 */
 	def static ISLMultiAff buildTranslationMaff(ISLPoint vector) {
@@ -344,6 +380,59 @@ class ISLUtil {
 		ISLMultiAff.buildFromAffList(space, affList)
 	}
 	
+	
+	/*************************************** 
+	 *	      Spacetime Map Methods        * 
+	 ***************************************/
+	 
+	 
+	/**
+	 * Attempts to factor out any extant constant factors from each dimension of
+	 * a spacetime map. If, for example, the target of a spacetime map  for one variable
+	 * was [2i-2j+1], and the other variable targets were factorable by 2,
+	 * this would be transformed into [i-j, 1].
+	 * This transformation preserves the lexicographical ordering of points,
+	 * 
+	 */
+	def static ISLUnionMap liftSpacetimeFactors(ISLUnionMap spacetimeMap) {
+		val nDims = spacetimeMap.maps.get(0).dim(ISLDimType.isl_dim_out)
+		val Iterable<Iterable<ISLAff>> mapDimensions = 
+			(0..nDims-1).map[ int i | 
+				spacetimeMap.maps.map[stMap | stMap.copy.toMultiAff.getAff(i)]
+			]
+		
+		// Gets the GCD of all the affine coefficients in the dimension
+		val Iterable<ISLVal> dimensionFactors = mapDimensions.map[ Iterable<ISLAff> dimension |
+			dimension.map[ ISLAff aff |
+				(0..aff.dim(ISLDimType.isl_dim_in)-1).map[ int i |
+					aff.getCoefficientVal(ISLDimType.isl_dim_in, i)
+				].filter[ ISLVal a |
+					!a.isZero
+				].reduce[ ISLVal a, ISLVal b | 
+					a.copy.abs.gcd(b.copy.abs)
+				]
+			].filter[ a | a !== null].reduce[ ISLVal a, ISLVal b |
+				a.copy.abs.gcd(b.copy.abs)
+			]
+		]
+		
+		return spacetimeMap.maps.map[ ISLMap stMap |
+			val stMaff = stMap.copy.toMultiAff
+			
+			return (0..nDims-1).map[ int i | 
+				val ISLVal factor = dimensionFactors.get(i)
+				val ISLAff aff = stMaff.getAff(i)
+				
+				if(factor.copy.asLong <= 1) return #[stMaff.getAff(i).copy]
+				else return #[
+					aff.copy.setConstant(aff.getConstantVal.copy.div(factor.copy).floor).scaleDown(factor.copy),
+					aff.copy.scale(0).setConstant(aff.getConstantVal.copy.mod(factor.copy))
+					
+				]
+			].flatten.toList.convertToMultiAff.toMap
+				.setInputTupleName(stMap.getInputTupleName)
+		].convertToUnionMap
+	}
 	
 	/*************************************** 
 	 *	  Lexical Equality Set Methods     * 

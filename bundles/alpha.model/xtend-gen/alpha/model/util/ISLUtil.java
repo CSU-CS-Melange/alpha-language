@@ -1,6 +1,7 @@
 package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLAffList;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
@@ -31,6 +32,7 @@ import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -360,6 +362,36 @@ public class ISLUtil {
   }
 
   /**
+   * Builds a maff that computes the vector projection along a vector
+   */
+  public static ISLMultiAff buildProjectionMaff(final ISLPoint vector) {
+    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
+    ArrayList<ISLAff> rejectAffList = new ArrayList<ISLAff>();
+    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
+      {
+        ISLAff rejectAff = ISLAff.buildZero(localSpace.copy());
+        for (int j = 0; (j < localSpace.dim(ISLDimType.isl_dim_out)); j++) {
+          rejectAff = rejectAff.add(
+            ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, j).scale(
+              vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy()));
+        }
+        rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy());
+        rejectAffList.add(rejectAff);
+      }
+    }
+    return ISLUtil.convertToMultiAff(rejectAffList);
+  }
+
+  /**
+   * Builds a maff that computes the vector rejection along a vector
+   * The vector rejection is the projection onto a plane orthogonal to the
+   * given vector.
+   */
+  public static ISLMultiAff buildRejectionMaff(final ISLPoint vector) {
+    return ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()).sub(ISLUtil.buildProjectionMaff(vector));
+  }
+
+  /**
    * Returns a MultiAff that translates points along the given vector
    */
   public static ISLMultiAff buildTranslationMaff(final ISLPoint vector) {
@@ -444,6 +476,68 @@ public class ISLUtil {
       _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Attempts to factor out any extant constant factors from each dimension of
+   * a spacetime map. If, for example, the target of a spacetime map  for one variable
+   * was [2i-2j+1], and the other variable targets were factorable by 2,
+   * this would be transformed into [i-j, 1].
+   * This transformation preserves the lexicographical ordering of points,
+   */
+  public static ISLUnionMap liftSpacetimeFactors(final ISLUnionMap spacetimeMap) {
+    final int nDims = spacetimeMap.getMaps().get(0).dim(ISLDimType.isl_dim_out);
+    final Function1<Integer, Iterable<ISLAff>> _function = (Integer i) -> {
+      final Function1<ISLMap, ISLAff> _function_1 = (ISLMap stMap) -> {
+        return ISLUtil.toMultiAff(stMap.copy()).getAff(i);
+      };
+      return ListExtensions.<ISLMap, ISLAff>map(spacetimeMap.getMaps(), _function_1);
+    };
+    final Iterable<Iterable<ISLAff>> mapDimensions = IterableExtensions.<Integer, Iterable<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function);
+    final Function1<Iterable<ISLAff>, ISLVal> _function_1 = (Iterable<ISLAff> dimension) -> {
+      final Function1<ISLAff, ISLVal> _function_2 = (ISLAff aff) -> {
+        int _dim = aff.dim(ISLDimType.isl_dim_in);
+        int _minus = (_dim - 1);
+        final Function1<Integer, ISLVal> _function_3 = (Integer i) -> {
+          return aff.getCoefficientVal(ISLDimType.isl_dim_in, i);
+        };
+        final Function1<ISLVal, Boolean> _function_4 = (ISLVal a) -> {
+          boolean _isZero = a.isZero();
+          return Boolean.valueOf((!_isZero));
+        };
+        final Function2<ISLVal, ISLVal, ISLVal> _function_5 = (ISLVal a, ISLVal b) -> {
+          return a.copy().abs().gcd(b.copy().abs());
+        };
+        return IterableExtensions.<ISLVal>reduce(IterableExtensions.<ISLVal>filter(IterableExtensions.<Integer, ISLVal>map(new IntegerRange(0, _minus), _function_3), _function_4), _function_5);
+      };
+      final Function1<ISLVal, Boolean> _function_3 = (ISLVal a) -> {
+        return Boolean.valueOf((a != null));
+      };
+      final Function2<ISLVal, ISLVal, ISLVal> _function_4 = (ISLVal a, ISLVal b) -> {
+        return a.copy().abs().gcd(b.copy().abs());
+      };
+      return IterableExtensions.<ISLVal>reduce(IterableExtensions.<ISLVal>filter(IterableExtensions.<ISLAff, ISLVal>map(dimension, _function_2), _function_3), _function_4);
+    };
+    final Iterable<ISLVal> dimensionFactors = IterableExtensions.<Iterable<ISLAff>, ISLVal>map(mapDimensions, _function_1);
+    final Function1<ISLMap, ISLMap> _function_2 = (ISLMap stMap) -> {
+      final ISLMultiAff stMaff = ISLUtil.toMultiAff(stMap.copy());
+      final Function1<Integer, List<ISLAff>> _function_3 = (Integer i) -> {
+        final ISLVal factor = ((ISLVal[])Conversions.unwrapArray(dimensionFactors, ISLVal.class))[i];
+        final ISLAff aff = stMaff.getAff(i);
+        long _asLong = factor.copy().asLong();
+        boolean _lessEqualsThan = (_asLong <= 1);
+        if (_lessEqualsThan) {
+          ISLAff _copy = stMaff.getAff(i).copy();
+          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_copy));
+        } else {
+          ISLAff _scaleDown = aff.copy().setConstant(aff.getConstantVal().copy().div(factor.copy()).floor()).scaleDown(factor.copy());
+          ISLAff _setConstant = aff.copy().scale(0).setConstant(aff.getConstantVal().copy().mod(factor.copy()));
+          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_scaleDown, _setConstant));
+        }
+      };
+      return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(Iterables.<ISLAff>concat(IterableExtensions.<Integer, List<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function_3)))).toMap().<ISLMap>setInputTupleName(stMap.getInputTupleName());
+    };
+    return ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(spacetimeMap.getMaps(), _function_2));
   }
 
   /**
