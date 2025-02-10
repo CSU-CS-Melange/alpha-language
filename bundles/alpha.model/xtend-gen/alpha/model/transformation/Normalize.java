@@ -143,7 +143,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
    */
   private final boolean DEEP;
 
-  public static boolean DEBUG = false;
+  public static boolean DEBUG = true;
 
   protected String debug(final String ruleID, final String rule) {
     String _xifexpression = null;
@@ -357,6 +357,11 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return (_eContainer instanceof CaseExpression);
   }
 
+  public static boolean childOfRestrictExpression(final AlphaExpression expr) {
+    EObject _eContainer = expr.eContainer();
+    return (_eContainer instanceof RestrictExpression);
+  }
+
   @Override
   public void outRestrictExpression(final RestrictExpression re) {
     boolean _invalidState = this.invalidState(re);
@@ -368,7 +373,10 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     if (_invalidState_1) {
       return;
     }
-    if ((re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re)))) {
+    AlphaInternalStateConstructor.recomputeContextDomain(re);
+    if (((re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re)))) {
+      InputOutput.<ISLSet>println(re.getExpressionDomain());
+      InputOutput.<ISLSet>println(re.getExpr().getExpressionDomain());
       this.debug("redundant restrict", "D : E -> E");
       EcoreUtil.replace(re, re.getExpr());
     }
