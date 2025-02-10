@@ -39,12 +39,12 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	
 	override void inAlphaSystem(AlphaSystem system) {
 		var variables = system.variables
-		prdg.setNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy)].toSet)
+		prdg.setNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy, false, v)].toSet)
 	}
 
 	override void inStandardEquation(StandardEquation standardEquation) {		
 		this.functions.push(ISLMultiAff.buildIdentity(standardEquation.variable.domain.copy.identity.space))
-		this.sources.push(new PRDGNode(standardEquation.variable.name, standardEquation.variable.domain.copy))
+		this.sources.push(new PRDGNode(standardEquation.variable.name, standardEquation.variable.domain.copy, false, standardEquation.variable))
 		this.numberReductions = 0
 	}
 
@@ -65,7 +65,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	}
 	
 	override void visitVariableExpression(VariableExpression ve) {
-		var target = new PRDGNode(ve.variable.name, ve.variable.domain)
+		var target = new PRDGNode(ve.variable.name, ve.variable.domain, false, ve.variable)
 		val dom = !this.domains.empty() ? this.domains.peek.copy : ve.contextDomain.copy
 		val map = this.functions.peek.copy.toMap
 		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, map)
@@ -86,7 +86,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 		val dom = !this.domains.empty() ? this.domains.peek.copy : reduceExpression.contextDomain.copy
 		
 		//Node for body
-		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
+		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true, reduceExpression))
 
 		//Dependence from result to body
 		//We skip the 'result' node because it is functionally useless
