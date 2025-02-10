@@ -14,6 +14,7 @@ import alpha.model.transformation.Normalize;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.Face;
+import alpha.model.util.ISLUtil;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -119,6 +120,71 @@ public class SplitReduction {
       AlphaInternalStateConstructor.recomputeContextDomain(are);
       Normalize.apply(are);
       PermutationCaseReduce.apply(are);
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+
+  /**
+   * Transforms the input reduction body into n pieces, where n is the size of maffs
+   * Each piece DS_i is constructed such that maffs[i] "dominates".
+   * i.e., maffs[i] maps all points in D_i to lexicographically greater values to all maffs[j]
+   * (or rather, greater than or equal to in the case that i >= j).
+   * 
+   * This is used to split reduction domains according to the dominant dependences
+   * in ReductionSplitScheduler
+   * 
+   * Inputs:
+   * 		are: reduction expression to be split
+   *    maffs: a list of multi affine expressions, possibly representing spacetime maps
+   * 
+   * before: reduce(op, f, E)
+   * after:  reduce(op, f, case {...DS_i : E;...})
+   * 
+   * Returns the generated domain pieces, in order
+   */
+  public static List<ISLSet> applyDominanceSplit(final AbstractReduceExpression are, final Iterable<ISLMultiAff> maffs) {
+    try {
+      int _nbBasicSets = are.getBody().getContextDomain().getNbBasicSets();
+      boolean _greaterThan = (_nbBasicSets > 1);
+      if (_greaterThan) {
+        throw new Exception("Cannot split a reduction body with multiple basic sets");
+      }
+      final CaseExpression caseExpr = AlphaUserFactory.createCaseExpression();
+      final ArrayList<ISLSet> DS = new ArrayList<ISLSet>();
+      for (int i = 0; (i < IterableExtensions.size(maffs)); i++) {
+        {
+          ISLSet DS_i = null;
+          for (int j = 0; (j < IterableExtensions.size(maffs)); j++) {
+            {
+              ISLSet _xifexpression = null;
+              if ((i > j)) {
+                _xifexpression = ISLUtil.buildLexGTSet(((ISLMultiAff[])Conversions.unwrapArray(maffs, ISLMultiAff.class))[i], ((ISLMultiAff[])Conversions.unwrapArray(maffs, ISLMultiAff.class))[j]);
+              } else {
+                _xifexpression = ISLUtil.buildLexGESet(((ISLMultiAff[])Conversions.unwrapArray(maffs, ISLMultiAff.class))[i], ((ISLMultiAff[])Conversions.unwrapArray(maffs, ISLMultiAff.class))[j]);
+              }
+              final ISLSet inequality = _xifexpression;
+              ISLSet _xifexpression_1 = null;
+              if ((DS_i == null)) {
+                _xifexpression_1 = inequality;
+              } else {
+                _xifexpression_1 = DS_i.intersect(inequality);
+              }
+              DS_i = _xifexpression_1;
+            }
+          }
+          ISLSet _copy = DS_i.copy();
+          DS.add(_copy);
+          EList<AlphaExpression> _exprs = caseExpr.getExprs();
+          RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(DS_i.simplify(), AlphaUtil.<AlphaExpression>copyAE(are.getBody()));
+          _exprs.add(_createRestrictExpression);
+        }
+      }
+      EcoreUtil.replace(are.getBody(), caseExpr);
+      AlphaInternalStateConstructor.recomputeContextDomain(are);
+      Normalize.apply(are);
+      PermutationCaseReduce.apply(are);
+      return DS;
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }

@@ -22,6 +22,11 @@ import static extension alpha.model.util.AffineFunctionOperations.*
 import static extension alpha.model.util.AlphaUtil.copyAE
 import static extension alpha.model.util.AlphaUtil.getContainerEquation
 import alpha.model.StandardEquation
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import alpha.model.util.ISLUtil
+import alpha.model.util.Show
+import java.util.List
+import java.util.ArrayList
 
 /**
  * This class carries out the analysis required for splitting from the max 
@@ -104,6 +109,52 @@ class SplitReduction {
 		PermutationCaseReduce.apply(are)
 	}
 	
+	/**
+	 * Transforms the input reduction body into n pieces, where n is the size of maffs
+	 * Each piece DS_i is constructed such that maffs[i] "dominates". 
+	 * i.e., maffs[i] maps all points in D_i to lexicographically greater values to all maffs[j]
+	 * (or rather, greater than or equal to in the case that i >= j).
+	 * 
+	 * This is used to split reduction domains according to the dominant dependences
+	 * in ReductionSplitScheduler
+	 * 
+	 * Inputs:
+	 * 		are: reduction expression to be split
+	 *    maffs: a list of multi affine expressions, possibly representing spacetime maps
+	 * 
+	 * before: reduce(op, f, E)
+	 * after:  reduce(op, f, case {...DS_i : E;...})
+	 * 
+	 * Returns the generated domain pieces, in order
+	 * 
+	 */
+	static def List<ISLSet> applyDominanceSplit(AbstractReduceExpression are, Iterable<ISLMultiAff> maffs) {
+		if (are.body.contextDomain.nbBasicSets > 1)
+			throw new Exception("Cannot split a reduction body with multiple basic sets")
+			
+		val caseExpr = createCaseExpression()
+		val DS = new ArrayList<ISLSet>
+		
+		for(var i = 0; i < maffs.size; i++) {
+			var ISLSet DS_i
+			for(var j = 0; j < maffs.size; j++) {
+				val inequality = i > j ? ISLUtil.buildLexGTSet(maffs.get(i), maffs.get(j))
+					: ISLUtil.buildLexGESet(maffs.get(i), maffs.get(j))
+				
+				DS_i = DS_i === null ? inequality : DS_i.intersect(inequality)
+			}
+			
+			DS += DS_i.copy
+			caseExpr.exprs += createRestrictExpression(DS_i.simplify, are.body.copyAE)
+		}
+		
+		EcoreUtil.replace(are.body, caseExpr)
+		AlphaInternalStateConstructor.recomputeContextDomain(are)
+		Normalize.apply(are)
+		PermutationCaseReduce.apply(are)
+		
+		return DS
+	}
 	
 	/** 
 	 * Returns the list of candidate splits that separate the reduction body into 
