@@ -50,7 +50,7 @@ class PRDGEdge {
 	
 	override boolean equals(Object other) { 
 		if(other instanceof PRDGEdge) 
-			return source.equals(other.getSource) 
+			return source.equals(other.getSource)
 				&& dest.equals(other.getDest)
 				&& map.isPlainEqual(other.map)
 		else false
