@@ -425,7 +425,7 @@ class ISLUtil {
 				
 				if(factor.copy.asLong <= 1) return #[stMaff.getAff(i).copy]
 				else return #[
-					aff.copy.setConstant(aff.getConstantVal.copy.div(factor.copy).floor).scaleDown(factor.copy),
+					aff.copy.scaleDown(factor.copy).setConstant(aff.getConstantVal.copy.div(factor.copy).floor),
 					aff.copy.scale(0).setConstant(aff.getConstantVal.copy.mod(factor.copy))
 					
 				]

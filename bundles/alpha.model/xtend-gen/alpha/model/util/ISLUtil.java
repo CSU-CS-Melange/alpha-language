@@ -530,9 +530,9 @@ public class ISLUtil {
           ISLAff _copy = stMaff.getAff(i).copy();
           return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_copy));
         } else {
-          ISLAff _scaleDown = aff.copy().setConstant(aff.getConstantVal().copy().div(factor.copy()).floor()).scaleDown(factor.copy());
-          ISLAff _setConstant = aff.copy().scale(0).setConstant(aff.getConstantVal().copy().mod(factor.copy()));
-          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_scaleDown, _setConstant));
+          ISLAff _setConstant = aff.copy().scaleDown(factor.copy()).setConstant(aff.getConstantVal().copy().div(factor.copy()).floor());
+          ISLAff _setConstant_1 = aff.copy().scale(0).setConstant(aff.getConstantVal().copy().mod(factor.copy()));
+          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_setConstant, _setConstant_1));
         }
       };
       return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(Iterables.<ISLAff>concat(IterableExtensions.<Integer, List<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function_3)))).toMap().<ISLMap>setInputTupleName(stMap.getInputTupleName());
