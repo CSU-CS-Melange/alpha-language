@@ -14,38 +14,43 @@ import alpha.model.exception.CausalityViolationException
 
 class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 	var Scheduler scheduler
-	var Stack<DependenceExpression> dependenceExpressions
+	var Stack<ISLMultiAff> dependenceMaffs
 	var Stack<String> sourceNames
+	var Stack<ISLSet> domains
 	
 	new(Scheduler scheduler) {
 		this.scheduler = scheduler
-		dependenceExpressions = new Stack()
+		dependenceMaffs = new Stack()
 		sourceNames = new Stack()
+		domains = new Stack()
 	}
 	
-	override void inStandardEquation(StandardEquation standardEquation) {
+	override void inStandardEquation(StandardEquation standardEquation) {	
+		this.dependenceMaffs.push(ISLMultiAff.buildIdentity(standardEquation.variable.domain.copy.identity.space))
+		this.domains.push(standardEquation.variable.domain.copy)
 		this.sourceNames.push(standardEquation.variable.name)
 	}
 
 	override void outStandardEquation(StandardEquation standardEquation) {
+		this.domains.pop
 		this.sourceNames.pop
 	}
 	
 	override void inDependenceExpression(DependenceExpression dependenceExpression) {
-		dependenceExpressions.push(dependenceExpression)
+		dependenceMaffs.push(dependenceExpression.function.copy)
+		domains.push(dependenceExpression.contextDomain.copy)
 	}
 	
 	override void outDependenceExpression(DependenceExpression dependenceExpression) {
-		dependenceExpressions.pop
+		dependenceMaffs.pop
+		domains.pop
 	}
 	
 	override void visitVariableExpression(VariableExpression ve) {
 		if(ve.variable.isInput) return;
 		
-		val DependenceExpression de = dependenceExpressions.peek
-		
 		val ISLMultiAff dependenceTimestampMaff = ISLUtil.toMultiAff(scheduler.getScheduleMap(ve.variable.name).copy.clearInputTupleName)
-		val ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(de.getFunction.copy)
+		val ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(dependenceMaffs.peek.copy)
 		var ISLMultiAff writeTimestampMaff = ISLUtil.toMultiAff(scheduler.getScheduleMap(sourceNames.peek).copy.clearInputTupleName)
 		
 		// Need to add a dimension to the write timestamp if in a reduction body
@@ -56,11 +61,11 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 			)
 		}
 		
-		verifyCausality(de, writeTimestampMaff, readTimestampMaff)
+		verifyCausality(writeTimestampMaff, readTimestampMaff)
 	}
 	
-	def protected void verifyCausality(DependenceExpression de, ISLMultiAff writeTimestampMaff, ISLMultiAff readTimestampMaff) {
-		val ISLSet domain = de.contextDomain.copy
+	def protected void verifyCausality(ISLMultiAff writeTimestampMaff, ISLMultiAff readTimestampMaff) {
+		val ISLSet domain = domains.peek.copy
 		 
 		val int timestampDims = writeTimestampMaff.getNbOutputs
 		// Start with the empty set in the relevant space
@@ -72,7 +77,7 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 			)
 			
 			if(!domain.isSubset(causalitySet)) {
-				throw new CausalityViolationException(de, writeTimestampMaff, 
+				throw new CausalityViolationException(dependenceMaffs.peek, writeTimestampMaff, 
 					readTimestampMaff, domain.copy.subtract(causalitySet.copy), i)
 			}
 			

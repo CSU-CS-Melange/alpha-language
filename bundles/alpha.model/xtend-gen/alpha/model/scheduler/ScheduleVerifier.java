@@ -16,36 +16,45 @@ import java.util.Stack;
 public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
   private Scheduler scheduler;
 
-  private Stack<DependenceExpression> dependenceExpressions;
+  private Stack<ISLMultiAff> dependenceMaffs;
 
   private Stack<String> sourceNames;
 
+  private Stack<ISLSet> domains;
+
   public ScheduleVerifier(final Scheduler scheduler) {
     this.scheduler = scheduler;
-    Stack<DependenceExpression> _stack = new Stack<DependenceExpression>();
-    this.dependenceExpressions = _stack;
+    Stack<ISLMultiAff> _stack = new Stack<ISLMultiAff>();
+    this.dependenceMaffs = _stack;
     Stack<String> _stack_1 = new Stack<String>();
     this.sourceNames = _stack_1;
+    Stack<ISLSet> _stack_2 = new Stack<ISLSet>();
+    this.domains = _stack_2;
   }
 
   @Override
   public void inStandardEquation(final StandardEquation standardEquation) {
+    this.dependenceMaffs.push(ISLMultiAff.buildIdentity(standardEquation.getVariable().getDomain().copy().identity().getSpace()));
+    this.domains.push(standardEquation.getVariable().getDomain().copy());
     this.sourceNames.push(standardEquation.getVariable().getName());
   }
 
   @Override
   public void outStandardEquation(final StandardEquation standardEquation) {
+    this.domains.pop();
     this.sourceNames.pop();
   }
 
   @Override
   public void inDependenceExpression(final DependenceExpression dependenceExpression) {
-    this.dependenceExpressions.push(dependenceExpression);
+    this.dependenceMaffs.push(dependenceExpression.getFunction().copy());
+    this.domains.push(dependenceExpression.getContextDomain().copy());
   }
 
   @Override
   public void outDependenceExpression(final DependenceExpression dependenceExpression) {
-    this.dependenceExpressions.pop();
+    this.dependenceMaffs.pop();
+    this.domains.pop();
   }
 
   @Override
@@ -54,9 +63,8 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
     if ((_isInput).booleanValue()) {
       return;
     }
-    final DependenceExpression de = this.dependenceExpressions.peek();
     final ISLMultiAff dependenceTimestampMaff = ISLUtil.toMultiAff(this.scheduler.getScheduleMap(ve.getVariable().getName()).copy().clearInputTupleName());
-    final ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(de.getFunction().copy());
+    final ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(this.dependenceMaffs.peek().copy());
     ISLMultiAff writeTimestampMaff = ISLUtil.toMultiAff(this.scheduler.getScheduleMap(this.sourceNames.peek()).copy().clearInputTupleName());
     int _dim = writeTimestampMaff.dim(ISLDimType.isl_dim_in);
     int _dim_1 = readTimestampMaff.dim(ISLDimType.isl_dim_in);
@@ -68,11 +76,11 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
       writeTimestampMaff = writeTimestampMaff.addDims(
         ISLDimType.isl_dim_in, _minus);
     }
-    this.verifyCausality(de, writeTimestampMaff, readTimestampMaff);
+    this.verifyCausality(writeTimestampMaff, readTimestampMaff);
   }
 
-  protected void verifyCausality(final DependenceExpression de, final ISLMultiAff writeTimestampMaff, final ISLMultiAff readTimestampMaff) {
-    final ISLSet domain = de.getContextDomain().copy();
+  protected void verifyCausality(final ISLMultiAff writeTimestampMaff, final ISLMultiAff readTimestampMaff) {
+    final ISLSet domain = this.domains.peek().copy();
     final int timestampDims = writeTimestampMaff.getNbOutputs();
     ISLSet coveredSet = ISLSet.buildEmpty(domain.getSpace().copy());
     for (int i = 0; (i < timestampDims); i++) {
@@ -82,8 +90,9 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
         boolean _isSubset = domain.isSubset(causalitySet);
         boolean _not = (!_isSubset);
         if (_not) {
+          ISLMultiAff _peek = this.dependenceMaffs.peek();
           ISLSet _subtract = domain.copy().subtract(causalitySet.copy());
-          throw new CausalityViolationException(de, writeTimestampMaff, readTimestampMaff, _subtract, i);
+          throw new CausalityViolationException(_peek, writeTimestampMaff, readTimestampMaff, _subtract, i);
         }
         coveredSet = coveredSet.union(
           ISLSet.buildGTSet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i)));

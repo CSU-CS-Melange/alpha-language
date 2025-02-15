@@ -16,7 +16,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 public class CausalityViolationException extends RuntimeException {
 	private static final long serialVersionUID = 6671759112318252538L;
 
-	public CausalityViolationException(DependenceExpression de, ISLMultiAff writeTimestampMaff, 
+	public CausalityViolationException(ISLMultiAff de, ISLMultiAff writeTimestampMaff, 
 			ISLMultiAff readTimestampMaff, ISLSet set, int dimension) {
 		super(
 			"Causality failed for dependence: " + de
