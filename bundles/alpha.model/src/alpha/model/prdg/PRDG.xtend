@@ -1,7 +1,5 @@
 package alpha.model.prdg
 
-import java.util.List
-import java.util.LinkedList
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLDimType
@@ -35,9 +33,9 @@ class PRDG {
 	
 	def show() {
 		println("Nodes: ")
-		println(nodes.map[ node | node.toString() ])
+		nodes.forEach[ node | println("\t" + node.toString()) ]
 		println("Edges: ")
-		println(edges.map[ edge | edge.toString() ])
+		edges.forEach[ edge | println("\t" + edge.toString()) ]
 	}
 	
 	def addNode(PRDGNode node) {
@@ -89,23 +87,12 @@ class PRDG {
 		
 		this.islPRDG = ISLMap.buildEmpty(ISLSpace.copySpaceParamsForMap(domains.getSpace.copy)).toUnionMap
 		for (PRDGEdge edge : this.getEdges) {
-			var map1 = edge.function.copy
-			var set = edge.domain.copy
-			var map2 = map1.copy.toMap.simplify.intersectDomain(set.copy)			
-			if (map2 === null) {
-				System.out.println("map1 = " + map1)
-				System.out.println("set = " + set)
-				throw new RuntimeException("Problem while intersecting domain")
-			}
+			var map = edge.getMap
 			
-			if(edge.source.isReductionNode && edge.dest.isReductionNode) {
-				map2 = map2.reverse
-
-			}	
-			map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
-			map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
+			map = map.setTupleName(ISLDimType.isl_dim_out, edge.dest.name)
+			map = map.setTupleName(ISLDimType.isl_dim_in, edge.source.name)
 					
-			this.islPRDG = islPRDG.union(map2.copy.toUnionMap)
+			this.islPRDG = islPRDG.union(map.copy.toUnionMap)
 		}		
 		
 		this.islPRDG
@@ -117,4 +104,11 @@ class PRDG {
 	}
 	
 	override int hashCode() {nodes.hashCode() + 37 * edges.hashCode()}
+	
+	override String toString() {
+		"Nodes: "
+		+ nodes.map[ node | "\n\t" + node.toString()].reduce[a, b | a + b]
+		+ "\nEdges: "
+		+ edges.map[ edge | "\n\t" + edge.toString()].reduce[a, b | a + b]
+	}
 }

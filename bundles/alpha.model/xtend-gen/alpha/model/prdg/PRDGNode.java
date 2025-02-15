@@ -1,6 +1,15 @@
 package alpha.model.prdg;
 
+import alpha.model.AlphaSystem;
+import alpha.model.StandardEquation;
+import alpha.model.SystemBody;
+import alpha.model.Variable;
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
 public class PRDGNode {
@@ -36,8 +45,42 @@ public class PRDGNode {
     return this.domain.copy();
   }
 
+  public ISLSpace getSpace() {
+    return this.getDomain().getSpace().copy();
+  }
+
+  public ISLLocalSpace getLocalSpace() {
+    return this.getSpace().copy().toLocalSpace();
+  }
+
   public boolean isReductionNode() {
     return this.reductionNode;
+  }
+
+  /**
+   * Gets the Variable which corresponds to this node.
+   * In the case of reductions, this is the variable which contains it.
+   */
+  public Variable getOriginVariable(final AlphaSystem sys) {
+    if (this.reductionNode) {
+      final String varName = this.name.substring(0, this.name.lastIndexOf("_reduce"));
+      return sys.getVariable(varName);
+    } else {
+      return sys.getVariable(this.name);
+    }
+  }
+
+  /**
+   * Gets the standard equation that this node originates from.
+   */
+  public StandardEquation getOriginEquation(final AlphaSystem sys) {
+    final Function1<SystemBody, StandardEquation> _function = (SystemBody body) -> {
+      return body.getStandardEquation(this.getOriginVariable(sys));
+    };
+    final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation se) -> {
+      return Boolean.valueOf((se != null));
+    };
+    return IterableExtensions.<StandardEquation>findFirst(ListExtensions.<SystemBody, StandardEquation>map(sys.getSystemBodies(), _function), _function_1);
   }
 
   @Override

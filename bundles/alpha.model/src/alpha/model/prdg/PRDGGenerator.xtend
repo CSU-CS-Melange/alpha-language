@@ -39,12 +39,12 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	
 	override void inAlphaSystem(AlphaSystem system) {
 		var variables = system.variables
-		prdg.setNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy)].toSet)
+		prdg.setNodes(variables.filter[ v | !v.isInput || includeInputs].map[ v | new PRDGNode(v.name, v.domain.copy, false)].toSet)
 	}
 
 	override void inStandardEquation(StandardEquation standardEquation) {		
 		this.functions.push(ISLMultiAff.buildIdentity(standardEquation.variable.domain.copy.identity.space))
-		this.sources.push(new PRDGNode(standardEquation.variable.name, standardEquation.variable.domain.copy))
+		this.sources.push(new PRDGNode(standardEquation.variable.name, standardEquation.variable.domain.copy, false))
 		this.numberReductions = 0
 	}
 
@@ -65,39 +65,36 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	}
 	
 	override void visitVariableExpression(VariableExpression ve) {
-		var target = new PRDGNode(ve.variable.name, ve.variable.domain)
+		var target = new PRDGNode(ve.variable.name, ve.variable.domain, false)
 		val dom = !this.domains.empty() ? this.domains.peek.copy : ve.contextDomain.copy
-		val fun = this.functions.peek.copy
-		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, fun)
+		val map = this.functions.peek.copy.toMap
+		val edge = new PRDGEdge(this.sources.peek, target, dom.copy, map)
 		prdg.addEdge(edge)
 		
 	}
 	
 	override void inReduceExpression(ReduceExpression reduceExpression) {
 
-		//Names for the new reduction nodes
-		var reductionName = this.sources.peek.name + "_reduce" + this.numberReductions + "_result"
-		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions + "_body"
+		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions
 		this.numberReductions++
 		
-		
-		this.prdg.nodes.add(new PRDGNode(reductionName, reduceExpression.contextDomain.copy, true))
-		
 		//Dependence from use to the result
-		val useToRes = this.functions.peek.copy
+		val useToRes = this.functions.peek.copy.toMap
 
 		//When the parent is a dependence expression, the context domain of that dependence is what we want
 		//otherwise, assume identity dependence and use the context domain of the variable
 		val dom = !this.domains.empty() ? this.domains.peek.copy : reduceExpression.contextDomain.copy
-		this.prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(reductionName), dom, useToRes))
 		
 		//Node for body
 		this.prdg.nodes.add(new PRDGNode(bodyName, reduceExpression.body.contextDomain.copy, true))
 
 		//Dependence from result to body
-		val ISLMultiAff resToBody = reduceExpression.projection.copy
+		//We skip the 'result' node because it is functionally useless
+		val ISLMap resToBody = reduceExpression.projection.copy.toMap.reverse
+			.intersectRange(reduceExpression.body.contextDomain.copy)
+		val useToBody = useToRes.applyRange(resToBody).intersectDomain(dom)
 		
-		prdg.addEdge(new PRDGEdge(prdg.getNode(reductionName), prdg.getNode(bodyName), reduceExpression.body.contextDomain.copy, resToBody))
+		prdg.addEdge(new PRDGEdge(this.sources.peek, prdg.getNode(bodyName), useToBody))
 
 		//Inside the reduction, dependence is from the body
 		this.sources.push(this.prdg.getNode(bodyName))

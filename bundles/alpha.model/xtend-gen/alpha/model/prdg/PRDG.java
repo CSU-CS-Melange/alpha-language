@@ -2,15 +2,16 @@ package alpha.model.prdg;
 
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
@@ -46,21 +47,21 @@ public class PRDG {
     return this.edges;
   }
 
-  public Iterable<String> show() {
-    Iterable<String> _xblockexpression = null;
-    {
-      InputOutput.<String>println("Nodes: ");
-      final Function1<PRDGNode, String> _function = (PRDGNode node) -> {
-        return node.toString();
-      };
-      InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGNode, String>map(this.nodes, _function));
-      InputOutput.<String>println("Edges: ");
-      final Function1<PRDGEdge, String> _function_1 = (PRDGEdge edge) -> {
-        return edge.toString();
-      };
-      _xblockexpression = InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGEdge, String>map(this.edges, _function_1));
-    }
-    return _xblockexpression;
+  public void show() {
+    InputOutput.<String>println("Nodes: ");
+    final Consumer<PRDGNode> _function = (PRDGNode node) -> {
+      String _string = node.toString();
+      String _plus = ("\t" + _string);
+      InputOutput.<String>println(_plus);
+    };
+    this.nodes.forEach(_function);
+    InputOutput.<String>println("Edges: ");
+    final Consumer<PRDGEdge> _function_1 = (PRDGEdge edge) -> {
+      String _string = edge.toString();
+      String _plus = ("\t" + _string);
+      InputOutput.<String>println(_plus);
+    };
+    this.edges.forEach(_function_1);
   }
 
   public boolean addNode(final PRDGNode node) {
@@ -129,20 +130,10 @@ public class PRDG {
       Set<PRDGEdge> _edges = this.getEdges();
       for (final PRDGEdge edge : _edges) {
         {
-          ISLMultiAff map1 = edge.getFunction().copy();
-          ISLSet set = edge.getDomain().copy();
-          ISLMap map2 = map1.copy().toMap().simplify().intersectDomain(set.copy());
-          if ((map2 == null)) {
-            System.out.println(("map1 = " + map1));
-            System.out.println(("set = " + set));
-            throw new RuntimeException("Problem while intersecting domain");
-          }
-          if ((edge.getSource().isReductionNode() && edge.getDest().isReductionNode())) {
-            map2 = map2.reverse();
-          }
-          map2 = map2.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
-          map2 = map2.setTupleName(ISLDimType.isl_dim_in, edge.getSource().getName());
-          this.islPRDG = this.islPRDG.union(map2.copy().toUnionMap());
+          ISLMap map = edge.getMap();
+          map = map.setTupleName(ISLDimType.isl_dim_out, edge.getDest().getName());
+          map = map.setTupleName(ISLDimType.isl_dim_in, edge.getSource().getName());
+          this.islPRDG = this.islPRDG.union(map.copy().toUnionMap());
         }
       }
       _xblockexpression = this.islPRDG;
@@ -167,5 +158,28 @@ public class PRDG {
     int _hashCode_1 = this.edges.hashCode();
     int _multiply = (37 * _hashCode_1);
     return (_hashCode + _multiply);
+  }
+
+  @Override
+  public String toString() {
+    final Function1<PRDGNode, String> _function = (PRDGNode node) -> {
+      String _string = node.toString();
+      return ("\n\t" + _string);
+    };
+    final Function2<String, String, String> _function_1 = (String a, String b) -> {
+      return (a + b);
+    };
+    String _reduce = IterableExtensions.<String>reduce(IterableExtensions.<PRDGNode, String>map(this.nodes, _function), _function_1);
+    String _plus = ("Nodes: " + _reduce);
+    String _plus_1 = (_plus + "\nEdges: ");
+    final Function1<PRDGEdge, String> _function_2 = (PRDGEdge edge) -> {
+      String _string = edge.toString();
+      return ("\n\t" + _string);
+    };
+    final Function2<String, String, String> _function_3 = (String a, String b) -> {
+      return (a + b);
+    };
+    String _reduce_1 = IterableExtensions.<String>reduce(IterableExtensions.<PRDGEdge, String>map(this.edges, _function_2), _function_3);
+    return (_plus_1 + _reduce_1);
   }
 }
