@@ -21,34 +21,48 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 
 /**
  * Serializes a reduction along given reuse function(s).
+ * 
+ * This will modify the container system of the given ReduceExpression.
+ * 
  * This class is not given enough information to automatically decompose
  * reductions, so it must serialize all dimensions of the reduction at once.
  * Users can manually apply DecomposeReduction beforehand if they only wish to
  * partially serialize the reduction.
- * 
  */
-class SerializeReduction { //TODO: allow partial serialization
-	static def void apply(AbstractReduceExpression reduce, ISLMultiAff reuseDep) {
-		val Variable writeVar = (AlphaUtil.getContainerEquation(reduce) as StandardEquation).variable
+class SerializeReduction {
+	/**
+	 * Applies a 1D serialization. Can only be used on reductions of rank 1.
+	 */
+	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep) {
+		val Variable writeVar = (AlphaUtil.getContainerEquation(are) as StandardEquation).variable
 		val String newName = AlphaUtil.duplicateNameResolver.apply(
-			AlphaUtil.getContainerSystem(reduce),
+			AlphaUtil.getContainerSystem(are),
 			writeVar.name + "_reduction",
 			"_"
 		)
-		apply(reduce, reuseDep, newName)
+		apply(are, reuseDep, newName)
 	}
 	
-	static def void apply(AbstractReduceExpression reduce, ISLMultiAff reuseDep, String newName) {
-		checkArguments(reduce, #[reuseDep], newName)
-		serialize(reduce, reuseDep, newName)
+	/**
+	 * Serializes a reduction using an arbitrary set of basis vectors as reuse dependences.
+	 * This is not guaranteed to be a 'good' serialization, but it will certainly be valid.
+	 */
+	static def void applyAuto(AbstractReduceExpression are) {
+		var nullSpace = are.projectionExpr.getISLMultiAff.copy.nullSpace
+		SerializeReduction.applyAll(are, nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff])
 	}
 	
-	static def void applyAll(AbstractReduceExpression reduce, Iterable<ISLMultiAff> partialReuseDeps) {
-		checkArguments(reduce, partialReuseDeps, "")
+	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
+		checkArguments(are, #[reuseDep], newName)
+		serialize(are, reuseDep, newName)
+	}
+	
+	static def void applyAll(AbstractReduceExpression are, Iterable<ISLMultiAff> partialReuseDeps) {
+		checkArguments(are, partialReuseDeps, "")
 		
 		//extend reuseDeps to span the whole nullspace if it isn't long enough.
 		var reuseDeps = partialReuseDeps.map[a | a]
-		var nullSpace = reduce.projectionExpr.getISLMultiAff.copy.nullSpace
+		var nullSpace = are.projectionExpr.getISLMultiAff.copy.nullSpace
 		if(reuseDeps.size <  nullSpace.copy.dimensionality) {
 			val Iterable<ISLPoint> reuseVectors = reuseDeps.map[dep | dep.copy.toMap.deltas.samplePoint]
 			
@@ -59,50 +73,61 @@ class SerializeReduction { //TODO: allow partial serialization
 			reuseDeps = reuseDeps + nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff]
 		}
 		
-		val Variable writeVar = (AlphaUtil.getContainerEquation(reduce) as StandardEquation).variable
+		val Variable writeVar = (AlphaUtil.getContainerEquation(are) as StandardEquation).variable
 		
+		//Serialize the reduction one dependence at a time.
 		for(var i = 0; i < reuseDeps.length-1; i++)  {
 			val String newName = AlphaUtil.duplicateNameResolver.apply(
-				AlphaUtil.getContainerSystem(reduce),
+				AlphaUtil.getContainerSystem(are),
 				writeVar.name + "_reduction",
 				i.toString
 			)
-			val writeMaff = reduce.projectionExpr.getISLMultiAff
+			val writeMaff = are.projectionExpr.getISLMultiAff
 			
 			val reuseDep = reuseDeps.get(i)
 			val ISLMultiAff f1 = buildRejectionMaff(reuseDep.copy.toMap.deltas.samplePoint)
 			val ISLMultiAff f2 = writeMaff.copy.toMap.applyDomain(f1.copy.toMap).toMultiAff
 			
-			ReductionDecomposition.apply(reduce, f1, f2)
+			ReductionDecomposition.apply(are, f1, f2)
 			
-			serialize(reduce.body as AbstractReduceExpression, reuseDep, newName)
+			serialize(are.body as AbstractReduceExpression, reuseDep, newName)
 		}
 		
 		val String newName = AlphaUtil.duplicateNameResolver.apply(
-			AlphaUtil.getContainerSystem(reduce),
+			AlphaUtil.getContainerSystem(are),
 			writeVar.name + "_reduction",
 			(reuseDeps.length-1).toString
 		)
 			
-		serialize(reduce, reuseDeps.get(reuseDeps.length-1), newName)
+		serialize(are, reuseDeps.get(reuseDeps.length-1), newName)
 	}
 	
-	private static def void serialize(AbstractReduceExpression reduce, ISLMultiAff reuseDep, String newName) {
-		var AlphaSystem sys = AlphaUtil.getContainerSystem(reduce)		
-		val systemBody = AlphaUtil.getContainerSystemBody(reduce)
-		val ISLSet body = reduce.body.getContextDomain
-		val ISLMultiAff writeMaff = reduce.projectionExpr.getISLMultiAff
-		var AlphaExpression coreExpr = reduce.body 
+	/**
+	 * The main serialize method, which all public-facing methods eventually call.
+	 */
+	private static def void serialize(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
+		var AlphaSystem sys = AlphaUtil.getContainerSystem(are)		
+		val systemBody = AlphaUtil.getContainerSystemBody(are)
+		val ISLSet body = are.body.getContextDomain
+		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
+		var AlphaExpression coreExpr = are.body 
 		if(coreExpr instanceof RestrictExpression) coreExpr = coreExpr.expr
 		
 		val Variable reductionVar = AlphaUserFactory.createVariable(newName, body.copy)
 		sys.locals.add(reductionVar)
 
+		/*
+		 * The 'top' set of points are what is read by the write variable.
+		 * The 'bottom' set of points do not read any other points in the serialized reduction.
+		 */
 		val ISLSet top = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap)).simplify
 		val ISLSet bottom = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap.reverse)).simplify
 		
 		val CaseExpression writeCaseExpr = AlphaUserFactory.createCaseExpression()
-		
+		/*
+		 * Create a dependence from the write variable to each top 'facet' of the serialized reduction.
+		 * Typically, there is only one such facet.
+		 */
 		var ISLSet coveredDomain = ISLSet.buildEmpty(body.copy.apply(writeMaff.copy.toMap).getSpace)
 		for( ISLBasicSet basicFacet : top.getBasicSets ) {
 			val ISLSet facet = basicFacet.copy.toSet
@@ -112,6 +137,11 @@ class SerializeReduction { //TODO: allow partial serialization
 			
 			val readExpr = AlphaUserFactory.createVariableExpression(reductionVar)
 			
+			/*
+			 * Replaces the ReduceExpression with a simple DependenceExpression if it is
+			 * single valued. Even if a ReduceExpression remains by the end, it is guaranteed
+			 * to be bounded.
+			 */
 			var AlphaExpression dependenceExpr
 			if(shadowProject.copy.reverse.isSingleValued) {
 				dependenceExpr = AlphaUserFactory.createDependenceExpression(
@@ -121,7 +151,7 @@ class SerializeReduction { //TODO: allow partial serialization
 			}
 			else {
 				dependenceExpr = AlphaUserFactory.createReduceExpression(
-					reduce.operator,
+					are.operator,
 					writeMaff.copy,
 					AlphaUserFactory.createRestrictExpression(
 						top.copy,
@@ -133,14 +163,22 @@ class SerializeReduction { //TODO: allow partial serialization
 			writeCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(shadow, dependenceExpr)
 		}
 		
-		EcoreUtil.replace(reduce, writeCaseExpr)
+		EcoreUtil.replace(are, writeCaseExpr)
 	
+		/*
+		 * Generates the Exprs that the new StandardEquation will use.
+		 */
 		val readCaseExpr = AlphaUserFactory.createCaseExpression()
 		val selfDepExpr = AlphaUserFactory.createDependenceExpression(
 			reuseDep.copy, 
 			AlphaUserFactory.createVariableExpression(reductionVar)
 		)
-		 
+		
+		/*
+		 * The 'bottom' points only read from the read variable.
+		 * The rest read from the read variable, and also their fellow points using
+		 * reuseDep as a uniform dependence.
+		 */
 		readCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(
 			bottom.copy, 
 			EcoreUtil.copy(coreExpr)
@@ -148,7 +186,7 @@ class SerializeReduction { //TODO: allow partial serialization
 		readCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(
 			body.copy.subtract(bottom.copy), 
 			AlphaUserFactory.createBinaryExpression(
-				AlphaOperatorUtil.reductionOPtoBinaryOP(reduce.operator),
+				AlphaOperatorUtil.reductionOPtoBinaryOP(are.operator),
 				EcoreUtil.copy(coreExpr),
 				selfDepExpr
 			)
@@ -160,14 +198,17 @@ class SerializeReduction { //TODO: allow partial serialization
 		AlphaInternalStateConstructor.recomputeContextDomain(sys)
 	}
 	
-	static def private void checkArguments(AbstractReduceExpression reduce, Iterable<ISLMultiAff> reuseDeps, String newName) {
-		val ISLMultiAff writeMaff = reduce.projectionExpr.getISLMultiAff
+	/**
+	 * Sanity check!
+	 */
+	static def private void checkArguments(AbstractReduceExpression are, Iterable<ISLMultiAff> reuseDeps, String newName) {
+		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
 		val nullSpace = writeMaff.copy.nullSpace
 		
 		val Iterable<ISLPoint> reuseVectors = reuseDeps.map[dep | dep.copy.toMap.deltas.samplePoint]
 		if(!reuseVectors.forall[vector | vector.copy.toSet.isSubset(nullSpace.copy)]) {
 			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences: " + reuseDeps +
-				"\ndo not all reside in the nullspace of the projection function: " + reduce	)
+				"\ndo not all reside in the nullspace of the projection function: " + are	)
 		}
 		
 		val dimensionality = reuseVectors.getSpan.dimensionality
@@ -176,7 +217,12 @@ class SerializeReduction { //TODO: allow partial serialization
 				"\ndo not form a linearly independent set.")
 		}
 		
-		var AlphaSystem sys = AlphaUtil.getContainerSystem(reduce)
+		if(dimensionality < nullSpace.copy.dimensionality) {
+			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences " + reuseDeps + 
+				" are insufficient to serialize the the given reduction: " + are)
+		}
+		
+		var AlphaSystem sys = AlphaUtil.getContainerSystem(are)
 		if(sys === null) {
 			throw new IllegalArgumentException("[SerializeReduction] Reduction Expression has no containing system.")
 		}
