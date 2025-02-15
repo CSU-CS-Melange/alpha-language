@@ -23,6 +23,20 @@ import java.util.List
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
+import java.util.List
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
+import fr.irisa.cairn.jnimap.isl.ISLAffList
+import java.util.Iterator
+import fr.irisa.cairn.jnimap.isl.ISLPoint
+import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLVal
+import alpha.model.scheduler.ManualScheduler
+import alpha.model.exception.CausalityViolationException
+import alpha.model.scheduler.ScheduleVerifier
+import alpha.model.AlphaSystem
 
 class ISLUtil {
 	/*************************************** 
@@ -343,103 +357,6 @@ class ISLUtil {
 		unionSet
 	}
 	
-	/**
-	 * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
-	 * Basis vectors are given as ISLPoints
-	 */
-	def static List<ISLPoint> getBasisVectors(ISLSet set) {
-		var vectors = new ArrayList<ISLPoint>()
-		var ISLSet workingSet = set.copy.affineHull.toSet
-		val dim = workingSet.dimensionality
-		for(var i = 0; i < dim; i++) {
-			val ISLPoint basisVector = workingSet.copy.getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas.samplePoint
-			vectors += basisVector
-			workingSet = workingSet.intersect(basisVector.copy.getOrthogonalPlane)
-		}
-		return vectors
-	}
-	
-	/**
-	 * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
-	 * Vectors do not necessarily need to be linearly independent
-	 * but should be zero in the parameters
-	 */
-	def static ISLSet getSpan(Iterable<ISLPoint> basisVectors) {
-		val ISLSet basisSet = basisVectors.map[a | a.toSet].reduce[a, b | a.union(b)]
-		val zeroVector = ISLSet.buildUniverse(basisSet.getSpace.copy).samplePoint
-		return basisSet.union(zeroVector.toSet).affineHull.toSet
-	}
-	
-	/**
-	 * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
-	 */
-	def static ISLSet getOrthogonalPlane(ISLPoint vector) {
-		val localSpace = vector.getSpace.copy.toLocalSpace
-	 	var projectAff = ISLAff.buildZero(localSpace.copy)
-	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
-	 		projectAff = projectAff.add(
-	 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, i).scale(
-	 				vector.getCoordinateVal(ISLDimType.isl_dim_out, i)
-	 			)
-	 		)
-	 	}
-	 	
-		val ISLConstraint constraint = projectAff.toEqualityConstraint
-	 	return ISLSet.buildUniverse(vector.getSpace.copy).addConstraint(constraint)
-	}
-	
-	/**
-	 * Builds a maff that computes the vector projection along a vector
-	 */
-	def static ISLMultiAff buildProjectionMaff(ISLPoint vector) {
-		val localSpace = vector.getSpace.copy.toLocalSpace
-		var rejectAffList = new ArrayList<ISLAff>
-	 	
-	 	for(var i = 0; i < localSpace.dim(ISLDimType.isl_dim_out); i++) {
-	 		var rejectAff = ISLAff.buildZero(localSpace.copy)
-	 		
-		 	for(var j = 0; j < localSpace.dim(ISLDimType.isl_dim_out); j++) {
-		 		rejectAff = rejectAff.add(
-		 			ISLAff.buildVarOnDomain(localSpace.copy, ISLDimType.isl_dim_out, j).scale(
-		 				vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy
-		 			)
-		 		)
-		 	}
-		 	
-		 	rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy)
-		 	rejectAffList += rejectAff
-	 	}
-	 	
-	 	return rejectAffList.convertToMultiAff
-	}
-	
-	/**
-	 * Builds a maff that computes the vector rejection along a vector
-	 * The vector rejection is the projection onto a plane orthogonal to the
-	 * given vector.
-	 */
-	def static ISLMultiAff buildRejectionMaff(ISLPoint vector) {
-		return ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
-			.sub(vector.buildProjectionMaff)
-	}
-	
-	/**
-	 * Returns a MultiAff that translates points along the given vector
-	 */
-	def static ISLMultiAff buildTranslationMaff(ISLPoint vector) {
-		ISLMap.buildFromDomainAndRange(
-			ISLSet.buildUniverse(vector.getSpace.copy),
-			vector.copy.toSet
-		).toMultiAff.add(
-			ISLSet.buildUniverse(vector.getSpace.copy).identity.toMultiAff
-		)
-	}
-	
-	
-	/*************************************** 
-	 *	         Conversion Methods        * 
-	 ***************************************/
-	 
 	
 	/**
 	 * Generates a union map out of a list of ISLMaps
@@ -475,6 +392,87 @@ class ISLUtil {
 		for(aff : affs) {affList = affList.add(aff)}
 
 		ISLMultiAff.buildFromAffList(space, affList)
+	}
+	
+	/*************************************** 
+	 *	      Spacetime Map Methods        * 
+	 ***************************************/
+	 
+	 
+	/**
+	 * Attempts to factor out any extant constant factors from each dimension of
+	 * a spacetime map. If, for example, the target of a spacetime map  for one variable
+	 * was [2i-2j+1], and the other variable targets were factorable by 2,
+	 * this would be transformed into [i-j, 1].
+	 * This transformation preserves the lexicographical ordering of points,
+	 * 
+	 */
+	def static ISLUnionMap liftSpacetimeFactors(ISLUnionMap spacetimeMap) {
+		val nDims = spacetimeMap.maps.get(0).dim(ISLDimType.isl_dim_out)
+		val Iterable<Iterable<ISLAff>> mapDimensions = 
+			(0..nDims-1).map[ int i | 
+				spacetimeMap.maps.map[stMap | stMap.copy.toMultiAff.getAff(i)]
+			]
+		
+		// Gets the GCD of all the affine coefficients in the dimension
+		val Iterable<ISLVal> dimensionFactors = mapDimensions.map[ Iterable<ISLAff> dimension |
+			dimension.map[ ISLAff aff |
+				(0..aff.dim(ISLDimType.isl_dim_in)-1).map[ int i |
+					aff.getCoefficientVal(ISLDimType.isl_dim_in, i)
+				].filter[ ISLVal a |
+					!a.isZero
+				].reduce[ ISLVal a, ISLVal b | 
+					a.copy.abs.gcd(b.copy.abs)
+				]
+			].filter[ a | a !== null].reduce[ ISLVal a, ISLVal b |
+				a.copy.abs.gcd(b.copy.abs)
+			]
+		]
+		
+		return spacetimeMap.maps.map[ ISLMap stMap |
+			val stMaff = stMap.copy.toMultiAff
+			
+			return (0..nDims-1).map[ int i | 
+				val ISLVal factor = dimensionFactors.get(i)
+				val ISLAff aff = stMaff.getAff(i)
+				
+				if(factor.copy.asLong <= 1) return #[stMaff.getAff(i).copy]
+				else return #[
+					aff.copy.scaleDown(factor.copy).setConstant(aff.getConstantVal.copy.div(factor.copy).floor),
+					aff.copy.scale(0).setConstant(aff.getConstantVal.copy.mod(factor.copy))
+					
+				]
+			].flatten.toList.convertToMultiAff.toMap
+				.setInputTupleName(stMap.getInputTupleName)
+		].convertToUnionMap
+	}
+	
+	/**
+	 * Counts the number of time dimensions in a spacetime map
+	 * I.e. the minimal first few dimensions of the map that 
+	 * satisfy all of the causality restraints.
+	 */
+	def static int countTimeDimensions(AlphaSystem sys, ISLUnionMap spacetimeMap) {
+		val nDims = spacetimeMap.maps.get(0).dim(ISLDimType.isl_dim_out)
+		for(var i = 0; i < nDims; i++) {
+			val nTimeDims = i+1
+			val ISLUnionMap timeMap = spacetimeMap.maps.map[ stMap | 
+				stMap.copy.toMultiAff.getAffs.subList(0, nTimeDims)
+					.toList.convertToMultiAff.toMap
+			].convertToUnionMap
+			
+			val scheduler = new ManualScheduler(timeMap, spacetimeMap.getDomain)
+			
+			var validSchedule = true
+			try {
+				ScheduleVerifier.verify(sys, scheduler)
+			} catch(CausalityViolationException e) {
+				validSchedule = false
+			}
+			if(validSchedule) return nTimeDims
+		}
+		
+		return -1
 	}
 	
 	/*************************************** 

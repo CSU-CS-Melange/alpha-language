@@ -428,96 +428,6 @@ public class ISLUtil {
   }
 
   /**
-   * Returns the linearly independent basis vectors of the (non-parametric) subspace in which a set lies
-   * Basis vectors are given as ISLPoints
-   */
-  public static List<ISLPoint> getBasisVectors(final ISLSet set) {
-    ArrayList<ISLPoint> vectors = new ArrayList<ISLPoint>();
-    ISLSet workingSet = set.copy().affineHull().toSet();
-    final int dim = ISLUtil.dimensionality(workingSet);
-    for (int i = 0; (i < dim); i++) {
-      {
-        final ISLPoint basisVector = workingSet.copy().getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas().samplePoint();
-        vectors.add(basisVector);
-        workingSet = workingSet.intersect(ISLUtil.getOrthogonalPlane(basisVector.copy()));
-      }
-    }
-    return vectors;
-  }
-
-  /**
-   * Returns the ISLBasicSet that is the subspace spanned by a list of vectors
-   * Vectors do not necessarily need to be linearly independent
-   * but should be zero in the parameters
-   */
-  public static ISLSet getSpan(final Iterable<ISLPoint> basisVectors) {
-    final Function1<ISLPoint, ISLSet> _function = (ISLPoint a) -> {
-      return a.toSet();
-    };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet a, ISLSet b) -> {
-      return a.union(b);
-    };
-    final ISLSet basisSet = IterableExtensions.<ISLSet>reduce(IterableExtensions.<ISLPoint, ISLSet>map(basisVectors, _function), _function_1);
-    final ISLPoint zeroVector = ISLSet.buildUniverse(basisSet.getSpace().copy()).samplePoint();
-    return basisSet.union(zeroVector.toSet()).affineHull().toSet();
-  }
-
-  /**
-   * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
-   */
-  public static ISLSet getOrthogonalPlane(final ISLPoint vector) {
-    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
-    ISLAff projectAff = ISLAff.buildZero(localSpace.copy());
-    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
-      projectAff = projectAff.add(
-        ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, i).scale(
-          vector.getCoordinateVal(ISLDimType.isl_dim_out, i)));
-    }
-    final ISLConstraint constraint = projectAff.toEqualityConstraint();
-    return ISLSet.buildUniverse(vector.getSpace().copy()).addConstraint(constraint);
-  }
-
-  /**
-   * Builds a maff that computes the vector projection along a vector
-   */
-  public static ISLMultiAff buildProjectionMaff(final ISLPoint vector) {
-    final ISLLocalSpace localSpace = vector.getSpace().copy().toLocalSpace();
-    ArrayList<ISLAff> rejectAffList = new ArrayList<ISLAff>();
-    for (int i = 0; (i < localSpace.dim(ISLDimType.isl_dim_out)); i++) {
-      {
-        ISLAff rejectAff = ISLAff.buildZero(localSpace.copy());
-        for (int j = 0; (j < localSpace.dim(ISLDimType.isl_dim_out)); j++) {
-          rejectAff = rejectAff.add(
-            ISLAff.buildVarOnDomain(localSpace.copy(), ISLDimType.isl_dim_out, j).scale(
-              vector.getCoordinateVal(ISLDimType.isl_dim_out, j).copy()));
-        }
-        rejectAff = rejectAff.scale(vector.getCoordinateVal(ISLDimType.isl_dim_out, i).copy());
-        rejectAffList.add(rejectAff);
-      }
-    }
-    return ISLUtil.convertToMultiAff(rejectAffList);
-  }
-
-  /**
-   * Builds a maff that computes the vector rejection along a vector
-   * The vector rejection is the projection onto a plane orthogonal to the
-   * given vector.
-   */
-  public static ISLMultiAff buildRejectionMaff(final ISLPoint vector) {
-    return ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()).sub(ISLUtil.buildProjectionMaff(vector));
-  }
-
-  /**
-   * Returns a MultiAff that translates points along the given vector
-   */
-  public static ISLMultiAff buildTranslationMaff(final ISLPoint vector) {
-    return ISLUtil.toMultiAff(ISLMap.buildFromDomainAndRange(
-      ISLSet.buildUniverse(vector.getSpace().copy()), 
-      vector.copy().toSet())).add(
-      ISLUtil.toMultiAff(ISLSet.buildUniverse(vector.getSpace().copy()).identity()));
-  }
-
-  /**
    * Generates a union map out of a list of ISLMaps
    */
   public static ISLUnionMap convertToUnionMap(final List<ISLMap> maps) {
@@ -570,5 +480,170 @@ public class ISLUtil {
       _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Attempts to factor out any extant constant factors from each dimension of
+   * a spacetime map. If, for example, the target of a spacetime map  for one variable
+   * was [2i-2j+1], and the other variable targets were factorable by 2,
+   * this would be transformed into [i-j, 1].
+   * This transformation preserves the lexicographical ordering of points,
+   */
+  public static ISLUnionMap liftSpacetimeFactors(final ISLUnionMap spacetimeMap) {
+    final int nDims = spacetimeMap.getMaps().get(0).dim(ISLDimType.isl_dim_out);
+    final Function1<Integer, Iterable<ISLAff>> _function = (Integer i) -> {
+      final Function1<ISLMap, ISLAff> _function_1 = (ISLMap stMap) -> {
+        return ISLUtil.toMultiAff(stMap.copy()).getAff(i);
+      };
+      return ListExtensions.<ISLMap, ISLAff>map(spacetimeMap.getMaps(), _function_1);
+    };
+    final Iterable<Iterable<ISLAff>> mapDimensions = IterableExtensions.<Integer, Iterable<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function);
+    final Function1<Iterable<ISLAff>, ISLVal> _function_1 = (Iterable<ISLAff> dimension) -> {
+      final Function1<ISLAff, ISLVal> _function_2 = (ISLAff aff) -> {
+        int _dim = aff.dim(ISLDimType.isl_dim_in);
+        int _minus = (_dim - 1);
+        final Function1<Integer, ISLVal> _function_3 = (Integer i) -> {
+          return aff.getCoefficientVal(ISLDimType.isl_dim_in, i);
+        };
+        final Function1<ISLVal, Boolean> _function_4 = (ISLVal a) -> {
+          boolean _isZero = a.isZero();
+          return Boolean.valueOf((!_isZero));
+        };
+        final Function2<ISLVal, ISLVal, ISLVal> _function_5 = (ISLVal a, ISLVal b) -> {
+          return a.copy().abs().gcd(b.copy().abs());
+        };
+        return IterableExtensions.<ISLVal>reduce(IterableExtensions.<ISLVal>filter(IterableExtensions.<Integer, ISLVal>map(new IntegerRange(0, _minus), _function_3), _function_4), _function_5);
+      };
+      final Function1<ISLVal, Boolean> _function_3 = (ISLVal a) -> {
+        return Boolean.valueOf((a != null));
+      };
+      final Function2<ISLVal, ISLVal, ISLVal> _function_4 = (ISLVal a, ISLVal b) -> {
+        return a.copy().abs().gcd(b.copy().abs());
+      };
+      return IterableExtensions.<ISLVal>reduce(IterableExtensions.<ISLVal>filter(IterableExtensions.<ISLAff, ISLVal>map(dimension, _function_2), _function_3), _function_4);
+    };
+    final Iterable<ISLVal> dimensionFactors = IterableExtensions.<Iterable<ISLAff>, ISLVal>map(mapDimensions, _function_1);
+    final Function1<ISLMap, ISLMap> _function_2 = (ISLMap stMap) -> {
+      final ISLMultiAff stMaff = ISLUtil.toMultiAff(stMap.copy());
+      final Function1<Integer, List<ISLAff>> _function_3 = (Integer i) -> {
+        final ISLVal factor = ((ISLVal[])Conversions.unwrapArray(dimensionFactors, ISLVal.class))[i];
+        final ISLAff aff = stMaff.getAff(i);
+        long _asLong = factor.copy().asLong();
+        boolean _lessEqualsThan = (_asLong <= 1);
+        if (_lessEqualsThan) {
+          ISLAff _copy = stMaff.getAff(i).copy();
+          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_copy));
+        } else {
+          ISLAff _setConstant = aff.copy().scaleDown(factor.copy()).setConstant(aff.getConstantVal().copy().div(factor.copy()).floor());
+          ISLAff _setConstant_1 = aff.copy().scale(0).setConstant(aff.getConstantVal().copy().mod(factor.copy()));
+          return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_setConstant, _setConstant_1));
+        }
+      };
+      return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(Iterables.<ISLAff>concat(IterableExtensions.<Integer, List<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function_3)))).toMap().<ISLMap>setInputTupleName(stMap.getInputTupleName());
+    };
+    return ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(spacetimeMap.getMaps(), _function_2));
+  }
+
+  /**
+   * Counts the number of time dimensions in a spacetime map
+   * I.e. the minimal first few dimensions of the map that
+   * satisfy all of the causality restraints.
+   */
+  public static int countTimeDimensions(final AlphaSystem sys, final ISLUnionMap spacetimeMap) {
+    final int nDims = spacetimeMap.getMaps().get(0).dim(ISLDimType.isl_dim_out);
+    for (int i = 0; (i < nDims); i++) {
+      {
+        final int nTimeDims = (i + 1);
+        final Function1<ISLMap, ISLMap> _function = (ISLMap stMap) -> {
+          return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(ISLUtil.toMultiAff(stMap.copy()).getAffs().subList(0, nTimeDims))).toMap();
+        };
+        final ISLUnionMap timeMap = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(spacetimeMap.getMaps(), _function));
+        ISLUnionSet _domain = spacetimeMap.getDomain();
+        final ManualScheduler scheduler = new ManualScheduler(timeMap, _domain);
+        boolean validSchedule = true;
+        try {
+          ScheduleVerifier.verify(sys, scheduler);
+        } catch (final Throwable _t) {
+          if (_t instanceof CausalityViolationException) {
+            validSchedule = false;
+          } else {
+            throw Exceptions.sneakyThrow(_t);
+          }
+        }
+        if (validSchedule) {
+          return nTimeDims;
+        }
+      }
+    }
+    return (-1);
+  }
+
+  /**
+   * Builds the set of points where aff1 is lexicographically equal to aff2
+   */
+  public static ISLSet buildLexEQSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    ISLSet set = null;
+    for (int i = 0; (i < aff1.getAffs().size()); i++) {
+      {
+        final ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        ISLSet _xifexpression = null;
+        if ((set == null)) {
+          _xifexpression = EQSet;
+        } else {
+          _xifexpression = set.intersect(EQSet);
+        }
+        set = _xifexpression;
+      }
+    }
+    return set;
+  }
+
+  public static ISLSet buildLexGTSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    ISLSet lexSet = null;
+    ISLSet set = null;
+    for (int i = 0; (i < aff1.getAffs().size()); i++) {
+      {
+        final ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        final ISLSet GTSet = ISLSet.buildGTSet(aff1.getAffs().get(i).copy(), aff2.getAffs().get(i).copy());
+        ISLSet _xifexpression = null;
+        if ((lexSet == null)) {
+          _xifexpression = GTSet;
+        } else {
+          _xifexpression = GTSet.intersect(lexSet.copy());
+        }
+        final ISLSet GESet = _xifexpression;
+        ISLSet _xifexpression_1 = null;
+        if ((set == null)) {
+          _xifexpression_1 = GESet;
+        } else {
+          _xifexpression_1 = set.union(GESet);
+        }
+        set = _xifexpression_1;
+        ISLSet _xifexpression_2 = null;
+        if ((lexSet == null)) {
+          _xifexpression_2 = EQSet;
+        } else {
+          _xifexpression_2 = lexSet.intersect(EQSet);
+        }
+        lexSet = _xifexpression_2;
+      }
+    }
+    return set.simplify();
+  }
+
+  public static ISLSet buildLexGESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexEQSet(aff1, aff2).union(ISLUtil.buildLexGTSet(aff1, aff2)).simplify();
+  }
+
+  public static ISLSet buildLexLTSet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexGTSet(aff2, aff1);
+  }
+
+  public static ISLSet buildLexLESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexGESet(aff2, aff1);
+  }
+
+  public static ISLSet buildLexNESet(final ISLMultiAff aff1, final ISLMultiAff aff2) {
+    return ISLUtil.buildLexEQSet(aff1, aff2).complement().simplify();
   }
 }
