@@ -51,6 +51,7 @@ jobs:
         alpha.model.tests.scheduling.PRDGTest
         alpha.model.tests.transformation.reduction.NormalizeReductionDeepTest
         alpha.model.tests.transformation.reduction.SplitReductionTest
+        alpha.model.tests.transformation.reduction.SerializeReductionTest
         alpha.model.tests.transformations.DistributivityTest
         alpha.model.tests.transformations.FactorOutFromReductionTest
         alpha.model.tests.transformations.HigherOrderOperatorTest

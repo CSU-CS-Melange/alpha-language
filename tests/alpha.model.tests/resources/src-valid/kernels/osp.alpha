@@ -1,0 +1,13 @@
+package OSP {
+	affine OSP [N] -> {:N>0}
+		inputs
+			W : {[i] : 0<=i<=N}
+		outputs
+			C : {[i,j] : 1<=i<=j<=N};
+		let
+			C[i,j] = case {
+				{: i=j} : 0[];
+				{: i<j} : reduce(min, [k], {: i<=k<j} : C[i,k] + C[k+1, j] + W[i-1]*W[j]*W[k]);
+			};
+		.
+}
