@@ -24,6 +24,10 @@ import java.util.Iterator
 import fr.irisa.cairn.jnimap.isl.ISLPoint
 import java.util.ArrayList
 import fr.irisa.cairn.jnimap.isl.ISLVal
+import alpha.model.scheduler.ManualScheduler
+import alpha.model.exception.CausalityViolationException
+import alpha.model.scheduler.ScheduleVerifier
+import alpha.model.AlphaSystem
 
 class ISLUtil {
 	/*************************************** 
@@ -432,6 +436,34 @@ class ISLUtil {
 			].flatten.toList.convertToMultiAff.toMap
 				.setInputTupleName(stMap.getInputTupleName)
 		].convertToUnionMap
+	}
+	
+	/**
+	 * Counts the number of time dimensions in a spacetime map
+	 * I.e. the minimal first few dimensions of the map that 
+	 * satisfy all of the causality restraints.
+	 */
+	def static int countTimeDimensions(AlphaSystem sys, ISLUnionMap spacetimeMap) {
+		val nDims = spacetimeMap.maps.get(0).dim(ISLDimType.isl_dim_out)
+		for(var i = 0; i < nDims; i++) {
+			val nTimeDims = i+1
+			val ISLUnionMap timeMap = spacetimeMap.maps.map[ stMap | 
+				stMap.copy.toMultiAff.getAffs.subList(0, nTimeDims)
+					.toList.convertToMultiAff.toMap
+			].convertToUnionMap
+			
+			val scheduler = new ManualScheduler(timeMap, spacetimeMap.getDomain)
+			
+			var validSchedule = true
+			try {
+				ScheduleVerifier.verify(sys, scheduler)
+			} catch(CausalityViolationException e) {
+				validSchedule = false
+			}
+			if(validSchedule) return nTimeDims
+		}
+		
+		return -1
 	}
 	
 	/*************************************** 

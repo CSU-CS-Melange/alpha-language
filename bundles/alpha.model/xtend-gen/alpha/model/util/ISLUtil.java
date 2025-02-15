@@ -1,6 +1,10 @@
 package alpha.model.util;
 
+import alpha.model.AlphaSystem;
+import alpha.model.exception.CausalityViolationException;
 import alpha.model.matrix.MatrixOperations;
+import alpha.model.scheduler.ManualScheduler;
+import alpha.model.scheduler.ScheduleVerifier;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLAffList;
@@ -538,6 +542,40 @@ public class ISLUtil {
       return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(Iterables.<ISLAff>concat(IterableExtensions.<Integer, List<ISLAff>>map(new IntegerRange(0, (nDims - 1)), _function_3)))).toMap().<ISLMap>setInputTupleName(stMap.getInputTupleName());
     };
     return ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(spacetimeMap.getMaps(), _function_2));
+  }
+
+  /**
+   * Counts the number of time dimensions in a spacetime map
+   * I.e. the minimal first few dimensions of the map that
+   * satisfy all of the causality restraints.
+   */
+  public static int countTimeDimensions(final AlphaSystem sys, final ISLUnionMap spacetimeMap) {
+    final int nDims = spacetimeMap.getMaps().get(0).dim(ISLDimType.isl_dim_out);
+    for (int i = 0; (i < nDims); i++) {
+      {
+        final int nTimeDims = (i + 1);
+        final Function1<ISLMap, ISLMap> _function = (ISLMap stMap) -> {
+          return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(ISLUtil.toMultiAff(stMap.copy()).getAffs().subList(0, nTimeDims))).toMap();
+        };
+        final ISLUnionMap timeMap = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(spacetimeMap.getMaps(), _function));
+        ISLUnionSet _domain = spacetimeMap.getDomain();
+        final ManualScheduler scheduler = new ManualScheduler(timeMap, _domain);
+        boolean validSchedule = true;
+        try {
+          ScheduleVerifier.verify(sys, scheduler);
+        } catch (final Throwable _t) {
+          if (_t instanceof CausalityViolationException) {
+            validSchedule = false;
+          } else {
+            throw Exceptions.sneakyThrow(_t);
+          }
+        }
+        if (validSchedule) {
+          return nTimeDims;
+        }
+      }
+    }
+    return (-1);
   }
 
   /**
