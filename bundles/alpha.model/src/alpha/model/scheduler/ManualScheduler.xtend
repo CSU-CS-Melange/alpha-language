@@ -1,29 +1,22 @@
 package alpha.model.scheduler
 
-import alpha.model.Variable
+import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-
-import static alpha.model.util.ISLUtil.*
 
 class ManualScheduler implements Scheduler {
 	ISLUnionMap maps
 	ISLUnionSet domains
 	
-	new(String maps, String domains) {
-		this.maps = toISLUnionMap(maps)
-		this.domains = toISLUnionSet(domains)
+	new(ISLUnionMap maps, ISLUnionSet domains) {
+		this.maps = maps
+		this.domains = domains
 	}
 	
-		
-	new(String scheduleString) {
-		val schedule = toISLSchedule(scheduleString)
-		println("BLAH: " + schedule)
+	new(ISLSchedule schedule) {
 		this.maps = schedule.map
-		this.maps.maps.forEach[x | println("Sched: " + x)]
 		this.domains = schedule.domain
 	}
-	
 	
 	override getScheduleMap(String variable) {
 		val map = this.maps.maps.filter(map | map.inputTupleName == variable).head ?: null
@@ -50,5 +43,4 @@ class ManualScheduler implements Scheduler {
 	override getDomains() {
 		this.domains.copy
 	}
-	
 }

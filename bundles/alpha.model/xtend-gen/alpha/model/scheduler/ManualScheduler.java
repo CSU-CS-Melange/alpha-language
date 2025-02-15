@@ -1,15 +1,12 @@
 package alpha.model.scheduler;
 
-import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
-import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
@@ -18,19 +15,13 @@ public class ManualScheduler implements Scheduler {
 
   private ISLUnionSet domains;
 
-  public ManualScheduler(final String maps, final String domains) {
-    this.maps = ISLUtil.toISLUnionMap(maps);
-    this.domains = ISLUtil.toISLUnionSet(domains);
+  public ManualScheduler(final ISLUnionMap maps, final ISLUnionSet domains) {
+    this.maps = maps;
+    this.domains = domains;
   }
 
-  public ManualScheduler(final String scheduleString) {
-    final ISLSchedule schedule = ISLUtil.toISLSchedule(scheduleString);
-    InputOutput.<String>println(("BLAH: " + schedule));
+  public ManualScheduler(final ISLSchedule schedule) {
     this.maps = schedule.getMap();
-    final Consumer<ISLMap> _function = (ISLMap x) -> {
-      InputOutput.<String>println(("Sched: " + x));
-    };
-    this.maps.getMaps().forEach(_function);
     this.domains = schedule.getDomain();
   }
 
