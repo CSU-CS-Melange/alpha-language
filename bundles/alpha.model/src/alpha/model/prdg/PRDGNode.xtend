@@ -1,13 +1,11 @@
 package alpha.model.prdg
 
+import alpha.model.AlphaSystem
+import alpha.model.StandardEquation
+import alpha.model.Variable
+import fr.irisa.cairn.jnimap.isl.ISLLocalSpace
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLLocalSpace
-import org.eclipse.emf.common.util.EList
-import alpha.model.AlphaNode
-import alpha.model.AlphaSystem
-import alpha.model.Variable
-import alpha.model.StandardEquation
 
 class PRDGNode {
 	String name
@@ -33,6 +31,10 @@ class PRDGNode {
 	def ISLLocalSpace getLocalSpace() { getSpace.copy.toLocalSpace }
 	def boolean isReductionNode() { reductionNode }
 	
+	/**
+	 * Gets the Variable which corresponds to this node.
+	 * In the case of reductions, this is the variable which contains it.
+	 */
 	def Variable getOriginVariable(AlphaSystem sys) {
 		if(reductionNode) {
 			val varName = name.substring(0,this.name.lastIndexOf("_reduce"))
@@ -40,6 +42,9 @@ class PRDGNode {
 		} else return sys.getVariable(name)
 	}
 	
+	/**
+	 * Gets the standard equation that this node originates from.
+	 */
 	def StandardEquation getOriginEquation(AlphaSystem sys) {
 		return sys.systemBodies.map[ body | 
 			body.getStandardEquation(getOriginVariable(sys))

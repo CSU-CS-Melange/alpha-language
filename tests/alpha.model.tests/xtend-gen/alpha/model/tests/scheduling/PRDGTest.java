@@ -27,7 +27,7 @@ public class PRDGTest {
    * If 'true', the edge is flipped, to conform to old AlphaZ specifications
    * If this is ever changed, this value can simply be set to false to maintain test correctness
    */
-  private final boolean RESULT_BODY_EDGE_FLIPPED = true;
+  private boolean RESULT_BODY_EDGE_FLIPPED = false;
 
   private PRDG prdg;
 
@@ -159,12 +159,21 @@ public class PRDGTest {
     }
   }
 
+  public void assertOriginsGettable() {
+    final Consumer<PRDGNode> _function = (PRDGNode node) -> {
+      Assert.assertNotNull(node.getOriginVariable(this.sys));
+      Assert.assertNotNull(node.getOriginEquation(this.sys));
+    };
+    this.prdg.getNodes().forEach(_function);
+  }
+
   public void assertPRDGValid() {
     this.assertEdgeDimensionsCorrect();
     this.assertEdgeDomsPartitionVariables();
     this.assertEdgeRangesInVariables();
     this.assertNodeDomainsCorrect();
     this.assertNodesComplete();
+    this.assertOriginsGettable();
   }
 
   @Test

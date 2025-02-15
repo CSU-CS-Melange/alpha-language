@@ -57,6 +57,10 @@ public class PRDGNode {
     return this.reductionNode;
   }
 
+  /**
+   * Gets the Variable which corresponds to this node.
+   * In the case of reductions, this is the variable which contains it.
+   */
   public Variable getOriginVariable(final AlphaSystem sys) {
     if (this.reductionNode) {
       final String varName = this.name.substring(0, this.name.lastIndexOf("_reduce"));
@@ -66,6 +70,9 @@ public class PRDGNode {
     }
   }
 
+  /**
+   * Gets the standard equation that this node originates from.
+   */
   public StandardEquation getOriginEquation(final AlphaSystem sys) {
     final Function1<SystemBody, StandardEquation> _function = (SystemBody body) -> {
       return body.getStandardEquation(this.getOriginVariable(sys));

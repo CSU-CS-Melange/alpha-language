@@ -1,31 +1,23 @@
 package alpha.model.tests.scheduling
 
-import alpha.model.prdg.PRDG
 import alpha.model.AlphaModelLoader
-import org.junit.Test
-import static org.junit.Assert.*
-import alpha.model.prdg.PRDGNode
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLContext
-import alpha.model.prdg.PRDGEdge
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import alpha.model.prdg.PRDGGenerator
-import java.util.List
-import java.util.Set
-import java.util.HashSet
-import java.util.Arrays
 import alpha.model.AlphaSystem
 import alpha.model.Variable
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import alpha.model.prdg.PRDG
+import alpha.model.prdg.PRDGEdge
+import alpha.model.prdg.PRDGGenerator
+import alpha.model.prdg.PRDGNode
 import fr.irisa.cairn.jnimap.isl.ISLDimType
-import java.util.HashMap
-import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import org.junit.Test
+
+import static org.junit.Assert.*
 
 class PRDGTest {
 	/*Whether the dependence edge from a reduction's result variable to its body is flipped
 	If 'true', the edge is flipped, to conform to old AlphaZ specifications
 	If this is ever changed, this value can simply be set to false to maintain test correctness*/
-	val boolean RESULT_BODY_EDGE_FLIPPED = true
+	var boolean RESULT_BODY_EDGE_FLIPPED = false
 	var PRDG prdg
 	var AlphaSystem sys
 	
@@ -61,7 +53,6 @@ class PRDGTest {
 		for(PRDGEdge edge : prdg.getEdges) {
 			var Variable sourceVar = sys.getVariable(edge.getSource.getName)
 			var Variable destVar = sys.getVariable(edge.getDest.getName)
-			
 			
 			if(edge.isReductionEdge && RESULT_BODY_EDGE_FLIPPED) {
 				val Variable temp = sourceVar
@@ -113,6 +104,13 @@ class PRDGTest {
 		}
 	}
 	
+	def void assertOriginsGettable() {
+		prdg.nodes.forEach[ node |
+			assertNotNull(node.getOriginVariable(sys))
+			assertNotNull(node.getOriginEquation(sys))
+		]
+	}
+	
 	def void assertPRDGValid() {
 		/*
 		 * Can't validate that edge functions match dependence functions without a visitor
@@ -124,6 +122,7 @@ class PRDGTest {
 		assertEdgeRangesInVariables
 		assertNodeDomainsCorrect
 		assertNodesComplete
+		assertOriginsGettable
 	}
 	
 	@Test

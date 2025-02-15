@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
@@ -157,5 +158,28 @@ public class PRDG {
     int _hashCode_1 = this.edges.hashCode();
     int _multiply = (37 * _hashCode_1);
     return (_hashCode + _multiply);
+  }
+
+  @Override
+  public String toString() {
+    final Function1<PRDGNode, String> _function = (PRDGNode node) -> {
+      String _string = node.toString();
+      return ("\n\t" + _string);
+    };
+    final Function2<String, String, String> _function_1 = (String a, String b) -> {
+      return (a + b);
+    };
+    String _reduce = IterableExtensions.<String>reduce(IterableExtensions.<PRDGNode, String>map(this.nodes, _function), _function_1);
+    String _plus = ("Nodes: " + _reduce);
+    String _plus_1 = (_plus + "\nEdges: ");
+    final Function1<PRDGEdge, String> _function_2 = (PRDGEdge edge) -> {
+      String _string = edge.toString();
+      return ("\n\t" + _string);
+    };
+    final Function2<String, String, String> _function_3 = (String a, String b) -> {
+      return (a + b);
+    };
+    String _reduce_1 = IterableExtensions.<String>reduce(IterableExtensions.<PRDGEdge, String>map(this.edges, _function_2), _function_3);
+    return (_plus_1 + _reduce_1);
   }
 }

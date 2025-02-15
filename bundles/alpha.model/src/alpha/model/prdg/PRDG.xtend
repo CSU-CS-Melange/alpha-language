@@ -104,4 +104,11 @@ class PRDG {
 	}
 	
 	override int hashCode() {nodes.hashCode() + 37 * edges.hashCode()}
+	
+	override String toString() {
+		"Nodes: "
+		+ nodes.map[ node | "\n\t" + node.toString()].reduce[a, b | a + b]
+		+ "\nEdges: "
+		+ edges.map[ edge | "\n\t" + edge.toString()].reduce[a, b | a + b]
+	}
 }

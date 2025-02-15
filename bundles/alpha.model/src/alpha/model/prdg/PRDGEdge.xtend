@@ -7,7 +7,6 @@ class PRDGEdge {
 	PRDGNode source
 	PRDGNode dest
 	ISLMap map
-//	JNIFunction function
 	
 	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMap map) {
 		this.source = source
@@ -41,7 +40,7 @@ class PRDGEdge {
 		this.dest
 	}
 	
-	//Whether this edge is from the result of a reduction to its body
+	//Whether this edge is from a variable to a reduction
 	def boolean isReductionEdge() {this.dest.isReductionNode}
 	
 	override String toString() {
