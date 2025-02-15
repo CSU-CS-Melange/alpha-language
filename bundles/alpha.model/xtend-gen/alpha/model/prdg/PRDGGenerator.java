@@ -63,7 +63,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     final Function1<Variable, PRDGNode> _function_1 = (Variable v) -> {
       String _name = v.getName();
       ISLSet _copy = v.getDomain().copy();
-      return new PRDGNode(_name, _copy, false, v);
+      return new PRDGNode(_name, _copy, false);
     };
     this.prdg.setNodes(IterableExtensions.<PRDGNode>toSet(IterableExtensions.<Variable, PRDGNode>map(IterableExtensions.<Variable>filter(variables, _function), _function_1)));
   }
@@ -73,8 +73,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     this.functions.push(ISLMultiAff.buildIdentity(standardEquation.getVariable().getDomain().copy().identity().getSpace()));
     String _name = standardEquation.getVariable().getName();
     ISLSet _copy = standardEquation.getVariable().getDomain().copy();
-    Variable _variable = standardEquation.getVariable();
-    PRDGNode _pRDGNode = new PRDGNode(_name, _copy, false, _variable);
+    PRDGNode _pRDGNode = new PRDGNode(_name, _copy, false);
     this.sources.push(_pRDGNode);
     this.numberReductions = 0;
   }
@@ -102,8 +101,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
   public void visitVariableExpression(final VariableExpression ve) {
     String _name = ve.getVariable().getName();
     ISLSet _domain = ve.getVariable().getDomain();
-    Variable _variable = ve.getVariable();
-    PRDGNode target = new PRDGNode(_name, _domain, false, _variable);
+    PRDGNode target = new PRDGNode(_name, _domain, false);
     ISLSet _xifexpression = null;
     boolean _empty = this.domains.empty();
     boolean _not = (!_empty);
@@ -138,7 +136,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     final ISLSet dom = _xifexpression;
     Set<PRDGNode> _nodes = this.prdg.getNodes();
     ISLSet _copy = reduceExpression.getBody().getContextDomain().copy();
-    PRDGNode _pRDGNode = new PRDGNode(bodyName, _copy, true, reduceExpression);
+    PRDGNode _pRDGNode = new PRDGNode(bodyName, _copy, true);
     _nodes.add(_pRDGNode);
     final ISLMap resToBody = reduceExpression.getProjection().copy().toMap().reverse().intersectRange(reduceExpression.getBody().getContextDomain().copy());
     final ISLMap useToBody = useToRes.applyRange(resToBody).intersectDomain(dom);
