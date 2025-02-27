@@ -359,6 +359,10 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 	static def childOfCaseExpression(AlphaExpression expr) {
 		expr.eContainer instanceof CaseExpression
 	}
+	
+	static def childOfRestrictExpression(AlphaExpression expr) {
+		expr.eContainer instanceof RestrictExpression
+	}
 
 	override outRestrictExpression(RestrictExpression re) {
 		if (invalidState(re)) return;
@@ -367,8 +371,10 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		
 		if (invalidState(re)) return;
 
+		AlphaInternalStateConstructor.recomputeContextDomain(re)
 		// D : E -> E if expression domain ofD : E and E are the same (i.e., restrict has no effect)
-		if (re.expressionDomain.isEqual(re.expr.expressionDomain) && !re.childOfCaseExpression) {
+		if (re.expressionDomain.isEqual(re.expr.expressionDomain) 
+			&& !re.childOfCaseExpression && !re.childOfRestrictExpression) {
 			debug("redundant restrict", "D : E -> E");
 			EcoreUtil.replace(re, re.expr);
 		}

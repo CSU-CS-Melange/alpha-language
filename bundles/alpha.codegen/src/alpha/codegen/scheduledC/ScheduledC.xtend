@@ -35,6 +35,7 @@ import static extension alpha.model.util.CommonExtensions.toArrayList
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import alpha.codegen.isl.AffineConverter
+import alpha.model.tiler.Tiler
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -46,6 +47,8 @@ class ScheduledC extends CodeGeneratorBase {
 	
 	/** An object that returns the schedule of the outputted C code */
 	protected val Scheduler scheduler
+	
+	protected val Tiler tiler
 	
 	protected val MemoryMapper mapper
 		
@@ -60,13 +63,14 @@ class ScheduledC extends CodeGeneratorBase {
 	protected var Map<String, AssignmentStmt> variableStatements
 	
 	new(SystemBody systemBody, AlphaNameChecker nameChecker, ScheduledTypeGenerator typeGenerator, 
-		Scheduler scheduler, MemoryMapper mapper, boolean cycleDetection, boolean inlineFunction,
+		Scheduler scheduler, Tiler tiler, MemoryMapper mapper, boolean cycleDetection, boolean inlineFunction,
 		boolean inlineCode
 	) {
 		super(systemBody, nameChecker, typeGenerator, cycleDetection)
 
-		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler, mapper)
+		this.exprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, program, scheduler, tiler, mapper)
 		this.scheduler = scheduler
+		this.tiler = tiler
 		this.inlineFunction = inlineFunction
 		this.inlineCode = inlineCode
 		this.variableStatements = new HashMap()
@@ -250,6 +254,9 @@ class ScheduledC extends CodeGeneratorBase {
 		for(map : scheduleMaps.maps) {
 			val name = map.copy.inputTupleName
 			var newMap = map.copy
+			if(tiler !== null) {
+				newMap = newMap.applyRange(tiler.getTileMap)
+			}
 			if(inlineCode) {
 				var String macroName
 				do {
@@ -285,8 +292,8 @@ class ScheduledC extends CodeGeneratorBase {
 		
 	}
 	
-	def static convert(AlphaSystem system, BaseDataType valueType, Scheduler scheduler, MemoryMapper mapper, 
-		boolean normalize, boolean inlineFunction, boolean inlineCode
+	def static convert(AlphaSystem system, BaseDataType valueType, Scheduler scheduler, Tiler tiler, 
+		MemoryMapper mapper, boolean normalize, boolean inlineFunction, boolean inlineCode
 	) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
@@ -311,7 +318,7 @@ class ScheduledC extends CodeGeneratorBase {
 		}
 		
 		return (new ScheduledC(alteredSystem.systemBodies.get(0), new AlphaNameChecker(false), 
-			 new ScheduledTypeGenerator(valueType, false), scheduler, mapper, false, inlineFunction, inlineCode
+			 new ScheduledTypeGenerator(valueType, false), scheduler, tiler, mapper, false, inlineFunction, inlineCode
 		)).convertSystemBody
 		
 	}

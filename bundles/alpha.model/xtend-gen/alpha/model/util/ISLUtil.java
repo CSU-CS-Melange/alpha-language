@@ -2,6 +2,7 @@ package alpha.model.util;
 
 import alpha.model.matrix.MatrixOperations;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLAffList;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -322,6 +323,26 @@ public class ISLUtil {
         unionMap = _xifexpression;
       }
       _xblockexpression = unionMap;
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Generates a MultiAff out of a list of ISLAffs
+   */
+  public static ISLMultiAff convertToMultiAff(final List<ISLAff> affs) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      ISLAffList affList = ISLAffList.build(ISLContext.getInstance(), 0);
+      ISLSpace _copy = affs.get(0).getSpace().copy();
+      int _size = affs.size();
+      int _minus = (_size - 1);
+      ISLSpace space = _copy.addDims(
+        ISLDimType.isl_dim_out, _minus);
+      for (final ISLAff aff : affs) {
+        affList = affList.add(aff);
+      }
+      _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
     }
     return _xblockexpression;
   }

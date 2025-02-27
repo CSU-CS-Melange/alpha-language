@@ -24,6 +24,7 @@ import alpha.codegen.isl.AffineConverter
 
 
 import static alpha.model.util.ISLUtil.*
+import alpha.model.tiler.Tiler
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -42,6 +43,8 @@ class ScheduledExprConverter extends ExprConverter {
 	/** Generates the schedule to be used by the ISL LoopGenerator */
 	protected val Scheduler scheduler
 	
+	protected val Tiler tiler
+	
 	/** Represents the current reduction target for schedule lookup */
 	protected var String reductionTarget
 	
@@ -58,12 +61,13 @@ class ScheduledExprConverter extends ExprConverter {
 	
 	/** Constructs a new converter for expressions. */
 	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, 
-		ProgramBuilder program, Scheduler scheduler, MemoryMapper mapper
+		ProgramBuilder program, Scheduler scheduler, Tiler tiler, MemoryMapper mapper
 	) {
 		super(typeGenerator, nameChecker)
 		this.program = program
 		this.typeGenerator = typeGenerator
 		this.scheduler = scheduler
+		this.tiler = tiler
 		this.reductionTarget = ""
 		this.mapper = mapper
 	}
@@ -137,6 +141,8 @@ class ScheduledExprConverter extends ExprConverter {
 		
 		// We also take the map from the scheduler as well
 		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity		
+		
+		if(tiler !== null) scheduleMap = scheduleMap.applyRange(tiler.getTileMap)
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
