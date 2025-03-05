@@ -29,6 +29,9 @@ import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.util.EcoreUtil.Copier
 import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider
 import org.eclipse.xtext.naming.IQualifiedNameProvider
+import alpha.model.BINARY_OP
+import alpha.model.BinaryExpression
+import alpha.model.factory.AlphaUserFactory
 
 /**
  * Utility methods for analysis and transformation of Alpha programs.
@@ -418,5 +421,15 @@ class AlphaUtil {
 	
 	static def parseIntVector(String intVecStr) {
 		return parseIntArray(intVecStr).toList
+	}
+	
+	static def AlphaExpression createNaryExpression(BINARY_OP op, Iterable<AlphaExpression> exprs) {
+		if(exprs.size < 1) throw new IllegalArgumentException("exprs must be of size 1 or greater")
+		else if(exprs.size == 1) return exprs.get(0)
+		else return AlphaUserFactory.createBinaryExpression(
+			op,
+			exprs.get(0),
+			createNaryExpression(op, exprs.toList.subList(1, exprs.size))
+		)
 	}
 }

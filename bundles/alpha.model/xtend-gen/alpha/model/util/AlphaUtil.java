@@ -7,8 +7,10 @@ import alpha.model.AlphaPackage;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.AlphaVisitable;
+import alpha.model.BINARY_OP;
 import alpha.model.Equation;
 import alpha.model.SystemBody;
+import alpha.model.factory.AlphaUserFactory;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
@@ -566,6 +568,24 @@ public class AlphaUtil {
 
   public static List<Integer> parseIntVector(final String intVecStr) {
     return IterableExtensions.<Integer>toList(((Iterable<Integer>)Conversions.doWrapArray(AlphaUtil.parseIntArray(intVecStr))));
+  }
+
+  public static AlphaExpression createNaryExpression(final BINARY_OP op, final Iterable<AlphaExpression> exprs) {
+    int _size = IterableExtensions.size(exprs);
+    boolean _lessThan = (_size < 1);
+    if (_lessThan) {
+      throw new IllegalArgumentException("exprs must be of size 1 or greater");
+    } else {
+      int _size_1 = IterableExtensions.size(exprs);
+      boolean _equals = (_size_1 == 1);
+      if (_equals) {
+        return ((AlphaExpression[])Conversions.unwrapArray(exprs, AlphaExpression.class))[0];
+      } else {
+        return AlphaUserFactory.createBinaryExpression(op, 
+          ((AlphaExpression[])Conversions.unwrapArray(exprs, AlphaExpression.class))[0], 
+          AlphaUtil.createNaryExpression(op, IterableExtensions.<AlphaExpression>toList(exprs).subList(1, IterableExtensions.size(exprs))));
+      }
+    }
   }
 
   private static Iterable<AlphaConstant> gatherAlphaConstants(final EObject ap) {
