@@ -4,20 +4,26 @@ import alpha.model.AbstractReduceExpression
 import alpha.model.AlphaExpression
 import alpha.model.AlphaInternalStateConstructor
 import alpha.model.AlphaSystem
+import alpha.model.BINARY_OP
 import alpha.model.CaseExpression
 import alpha.model.RestrictExpression
 import alpha.model.StandardEquation
 import alpha.model.Variable
-import alpha.model.factory.AlphaUserFactory
 import alpha.model.util.AlphaOperatorUtil
 import alpha.model.util.AlphaUtil
-import static extension alpha.model.util.ISLUtil.*
+import alpha.model.util.FaceLattice
+import alpha.model.util.JavaUtil
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPoint
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import java.util.ArrayList
 import org.eclipse.emf.ecore.util.EcoreUtil
+
+import static extension alpha.model.factory.AlphaUserFactory.*
+import static extension alpha.model.util.ISLUtil.*
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 
 /**
  * Serializes a reduction along given reuse function(s).
@@ -49,7 +55,7 @@ class SerializeReduction {
 	 */
 	static def void applyAuto(AbstractReduceExpression are) {
 		var nullSpace = are.projectionExpr.getISLMultiAff.copy.nullSpace
-		SerializeReduction.applyAll(are, nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff])
+		SerializeReduction.applySequential(are, nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff])
 	}
 	
 	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
@@ -57,7 +63,12 @@ class SerializeReduction {
 		serialize(are, reuseDep, newName)
 	}
 	
-	static def void applyAll(AbstractReduceExpression are, Iterable<ISLMultiAff> partialReuseDeps) {
+	/**
+	 * Applies a series of reductions, creating a new temporary variable for each.
+	 * Avoids a potentially exponential number of domains, at the cost of
+	 * potential schedule bloat when fed to FoutrierScheduler
+	 */
+	static def void applySequential(AbstractReduceExpression are, Iterable<ISLMultiAff> partialReuseDeps) {
 		checkArguments(are, partialReuseDeps, "")
 		
 		//extend reuseDeps to span the whole nullspace if it isn't long enough.
@@ -102,6 +113,160 @@ class SerializeReduction {
 		serialize(are, reuseDeps.get(reuseDeps.length-1), newName)
 	}
 	
+	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff rho, String newName) {
+		//TODO argument checking
+		
+		serializeOneShot(are, rho, newName)
+	}
+	
+	/**
+	 * Serialize a reduction using only one accumulation vector
+	 * May have an exponential number of domains
+	 * But avoids schedule bloat from having more variables than needed
+	 */
+	private static def void serializeOneShot(AbstractReduceExpression are, ISLMultiAff rho, String newName) {
+		val ISLSet body = are.body.getContextDomain	
+		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
+
+		var AlphaExpression coreExpr = are.body 
+		if(coreExpr instanceof RestrictExpression) coreExpr = coreExpr.expr
+		
+		var sys = AlphaUtil.getContainerSystem(are)
+		val Variable reductionVar = createVariable(newName, body.copy)
+		sys.locals.add(reductionVar)
+		
+		/*
+		 * The basin is the set of points whose flow along rho does not exit the reduction body
+		 * The top is the set of points which do flow outside the body
+		 */
+		val ISLSet basin = body.copy.intersect(body.copy.apply(rho.copy.toMap.reverse))
+		val ISLSet top = body.copy.subtract(basin.copy).simplify
+		val ISLSet bottom = body.copy.subtract(body.copy.apply(rho.copy.toMap)).simplify
+		
+		val FaceLattice lattice = FaceLattice.create(body.getBasicSetAt(0).copy)
+		
+		/*
+		 * We create a new set of vectors to flow along once information reaches the top
+		 * These vectors are defined by the vector along each edge that becomes rho
+		 * when projected onto it
+		 * So each edgeFlowVec is assigned the same timestamp as rho
+		 */
+		val ISLSet rhoProjPreimage = rho.copy.toMap.deltas.preimage(
+			rho.copy.toMap.deltas.samplePoint.buildProjectionMaff
+		)
+		//TODO: implemented wrong. Need to analyze the *slice* of the reduction body
+		val int nExtraDims = body.dim(ISLDimType.isl_dim_set) - writeMaff.copy.nullSpace.dimensionality
+		val Iterable<ISLPoint> edgeFlowVecs = lattice.getFaces(1 + nExtraDims).map[edge | edge.toBasicSet.toSet]
+			.filter[set | set.copy.isSubset(top.copy)]
+			.map[set | 
+				set.getBasisVectors.getSpan.intersect(
+					writeMaff.copy.nullSpace
+				).intersect(
+					rhoProjPreimage.copy
+				)
+			].filter[set | !set.isEmpty]
+			.map[set | set.samplePoint]
+
+		/*
+		 * A set of actually useful edge flow vectors is produced, along with the domains they accumulate.
+		 * The peak is the remaining set of unaccumulated points
+		 */
+		var ISLSet peak = top.copy
+		var infoFlowMaps = new ArrayList<ISLMap>
+		for(ISLPoint vec : edgeFlowVecs) {
+			val accumulatedPoints = top.copy.intersect(top.copy.apply(rho.copy.toMap.reverse))
+			
+			if(!accumulatedPoints.isEmpty) {
+				infoFlowMaps +=
+					vec.buildTranslationMaff.toMap.intersectDomain(accumulatedPoints.copy)
+				
+				peak = peak.subtract(accumulatedPoints)
+			}
+		}
+		infoFlowMaps += rho.copy.toMap.intersectDomain(basin)
+		
+		/*
+		 * Now convert the flow maps (flow vectors plus the domains they accumulate)
+		 * into actual dependences, and insert them into the program
+		 */
+		var CaseExpression cases = infoFlowToCases(
+			infoFlowMaps, 
+			AlphaOperatorUtil.reductionOPtoBinaryOP(are.operator),
+			reductionVar,
+			coreExpr
+		)
+		cases.exprs += createRestrictExpression(
+			bottom,
+			AlphaUtil.copyAE(coreExpr)
+		)
+		AlphaUtil.getContainerSystemBody(are).equations += createStandardEquation(
+			reductionVar, 
+			cases
+		)
+		/*
+		 * The peak (hopefully bounded, potentially not) is now accumulated with a reduction
+		 * into the write variable
+		 */
+		EcoreUtil.replace(
+			are,
+			createReduceExpression(
+				are.operator,
+				writeMaff,
+				createRestrictExpression(
+					peak,
+					createVariableExpression(reductionVar)
+				)
+			)
+		)
+		
+		AlphaInternalStateConstructor.recomputeContextDomain(sys)
+	}
+	
+	/**
+	 * Takes flow information (domains plus the Maff along which they accumulate)
+	 * and turns it into dependences
+	 * Because the ranges of flow maps can intersect, the number of domains one needs to consider
+	 * becomes exponential wrt. dimension
+	 * 
+	 * O(2^d) for realistic cases
+	 * O(2^(2^d)) worst case
+	 */
+	private static def CaseExpression infoFlowToCases(Iterable<ISLMap> infoFlowMaps, BINARY_OP op, Variable v, AlphaExpression coreExpr) {
+		val CaseExpression cases = createCaseExpression()
+		
+		JavaUtil.powerSet(infoFlowMaps.toSet).forEach[ wantMaps | 
+			val unwantMaps = infoFlowMaps.filter[map | !wantMaps.contains(map)]
+			
+			//Bottom of the reduction is handled separately
+			if(wantMaps.size < 1) return;
+			
+			var range = wantMaps.map[map | map.getRange]
+				.reduce[a, b | a.copy.intersect(b.copy)]
+			if(!unwantMaps.empty) range = range.subtract(
+					unwantMaps.map[map | map.getRange]
+					.reduce[a, b | a.copy.union(b.copy)]
+				)
+			if(range.isEmpty) return;
+			
+			//Generate cases for each combination of flow ranges
+			cases.exprs += createRestrictExpression(
+				range,
+				AlphaUtil.createNaryExpression(
+					op,
+					wantMaps.map[ map | 
+						createDependenceExpression(
+							map.copy.reverse.toMultiAff,
+							createVariableExpression(v)
+						)
+					] + #[AlphaUtil.copyAE(coreExpr)]
+				)
+			)
+		]
+		
+		return cases
+	}
+	
+	
 	/**
 	 * The main serialize method, which all public-facing methods eventually call.
 	 */
@@ -113,7 +278,7 @@ class SerializeReduction {
 		var AlphaExpression coreExpr = are.body 
 		if(coreExpr instanceof RestrictExpression) coreExpr = coreExpr.expr
 		
-		val Variable reductionVar = AlphaUserFactory.createVariable(newName, body.copy)
+		val Variable reductionVar = createVariable(newName, body.copy)
 		sys.locals.add(reductionVar)
 
 		/*
@@ -123,7 +288,7 @@ class SerializeReduction {
 		val ISLSet top = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap)).simplify
 		val ISLSet bottom = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap.reverse)).simplify
 		
-		val CaseExpression writeCaseExpr = AlphaUserFactory.createCaseExpression()
+		val CaseExpression writeCaseExpr = createCaseExpression()
 		/*
 		 * Create a dependence from the write variable to each top 'facet' of the serialized reduction.
 		 * Typically, there is only one such facet.
@@ -135,7 +300,7 @@ class SerializeReduction {
 			val ISLSet shadow = facet.copy.apply(shadowProject.copy).subtract(coveredDomain.copy)
 			coveredDomain = coveredDomain.union(shadow.copy)
 			
-			val readExpr = AlphaUserFactory.createVariableExpression(reductionVar)
+			val readExpr = createVariableExpression(reductionVar)
 			
 			/*
 			 * Replaces the ReduceExpression with a simple DependenceExpression if it is
@@ -144,23 +309,23 @@ class SerializeReduction {
 			 */
 			var AlphaExpression dependenceExpr
 			if(shadowProject.copy.reverse.isSingleValued) {
-				dependenceExpr = AlphaUserFactory.createDependenceExpression(
+				dependenceExpr = createDependenceExpression(
 					shadowProject.copy.reverse.toMultiAff,
 					readExpr
 				)
 			}
 			else {
-				dependenceExpr = AlphaUserFactory.createReduceExpression(
+				dependenceExpr = createReduceExpression(
 					are.operator,
 					writeMaff.copy,
-					AlphaUserFactory.createRestrictExpression(
+					createRestrictExpression(
 						top.copy,
 						readExpr
 					)
 				)
 			}
 			
-			writeCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(shadow, dependenceExpr)
+			writeCaseExpr.exprs += createRestrictExpression(shadow, dependenceExpr)
 		}
 		
 		EcoreUtil.replace(are, writeCaseExpr)
@@ -168,10 +333,10 @@ class SerializeReduction {
 		/*
 		 * Generates the Exprs that the new StandardEquation will use.
 		 */
-		val readCaseExpr = AlphaUserFactory.createCaseExpression()
-		val selfDepExpr = AlphaUserFactory.createDependenceExpression(
+		val readCaseExpr = createCaseExpression()
+		val selfDepExpr = createDependenceExpression(
 			reuseDep.copy, 
-			AlphaUserFactory.createVariableExpression(reductionVar)
+			createVariableExpression(reductionVar)
 		)
 		
 		/*
@@ -179,20 +344,20 @@ class SerializeReduction {
 		 * The rest read from the read variable, and also their fellow points using
 		 * reuseDep as a uniform dependence.
 		 */
-		readCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(
+		readCaseExpr.exprs += createRestrictExpression(
 			bottom.copy, 
 			EcoreUtil.copy(coreExpr)
 		)
-		readCaseExpr.exprs += AlphaUserFactory.createRestrictExpression(
+		readCaseExpr.exprs += createRestrictExpression(
 			body.copy.subtract(bottom.copy), 
-			AlphaUserFactory.createBinaryExpression(
+			createBinaryExpression(
 				AlphaOperatorUtil.reductionOPtoBinaryOP(are.operator),
 				EcoreUtil.copy(coreExpr),
 				selfDepExpr
 			)
 		)
 		
-		val standardEq = AlphaUserFactory.createStandardEquation(reductionVar, readCaseExpr)
+		val standardEq = createStandardEquation(reductionVar, readCaseExpr)
 		systemBody.equations += standardEq
 		
 		AlphaInternalStateConstructor.recomputeContextDomain(sys)
