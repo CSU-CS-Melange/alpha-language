@@ -40,13 +40,12 @@ class SerializeReduction {
 	 * Applies a 1D serialization. Can only be used on reductions of rank 1.
 	 */
 	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep) {
-		val Variable writeVar = (AlphaUtil.getContainerEquation(are) as StandardEquation).variable
-		val String newName = AlphaUtil.duplicateNameResolver.apply(
-			AlphaUtil.getContainerSystem(are),
-			writeVar.name + "_reduction",
-			"_"
-		)
-		apply(are, reuseDep, newName)
+		apply(are, reuseDep, generateReductionName(are))
+	}
+	
+	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
+		checkArguments(are, #[reuseDep], newName, false)
+		serialize(are, reuseDep, newName)
 	}
 	
 	/**
@@ -58,9 +57,13 @@ class SerializeReduction {
 		SerializeReduction.applySequential(are, nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff])
 	}
 	
-	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
-		checkArguments(are, #[reuseDep], newName)
-		serialize(are, reuseDep, newName)
+	static def void applyAuto(AbstractReduceExpression are, boolean oneShot) {
+		if(!oneShot) {
+			applyAuto(are)
+			return
+		} 
+		var nullSpace = are.projectionExpr.getISLMultiAff.copy.nullSpace
+		SerializeReduction.applyOneShot(are, nullSpace.getBasisVectors.get(0).buildTranslationMaff)
 	}
 	
 	/**
@@ -69,7 +72,7 @@ class SerializeReduction {
 	 * potential schedule bloat when fed to FoutrierScheduler
 	 */
 	static def void applySequential(AbstractReduceExpression are, Iterable<ISLMultiAff> partialReuseDeps) {
-		checkArguments(are, partialReuseDeps, "")
+		checkArguments(are, partialReuseDeps, "", false)
 		
 		//extend reuseDeps to span the whole nullspace if it isn't long enough.
 		var reuseDeps = partialReuseDeps.map[a | a]
@@ -113,10 +116,22 @@ class SerializeReduction {
 		serialize(are, reuseDeps.get(reuseDeps.length-1), newName)
 	}
 	
+	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff rho) {
+		applyOneShot(are, rho, generateReductionName(are))
+	}
+	
 	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff rho, String newName) {
-		//TODO argument checking
-		
+		checkArguments(are, #[rho], newName, false)
 		serializeOneShot(are, rho, newName)
+	}
+	
+	private static def String generateReductionName(AbstractReduceExpression are) {
+		val Variable writeVar = (AlphaUtil.getContainerEquation(are) as StandardEquation).variable
+		return AlphaUtil.duplicateNameResolver.apply(
+			AlphaUtil.getContainerSystem(are),
+			writeVar.name + "_reduction",
+			"_"
+		)
 	}
 	
 	/**
@@ -366,7 +381,7 @@ class SerializeReduction {
 	/**
 	 * Sanity check!
 	 */
-	static def private void checkArguments(AbstractReduceExpression are, Iterable<ISLMultiAff> reuseDeps, String newName) {
+	static def private void checkArguments(AbstractReduceExpression are, Iterable<ISLMultiAff> reuseDeps, String newName, boolean oneShot) {
 		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
 		val nullSpace = writeMaff.copy.nullSpace
 		
@@ -382,7 +397,7 @@ class SerializeReduction {
 				"\ndo not form a linearly independent set.")
 		}
 		
-		if(dimensionality < nullSpace.copy.dimensionality) {
+		if(dimensionality < nullSpace.copy.dimensionality && !oneShot) {
 			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences " + reuseDeps + 
 				" are insufficient to serialize the the given reduction: " + are)
 		}

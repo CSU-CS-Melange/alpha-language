@@ -58,15 +58,12 @@ public class SerializeReduction {
    * Applies a 1D serialization. Can only be used on reductions of rank 1.
    */
   public static void apply(final AbstractReduceExpression are, final ISLMultiAff reuseDep) {
-    Equation _containerEquation = AlphaUtil.getContainerEquation(are);
-    final Variable writeVar = ((StandardEquation) _containerEquation).getVariable();
-    Function3<AlphaSystem, String, String, String> _duplicateNameResolver = AlphaUtil.duplicateNameResolver();
-    AlphaSystem _containerSystem = AlphaUtil.getContainerSystem(are);
-    String _name = writeVar.getName();
-    String _plus = (_name + "_reduction");
-    final String newName = _duplicateNameResolver.apply(_containerSystem, _plus, 
-      "_");
-    SerializeReduction.apply(are, reuseDep, newName);
+    SerializeReduction.apply(are, reuseDep, SerializeReduction.generateReductionName(are));
+  }
+
+  public static void apply(final AbstractReduceExpression are, final ISLMultiAff reuseDep, final String newName) {
+    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(reuseDep)), newName, false);
+    SerializeReduction.serialize(are, reuseDep, newName);
   }
 
   /**
@@ -81,9 +78,13 @@ public class SerializeReduction {
     SerializeReduction.applySequential(are, ListExtensions.<ISLPoint, ISLMultiAff>map(ISLUtil.getBasisVectors(nullSpace), _function));
   }
 
-  public static void apply(final AbstractReduceExpression are, final ISLMultiAff reuseDep, final String newName) {
-    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(reuseDep)), newName);
-    SerializeReduction.serialize(are, reuseDep, newName);
+  public static void applyAuto(final AbstractReduceExpression are, final boolean oneShot) {
+    if ((!oneShot)) {
+      SerializeReduction.applyAuto(are);
+      return;
+    }
+    ISLSet nullSpace = ISLUtil.nullSpace(are.getProjectionExpr().getISLMultiAff().copy());
+    SerializeReduction.applyOneShot(are, ISLUtil.buildTranslationMaff(ISLUtil.getBasisVectors(nullSpace).get(0)));
   }
 
   /**
@@ -92,7 +93,7 @@ public class SerializeReduction {
    * potential schedule bloat when fed to FoutrierScheduler
    */
   public static void applySequential(final AbstractReduceExpression are, final Iterable<ISLMultiAff> partialReuseDeps) {
-    SerializeReduction.checkArguments(are, partialReuseDeps, "");
+    SerializeReduction.checkArguments(are, partialReuseDeps, "", false);
     final Function1<ISLMultiAff, ISLMultiAff> _function = (ISLMultiAff a) -> {
       return a;
     };
@@ -151,8 +152,24 @@ public class SerializeReduction {
     SerializeReduction.serialize(are, ((ISLMultiAff[])Conversions.unwrapArray(_converted_reuseDeps_1, ISLMultiAff.class))[_minus], newName);
   }
 
+  public static void applyOneShot(final AbstractReduceExpression are, final ISLMultiAff rho) {
+    SerializeReduction.applyOneShot(are, rho, SerializeReduction.generateReductionName(are));
+  }
+
   public static void applyOneShot(final AbstractReduceExpression are, final ISLMultiAff rho, final String newName) {
+    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(rho)), newName, false);
     SerializeReduction.serializeOneShot(are, rho, newName);
+  }
+
+  private static String generateReductionName(final AbstractReduceExpression are) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(are);
+    final Variable writeVar = ((StandardEquation) _containerEquation).getVariable();
+    Function3<AlphaSystem, String, String, String> _duplicateNameResolver = AlphaUtil.duplicateNameResolver();
+    AlphaSystem _containerSystem = AlphaUtil.getContainerSystem(are);
+    String _name = writeVar.getName();
+    String _plus = (_name + "_reduction");
+    return _duplicateNameResolver.apply(_containerSystem, _plus, 
+      "_");
   }
 
   /**
@@ -362,7 +379,7 @@ public class SerializeReduction {
   /**
    * Sanity check!
    */
-  private static void checkArguments(final AbstractReduceExpression are, final Iterable<ISLMultiAff> reuseDeps, final String newName) {
+  private static void checkArguments(final AbstractReduceExpression are, final Iterable<ISLMultiAff> reuseDeps, final String newName, final boolean oneShot) {
     final ISLMultiAff writeMaff = are.getProjectionExpr().getISLMultiAff();
     final ISLSet nullSpace = ISLUtil.nullSpace(writeMaff.copy());
     final Function1<ISLMultiAff, ISLPoint> _function = (ISLMultiAff dep) -> {
@@ -385,9 +402,7 @@ public class SerializeReduction {
       throw new IllegalArgumentException((("[SerializeReduction] Reuse dependences: " + reuseDeps) + 
         "\ndo not form a linearly independent set."));
     }
-    int _dimensionality = ISLUtil.dimensionality(nullSpace.copy());
-    boolean _lessThan_1 = (dimensionality < _dimensionality);
-    if (_lessThan_1) {
+    if (((dimensionality < ISLUtil.dimensionality(nullSpace.copy())) && (!oneShot))) {
       throw new IllegalArgumentException(((("[SerializeReduction] Reuse dependences " + reuseDeps) + 
         " are insufficient to serialize the the given reduction: ") + are));
     }
