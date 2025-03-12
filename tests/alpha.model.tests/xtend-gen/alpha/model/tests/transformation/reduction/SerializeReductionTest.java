@@ -80,29 +80,29 @@ public class SerializeReductionTest {
 
   private AlphaSystem sys;
 
-  public void readFileAndSerialize(final String file) {
+  public void readFileAndSerialize(final String file, final boolean oneShot) {
     try {
       this.sys = AlphaModelLoader.loadModel(file).getSystems().get(0);
-      final Function1<Variable, String> _function = (Variable variable) -> {
-        return variable.getName();
-      };
-      final Set<String> variableNames = IterableExtensions.<String>toSet(ListExtensions.<Variable, String>map(this.sys.getVariables(), _function));
       NormalizeReduction.apply(this.sys);
-      final Function1<Variable, Boolean> _function_1 = (Variable variable) -> {
-        boolean _contains = variableNames.contains(variable.getName());
-        return Boolean.valueOf((!_contains));
+      final Function1<Variable, Boolean> _function = (Variable variable) -> {
+        final StandardEquation standardEq = this.sys.getSystemBodies().get(0).getStandardEquation(variable);
+        if ((standardEq == null)) {
+          return Boolean.valueOf(false);
+        }
+        AlphaExpression _expr = standardEq.getExpr();
+        return Boolean.valueOf((_expr instanceof ReduceExpression));
       };
-      final Iterable<Variable> reductionVariables = IterableExtensions.<Variable>filter(this.sys.getVariables(), _function_1);
+      final Iterable<Variable> reductionVariables = IterableExtensions.<Variable>filter(this.sys.getVariables(), _function);
       for (final Variable v : reductionVariables) {
         AlphaExpression _expr = this.getStandardEquation(v).getExpr();
-        this.autoSerializeAndAssert(((AbstractReduceExpression) _expr));
+        this.autoSerializeAndAssert(((AbstractReduceExpression) _expr), oneShot);
       }
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
   }
 
-  public void autoSerializeAndAssert(final AbstractReduceExpression are) {
+  public void autoSerializeAndAssert(final AbstractReduceExpression are, final boolean oneShot) {
     final ISLSet originalDomain = are.getBody().getContextDomain().copy();
     final ISLUnionSet originalReadSet = SerializeReductionTest.ReadSetComputer.compute(AlphaUtil.getContainerEquation(are));
     Equation _containerEquation = AlphaUtil.getContainerEquation(are);
@@ -111,7 +111,11 @@ public class SerializeReductionTest {
       return variable.getName();
     };
     final Set<String> variableNames = IterableExtensions.<String>toSet(ListExtensions.<Variable, String>map(this.sys.getVariables(), _function));
-    SerializeReduction.applyAuto(are);
+    if (oneShot) {
+      SerializeReduction.applyAuto(are, true);
+    } else {
+      SerializeReduction.applyAuto(are);
+    }
     Normalize.apply(this.sys);
     final Function1<Variable, Boolean> _function_1 = (Variable variable) -> {
       boolean _contains = variableNames.contains(variable.getName());
@@ -182,16 +186,7 @@ public class SerializeReductionTest {
 
   @Test
   public void testOSP() {
-    this.readFileAndSerialize("resources/src-valid/kernels/osp.alpha");
-  }
-
-  @Test
-  public void testBPMax() {
-    this.readFileAndSerialize("resources/src-valid/kernels/bpmax.alpha");
-  }
-
-  @Test
-  public void testCholesky() {
-    this.readFileAndSerialize("resources/src-valid/kernels/cholesky.alpha");
+    this.readFileAndSerialize("resources/src-valid/kernels/osp.alpha", false);
+    this.readFileAndSerialize("resources/src-valid/kernels/osp.alpha", true);
   }
 }

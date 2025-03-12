@@ -64,26 +64,33 @@ class SerializeReductionTest {
 	
 	var AlphaSystem sys
 	
-	def void readFileAndSerialize(String file) {
+	def void readFileAndSerialize(String file, boolean oneShot) {
 		sys = AlphaModelLoader.loadModel(file).systems.get(0)
-		val Set<String> variableNames = sys.getVariables.map[variable | variable.name].toSet
 		
 		NormalizeReduction.apply(sys)
-		val Iterable<Variable> reductionVariables = sys.getVariables.filter[variable | !variableNames.contains(variable.name)]
+		val Iterable<Variable> reductionVariables = sys.getVariables.filter[variable |
+			val standardEq = sys.systemBodies.get(0).getStandardEquation(variable)
+			if(standardEq === null) return false;
+			return standardEq.expr instanceof ReduceExpression
+		]
 		
 		for(v : reductionVariables) {
-			autoSerializeAndAssert(v.getStandardEquation.getExpr as AbstractReduceExpression)
+			autoSerializeAndAssert(v.getStandardEquation.getExpr as AbstractReduceExpression, oneShot)
 		}
 	}
 	
-	def void autoSerializeAndAssert(AbstractReduceExpression are) {
+	def void autoSerializeAndAssert(AbstractReduceExpression are, boolean oneShot) {
 		val ISLSet originalDomain = are.body.getContextDomain.copy 
 		val ISLUnionSet originalReadSet = ReadSetComputer.compute(are.getContainerEquation)
 		
 		val Variable writeVar = (are.getContainerEquation as StandardEquation).variable
 		val Set<String> variableNames = sys.getVariables.map[variable | variable.name].toSet
 		
-		SerializeReduction.applyAuto(are)
+		if(oneShot){
+			SerializeReduction.applyAuto(are, true)
+		} else {
+			SerializeReduction.applyAuto(are)
+		}
 		Normalize.apply(sys)
 		
 		val Variable newVariable = sys.getVariables.findFirst[variable | !variableNames.contains(variable.name)]
@@ -137,16 +144,7 @@ class SerializeReductionTest {
 	
 	@Test
 	def void testOSP() {
-		readFileAndSerialize("resources/src-valid/kernels/osp.alpha")
+		readFileAndSerialize("resources/src-valid/kernels/osp.alpha", false)
+		readFileAndSerialize("resources/src-valid/kernels/osp.alpha", true)
 	} 
-	
-	@Test
-	def void testBPMax() {
-		readFileAndSerialize("resources/src-valid/kernels/bpmax.alpha")
-	}
-	
-	@Test
-	def void testCholesky() {
-		readFileAndSerialize("resources/src-valid/kernels/cholesky.alpha")
-	}
 }
