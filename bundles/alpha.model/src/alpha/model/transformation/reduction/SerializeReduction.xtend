@@ -30,26 +30,28 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
  * 
  * This will modify the container system of the given ReduceExpression.
  * 
- * This class is not given enough information to automatically decompose
- * reductions, so it must serialize all dimensions of the reduction at once.
- * Users can manually apply DecomposeReduction beforehand if they only wish to
- * partially serialize the reduction.
+ * Three methods are included:
+ * - apply: serializes a reduction of rank 1 with a single accumulation vector.
+ * - applyAuto: serializes a reduction with automatically generated accumulation vectors.
+ * - applySequential: serializes a reduction of rank n with up to n accumulation vectors
+ * 		(more accumulation vectors are automatically generated as needed).
+ * - applyOneShot: serializes a reduction of any rank with a single accumulation vector.
  */
 class SerializeReduction {
 	/**
 	 * Applies a 1D serialization. Can only be used on reductions of rank 1.
 	 */
-	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep) {
-		apply(are, reuseDep, generateReductionName(are))
+	static def void apply(AbstractReduceExpression are, ISLMultiAff accumulationMaff) {
+		apply(are, accumulationMaff, generateReductionName(are))
 	}
 	
-	static def void apply(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
-		checkArguments(are, #[reuseDep], newName, false)
-		serialize(are, reuseDep, newName)
+	static def void apply(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
+		checkArguments(are, #[accumulationMaff], newName, false)
+		serialize(are, accumulationMaff, newName)
 	}
 	
 	/**
-	 * Serializes a reduction using an arbitrary set of basis vectors as reuse dependences.
+	 * Serializes a reduction using an arbitrary set of basis vectors as directions of accumulation.
 	 * This is not guaranteed to be a 'good' serialization, but it will certainly be valid.
 	 */
 	static def void applyAuto(AbstractReduceExpression are) {
@@ -71,26 +73,26 @@ class SerializeReduction {
 	 * Avoids a potentially exponential number of domains, at the cost of
 	 * potential schedule bloat when fed to FoutrierScheduler
 	 */
-	static def void applySequential(AbstractReduceExpression are, Iterable<ISLMultiAff> partialReuseDeps) {
-		checkArguments(are, partialReuseDeps, "", false)
+	static def void applySequential(AbstractReduceExpression are, Iterable<ISLMultiAff> partialaccumulationMaffs) {
+		checkArguments(are, partialaccumulationMaffs, "", false)
 		
-		//extend reuseDeps to span the whole nullspace if it isn't long enough.
-		var reuseDeps = partialReuseDeps.map[a | a]
+		//extend accumulationMaffs to span the whole nullspace if it isn't long enough.
+		var accumulationMaffs = partialaccumulationMaffs.map[a | a]
 		var nullSpace = are.projectionExpr.getISLMultiAff.copy.nullSpace
-		if(reuseDeps.size <  nullSpace.copy.dimensionality) {
-			val Iterable<ISLPoint> reuseVectors = reuseDeps.map[dep | dep.copy.toMap.deltas.samplePoint]
+		if(accumulationMaffs.size <  nullSpace.copy.dimensionality) {
+			val Iterable<ISLPoint> accumulationVectors = accumulationMaffs.map[accumulationMaff | accumulationMaff.copy.toMap.deltas.samplePoint]
 			
-			for(var i = 0; i < reuseVectors.size; i++) {
-				nullSpace = nullSpace.apply(reuseVectors.get(i).copy.buildRejectionMaff.toMap)
+			for(var i = 0; i < accumulationVectors.size; i++) {
+				nullSpace = nullSpace.apply(accumulationVectors.get(i).copy.buildRejectionMaff.toMap)
 			}
 			
-			reuseDeps = reuseDeps + nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff]
+			accumulationMaffs = accumulationMaffs + nullSpace.getBasisVectors.map[vec | vec.buildTranslationMaff]
 		}
 		
 		val Variable writeVar = (AlphaUtil.getContainerEquation(are) as StandardEquation).variable
 		
 		//Serialize the reduction one dependence at a time.
-		for(var i = 0; i < reuseDeps.length-1; i++)  {
+		for(var i = 0; i < accumulationMaffs.length-1; i++)  {
 			val String newName = AlphaUtil.duplicateNameResolver.apply(
 				AlphaUtil.getContainerSystem(are),
 				writeVar.name + "_reduction",
@@ -98,31 +100,31 @@ class SerializeReduction {
 			)
 			val writeMaff = are.projectionExpr.getISLMultiAff
 			
-			val reuseDep = reuseDeps.get(i)
-			val ISLMultiAff f1 = buildRejectionMaff(reuseDep.copy.toMap.deltas.samplePoint)
+			val accumulationMaff = accumulationMaffs.get(i)
+			val ISLMultiAff f1 = buildRejectionMaff(accumulationMaff.copy.toMap.deltas.samplePoint)
 			val ISLMultiAff f2 = writeMaff.copy.toMap.applyDomain(f1.copy.toMap).toMultiAff
 			
 			ReductionDecomposition.apply(are, f1, f2)
 			
-			serialize(are.body as AbstractReduceExpression, reuseDep, newName)
+			serialize(are.body as AbstractReduceExpression, accumulationMaff, newName)
 		}
 		
 		val String newName = AlphaUtil.duplicateNameResolver.apply(
 			AlphaUtil.getContainerSystem(are),
 			writeVar.name + "_reduction",
-			(reuseDeps.length-1).toString
+			(accumulationMaffs.length-1).toString
 		)
 			
-		serialize(are, reuseDeps.get(reuseDeps.length-1), newName)
+		serialize(are, accumulationMaffs.get(accumulationMaffs.length-1), newName)
 	}
 	
-	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff rho) {
-		applyOneShot(are, rho, generateReductionName(are))
+	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff) {
+		applyOneShot(are, accumulationMaff, generateReductionName(are))
 	}
 	
-	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff rho, String newName) {
-		checkArguments(are, #[rho], newName, false)
-		serializeOneShot(are, rho, newName)
+	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
+		checkArguments(are, #[accumulationMaff], newName, false)
+		serializeOneShot(are, accumulationMaff, newName)
 	}
 	
 	private static def String generateReductionName(AbstractReduceExpression are) {
@@ -139,7 +141,7 @@ class SerializeReduction {
 	 * May have an exponential number of domains
 	 * But avoids schedule bloat from having more variables than needed
 	 */
-	private static def void serializeOneShot(AbstractReduceExpression are, ISLMultiAff rho, String newName) {
+	private static def void serializeOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
 		val ISLSet body = are.body.getContextDomain	
 		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
 
@@ -151,25 +153,24 @@ class SerializeReduction {
 		sys.locals.add(reductionVar)
 		
 		/*
-		 * The basin is the set of points whose flow along rho does not exit the reduction body
+		 * The basin is the set of points whose flow along accumulationMaff does not exit the reduction body
 		 * The top is the set of points which do flow outside the body
 		 */
-		val ISLSet basin = body.copy.intersect(body.copy.apply(rho.copy.toMap.reverse))
+		val ISLSet basin = body.copy.intersect(body.copy.apply(accumulationMaff.copy.toMap.reverse))
 		val ISLSet top = body.copy.subtract(basin.copy).simplify
-		val ISLSet bottom = body.copy.subtract(body.copy.apply(rho.copy.toMap)).simplify
+		val ISLSet bottom = body.copy.subtract(body.copy.apply(accumulationMaff.copy.toMap)).simplify
 		
 		val FaceLattice lattice = FaceLattice.create(body.getBasicSetAt(0).copy)
 		
 		/*
 		 * We create a new set of vectors to flow along once information reaches the top
-		 * These vectors are defined by the vector along each edge that becomes rho
+		 * These vectors are defined by the vector along each edge that becomes accumulationMaff
 		 * when projected onto it
-		 * So each edgeFlowVec is assigned the same timestamp as rho
+		 * So each edgeFlowVec is assigned the same timestamp as accumulationMaff
 		 */
-		val ISLSet rhoProjPreimage = rho.copy.toMap.deltas.preimage(
-			rho.copy.toMap.deltas.samplePoint.buildProjectionMaff
+		val ISLSet accumulationMaffProjPreimage = accumulationMaff.copy.toMap.deltas.preimage(
+			accumulationMaff.copy.toMap.deltas.samplePoint.buildProjectionMaff
 		)
-		//TODO: implemented wrong. Need to analyze the *slice* of the reduction body
 		val int nExtraDims = body.dim(ISLDimType.isl_dim_set) - writeMaff.copy.nullSpace.dimensionality
 		val Iterable<ISLPoint> edgeFlowVecs = lattice.getFaces(1 + nExtraDims).map[edge | edge.toBasicSet.toSet]
 			.filter[set | set.copy.isSubset(top.copy)]
@@ -177,7 +178,7 @@ class SerializeReduction {
 				set.getBasisVectors.getSpan.intersect(
 					writeMaff.copy.nullSpace
 				).intersect(
-					rhoProjPreimage.copy
+					accumulationMaffProjPreimage.copy
 				)
 			].filter[set | !set.isEmpty]
 			.map[set | set.samplePoint]
@@ -189,7 +190,7 @@ class SerializeReduction {
 		var ISLSet peak = top.copy
 		var infoFlowMaps = new ArrayList<ISLMap>
 		for(ISLPoint vec : edgeFlowVecs) {
-			val accumulatedPoints = top.copy.intersect(top.copy.apply(rho.copy.toMap.reverse))
+			val accumulatedPoints = top.copy.intersect(top.copy.apply(accumulationMaff.copy.toMap.reverse))
 			
 			if(!accumulatedPoints.isEmpty) {
 				infoFlowMaps +=
@@ -198,7 +199,7 @@ class SerializeReduction {
 				peak = peak.subtract(accumulatedPoints)
 			}
 		}
-		infoFlowMaps += rho.copy.toMap.intersectDomain(basin)
+		infoFlowMaps += accumulationMaff.copy.toMap.intersectDomain(basin)
 		
 		/*
 		 * Now convert the flow maps (flow vectors plus the domains they accumulate)
@@ -283,9 +284,9 @@ class SerializeReduction {
 	
 	
 	/**
-	 * The main serialize method, which all public-facing methods eventually call.
+	 * The main serialize method, which apply and applyAll eventually call.
 	 */
-	private static def void serialize(AbstractReduceExpression are, ISLMultiAff reuseDep, String newName) {
+	private static def void serialize(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
 		var AlphaSystem sys = AlphaUtil.getContainerSystem(are)		
 		val systemBody = AlphaUtil.getContainerSystemBody(are)
 		val ISLSet body = are.body.getContextDomain
@@ -300,8 +301,8 @@ class SerializeReduction {
 		 * The 'top' set of points are what is read by the write variable.
 		 * The 'bottom' set of points do not read any other points in the serialized reduction.
 		 */
-		val ISLSet top = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap)).simplify
-		val ISLSet bottom = body.copy.subtract(body.copy.apply(reuseDep.copy.toMap.reverse)).simplify
+		val ISLSet top = body.copy.subtract(body.copy.apply(accumulationMaff.copy.toMap)).simplify
+		val ISLSet bottom = body.copy.subtract(body.copy.apply(accumulationMaff.copy.toMap.reverse)).simplify
 		
 		val CaseExpression writeCaseExpr = createCaseExpression()
 		/*
@@ -350,7 +351,7 @@ class SerializeReduction {
 		 */
 		val readCaseExpr = createCaseExpression()
 		val selfDepExpr = createDependenceExpression(
-			reuseDep.copy, 
+			accumulationMaff.copy, 
 			createVariableExpression(reductionVar)
 		)
 		
@@ -381,24 +382,24 @@ class SerializeReduction {
 	/**
 	 * Sanity check!
 	 */
-	static def private void checkArguments(AbstractReduceExpression are, Iterable<ISLMultiAff> reuseDeps, String newName, boolean oneShot) {
+	static def private void checkArguments(AbstractReduceExpression are, Iterable<ISLMultiAff> accumulationMaffs, String newName, boolean oneShot) {
 		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
 		val nullSpace = writeMaff.copy.nullSpace
 		
-		val Iterable<ISLPoint> reuseVectors = reuseDeps.map[dep | dep.copy.toMap.deltas.samplePoint]
-		if(!reuseVectors.forall[vector | vector.copy.toSet.isSubset(nullSpace.copy)]) {
-			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences: " + reuseDeps +
+		val Iterable<ISLPoint> accumulationVectors = accumulationMaffs.map[accumulationMaff | accumulationMaff.copy.toMap.deltas.samplePoint]
+		if(!accumulationVectors.forall[vector | vector.copy.toSet.isSubset(nullSpace.copy)]) {
+			throw new IllegalArgumentException("[SerializeReduction] Accumulation directions: " + accumulationMaffs +
 				"\ndo not all reside in the nullspace of the projection function: " + are	)
 		}
 		
-		val dimensionality = reuseVectors.getSpan.dimensionality
-		if(dimensionality < reuseVectors.size) {
-			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences: " + reuseDeps +
+		val dimensionality = accumulationVectors.getSpan.dimensionality
+		if(dimensionality < accumulationVectors.size) {
+			throw new IllegalArgumentException("[SerializeReduction] Accumulation directions: " + accumulationMaffs +
 				"\ndo not form a linearly independent set.")
 		}
 		
 		if(dimensionality < nullSpace.copy.dimensionality && !oneShot) {
-			throw new IllegalArgumentException("[SerializeReduction] Reuse dependences " + reuseDeps + 
+			throw new IllegalArgumentException("[SerializeReduction] Accumulation directions " + accumulationMaffs + 
 				" are insufficient to serialize the the given reduction: " + are)
 		}
 		
