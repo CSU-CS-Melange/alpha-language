@@ -123,7 +123,7 @@ class SerializeReduction {
 	}
 	
 	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
-		checkArguments(are, #[accumulationMaff], newName, false)
+		checkArguments(are, #[accumulationMaff], newName, true)
 		serializeOneShot(are, accumulationMaff, newName)
 	}
 	

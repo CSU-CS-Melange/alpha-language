@@ -159,7 +159,7 @@ public class SerializeReduction {
   }
 
   public static void applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
-    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, false);
+    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, true);
     SerializeReduction.serializeOneShot(are, accumulationMaff, newName);
   }
 
