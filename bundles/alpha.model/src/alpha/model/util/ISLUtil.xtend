@@ -255,6 +255,8 @@ class ISLUtil {
 	def static List<ISLPoint> getBasisVectors(ISLSet set) {
 		var vectors = new ArrayList<ISLPoint>()
 		var ISLSet workingSet = set.copy.affineHull.toSet
+		//The working set must be aligned to the origin or empty intersections may occur
+		workingSet = workingSet.apply(workingSet.copy.samplePoint.buildTranslationMaff.toMap.reverse)
 		val dim = workingSet.dimensionality
 		for(var i = 0; i < dim; i++) {
 			val ISLPoint basisVector = workingSet.copy.getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas.samplePoint

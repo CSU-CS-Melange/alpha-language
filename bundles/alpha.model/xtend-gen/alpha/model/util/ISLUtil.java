@@ -322,6 +322,7 @@ public class ISLUtil {
   public static List<ISLPoint> getBasisVectors(final ISLSet set) {
     ArrayList<ISLPoint> vectors = new ArrayList<ISLPoint>();
     ISLSet workingSet = set.copy().affineHull().toSet();
+    workingSet = workingSet.apply(ISLUtil.buildTranslationMaff(workingSet.copy().samplePoint()).toMap().reverse());
     final int dim = ISLUtil.dimensionality(workingSet);
     for (int i = 0; (i < dim); i++) {
       {
