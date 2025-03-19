@@ -85,7 +85,9 @@ public class OptimallySplitReductions {
       };
       final ISLSet superDomain = IterableExtensions.<ISLSet>findFirst(this.reuseDepMap.keySet(), _function);
       final Iterable<ISLMultiAff> reuseDeps = this.reuseDepMap.get(superDomain);
-      SerializeReduction.applySequential(reduceExpression, reuseDeps);
+      for (final ISLMultiAff dep : reuseDeps) {
+        SerializeReduction.applyOneShot(reduceExpression, dep);
+      }
     }
   }
 

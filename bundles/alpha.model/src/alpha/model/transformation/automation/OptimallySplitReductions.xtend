@@ -75,7 +75,9 @@ class OptimallySplitReductions {
 			val superDomain = reuseDepMap.keySet.findFirst[key | domain.copy.isSubset(key.copy)]
 			val reuseDeps = reuseDepMap.get(superDomain)
 			
-			SerializeReduction.applySequential(reduceExpression, reuseDeps)
+			for(ISLMultiAff dep : reuseDeps) {
+				SerializeReduction.applyOneShot(reduceExpression, dep)
+			}
 		}
 	}
 	
