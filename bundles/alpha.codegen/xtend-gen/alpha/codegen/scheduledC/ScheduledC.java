@@ -31,6 +31,7 @@ import alpha.model.UseEquation;
 import alpha.model.Variable;
 import alpha.model.memorymapper.MemoryMapper;
 import alpha.model.scheduler.Scheduler;
+import alpha.model.tiler.Tiler;
 import alpha.model.transformation.ChangeOfBasis;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.StandardizeNames;
@@ -78,6 +79,8 @@ public class ScheduledC extends CodeGeneratorBase {
    */
   protected final Scheduler scheduler;
 
+  protected final Tiler tiler;
+
   protected final MemoryMapper mapper;
 
   /**
@@ -92,11 +95,12 @@ public class ScheduledC extends CodeGeneratorBase {
 
   protected Map<String, AssignmentStmt> variableStatements;
 
-  public ScheduledC(final SystemBody systemBody, final AlphaNameChecker nameChecker, final ScheduledTypeGenerator typeGenerator, final Scheduler scheduler, final MemoryMapper mapper, final boolean cycleDetection, final boolean inlineFunction, final boolean inlineCode) {
+  public ScheduledC(final SystemBody systemBody, final AlphaNameChecker nameChecker, final ScheduledTypeGenerator typeGenerator, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper, final boolean cycleDetection, final boolean inlineFunction, final boolean inlineCode) {
     super(systemBody, nameChecker, typeGenerator, cycleDetection);
-    ScheduledExprConverter _scheduledExprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, this.program, scheduler, mapper);
+    ScheduledExprConverter _scheduledExprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, this.program, scheduler, tiler, mapper);
     this.exprConverter = _scheduledExprConverter;
     this.scheduler = scheduler;
+    this.tiler = tiler;
     this.inlineFunction = inlineFunction;
     this.inlineCode = inlineCode;
     HashMap<String, AssignmentStmt> _hashMap = new HashMap<String, AssignmentStmt>();
@@ -283,6 +287,9 @@ public class ScheduledC extends CodeGeneratorBase {
         {
           final String name = map_1.copy().getInputTupleName();
           ISLMap newMap = map_1.copy();
+          if ((this.tiler != null)) {
+            newMap = newMap.applyRange(this.tiler.getTileMap());
+          }
           if (this.inlineCode) {
             String macroName = null;
             do {
@@ -321,7 +328,7 @@ public class ScheduledC extends CodeGeneratorBase {
     return _xblockexpression;
   }
 
-  public static Program convert(final AlphaSystem system, final BaseDataType valueType, final Scheduler scheduler, final MemoryMapper mapper, final boolean normalize, final boolean inlineFunction, final boolean inlineCode) {
+  public static Program convert(final AlphaSystem system, final BaseDataType valueType, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper, final boolean normalize, final boolean inlineFunction, final boolean inlineCode) {
     int _length = ((Object[])Conversions.unwrapArray(system.getSystemBodies(), Object.class)).length;
     boolean _notEquals = (_length != 1);
     if (_notEquals) {
@@ -356,6 +363,6 @@ public class ScheduledC extends CodeGeneratorBase {
     SystemBody _get = alteredSystem.getSystemBodies().get(0);
     AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
     ScheduledTypeGenerator _scheduledTypeGenerator = new ScheduledTypeGenerator(valueType, false);
-    return new ScheduledC(_get, _alphaNameChecker, _scheduledTypeGenerator, scheduler, mapper, false, inlineFunction, inlineCode).convertSystemBody();
+    return new ScheduledC(_get, _alphaNameChecker, _scheduledTypeGenerator, scheduler, tiler, mapper, false, inlineFunction, inlineCode).convertSystemBody();
   }
 }
