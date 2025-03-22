@@ -343,6 +343,24 @@ class ISLUtil {
 	}
 	
 	
+	/**
+	 * Returns the parametrized box that bounds the given set.
+	 */
+	def static ISLBasicSet boundingBox(ISLSet set) {
+		val Iterable<ISLPoint> axes = (0..set.dim(ISLDimType.isl_dim_set)-1).map[dim | 
+			ISLPoint.buildZero(set.getSpace.copy).add(ISLDimType.isl_dim_set, dim, 1)
+		]
+		
+		val boxConstraints = axes.map[axis | 
+			set.copy.apply(buildProjectionMaff(axis.copy).toMap)
+				.basicSets.get(0)
+				.getConstraints
+				.filter[con | !con.isEquality]
+		].flatten
+		
+		return boxConstraints.fold(ISLBasicSet.buildUniverse(set.space.copy), [s, c | s.addConstraint(c)])
+	}
+	
 	/*************************************** 
 	 *	         Conversion Methods        * 
 	 ***************************************/

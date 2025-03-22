@@ -407,6 +407,30 @@ public class ISLUtil {
   }
 
   /**
+   * Returns the parametrized box that bounds the given set.
+   */
+  public static ISLBasicSet boundingBox(final ISLSet set) {
+    int _dim = set.dim(ISLDimType.isl_dim_set);
+    int _minus = (_dim - 1);
+    final Function1<Integer, ISLPoint> _function = (Integer dim) -> {
+      return ISLPoint.buildZero(set.getSpace().copy()).add(ISLDimType.isl_dim_set, (dim).intValue(), 1);
+    };
+    final Iterable<ISLPoint> axes = IterableExtensions.<Integer, ISLPoint>map(new IntegerRange(0, _minus), _function);
+    final Function1<ISLPoint, Iterable<ISLConstraint>> _function_1 = (ISLPoint axis) -> {
+      final Function1<ISLConstraint, Boolean> _function_2 = (ISLConstraint con) -> {
+        boolean _isEquality = con.isEquality();
+        return Boolean.valueOf((!_isEquality));
+      };
+      return IterableExtensions.<ISLConstraint>filter(set.copy().apply(ISLUtil.buildProjectionMaff(axis.copy()).toMap()).getBasicSets().get(0).getConstraints(), _function_2);
+    };
+    final Iterable<ISLConstraint> boxConstraints = Iterables.<ISLConstraint>concat(IterableExtensions.<ISLPoint, Iterable<ISLConstraint>>map(axes, _function_1));
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
+      return s.addConstraint(c);
+    };
+    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(boxConstraints, ISLBasicSet.buildUniverse(set.getSpace().copy()), _function_2);
+  }
+
+  /**
    * Generates a union set out of a list of ISLSets
    * The method in ISLUnionSet is bugged
    */
