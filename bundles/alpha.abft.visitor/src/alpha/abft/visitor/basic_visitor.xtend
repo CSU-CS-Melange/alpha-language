@@ -10,19 +10,16 @@ import alpha.model.transformation.AABFT
 
 class basic_visitor {
 	def static void main(String[] args) {
-		val AlphaRoot root = AlphaModelLoader.loadModel("resources/matmult.alpha")
+		val AlphaRoot root = AlphaModelLoader.loadModel("resources/scalmat.alpha")
 //		println(Show.print(root)) 
 
 //		println("---------------------------------")		
 		val AlphaSystem system = root.systems.get(0)
 		
 		println(Show.print(system))
+		println("---------------------------------")
 		
 		AABFT.apply(system)
-		
-		
-
-		
 		
 	}
 }

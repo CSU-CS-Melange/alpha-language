@@ -12,9 +12,10 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
 public class basic_visitor {
   public static void main(final String[] args) {
     try {
-      final AlphaRoot root = AlphaModelLoader.loadModel("resources/matmult.alpha");
+      final AlphaRoot root = AlphaModelLoader.loadModel("resources/scalmat.alpha");
       final AlphaSystem system = root.getSystems().get(0);
       InputOutput.<String>println(Show.<AlphaSystem>print(system));
+      InputOutput.<String>println("---------------------------------");
       AABFT.apply(system);
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
