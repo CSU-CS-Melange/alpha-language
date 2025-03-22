@@ -12,7 +12,8 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
 public class basic_visitor {
   public static void main(final String[] args) {
     try {
-      final AlphaRoot root = AlphaModelLoader.loadModel("resources/scalmat.alpha");
+      final String file = "matvec";
+      final AlphaRoot root = AlphaModelLoader.loadModel((("resources/" + file) + ".alpha"));
       final AlphaSystem system = root.getSystems().get(0);
       InputOutput.<String>println(Show.<AlphaSystem>print(system));
       InputOutput.<String>println("---------------------------------");

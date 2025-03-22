@@ -10,10 +10,9 @@ import alpha.model.transformation.AABFT
 
 class basic_visitor {
 	def static void main(String[] args) {
-		val AlphaRoot root = AlphaModelLoader.loadModel("resources/scalmat.alpha")
-//		println(Show.print(root)) 
-
-//		println("---------------------------------")		
+		val file = "matvec"
+		
+		val AlphaRoot root = AlphaModelLoader.loadModel("resources/"+file+".alpha")		
 		val AlphaSystem system = root.systems.get(0)
 		
 		println(Show.print(system))

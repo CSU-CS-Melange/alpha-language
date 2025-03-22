@@ -1,11 +1,9 @@
 package alpha.model.transformation;
 
-import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
 import alpha.model.StandardEquation;
 import alpha.model.VariableExpression;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
-import fr.irisa.cairn.jnimap.isl.ISLSet;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 
 @SuppressWarnings("all")
@@ -17,46 +15,60 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
   }
 
   @Override
-  public void inVariableExpression(final VariableExpression ve) {
-    InputOutput.<String>print("name: ");
-    InputOutput.<String>println(ve.getVariable().getName());
-    InputOutput.<String>print("domain: ");
-    InputOutput.<ISLSet>println(ve.getVariable().getDomain());
-    InputOutput.<String>print("basic sets: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbBasicSets()));
-    InputOutput.<String>print("constants: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbConstants()));
-    InputOutput.<String>print("divs: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbDivs()));
-    InputOutput.<String>print("indices: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbIndices()));
-    InputOutput.<String>print("params: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbParams()));
-    InputOutput.<String>print("points: ");
-    InputOutput.<Integer>println(Integer.valueOf(ve.getVariable().getDomain().getNbPoints()));
-    InputOutput.<String>println("ve done");
+  public void inStandardEquation(final StandardEquation se) {
+    final String name = se.getVariable().getName();
+    final int dim = se.getVariable().getDomain().getNbIndices();
+    AABFT.checkDim(name, dim);
   }
 
   @Override
-  public void inStandardEquation(final StandardEquation se) {
-    InputOutput.<String>print("name: ");
-    InputOutput.<String>println(se.getVariable().getName());
-    InputOutput.<String>print("domain: ");
-    InputOutput.<ISLSet>println(se.getVariable().getDomain());
-    InputOutput.<String>print("basic sets: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbBasicSets()));
-    InputOutput.<String>print("constants: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbConstants()));
-    InputOutput.<String>print("divs: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbDivs()));
-    InputOutput.<String>print("indices: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbIndices()));
-    InputOutput.<String>print("params: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbParams()));
-    InputOutput.<String>print("points: ");
-    InputOutput.<Integer>println(Integer.valueOf(se.getVariable().getDomain().getNbPoints()));
-    InputOutput.<String>print("expr: ");
-    InputOutput.<AlphaExpression>println(se.getExpr());
-    InputOutput.<String>println("se done");
+  public void inVariableExpression(final VariableExpression ve) {
+    final String name = ve.getVariable().getName();
+    final int dim = ve.getVariable().getDomain().getNbIndices();
+    AABFT.checkDim(name, dim);
+  }
+
+  public static String checkDim(final String name, final int dim) {
+    String _xblockexpression = null;
+    {
+      final int check = (dim - 1);
+      String msg = (((((("The variable \'" + name) + "\' has a (") + Integer.valueOf(dim)) + ")-dimensional domain, which would produce a ") + Integer.valueOf(check)) + "-dimensional checksum.");
+      final int index = 83;
+      String _xifexpression = null;
+      if ((check < 0)) {
+        InputOutput.<String>println(("ERROR: Invalid variable detected. " + msg));
+        System.exit(1);
+      } else {
+        String _xifexpression_1 = null;
+        if ((check == 0)) {
+          String _xblockexpression_1 = null;
+          {
+            StringBuilder sb = new StringBuilder(msg);
+            sb.insert(index, "(scalar) ");
+            msg = sb.toString();
+            _xblockexpression_1 = InputOutput.<String>println(msg);
+          }
+          _xifexpression_1 = _xblockexpression_1;
+        } else {
+          String _xifexpression_2 = null;
+          if ((check == 1)) {
+            String _xblockexpression_2 = null;
+            {
+              StringBuilder sb = new StringBuilder(msg);
+              sb.insert(index, "(vector) ");
+              msg = sb.toString();
+              _xblockexpression_2 = InputOutput.<String>println(msg);
+            }
+            _xifexpression_2 = _xblockexpression_2;
+          } else {
+            _xifexpression_2 = InputOutput.<String>println(msg);
+          }
+          _xifexpression_1 = _xifexpression_2;
+        }
+        _xifexpression = _xifexpression_1;
+      }
+      _xblockexpression = _xifexpression;
+    }
+    return _xblockexpression;
   }
 }
