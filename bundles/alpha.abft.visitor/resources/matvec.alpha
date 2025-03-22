@@ -1,0 +1,9 @@
+affine matvec [N]->{: N>0}
+ inputs
+  A : {[i,j] : 0<=i,j<N}
+  x : {[i]	 : 0<=i<N  }
+ outputs
+  b : {[i]   : 0<=i<N  }
+ let
+  b[i] = reduce(+, [k], A[i,k]*x[k]);
+.

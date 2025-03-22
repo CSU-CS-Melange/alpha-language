@@ -1,0 +1,11 @@
+affine scalmat [N]->{: N>0}
+ inputs
+  k : {[]	 :		   }
+  A : {[i,j] : 0<=i,j<N}
+
+ outputs
+  B : {[i,j] : 0<=i,j<N}
+
+ let
+  B[i,j] = k[]*A[i,j];
+.
