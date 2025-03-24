@@ -84,6 +84,17 @@ public class DTiler implements Tiler {
   }
 
   @Override
+  public ISLMap getUntileMap() {
+    ISLMap _copy = this.tileMap.copy();
+    int _size = this.getTiledDims().size();
+    int _dim = this.tileMap.dim(ISLDimType.isl_dim_out);
+    int _size_1 = this.getTiledDims().size();
+    int _minus = (_dim - _size_1);
+    return _copy.projectOut(
+      ISLDimType.isl_dim_out, _size, _minus).reverse();
+  }
+
+  @Override
   public Set<Integer> getTiledDims() {
     return IntStream.rangeClosed(this.startDim, this.endDim).boxed().collect(Collectors.<Integer>toSet());
   }

@@ -10,7 +10,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSpace
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLAff
 import java.util.ArrayList
-import alpha.model.util.ISLUtil
+import static extension alpha.model.util.ISLUtil.*
 import alpha.model.scheduler.Scheduler
 
 class DTiler implements Tiler {
@@ -46,7 +46,7 @@ class DTiler implements Tiler {
 		
 		this.startDim = startDim
 		this.endDim = endDim
-		this.tileMap = ISLUtil.convertToMultiAff(affs).toMap
+		this.tileMap = affs.convertToMultiAff.toMap
 	}
 	
 	def void argumentCheck(List<Integer> tileSizes, ISLSpace scheduleSpace, int startDim, int endDim,
@@ -66,6 +66,14 @@ class DTiler implements Tiler {
 	}
 	
 	override ISLMap getTileMap() {tileMap.copy}
+	
+	override ISLMap getUntileMap() {
+		return tileMap.copy.projectOut(
+			ISLDimType.isl_dim_out, 
+			tiledDims.size,
+			tileMap.dim(ISLDimType.isl_dim_out)-tiledDims.size
+		).reverse
+	}
 	
 	override Set<Integer> getTiledDims() {
 		IntStream.rangeClosed(startDim, endDim).boxed.collect(Collectors.toSet)
