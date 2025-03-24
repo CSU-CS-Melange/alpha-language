@@ -171,7 +171,7 @@ class SerializeReduction {
 		val ISLSet accumulationMaffProjPreimage = accumulationMaff.copy.toMap.deltas.preimage(
 			accumulationMaff.copy.toMap.deltas.samplePoint.buildProjectionMaff
 		)
-		val int nExtraDims = body.dim(ISLDimType.isl_dim_set) - writeMaff.copy.nullSpace.dimensionality
+		val int nExtraDims = body.dimensionality - writeMaff.copy.nullSpace.dimensionality
 		val Iterable<ISLPoint> edgeFlowVecs = lattice.getFaces(1 + nExtraDims).map[edge | edge.toBasicSet.toSet]
 			.filter[set | set.copy.isSubset(top.copy)]
 			.map[set | 

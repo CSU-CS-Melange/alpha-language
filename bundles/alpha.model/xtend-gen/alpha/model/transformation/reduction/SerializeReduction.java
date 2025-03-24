@@ -22,7 +22,6 @@ import alpha.model.util.ISLUtil;
 import alpha.model.util.JavaUtil;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
-import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPoint;
@@ -195,9 +194,9 @@ public class SerializeReduction {
     final FaceLattice lattice = FaceLattice.create(body.getBasicSetAt(0).copy());
     final ISLSet accumulationMaffProjPreimage = accumulationMaff.copy().toMap().deltas().preimage(
       ISLUtil.buildProjectionMaff(accumulationMaff.copy().toMap().deltas().samplePoint()));
-    int _dim = body.dim(ISLDimType.isl_dim_set);
-    int _dimensionality = ISLUtil.dimensionality(ISLUtil.nullSpace(writeMaff.copy()));
-    final int nExtraDims = (_dim - _dimensionality);
+    int _dimensionality = ISLUtil.dimensionality(body);
+    int _dimensionality_1 = ISLUtil.dimensionality(ISLUtil.nullSpace(writeMaff.copy()));
+    final int nExtraDims = (_dimensionality - _dimensionality_1);
     final Function1<Face, ISLSet> _function = (Face edge) -> {
       return edge.toBasicSet().toSet();
     };
