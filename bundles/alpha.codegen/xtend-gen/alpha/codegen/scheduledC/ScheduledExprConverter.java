@@ -36,6 +36,7 @@ import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
 import alpha.model.memorymapper.MemoryMapper;
 import alpha.model.scheduler.Scheduler;
+import alpha.model.tiler.Tiler;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
@@ -83,6 +84,8 @@ public class ScheduledExprConverter extends ExprConverter {
    */
   protected final Scheduler scheduler;
 
+  protected final Tiler tiler;
+
   /**
    * Represents the current reduction target for schedule lookup
    */
@@ -104,11 +107,12 @@ public class ScheduledExprConverter extends ExprConverter {
   /**
    * Constructs a new converter for expressions.
    */
-  public ScheduledExprConverter(final ScheduledTypeGenerator typeGenerator, final AlphaNameChecker nameChecker, final ProgramBuilder program, final Scheduler scheduler, final MemoryMapper mapper) {
+  public ScheduledExprConverter(final ScheduledTypeGenerator typeGenerator, final AlphaNameChecker nameChecker, final ProgramBuilder program, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper) {
     super(typeGenerator, nameChecker);
     this.program = program;
     this.typeGenerator = typeGenerator;
     this.scheduler = scheduler;
+    this.tiler = tiler;
     this.reductionTarget = "";
     this.mapper = mapper;
   }
@@ -185,6 +189,9 @@ public class ScheduledExprConverter extends ExprConverter {
       _elvis_1 = _identity;
     }
     ISLMap scheduleMap = _elvis_1;
+    if ((this.tiler != null)) {
+      scheduleMap = scheduleMap.applyRange(this.tiler.getTileMap());
+    }
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
       scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());

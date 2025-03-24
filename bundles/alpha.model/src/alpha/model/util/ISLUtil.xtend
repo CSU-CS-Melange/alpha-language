@@ -37,6 +37,8 @@ import alpha.model.scheduler.ManualScheduler
 import alpha.model.exception.CausalityViolationException
 import alpha.model.scheduler.ScheduleVerifier
 import alpha.model.AlphaSystem
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.isl.ISLAffList
 
 class ISLUtil {
 	/*************************************** 
@@ -390,16 +392,6 @@ class ISLUtil {
 	}
 	
 	/**
-	 * Converts an ISLMap to an ISLMultiAffine map as there is no default way
-	 */
-	def static ISLMultiAff toMultiAff(ISLMap map) {
-		val local = map.copy
-		val pma = local.toPWMultiAff
-		val piece = pma.getPiece(0)
-		piece.maff
-	}
-	
-	/**
 	 * Generates a MultiAff out of a list of ISLAffs 
 	 */
 	def static ISLMultiAff convertToMultiAff(List<ISLAff> affs) {
@@ -408,10 +400,20 @@ class ISLUtil {
 			ISLDimType.isl_dim_out,
 			affs.size()-1
 		)
-
+		
 		for(aff : affs) {affList = affList.add(aff)}
-
+		
 		ISLMultiAff.buildFromAffList(space, affList)
+	}
+	
+	/**
+	 * Converts an ISLMap to an ISLMultiAffine map as there is no default way
+	 */
+	def static ISLMultiAff toMultiAff(ISLMap map) {
+		val local = map.copy
+		val pma = local.toPWMultiAff
+		val piece = pma.getPiece(0)
+		piece.maff
 	}
 	
 	/*************************************** 

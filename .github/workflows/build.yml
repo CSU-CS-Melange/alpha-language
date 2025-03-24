@@ -50,6 +50,7 @@ jobs:
         alpha.model.tests.ComplexityCalculatorTest
         alpha.model.tests.scheduling.FoutrierSchedulerTest
         alpha.model.tests.scheduling.PRDGTest
+        alpha.model.tests.scheduling.DTilerTest
         alpha.model.tests.transformation.reduction.NormalizeReductionDeepTest
         alpha.model.tests.transformation.reduction.SplitReductionTest
         alpha.model.tests.transformation.reduction.SerializeReductionTest

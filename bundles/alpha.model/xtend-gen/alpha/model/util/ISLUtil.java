@@ -474,20 +474,6 @@ public class ISLUtil {
   }
 
   /**
-   * Converts an ISLMap to an ISLMultiAffine map as there is no default way
-   */
-  public static ISLMultiAff toMultiAff(final ISLMap map) {
-    ISLMultiAff _xblockexpression = null;
-    {
-      final ISLMap local = map.copy();
-      final ISLPWMultiAff pma = local.toPWMultiAff();
-      final ISLPWMultiAffPiece piece = pma.getPiece(0);
-      _xblockexpression = piece.getMaff();
-    }
-    return _xblockexpression;
-  }
-
-  /**
    * Generates a MultiAff out of a list of ISLAffs
    */
   public static ISLMultiAff convertToMultiAff(final List<ISLAff> affs) {
@@ -503,6 +489,20 @@ public class ISLUtil {
         affList = affList.add(aff);
       }
       _xblockexpression = ISLMultiAff.buildFromAffList(space, affList);
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Converts an ISLMap to an ISLMultiAffine map as there is no default way
+   */
+  public static ISLMultiAff toMultiAff(final ISLMap map) {
+    ISLMultiAff _xblockexpression = null;
+    {
+      final ISLMap local = map.copy();
+      final ISLPWMultiAff pma = local.toPWMultiAff();
+      final ISLPWMultiAffPiece piece = pma.getPiece(0);
+      _xblockexpression = piece.getMaff();
     }
     return _xblockexpression;
   }
