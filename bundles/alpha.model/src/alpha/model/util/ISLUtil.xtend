@@ -279,6 +279,18 @@ class ISLUtil {
 		return basisSet.union(zeroVector.toSet).affineHull.toSet
 	}
 	
+	def static ISLPoint affToVector(ISLAff aff) {
+		var ISLPoint vector = ISLSet.buildUniverse(aff.domainSpace.copy).samplePoint;
+		for(var i=0; i < aff.dim(ISLDimType.isl_dim_in); i++) {
+			vector = vector.setCoordinate(
+				ISLDimType.isl_dim_set, 
+				i,
+				aff.getCoefficientVal(ISLDimType.isl_dim_in, i)
+			)
+		}
+		return vector
+	}
+	
 	/**
 	 * Gets the n-1 dimensional plane (non-parametrically) orthogonal to a vector
 	 */

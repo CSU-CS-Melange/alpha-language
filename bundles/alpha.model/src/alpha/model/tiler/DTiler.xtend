@@ -17,12 +17,14 @@ class DTiler implements Tiler {
 	ISLMap tileMap
 	int startDim
 	int endDim
+	List<Integer> tileSizes
 	
 	/*
 	 * Creates a D-Tiler with rectangular tiles of the given size, 
 	 * from the start to the end dimension, inclusive.
 	 */
 	new(List<Integer> tileSizes, ISLSpace scheduleSpace, int startDim, int endDim) {
+		this.tileSizes = tileSizes
 		val int scheduleDim = scheduleSpace.dim(ISLDimType.isl_dim_out)
 		val int bandDim = endDim - startDim + 1
 		
@@ -91,5 +93,9 @@ class DTiler implements Tiler {
 		domain.copy.apply(getTileMap)
 			.projectOut(ISLDimType.isl_dim_out, endDim+1, tileMap.getNbOutputs-endDim-1)
 			.projectOut(ISLDimType.isl_dim_out, 0, startDim)
+	}
+	
+	def int getTileSize(int i) {
+		return this.tileSizes.get(i)
 	}
 }

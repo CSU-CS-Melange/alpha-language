@@ -23,11 +23,14 @@ public class DTiler implements Tiler {
 
   private int endDim;
 
+  private List<Integer> tileSizes;
+
   /**
    * Creates a D-Tiler with rectangular tiles of the given size,
    * from the start to the end dimension, inclusive.
    */
   public DTiler(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim) {
+    this.tileSizes = tileSizes;
     final int scheduleDim = scheduleSpace.dim(ISLDimType.isl_dim_out);
     final int bandDim = ((endDim - startDim) + 1);
     this.argumentCheck(tileSizes, scheduleSpace, startDim, endDim, scheduleDim, bandDim);
@@ -114,5 +117,9 @@ public class DTiler implements Tiler {
     int _minus = (_nbOutputs - this.endDim);
     int _minus_1 = (_minus - 1);
     return _apply.projectOut(ISLDimType.isl_dim_out, (this.endDim + 1), _minus_1).projectOut(ISLDimType.isl_dim_out, 0, this.startDim);
+  }
+
+  public int getTileSize(final int i) {
+    return (this.tileSizes.get(i)).intValue();
   }
 }
