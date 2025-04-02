@@ -375,6 +375,27 @@ class ISLUtil {
 		return boxConstraints.fold(ISLBasicSet.buildUniverse(set.space.copy), [s, c | s.addConstraint(c)])
 	}
 	
+	
+	/**
+	 * Returns the upper bound of an index in a set.
+	 * Parameters are projected out.
+	 * Returns Infinity if there is no bound.
+	 */
+	def static ISLVal getUpperBound(ISLSet set, ISLDimType dimType, int dim) {
+		val ISLPoint axis = ISLPoint.buildZero(set.getSpace.copy).add(dimType, dim, 1)
+		val ISLSet projectedSet = set.copy
+			.projectOut(ISLDimType.isl_dim_param, 0, set.dim(ISLDimType.isl_dim_param))
+			.apply(buildProjectionMaff(axis.copy).toMap)
+			
+		if(!projectedSet.hasUpperBound(dimType, dim))
+			return ISLVal.buildFromString(ISLContext.getInstance, "Infinity")
+	
+		else return projectedSet
+			.lexMax
+			.samplePoint
+			.getCoordinateVal(dimType, dim)
+	}
+	
 	/*************************************** 
 	 *	         Conversion Methods        * 
 	 ***************************************/

@@ -441,6 +441,23 @@ public class ISLUtil {
   }
 
   /**
+   * Returns the upper bound of an index in a set.
+   * Parameters are projected out.
+   * Returns Infinity if there is no bound.
+   */
+  public static ISLVal getUpperBound(final ISLSet set, final ISLDimType dimType, final int dim) {
+    final ISLPoint axis = ISLPoint.buildZero(set.getSpace().copy()).add(dimType, dim, 1);
+    final ISLSet projectedSet = set.copy().projectOut(ISLDimType.isl_dim_param, 0, set.dim(ISLDimType.isl_dim_param)).apply(ISLUtil.buildProjectionMaff(axis.copy()).toMap());
+    boolean _hasUpperBound = projectedSet.hasUpperBound(dimType, dim);
+    boolean _not = (!_hasUpperBound);
+    if (_not) {
+      return ISLVal.buildFromString(ISLContext.getInstance(), "Infinity");
+    } else {
+      return projectedSet.lexMax().samplePoint().getCoordinateVal(dimType, dim);
+    }
+  }
+
+  /**
    * Generates a union set out of a list of ISLSets
    * The method in ISLUnionSet is bugged
    */
