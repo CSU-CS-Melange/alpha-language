@@ -1,5 +1,6 @@
 package alpha.model.memorymapper;
 
+import alpha.model.Variable;
 import alpha.model.prdg.PRDG;
 import alpha.model.prdg.PRDGEdge;
 import alpha.model.prdg.PRDGNode;
@@ -8,10 +9,14 @@ import alpha.model.tiler.DTiler;
 import alpha.model.tiler.Tiler;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
+import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.HashMap;
+import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -26,7 +31,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  * Only attempts to optimize the first dimension of time for now
  */
 @SuppressWarnings("all")
-public class AutoTileMemoryMapper {
+public class AutoTileMemoryMapper implements MemoryMapper {
   private HashMap<String, ISLMap> memoryMaps;
 
   private final Tiler tiler;
@@ -39,12 +44,31 @@ public class AutoTileMemoryMapper {
     this.tiler = tiler;
     this.prdg = prdg;
     this.scheduler = scheduler;
+    HashMap<String, ISLMap> _hashMap = new HashMap<String, ISLMap>();
+    this.memoryMaps = _hashMap;
     this.generateMemoryMaps();
   }
 
   private void generateMemoryMaps() {
-    throw new Error("Unresolved compilation problems:"
-      + "\nThe method getUpperBound(ISLDimType, int) is undefined for the type ISLSet");
+    final Consumer<PRDGNode> _function = (PRDGNode it) -> {
+      final ISLMap tiledMemMap = this.scheduler.getScheduleMap(it.getName()).clearInputTupleName().applyRange(this.tiler.getTileMap());
+      final ISLSet tiledLifespan = this.maxLifespan(it).apply(this.tiler.getTileMap());
+      final ISLVal lifespanBound = ISLUtil.getUpperBound(tiledLifespan, ISLDimType.isl_dim_set, 0);
+      boolean _isInfinity = lifespanBound.isInfinity();
+      boolean _not = (!_isInfinity);
+      if (_not) {
+        long _asLong = lifespanBound.asLong();
+        final long modulus = (_asLong + 2);
+        final ISLMultiAff idMaff = ISLUtil.toMultiAff(tiledMemMap.getRange().identity());
+        final ISLMap modularMemMap = tiledMemMap.applyRange(
+          idMaff.setAff(0, 
+            idMaff.getAff(0).mod(modulus)).toMap());
+        this.memoryMaps.put(it.getName(), modularMemMap);
+      } else {
+        this.memoryMaps.put(it.getName(), tiledMemMap);
+      }
+    };
+    this.prdg.getNodes().forEach(_function);
   }
 
   public ISLSet maxLifespan(final PRDGNode variable) {
@@ -79,5 +103,19 @@ public class AutoTileMemoryMapper {
     };
     final ISLMap lifespan = IterableExtensions.<ISLMap>reduce(IterableExtensions.<ISLPWMultiAff, ISLMap>map(lastUses, _function_3), _function_4).simpleHull().toMap();
     return lifespan.getRange().lexMax().simpleHull().toSet();
+  }
+
+  @Override
+  public ISLMap getMemoryMap(final Variable variable) {
+    if ((((variable.isInput()).booleanValue() || (variable.isOutput()).booleanValue()) || (!this.memoryMaps.containsKey(variable.getName())))) {
+      return variable.getDomain().copy().identity();
+    } else {
+      return this.memoryMaps.get(variable.getName());
+    }
+  }
+
+  @Override
+  public String getDestination(final Variable variable) {
+    return variable.getName();
   }
 }

@@ -15,6 +15,8 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLPoint
 import alpha.model.tiler.DTiler
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
+import fr.irisa.cairn.jnimap.isl.ISLVal
+import alpha.model.Variable
 
 /**
  * Creates a tiled memory map that minimizes memory usage
@@ -25,7 +27,7 @@ import fr.irisa.cairn.jnimap.isl.ISLConstraint
  * 
  * Only attempts to optimize the first dimension of time for now
  */
-class AutoTileMemoryMapper {
+class AutoTileMemoryMapper implements MemoryMapper {
 	var HashMap<String, ISLMap> memoryMaps
 	val Tiler tiler
 	val PRDG prdg
@@ -35,6 +37,7 @@ class AutoTileMemoryMapper {
 		this.tiler = tiler
 		this.prdg = prdg
 		this.scheduler = scheduler
+		memoryMaps = new HashMap<String, ISLMap>
 		
 		generateMemoryMaps
 	}
@@ -42,16 +45,29 @@ class AutoTileMemoryMapper {
 	
 	def private void generateMemoryMaps() {
 		this.prdg.nodes.forEach[
-			val ISLSet lifespan = maxLifespan
+			val ISLMap tiledMemMap = scheduler.getScheduleMap(name).clearInputTupleName
+				.applyRange(tiler.tileMap)
 			
-			if(lifespan.hasUpperBound(ISLDimType.isl_dim_set, 0)) {
-				val tiledLifespan = lifespan.apply(tiler.tileMap)
-				val tileWidth = tiledLifespan.getUpperBound(ISLDimType.isl_dim_set, 0) //TODO: implement getUpperBound
+			val ISLSet tiledLifespan = maxLifespan.apply(tiler.tileMap)
+			val ISLVal lifespanBound = tiledLifespan.getUpperBound(ISLDimType.isl_dim_set, 0)
+			
+			//Apply a modular memory map iff the lifespan bound fits within a constant
+			//number of tiles
+			if(!lifespanBound.isInfinity) {
+				val long modulus = lifespanBound.asLong + 2
+				val ISLMultiAff idMaff = tiledMemMap.getRange.identity.toMultiAff
+				
+				val ISLMap modularMemMap = tiledMemMap.applyRange(
+					idMaff.setAff(0,
+						idMaff.getAff(0).mod(modulus)
+					).toMap
+				)
+				
+				memoryMaps.put(name, modularMemMap)
+				
+			//If no optimizations are possible, just apply a tiled memory map
 			} else {
-				//If no optimizations are possible, just apply a tiled memory map
-				val tiledMap = scheduler.getScheduleMap(name).clearInputTupleName
-					.applyRange(tiler.tileMap)
-				memoryMaps.put(name, tiledMap)
+				memoryMaps.put(name, tiledMemMap)
 			}
 		]
 	}
@@ -100,5 +116,15 @@ class AutoTileMemoryMapper {
 			.simpleHull.toMap
 			
 		return lifespan.getRange.lexMax.simpleHull.toSet
+	}
+	
+	override getMemoryMap(Variable variable) {
+		if(variable.isInput || variable.isOutput || !memoryMaps.containsKey(variable.name))
+			return variable.domain.copy.identity
+		else return memoryMaps.get(variable.name)
+	}
+	
+	override getDestination(Variable variable) {
+		return variable.name
 	}
 }
