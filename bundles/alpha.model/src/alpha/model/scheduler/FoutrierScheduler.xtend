@@ -5,10 +5,13 @@ import alpha.model.prdg.PRDG
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import alpha.model.util.ISLUtil
 
 class FoutrierScheduler implements Scheduler {
 	ISLSchedule schedule
 	PRDG prdg
+	ISLUnionMap umap
 	
 	new(PRDG prdg) {
 		this.prdg = prdg
@@ -19,6 +22,7 @@ class FoutrierScheduler implements Scheduler {
 		var ISLUnionSet domains = this.prdg.generateDomains
 		var islPRDG = this.prdg.generateISLPRDG
 		this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+		this.umap = ISLUtil.liftSpacetimeFactors(schedule.map)
 	}
 	
 	override getScheduleDomain(String variable) {
@@ -26,12 +30,12 @@ class FoutrierScheduler implements Scheduler {
 	}
 
 	override getScheduleMap(String variable) {
-		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head.copy
+		umap.maps.filter(map | map.inputTupleName == variable).head.copy
 		
 	}
 	
 	override getMaps() {
-		this.schedule.map.copy
+		umap.copy
 	}
 	
 	override getDomains() {

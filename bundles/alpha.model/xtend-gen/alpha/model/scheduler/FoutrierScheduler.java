@@ -1,6 +1,7 @@
 package alpha.model.scheduler;
 
 import alpha.model.prdg.PRDG;
+import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
@@ -16,17 +17,20 @@ public class FoutrierScheduler implements Scheduler {
 
   private PRDG prdg;
 
+  private ISLUnionMap umap;
+
   public FoutrierScheduler(final PRDG prdg) {
     this.prdg = prdg;
     this.generateSchedule();
   }
 
-  public ISLSchedule generateSchedule() {
-    ISLSchedule _xblockexpression = null;
+  public ISLUnionMap generateSchedule() {
+    ISLUnionMap _xblockexpression = null;
     {
       ISLUnionSet domains = this.prdg.generateDomains();
       ISLUnionMap islPRDG = this.prdg.generateISLPRDG();
-      _xblockexpression = this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, ISLSchedule.JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER);
+      this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, ISLSchedule.JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER);
+      _xblockexpression = this.umap = ISLUtil.liftSpacetimeFactors(this.schedule.getMap());
     }
     return _xblockexpression;
   }
@@ -46,12 +50,12 @@ public class FoutrierScheduler implements Scheduler {
       String _inputTupleName = map.getInputTupleName();
       return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
     };
-    return IterableExtensions.<ISLMap>head(IterableExtensions.<ISLMap>filter(this.schedule.getMap().getMaps(), _function)).copy();
+    return IterableExtensions.<ISLMap>head(IterableExtensions.<ISLMap>filter(this.umap.getMaps(), _function)).copy();
   }
 
   @Override
   public ISLUnionMap getMaps() {
-    return this.schedule.getMap().copy();
+    return this.umap.copy();
   }
 
   @Override
