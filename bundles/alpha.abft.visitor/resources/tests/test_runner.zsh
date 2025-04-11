@@ -1,6 +1,6 @@
 # !/bin/bash
 
-sizes=(2 5 10 20 50 100 200 500 1000 2000 5000)
+sizes=(2 5 10 20 50 100 200 300 400 500 600 700 800 900 1000 1250 1500 1750 2000 2500 3000 3500 4000 4500 5000)
 path="../"
 ext=".verify-rand"
 
@@ -21,7 +21,7 @@ for p in ${progs[@]}; do
     for n in ${sizes[@]}; do
         prog=$(sed -e 's|[^/]*/|/|' -e 's|/||' <<< $p)
 
-        echo Executing $prog with parameter N=$n"
+        echo "Executing $prog with parameter N=$n"
 
         t=$($path$p$ext $n | sed 's/[^0-9.]*//g' | sed -r 's/.{1}$//')
         
