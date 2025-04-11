@@ -1,0 +1,11 @@
+prog,N,time
+lud.verify-rand,2,0.000003
+lud.verify-rand,5,0.000004
+lud.verify-rand,10,0.000008
+lud.verify-rand,20,0.000032
+lud.verify-rand,50,0.000387
+lud.verify-rand,100,0.002937
+lud.verify-rand,200,0.020991
+lud.verify-rand,500,0.291550
+lud.verify-rand,1000,2.367075
+lud.verify-rand,2000,19.373050
