@@ -1,12 +1,16 @@
 package alpha.codegen.isl;
 
 import alpha.model.util.CommonExtensions;
+import alpha.model.util.ISLUtil;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
 import fr.irisa.cairn.jnimap.isl.IISLSingleSpaceSetMethods;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLMultiPWAff;
+import fr.irisa.cairn.jnimap.isl.ISLPWAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +35,21 @@ public class MemoryUtils {
    */
   public static ISLPWQPolynomial card(final ISLSet domain) {
     return BarvinokBindings.card(domain.copy());
+  }
+
+  public static ISLPWQPolynomial boxCard(final ISLSet domain) {
+    final ISLMultiPWAff widths = ISLUtil.boundingBoxWidths(domain).toMultiPWAff();
+    int _dim = domain.dim(ISLDimType.isl_dim_set);
+    final Function1<Integer, ISLPWAff> _function = (Integer dim) -> {
+      return widths.getAt((dim).intValue());
+    };
+    final Function1<ISLPWAff, ISLPWQPolynomial> _function_1 = (ISLPWAff it) -> {
+      return ISLUtil.toPWQPolynomial(it);
+    };
+    final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_2 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
+      return a.mul(b);
+    };
+    return IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<ISLPWAff, ISLPWQPolynomial>map(IterableExtensions.<Integer, ISLPWAff>map(new ExclusiveRange(0, _dim, true), _function), _function_1), _function_2);
   }
 
   /**
@@ -91,6 +110,37 @@ public class MemoryUtils {
     };
     final ISLSet lessThan = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices, true), _function_2), ISLSet.buildEmpty(domain.getSpace()), _function_3);
     return MemoryUtils.card(lessThan.intersect(domain.copy()));
+  }
+
+  public static ISLPWQPolynomial boxRank(final ISLSet domain) {
+    final ISLMultiPWAff widths = ISLUtil.boundingBoxWidths(domain).toMultiPWAff();
+    final ISLMultiPWAff mins = domain.copy().lexMinAsPWMultiAff().toMultiPWAff();
+    int _dim = domain.dim(ISLDimType.isl_dim_set);
+    final Function1<Integer, ISLPWQPolynomial> _function = (Integer dim) -> {
+      ISLPWQPolynomial _xblockexpression = null;
+      {
+        final ISLPWQPolynomial index = ISLQPolynomial.buildVarOnDomain(domain.getSpace().copy(), ISLDimType.isl_dim_set, (dim).intValue()).toPWQPolynomial().sub(ISLUtil.toPWQPolynomial(mins.getAt((dim).intValue())).addDims(ISLDimType.isl_dim_in, domain.dim(ISLDimType.isl_dim_set)));
+        int _dim_1 = domain.dim(ISLDimType.isl_dim_set);
+        final Function1<Integer, ISLPWAff> _function_1 = (Integer i) -> {
+          return widths.getAt((i).intValue()).copy();
+        };
+        final Function1<ISLPWAff, ISLPWQPolynomial> _function_2 = (ISLPWAff it) -> {
+          return ISLUtil.toPWQPolynomial(it);
+        };
+        final Function1<ISLPWQPolynomial, ISLPWQPolynomial> _function_3 = (ISLPWQPolynomial it) -> {
+          return it.addDims(ISLDimType.isl_dim_in, domain.dim(ISLDimType.isl_dim_set));
+        };
+        final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_4 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
+          return a.mul(b);
+        };
+        _xblockexpression = IterableExtensions.<ISLPWQPolynomial, ISLPWQPolynomial>fold(IterableExtensions.<ISLPWQPolynomial, ISLPWQPolynomial>map(IterableExtensions.<ISLPWAff, ISLPWQPolynomial>map(IterableExtensions.<Integer, ISLPWAff>map(new ExclusiveRange(((dim).intValue() + 1), _dim_1, true), _function_1), _function_2), _function_3), index, _function_4);
+      }
+      return _xblockexpression;
+    };
+    final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_1 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
+      return a.add(b);
+    };
+    return IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<Integer, ISLPWQPolynomial>map(new ExclusiveRange(0, _dim, true), _function), _function_1);
   }
 
   /**

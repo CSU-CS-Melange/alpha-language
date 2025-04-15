@@ -7,6 +7,11 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import static extension alpha.model.util.ISLUtil.*
+import fr.irisa.cairn.jnimap.isl.ISLMultiPWAff
+import fr.irisa.cairn.jnimap.isl.ISLPWAff
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLAff
 
 /** Helper methods intended for memory allocation and accessing using isl objects. */
 class MemoryUtils {
@@ -19,6 +24,14 @@ class MemoryUtils {
 	 */
 	def static ISLPWQPolynomial card(ISLSet domain) {
 		BarvinokBindings.card(domain.copy)
+	}
+	
+	def static ISLPWQPolynomial boxCard(ISLSet domain) {
+		val ISLMultiPWAff widths = domain.boundingBoxWidths.toMultiPWAff
+		return (0 ..< domain.dim(ISLDimType.isl_dim_set))
+			.map[dim | widths.getAt(dim)]
+			.map[toPWQPolynomial]
+			.reduce[a, b | a.mul(b)]
 	}
 	
 	/**
@@ -103,6 +116,25 @@ class MemoryUtils {
 		// our desired point, which is specified in the parameters.
 		// The cardinality of this set is thus the rank of our desired point.
 		return lessThan.intersect(domain.copy).card
+	}
+	
+	//TODO: Holy shit clean this up
+	def static ISLPWQPolynomial boxRank(ISLSet domain) {
+		val ISLMultiPWAff widths = domain.boundingBoxWidths.toMultiPWAff
+		val ISLMultiPWAff mins = domain.copy.lexMinAsPWMultiAff.toMultiPWAff
+		
+		return (0 ..< domain.dim(ISLDimType.isl_dim_set))
+			.map[dim | 
+				val index = ISLQPolynomial.buildVarOnDomain(domain.space.copy, ISLDimType.isl_dim_set, dim)
+					.toPWQPolynomial
+					.sub(mins.getAt(dim).toPWQPolynomial.addDims(ISLDimType.isl_dim_in, domain.dim(ISLDimType.isl_dim_set)));
+
+				(dim+1 ..< domain.dim(ISLDimType.isl_dim_set))
+					.map[i | widths.getAt(i).copy]
+					.map[toPWQPolynomial]
+					.map[addDims(ISLDimType.isl_dim_in, domain.dim(ISLDimType.isl_dim_set))]
+					.fold(index, [a, b | a.mul(b)])
+			].reduce[a, b | a.add(b)]
 	}
 	
 	/**
