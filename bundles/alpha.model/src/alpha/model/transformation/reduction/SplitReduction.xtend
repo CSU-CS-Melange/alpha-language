@@ -27,6 +27,8 @@ import alpha.model.util.ISLUtil
 import alpha.model.util.Show
 import java.util.List
 import java.util.ArrayList
+import java.util.Map
+import java.util.HashMap
 
 /**
  * This class carries out the analysis required for splitting from the max 
@@ -128,12 +130,12 @@ class SplitReduction {
 	 * Returns the generated domain pieces, in order
 	 * 
 	 */
-	static def List<ISLSet> applyDominanceSplit(AbstractReduceExpression are, Iterable<ISLMultiAff> maffs) {
+	static def Map<ISLSet, ISLMultiAff> applyDominanceSplit(AbstractReduceExpression are, Iterable<ISLMultiAff> maffs) {
 		if (are.body.contextDomain.nbBasicSets > 1)
 			throw new Exception("Cannot split a reduction body with multiple basic sets")
 			
 		val caseExpr = createCaseExpression()
-		val DS = new ArrayList<ISLSet>
+		val DS = new HashMap<ISLSet, ISLMultiAff>
 		
 		for(var i = 0; i < maffs.size; i++) {
 			var ISLSet DS_i
@@ -144,7 +146,7 @@ class SplitReduction {
 				DS_i = DS_i === null ? inequality : DS_i.intersect(inequality)
 			}
 			
-			DS += DS_i.copy
+			DS.put(DS_i.copy, maffs.get(i))
 			caseExpr.exprs += createRestrictExpression(DS_i.simplify, are.body.copyAE)
 		}
 		

@@ -25,7 +25,9 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.JNIPtrBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
@@ -143,7 +145,7 @@ public class SplitReduction {
    * 
    * Returns the generated domain pieces, in order
    */
-  public static List<ISLSet> applyDominanceSplit(final AbstractReduceExpression are, final Iterable<ISLMultiAff> maffs) {
+  public static Map<ISLSet, ISLMultiAff> applyDominanceSplit(final AbstractReduceExpression are, final Iterable<ISLMultiAff> maffs) {
     try {
       int _nbBasicSets = are.getBody().getContextDomain().getNbBasicSets();
       boolean _greaterThan = (_nbBasicSets > 1);
@@ -151,7 +153,7 @@ public class SplitReduction {
         throw new Exception("Cannot split a reduction body with multiple basic sets");
       }
       final CaseExpression caseExpr = AlphaUserFactory.createCaseExpression();
-      final ArrayList<ISLSet> DS = new ArrayList<ISLSet>();
+      final HashMap<ISLSet, ISLMultiAff> DS = new HashMap<ISLSet, ISLMultiAff>();
       for (int i = 0; (i < IterableExtensions.size(maffs)); i++) {
         {
           ISLSet DS_i = null;
@@ -173,8 +175,7 @@ public class SplitReduction {
               DS_i = _xifexpression_1;
             }
           }
-          ISLSet _copy = DS_i.copy();
-          DS.add(_copy);
+          DS.put(DS_i.copy(), ((ISLMultiAff[])Conversions.unwrapArray(maffs, ISLMultiAff.class))[i]);
           EList<AlphaExpression> _exprs = caseExpr.getExprs();
           RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(DS_i.simplify(), AlphaUtil.<AlphaExpression>copyAE(are.getBody()));
           _exprs.add(_createRestrictExpression);
