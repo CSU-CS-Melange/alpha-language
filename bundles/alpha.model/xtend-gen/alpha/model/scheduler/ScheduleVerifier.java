@@ -8,6 +8,7 @@ import alpha.model.exception.CausalityViolationException;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.ISLUtil;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Stack;
@@ -90,9 +91,9 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
         boolean _isSubset = domain.isSubset(causalitySet);
         boolean _not = (!_isSubset);
         if (_not) {
-          ISLMultiAff _peek = this.dependenceMaffs.peek();
+          ISLMap _map = this.dependenceMaffs.peek().copy().toMap();
           ISLSet _subtract = domain.copy().subtract(causalitySet.copy());
-          throw new CausalityViolationException(_peek, writeTimestampMaff, readTimestampMaff, _subtract, i);
+          throw new CausalityViolationException(_map, writeTimestampMaff, readTimestampMaff, _subtract, i);
         }
         coveredSet = coveredSet.union(
           ISLSet.buildGTSet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i)));
