@@ -62,4 +62,9 @@ public class FoutrierScheduler implements Scheduler {
   public ISLUnionSet getDomains() {
     return this.schedule.getDomain().copy();
   }
+
+  @Override
+  public ISLMap getAnonymousMap(final String variable) {
+    return this.getScheduleMap(variable).clearInputTupleName();
+  }
 }

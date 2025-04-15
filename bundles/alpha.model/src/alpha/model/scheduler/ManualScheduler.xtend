@@ -43,4 +43,8 @@ class ManualScheduler implements Scheduler {
 	override getDomains() {
 		this.domains.copy
 	}
+	
+	override getAnonymousMap(String variable) {
+ 		return getScheduleMap(variable).clearInputTupleName
+	}
 }

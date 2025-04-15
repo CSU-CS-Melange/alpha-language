@@ -5,6 +5,9 @@ import alpha.model.prdg.PRDG
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 
 class PlutoScheduler implements Scheduler {
 	ISLSchedule schedule
@@ -21,21 +24,23 @@ class PlutoScheduler implements Scheduler {
 		this.schedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_ISL)
 	}
 	
-	override getScheduleDomain(String variable) {
-		this.schedule.domain.sets.filter(set | set.tupleName == variable).head.copy
+	override ISLSet getScheduleDomain(String variable) {
+		schedule.domain.sets.findFirst[tupleName == variable].copy
 	}
 
-	override getScheduleMap(String variable) {
-		this.schedule.map.maps.filter(map | map.inputTupleName == variable).head.copy
-		
+	override ISLMap getScheduleMap(String variable) {
+		schedule.map.maps.findFirst[inputTupleName == variable].copy
 	}
 	
-	override getMaps() {
+	override ISLUnionMap getMaps() {
 		this.schedule.map.copy
 	}
 	
-	override getDomains() {
+	override ISLUnionSet getDomains() {
 		this.schedule.domain.copy
 	}
-
+	
+	override ISLMap getAnonymousMap(String variable) {
+ 		return getScheduleMap(variable).clearInputTupleName
+	}
 }

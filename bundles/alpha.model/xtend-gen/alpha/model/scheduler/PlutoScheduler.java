@@ -33,20 +33,20 @@ public class PlutoScheduler implements Scheduler {
 
   @Override
   public ISLSet getScheduleDomain(final String variable) {
-    final Function1<ISLSet, Boolean> _function = (ISLSet set) -> {
-      String _tupleName = set.getTupleName();
+    final Function1<ISLSet, Boolean> _function = (ISLSet it) -> {
+      String _tupleName = it.getTupleName();
       return Boolean.valueOf(Objects.equal(_tupleName, variable));
     };
-    return IterableExtensions.<ISLSet>head(IterableExtensions.<ISLSet>filter(this.schedule.getDomain().getSets(), _function)).copy();
+    return IterableExtensions.<ISLSet>findFirst(this.schedule.getDomain().getSets(), _function).copy();
   }
 
   @Override
   public ISLMap getScheduleMap(final String variable) {
-    final Function1<ISLMap, Boolean> _function = (ISLMap map) -> {
-      String _inputTupleName = map.getInputTupleName();
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      String _inputTupleName = it.getInputTupleName();
       return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
     };
-    return IterableExtensions.<ISLMap>head(IterableExtensions.<ISLMap>filter(this.schedule.getMap().getMaps(), _function)).copy();
+    return IterableExtensions.<ISLMap>findFirst(this.schedule.getMap().getMaps(), _function).copy();
   }
 
   @Override
@@ -57,5 +57,10 @@ public class PlutoScheduler implements Scheduler {
   @Override
   public ISLUnionSet getDomains() {
     return this.schedule.getDomain().copy();
+  }
+
+  @Override
+  public ISLMap getAnonymousMap(final String variable) {
+    return this.getScheduleMap(variable).clearInputTupleName();
   }
 }

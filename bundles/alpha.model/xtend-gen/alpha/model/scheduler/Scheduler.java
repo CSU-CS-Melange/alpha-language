@@ -14,4 +14,6 @@ public interface Scheduler {
   ISLUnionMap getMaps();
 
   ISLUnionSet getDomains();
+
+  ISLMap getAnonymousMap(final String variable);
 }

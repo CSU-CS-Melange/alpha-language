@@ -7,6 +7,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import alpha.model.util.ISLUtil
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSet
 
 class FoutrierScheduler implements Scheduler {
 	ISLSchedule schedule
@@ -25,21 +27,23 @@ class FoutrierScheduler implements Scheduler {
 		this.umap = ISLUtil.liftSpacetimeFactors(schedule.map)
 	}
 	
-	override getScheduleDomain(String variable) {
+	override ISLSet getScheduleDomain(String variable) {
 		this.schedule.domain.sets.filter(set | set.tupleName == variable).head.copy
 	}
 
-	override getScheduleMap(String variable) {
+	override ISLMap getScheduleMap(String variable) {
 		umap.maps.filter(map | map.inputTupleName == variable).head.copy
-		
 	}
 	
-	override getMaps() {
+	override ISLUnionMap getMaps() {
 		umap.copy
 	}
 	
-	override getDomains() {
+	override ISLUnionSet getDomains() {
 		this.schedule.domain.copy
 	}
-
+	
+ 	override ISLMap getAnonymousMap(String variable) {
+ 		return getScheduleMap(variable).clearInputTupleName
+ 	}
 }

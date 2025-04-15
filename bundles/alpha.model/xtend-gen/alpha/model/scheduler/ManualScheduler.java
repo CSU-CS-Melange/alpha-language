@@ -88,4 +88,9 @@ public class ManualScheduler implements Scheduler {
   public ISLUnionSet getDomains() {
     return this.domains.copy();
   }
+
+  @Override
+  public ISLMap getAnonymousMap(final String variable) {
+    return this.getScheduleMap(variable).clearInputTupleName();
+  }
 }

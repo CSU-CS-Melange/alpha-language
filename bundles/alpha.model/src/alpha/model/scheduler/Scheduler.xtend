@@ -10,4 +10,6 @@ interface Scheduler {
  	def ISLSet getScheduleDomain(String variable)
  	def ISLUnionMap getMaps()
  	def ISLUnionSet getDomains()
+ 	
+ 	def ISLMap getAnonymousMap(String variable)
 }
