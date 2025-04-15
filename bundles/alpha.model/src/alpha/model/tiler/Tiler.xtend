@@ -14,4 +14,9 @@ interface Tiler {
 	def ISLMap getUntileMap()
 	def Set<Integer> getTiledDims()
 	def ISLSet getApproximateOutset(ISLSet domain)
+	
+	//Whether or not the implementation makes use of fixed tile sizes
+	//if so, it should implement getTileSize
+	def boolean fixedTileSizes()
+	def int getTileSize(int dim)
 }

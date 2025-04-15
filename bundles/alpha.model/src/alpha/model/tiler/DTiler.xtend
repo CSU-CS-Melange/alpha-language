@@ -85,6 +85,10 @@ class DTiler implements Tiler {
 		getOutset(domain)
 	}
 	
+	override boolean fixedTileSizes() {
+		return true
+	}
+	
 	/**
 	 * Uses implicit ISL methods to get the exact output.
 	 * This takes exponential time in the worst case.
@@ -95,7 +99,7 @@ class DTiler implements Tiler {
 			.projectOut(ISLDimType.isl_dim_out, 0, startDim)
 	}
 	
-	def int getTileSize(int i) {
-		return this.tileSizes.get(i)
+	override int getTileSize(int dim) {
+		return this.tileSizes.get(dim - startDim)
 	}
 }

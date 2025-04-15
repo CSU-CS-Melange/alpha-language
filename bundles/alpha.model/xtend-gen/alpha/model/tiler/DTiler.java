@@ -107,6 +107,11 @@ public class DTiler implements Tiler {
     return this.getOutset(domain);
   }
 
+  @Override
+  public boolean fixedTileSizes() {
+    return true;
+  }
+
   /**
    * Uses implicit ISL methods to get the exact output.
    * This takes exponential time in the worst case.
@@ -119,7 +124,8 @@ public class DTiler implements Tiler {
     return _apply.projectOut(ISLDimType.isl_dim_out, (this.endDim + 1), _minus_1).projectOut(ISLDimType.isl_dim_out, 0, this.startDim);
   }
 
-  public int getTileSize(final int i) {
-    return (this.tileSizes.get(i)).intValue();
+  @Override
+  public int getTileSize(final int dim) {
+    return (this.tileSizes.get((dim - this.startDim))).intValue();
   }
 }

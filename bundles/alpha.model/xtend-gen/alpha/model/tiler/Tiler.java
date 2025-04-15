@@ -17,4 +17,8 @@ public interface Tiler {
   Set<Integer> getTiledDims();
 
   ISLSet getApproximateOutset(final ISLSet domain);
+
+  boolean fixedTileSizes();
+
+  int getTileSize(final int dim);
 }
