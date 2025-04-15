@@ -99,6 +99,10 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void visitVariableExpression(final VariableExpression ve) {
+    Boolean _isInput = ve.getVariable().isInput();
+    if ((_isInput).booleanValue()) {
+      return;
+    }
     String _name = ve.getVariable().getName();
     ISLSet _domain = ve.getVariable().getDomain();
     PRDGNode target = new PRDGNode(_name, _domain, false);
