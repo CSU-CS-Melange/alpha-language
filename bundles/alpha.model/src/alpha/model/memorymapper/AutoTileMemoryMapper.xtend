@@ -26,6 +26,8 @@ import alpha.model.Variable
  * the timestamp at which it is first written to
  * 
  * Only attempts to optimize the first dimension of time for now
+ * 
+ * Only works with fixed tile sizes
  */
 class AutoTileMemoryMapper implements MemoryMapper {
 	var HashMap<String, ISLMap> memoryMaps
@@ -34,6 +36,8 @@ class AutoTileMemoryMapper implements MemoryMapper {
 	val Scheduler scheduler
 	
 	new(Tiler tiler, PRDG prdg, Scheduler scheduler) {
+		argumentCheck(tiler, prdg, scheduler)
+		
 		this.tiler = tiler
 		this.prdg = prdg
 		this.scheduler = scheduler
@@ -45,23 +49,23 @@ class AutoTileMemoryMapper implements MemoryMapper {
 	
 	def private void generateMemoryMaps() {
 		this.prdg.nodes.forEach[
-			val ISLMap tiledMemMap = scheduler.getScheduleMap(name).clearInputTupleName
-				.applyRange(tiler.tileMap)
+			val ISLMap memMap = scheduler.getScheduleMap(name).clearInputTupleName
+			val ISLMap tiledMemMap = memMap.copy.applyRange(tiler.tileMap)
 			
 			val ISLSet tiledLifespan = maxLifespan.apply(tiler.tileMap)
 			val ISLVal lifespanBound = tiledLifespan.getUpperBound(ISLDimType.isl_dim_set, 0)
 			
 			//Apply a modular memory map iff the lifespan bound fits within a constant
 			//number of tiles
-			if(!lifespanBound.isInfinity) {
-				val long modulus = lifespanBound.asLong + 2
-				val ISLMultiAff idMaff = tiledMemMap.getRange.identity.toMultiAff
+			if(!lifespanBound.isInfinity && tiler.getTiledDims.contains(0)) {
+				val long modulus = (lifespanBound.asLong + 2) * tiler.getTileSize(0)
+				val ISLMultiAff idMaff = memMap.getRange.identity.toMultiAff
 				
-				val ISLMap modularMemMap = tiledMemMap.applyRange(
-					idMaff.setAff(0,
-						idMaff.getAff(0).mod(modulus)
-					).toMap
-				)
+				val moduloMap = idMaff.setAff(0, idMaff.getAff(0).mod(modulus))
+					.toMap
+				
+				val ISLMap modularMemMap = memMap.applyRange(moduloMap)
+					.applyRange(tiler.tileMap)
 				
 				memoryMaps.put(name, modularMemMap)
 				
@@ -121,10 +125,16 @@ class AutoTileMemoryMapper implements MemoryMapper {
 	override getMemoryMap(Variable variable) {
 		if(variable.isInput || variable.isOutput || !memoryMaps.containsKey(variable.name))
 			return variable.domain.copy.identity
-		else return memoryMaps.get(variable.name)
+		else return memoryMaps.get(variable.name).copy
 	}
 	
 	override getDestination(Variable variable) {
 		return variable.name
+	}
+	
+	def private void argumentCheck(Tiler tiler, PRDG prdg, Scheduler scheduler) {
+		if(!tiler.fixedTileSizes) {
+			throw new IllegalArgumentException("Tiler must have fixed tile sizes.")
+		}
 	}
 }

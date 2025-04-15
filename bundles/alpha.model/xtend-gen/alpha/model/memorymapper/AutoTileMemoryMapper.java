@@ -29,6 +29,8 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
  * the timestamp at which it is first written to
  * 
  * Only attempts to optimize the first dimension of time for now
+ * 
+ * Only works with fixed tile sizes
  */
 @SuppressWarnings("all")
 public class AutoTileMemoryMapper implements MemoryMapper {
@@ -41,6 +43,7 @@ public class AutoTileMemoryMapper implements MemoryMapper {
   private final Scheduler scheduler;
 
   public AutoTileMemoryMapper(final Tiler tiler, final PRDG prdg, final Scheduler scheduler) {
+    this.argumentCheck(tiler, prdg, scheduler);
     this.tiler = tiler;
     this.prdg = prdg;
     this.scheduler = scheduler;
@@ -51,18 +54,18 @@ public class AutoTileMemoryMapper implements MemoryMapper {
 
   private void generateMemoryMaps() {
     final Consumer<PRDGNode> _function = (PRDGNode it) -> {
-      final ISLMap tiledMemMap = this.scheduler.getScheduleMap(it.getName()).clearInputTupleName().applyRange(this.tiler.getTileMap());
+      final ISLMap memMap = this.scheduler.getScheduleMap(it.getName()).clearInputTupleName();
+      final ISLMap tiledMemMap = memMap.copy().applyRange(this.tiler.getTileMap());
       final ISLSet tiledLifespan = this.maxLifespan(it).apply(this.tiler.getTileMap());
       final ISLVal lifespanBound = ISLUtil.getUpperBound(tiledLifespan, ISLDimType.isl_dim_set, 0);
-      boolean _isInfinity = lifespanBound.isInfinity();
-      boolean _not = (!_isInfinity);
-      if (_not) {
+      if (((!lifespanBound.isInfinity()) && this.tiler.getTiledDims().contains(Integer.valueOf(0)))) {
         long _asLong = lifespanBound.asLong();
-        final long modulus = (_asLong + 2);
-        final ISLMultiAff idMaff = ISLUtil.toMultiAff(tiledMemMap.getRange().identity());
-        final ISLMap modularMemMap = tiledMemMap.applyRange(
-          idMaff.setAff(0, 
-            idMaff.getAff(0).mod(modulus)).toMap());
+        long _plus = (_asLong + 2);
+        int _tileSize = this.tiler.getTileSize(0);
+        final long modulus = (_plus * _tileSize);
+        final ISLMultiAff idMaff = ISLUtil.toMultiAff(memMap.getRange().identity());
+        final ISLMap moduloMap = idMaff.setAff(0, idMaff.getAff(0).mod(modulus)).toMap();
+        final ISLMap modularMemMap = memMap.applyRange(moduloMap).applyRange(this.tiler.getTileMap());
         this.memoryMaps.put(it.getName(), modularMemMap);
       } else {
         this.memoryMaps.put(it.getName(), tiledMemMap);
@@ -110,12 +113,20 @@ public class AutoTileMemoryMapper implements MemoryMapper {
     if ((((variable.isInput()).booleanValue() || (variable.isOutput()).booleanValue()) || (!this.memoryMaps.containsKey(variable.getName())))) {
       return variable.getDomain().copy().identity();
     } else {
-      return this.memoryMaps.get(variable.getName());
+      return this.memoryMaps.get(variable.getName()).copy();
     }
   }
 
   @Override
   public String getDestination(final Variable variable) {
     return variable.getName();
+  }
+
+  private void argumentCheck(final Tiler tiler, final PRDG prdg, final Scheduler scheduler) {
+    boolean _fixedTileSizes = tiler.fixedTileSizes();
+    boolean _not = (!_fixedTileSizes);
+    if (_not) {
+      throw new IllegalArgumentException("Tiler must have fixed tile sizes.");
+    }
   }
 }
