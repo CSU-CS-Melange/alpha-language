@@ -17,10 +17,12 @@ import fr.irisa.cairn.jnimap.isl.ISLLocalSpace;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMatrix;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
+import fr.irisa.cairn.jnimap.isl.ISLPWAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLPoint;
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
@@ -42,6 +44,25 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
 public class ISLUtil {
+  /**
+   * ISL DimType Shorthand
+   */
+  public static class Dims {
+    public static ISLDimType CONST = ISLDimType.isl_dim_cst;
+
+    public static ISLDimType PARAM = ISLDimType.isl_dim_param;
+
+    public static ISLDimType IN = ISLDimType.isl_dim_in;
+
+    public static ISLDimType OUT = ISLDimType.isl_dim_out;
+
+    public static ISLDimType SET = ISLDimType.isl_dim_set;
+
+    public static ISLDimType DIV = ISLDimType.isl_dim_div;
+
+    public static ISLDimType ALL = ISLDimType.isl_dim_all;
+  }
+
   /**
    * Creates an ISLBasicSet from a string
    */
@@ -421,23 +442,40 @@ public class ISLUtil {
    */
   public static ISLBasicSet boundingBox(final ISLSet set) {
     int _dim = set.dim(ISLDimType.isl_dim_set);
-    int _minus = (_dim - 1);
-    final Function1<Integer, ISLPoint> _function = (Integer dim) -> {
-      return ISLPoint.buildZero(set.getSpace().copy()).add(ISLDimType.isl_dim_set, (dim).intValue(), 1);
+    final Function1<Integer, Iterable<ISLConstraint>> _function = (Integer dim) -> {
+      Iterable<ISLConstraint> _xblockexpression = null;
+      {
+        final ISLPoint axis = ISLPoint.buildZero(set.getSpace().copy()).add(ISLDimType.isl_dim_set, (dim).intValue(), 1);
+        final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint it) -> {
+          return Boolean.valueOf(it.involvesDims(ISLDimType.isl_dim_set, (dim).intValue(), 1));
+        };
+        _xblockexpression = IterableExtensions.<ISLConstraint>filter(set.copy().apply(ISLUtil.buildProjectionMaff(axis.copy()).toMap()).getBasicSets().get(0).getConstraints(), _function_1);
+      }
+      return _xblockexpression;
     };
-    final Iterable<ISLPoint> axes = IterableExtensions.<Integer, ISLPoint>map(new IntegerRange(0, _minus), _function);
-    final Function1<ISLPoint, Iterable<ISLConstraint>> _function_1 = (ISLPoint axis) -> {
-      final Function1<ISLConstraint, Boolean> _function_2 = (ISLConstraint con) -> {
-        boolean _isEquality = con.isEquality();
-        return Boolean.valueOf((!_isEquality));
-      };
-      return IterableExtensions.<ISLConstraint>filter(set.copy().apply(ISLUtil.buildProjectionMaff(axis.copy()).toMap()).getBasicSets().get(0).getConstraints(), _function_2);
-    };
-    final Iterable<ISLConstraint> boxConstraints = Iterables.<ISLConstraint>concat(IterableExtensions.<ISLPoint, Iterable<ISLConstraint>>map(axes, _function_1));
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
+    final Iterable<ISLConstraint> boxConstraints = Iterables.<ISLConstraint>concat(IterableExtensions.<Integer, Iterable<ISLConstraint>>map(new ExclusiveRange(0, _dim, true), _function));
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = (ISLBasicSet s, ISLConstraint c) -> {
       return s.addConstraint(c);
     };
-    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(boxConstraints, ISLBasicSet.buildUniverse(set.getSpace().copy()), _function_2);
+    return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(boxConstraints, ISLBasicSet.buildUniverse(set.getSpace().copy()), _function_1);
+  }
+
+  /**
+   * Returns a piecwise maff, each dimension of which yields the parametrized
+   * width of the set's bounding box in the corresponding dimension.
+   * 
+   * Importantly, we define width as the number of points in any dimension,
+   * so if the bounding box is flat in a dimension, it is of width 1, not 0.
+   */
+  public static ISLPWMultiAff boundingBoxWidths(final ISLSet set) {
+    final ISLSet box = ISLUtil.boundingBox(set.copy()).toSet();
+    int _dim = set.dim(ISLDimType.isl_dim_out);
+    final Function1<Integer, ISLAff> _function = (Integer it) -> {
+      return ISLAff.buildValOnDomain(set.getSpace().copy().toLocalSpace(), 1);
+    };
+    final ISLMultiAff ones = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(IterableExtensions.<Integer, ISLAff>map(new ExclusiveRange(0, _dim, true), _function)));
+    final ISLSet shiftedBox = set.copy().apply(ISLUtil.toMultiAff(set.copy().identity()).add(ones).toMap());
+    return shiftedBox.lexMaxAsPWMultiAff().sub(box.lexMinAsPWMultiAff());
   }
 
   /**
@@ -535,6 +573,24 @@ public class ISLUtil {
   }
 
   /**
+   * Converts a piecewise aff into a piecewise quasi-polynomial.
+   */
+  public static ISLPWQPolynomial toPWQPolynomial(final ISLPWAff pwAff) {
+    final Function1<ISLPWMultiAffPiece, ISLPWQPolynomial> _function = (ISLPWMultiAffPiece piece) -> {
+      ISLPWQPolynomial _xblockexpression = null;
+      {
+        final ISLQPolynomial qPoly = ISLQPolynomial.buildFromAff(piece.getMaff().getAff(0));
+        _xblockexpression = ISLPWQPolynomial.build(piece.getSet(), qPoly);
+      }
+      return _xblockexpression;
+    };
+    final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_1 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
+      return a.addDisjoint(b);
+    };
+    return IterableExtensions.<ISLPWQPolynomial>reduce(ListExtensions.<ISLPWMultiAffPiece, ISLPWQPolynomial>map(pwAff.copy().toPWMultiAff().getPieces(), _function), _function_1);
+  }
+
+  /**
    * Attempts to factor out any extant constant factors from each dimension of
    * a spacetime map. If, for example, the target of a spacetime map  for one variable
    * was [2i-2j+1], and the other variable targets were factorable by 2,
@@ -580,9 +636,7 @@ public class ISLUtil {
       final Function1<Integer, List<ISLAff>> _function_3 = (Integer i) -> {
         final ISLVal factor = ((ISLVal[])Conversions.unwrapArray(dimensionFactors, ISLVal.class))[i];
         final ISLAff aff = stMaff.getAff(i);
-        long _asLong = factor.copy().asLong();
-        boolean _lessEqualsThan = (_asLong <= 1);
-        if (_lessEqualsThan) {
+        if (((factor == null) || (factor.copy().asLong() <= 1))) {
           ISLAff _copy = stMaff.getAff(i).copy();
           return Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(_copy));
         } else {

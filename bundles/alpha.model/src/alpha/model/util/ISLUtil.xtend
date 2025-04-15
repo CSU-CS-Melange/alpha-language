@@ -1,5 +1,9 @@
 package alpha.model.util
 
+import alpha.model.AlphaSystem
+import alpha.model.exception.CausalityViolationException
+import alpha.model.scheduler.ManualScheduler
+import alpha.model.scheduler.ScheduleVerifier
 import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLAffList
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap
@@ -10,6 +14,7 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMatrix
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLPoint
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
@@ -23,24 +28,26 @@ import java.util.List
 import static extension alpha.model.matrix.MatrixOperations.scalarMultiplication
 import static extension alpha.model.matrix.MatrixOperations.transpose
 import static extension alpha.model.util.DomainOperations.*
-import java.util.List
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
-import fr.irisa.cairn.jnimap.isl.ISLAffList
-import java.util.Iterator
-import fr.irisa.cairn.jnimap.isl.ISLPoint
-import java.util.ArrayList
-import fr.irisa.cairn.jnimap.isl.ISLVal
-import alpha.model.scheduler.ManualScheduler
-import alpha.model.exception.CausalityViolationException
-import alpha.model.scheduler.ScheduleVerifier
-import alpha.model.AlphaSystem
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLAffList
+import fr.irisa.cairn.jnimap.isl.ISLPWAff
+import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
 
 class ISLUtil {
+	
+	/*************************************** 
+	 *	      ISL DimType Shorthand        * 
+	 ***************************************/
+	 
+	static class Dims {
+		static public ISLDimType CONST = ISLDimType.isl_dim_cst
+		static public ISLDimType PARAM = ISLDimType.isl_dim_param
+		static public ISLDimType IN    = ISLDimType.isl_dim_in
+		static public ISLDimType OUT   = ISLDimType.isl_dim_out
+		static public ISLDimType SET   = ISLDimType.isl_dim_set
+		static public ISLDimType DIV   = ISLDimType.isl_dim_div
+		static public ISLDimType ALL   = ISLDimType.isl_dim_all
+	}	
+	
 	/*************************************** 
 	 *	  String Instantiation Methods     * 
 	 ***************************************/
@@ -361,20 +368,36 @@ class ISLUtil {
 	 * Returns the parametrized box that bounds the given set.
 	 */
 	def static ISLBasicSet boundingBox(ISLSet set) {
-		val Iterable<ISLPoint> axes = (0..set.dim(ISLDimType.isl_dim_set)-1).map[dim | 
-			ISLPoint.buildZero(set.getSpace.copy).add(ISLDimType.isl_dim_set, dim, 1)
-		]
-		
-		val boxConstraints = axes.map[axis | 
+		val boxConstraints = (0 ..< set.dim(ISLDimType.isl_dim_set)).map[dim | 
+			val axis = ISLPoint.buildZero(set.getSpace.copy).add(ISLDimType.isl_dim_set, dim, 1)
+
 			set.copy.apply(buildProjectionMaff(axis.copy).toMap)
 				.basicSets.get(0)
 				.getConstraints
-				.filter[con | !con.isEquality]
+				.filter[it.involvesDims(ISLDimType.isl_dim_set, dim, 1)]
 		].flatten
 		
 		return boxConstraints.fold(ISLBasicSet.buildUniverse(set.space.copy), [s, c | s.addConstraint(c)])
 	}
 	
+	/**
+	 * Returns a piecwise maff, each dimension of which yields the parametrized 
+	 * width of the set's bounding box in the corresponding dimension.
+	 * 
+	 * Importantly, we define width as the number of points in any dimension,
+	 * so if the bounding box is flat in a dimension, it is of width 1, not 0.
+	 */
+	def static ISLPWMultiAff boundingBoxWidths(ISLSet set) {
+		//TODO: Add one to each width
+		val box = set.copy.boundingBox.toSet
+		val ones = (0 ..< set.dim(ISLDimType.isl_dim_out))
+			.map[ISLAff.buildValOnDomain(set.space.copy.toLocalSpace, 1)]
+			.toList.convertToMultiAff
+		val shiftedBox = set.copy.apply(set.copy.identity.toMultiAff.add(ones).toMap)
+			
+		return shiftedBox.lexMaxAsPWMultiAff
+			.sub(box.lexMinAsPWMultiAff)
+	}
 	
 	/**
 	 * Returns the upper bound of an index in a set.
@@ -449,6 +472,17 @@ class ISLUtil {
 		piece.maff
 	}
 	
+	/**
+	 * Converts a piecewise aff into a piecewise quasi-polynomial.
+	 */
+	def static ISLPWQPolynomial toPWQPolynomial(ISLPWAff pwAff) {
+		pwAff.copy.toPWMultiAff.getPieces.map[ piece |
+			val qPoly = ISLQPolynomial.buildFromAff(piece.maff.getAff(0))
+			ISLPWQPolynomial.build(piece.set, qPoly)
+		].reduce[a, b | a.addDisjoint(b)]
+	}
+	
+	
 	/*************************************** 
 	 *	      Spacetime Map Methods        * 
 	 ***************************************/
@@ -491,7 +525,7 @@ class ISLUtil {
 				val ISLVal factor = dimensionFactors.get(i)
 				val ISLAff aff = stMaff.getAff(i)
 				
-				if(factor.copy.asLong <= 1) return #[stMaff.getAff(i).copy]
+				if(factor === null || factor.copy.asLong <= 1) return #[stMaff.getAff(i).copy]
 				else return #[
 					aff.copy.scaleDown(factor.copy).setConstant(aff.getConstantVal.copy.div(factor.copy).floor),
 					aff.copy.scale(0).setConstant(aff.getConstantVal.copy.mod(factor.copy))
