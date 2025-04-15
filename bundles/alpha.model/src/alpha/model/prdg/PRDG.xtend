@@ -20,7 +20,7 @@ class PRDG {
 	}
 
 	def PRDGNode getNode(String name) {
-		nodes.filter[ node | node.name.equals(name) ].get(0)
+		nodes.findFirst[ it.name.equals(name) ]
 	}
 	
 	def Set<PRDGNode> getNodes() {
@@ -29,13 +29,6 @@ class PRDG {
 	
 	def Set<PRDGEdge> getEdges() {
 		this.edges
-	}
-	
-	def show() {
-		println("Nodes: ")
-		nodes.forEach[ node | println("\t" + node.toString()) ]
-		println("Edges: ")
-		edges.forEach[ edge | println("\t" + edge.toString()) ]
 	}
 	
 	def addNode(PRDGNode node) {
@@ -104,4 +97,11 @@ class PRDG {
 	}
 	
 	override int hashCode() {nodes.hashCode() + 37 * edges.hashCode()}
+	
+	override String toString() {
+		return "Nodes: \n\t"
+		 + nodes.join("\n\t")
+		 + "\nEdges: \n\t"
+		 + edges.join("\n\t")
+	}
 }

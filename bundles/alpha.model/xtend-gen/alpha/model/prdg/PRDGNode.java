@@ -67,11 +67,11 @@ public class PRDGNode {
   }
 
   public StandardEquation getOriginEquation(final AlphaSystem sys) {
-    final Function1<SystemBody, StandardEquation> _function = (SystemBody body) -> {
-      return body.getStandardEquation(this.getOriginVariable(sys));
+    final Function1<SystemBody, StandardEquation> _function = (SystemBody it) -> {
+      return it.getStandardEquation(this.getOriginVariable(sys));
     };
-    final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation se) -> {
-      return Boolean.valueOf((se != null));
+    final Function1<StandardEquation, Boolean> _function_1 = (StandardEquation it) -> {
+      return Boolean.valueOf((it != null));
     };
     return IterableExtensions.<StandardEquation>findFirst(ListExtensions.<SystemBody, StandardEquation>map(sys.getSystemBodies(), _function), _function_1);
   }

@@ -41,9 +41,9 @@ class PRDGNode {
 	}
 	
 	def StandardEquation getOriginEquation(AlphaSystem sys) {
-		return sys.systemBodies.map[ body | 
-			body.getStandardEquation(getOriginVariable(sys))
-		].findFirst[ se | se !== null]
+		return sys.systemBodies
+			.map[getStandardEquation(getOriginVariable(sys))]
+			.findFirst[ it !== null ]
 	}
 	
 	override boolean equals(Object other) { 

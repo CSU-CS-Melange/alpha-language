@@ -7,7 +7,6 @@ class PRDGEdge {
 	PRDGNode source
 	PRDGNode dest
 	ISLMap map
-//	JNIFunction function
 	
 	new(PRDGNode source, PRDGNode dest, ISLSet domain, ISLMap map) {
 		this.source = source

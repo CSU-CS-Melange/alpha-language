@@ -8,10 +8,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
-import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
@@ -32,10 +29,10 @@ public class PRDG {
   }
 
   public PRDGNode getNode(final String name) {
-    final Function1<PRDGNode, Boolean> _function = (PRDGNode node) -> {
-      return Boolean.valueOf(node.getName().equals(name));
+    final Function1<PRDGNode, Boolean> _function = (PRDGNode it) -> {
+      return Boolean.valueOf(it.getName().equals(name));
     };
-    return ((PRDGNode[])Conversions.unwrapArray(IterableExtensions.<PRDGNode>filter(this.nodes, _function), PRDGNode.class))[0];
+    return IterableExtensions.<PRDGNode>findFirst(this.nodes, _function);
   }
 
   public Set<PRDGNode> getNodes() {
@@ -44,23 +41,6 @@ public class PRDG {
 
   public Set<PRDGEdge> getEdges() {
     return this.edges;
-  }
-
-  public void show() {
-    InputOutput.<String>println("Nodes: ");
-    final Consumer<PRDGNode> _function = (PRDGNode node) -> {
-      String _string = node.toString();
-      String _plus = ("\t" + _string);
-      InputOutput.<String>println(_plus);
-    };
-    this.nodes.forEach(_function);
-    InputOutput.<String>println("Edges: ");
-    final Consumer<PRDGEdge> _function_1 = (PRDGEdge edge) -> {
-      String _string = edge.toString();
-      String _plus = ("\t" + _string);
-      InputOutput.<String>println(_plus);
-    };
-    this.edges.forEach(_function_1);
   }
 
   public boolean addNode(final PRDGNode node) {
@@ -157,5 +137,14 @@ public class PRDG {
     int _hashCode_1 = this.edges.hashCode();
     int _multiply = (37 * _hashCode_1);
     return (_hashCode + _multiply);
+  }
+
+  @Override
+  public String toString() {
+    String _join = IterableExtensions.join(this.nodes, "\n\t");
+    String _plus = ("Nodes: \n\t" + _join);
+    String _plus_1 = (_plus + "\nEdges: \n\t");
+    String _join_1 = IterableExtensions.join(this.edges, "\n\t");
+    return (_plus_1 + _join_1);
   }
 }
