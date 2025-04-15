@@ -77,7 +77,7 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 			)
 			
 			if(!domain.isSubset(causalitySet)) {
-				throw new CausalityViolationException(dependenceMaffs.peek, writeTimestampMaff, 
+				throw new CausalityViolationException(dependenceMaffs.peek.copy.toMap, writeTimestampMaff, 
 					readTimestampMaff, domain.copy.subtract(causalitySet.copy), i)
 			}
 			
