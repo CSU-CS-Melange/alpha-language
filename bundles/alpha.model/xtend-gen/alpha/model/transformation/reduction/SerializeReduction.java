@@ -26,7 +26,6 @@ import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLPoint;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -197,55 +196,56 @@ public class SerializeReduction {
     int _dimensionality = ISLUtil.dimensionality(body);
     int _dimensionality_1 = ISLUtil.dimensionality(ISLUtil.nullSpace(writeMaff.copy()));
     final int nExtraDims = (_dimensionality - _dimensionality_1);
-    final Function1<Face, ISLSet> _function = (Face edge) -> {
-      return edge.toBasicSet().toSet();
+    final Function1<Face, ISLSet> _function = (Face it) -> {
+      return it.toBasicSet().toSet();
     };
-    final Function1<ISLSet, Boolean> _function_1 = (ISLSet set) -> {
-      return Boolean.valueOf(set.copy().isSubset(top.copy()));
+    final Function1<ISLSet, Boolean> _function_1 = (ISLSet it) -> {
+      return Boolean.valueOf(it.copy().isSubset(top.copy()));
     };
-    final Function1<ISLSet, ISLSet> _function_2 = (ISLSet set) -> {
-      return ISLUtil.getSpan(ISLUtil.getBasisVectors(set)).intersect(
-        ISLUtil.nullSpace(writeMaff.copy())).intersect(
-        accumulationMaffProjPreimage.copy());
+    final Iterable<ISLSet> topRidges = IterableExtensions.<ISLSet>filter(ListExtensions.<Face, ISLSet>map(lattice.getFaces((1 + nExtraDims)), _function), _function_1);
+    final Function1<ISLSet, ISLSet> _function_2 = (ISLSet it) -> {
+      return ISLUtil.getSpan(ISLUtil.getBasisVectors(it));
     };
-    final Function1<ISLSet, Boolean> _function_3 = (ISLSet set) -> {
-      boolean _isEmpty = set.isEmpty();
-      return Boolean.valueOf((!_isEmpty));
+    final Function1<ISLSet, ISLSet> _function_3 = (ISLSet it) -> {
+      return it.intersect(ISLUtil.nullSpace(writeMaff.copy()));
     };
-    final Function1<ISLSet, ISLPoint> _function_4 = (ISLSet set) -> {
-      return set.samplePoint();
+    final Iterable<ISLSet> sliceEdgeSpaces = IterableExtensions.<ISLSet, ISLSet>map(IterableExtensions.<ISLSet, ISLSet>map(topRidges, _function_2), _function_3);
+    final Function1<ISLSet, ISLSet> _function_4 = (ISLSet it) -> {
+      return it.intersect(accumulationMaffProjPreimage.copy());
     };
-    final Iterable<ISLPoint> edgeFlowVecs = IterableExtensions.<ISLSet, ISLPoint>map(IterableExtensions.<ISLSet>filter(IterableExtensions.<ISLSet, ISLSet>map(IterableExtensions.<ISLSet>filter(ListExtensions.<Face, ISLSet>map(lattice.getFaces((1 + nExtraDims)), _function), _function_1), _function_2), _function_3), _function_4);
-    ISLSet peak = top.copy();
-    ArrayList<ISLMap> infoFlowMaps = new ArrayList<ISLMap>();
-    for (final ISLPoint vec : edgeFlowVecs) {
-      {
-        final ISLSet accumulatedPoints = top.copy().intersect(top.copy().apply(accumulationMaff.copy().toMap().reverse()));
-        boolean _isEmpty = accumulatedPoints.isEmpty();
-        boolean _not = (!_isEmpty);
-        if (_not) {
-          ISLMap _intersectDomain = ISLUtil.buildTranslationMaff(vec).toMap().intersectDomain(accumulatedPoints.copy());
-          infoFlowMaps.add(_intersectDomain);
-          peak = peak.subtract(accumulatedPoints);
-        }
-      }
-    }
+    final Function1<ISLSet, Boolean> _function_5 = (ISLSet it) -> {
+      return Boolean.valueOf(it.isEmpty());
+    };
+    final Function1<ISLSet, ISLPoint> _function_6 = (ISLSet it) -> {
+      return it.samplePoint();
+    };
+    final Iterable<ISLPoint> edgeFlowVecs = IterableExtensions.<ISLSet, ISLPoint>map(IterableExtensions.<ISLSet>reject(IterableExtensions.<ISLSet, ISLSet>map(sliceEdgeSpaces, _function_4), _function_5), _function_6);
+    final Function1<ISLPoint, ISLMap> _function_7 = (ISLPoint it) -> {
+      return ISLUtil.buildTranslationMaff(it).toMap();
+    };
+    final Function1<ISLMap, ISLMap> _function_8 = (ISLMap it) -> {
+      return it.intersectDomain(top.copy().intersect(top.copy().apply(it.copy().reverse())));
+    };
+    final Function1<ISLMap, Boolean> _function_9 = (ISLMap it) -> {
+      return Boolean.valueOf(it.domain().isEmpty());
+    };
+    Iterable<ISLMap> _reject = IterableExtensions.<ISLMap>reject(IterableExtensions.<ISLMap, ISLMap>map(IterableExtensions.<ISLPoint, ISLMap>map(edgeFlowVecs, _function_7), _function_8), _function_9);
     ISLMap _intersectDomain = accumulationMaff.copy().toMap().intersectDomain(basin);
-    infoFlowMaps.add(_intersectDomain);
+    final Iterable<ISLMap> infoFlowMaps = Iterables.<ISLMap>concat(_reject, Collections.<ISLMap>unmodifiableList(CollectionLiterals.<ISLMap>newArrayList(_intersectDomain)));
+    final Function2<ISLSet, ISLMap, ISLSet> _function_10 = (ISLSet peak, ISLMap map) -> {
+      return peak.subtract(map.getDomain());
+    };
+    final ISLSet peak = IterableExtensions.<ISLMap, ISLSet>fold(infoFlowMaps, top.copy(), _function_10);
     CaseExpression cases = SerializeReduction.infoFlowToCases(infoFlowMaps, 
       AlphaOperatorUtil.reductionOPtoBinaryOP(are.getOperator()), reductionVar, coreExpr);
     EList<AlphaExpression> _exprs = cases.getExprs();
-    RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(bottom, 
-      AlphaUtil.<AlphaExpression>copyAE(coreExpr));
+    RestrictExpression _createRestrictExpression = AlphaUserFactory.createRestrictExpression(bottom, AlphaUtil.<AlphaExpression>copyAE(coreExpr));
     _exprs.add(_createRestrictExpression);
     EList<Equation> _equations = AlphaUtil.getContainerSystemBody(are).getEquations();
     StandardEquation _createStandardEquation = AlphaUserFactory.createStandardEquation(reductionVar, cases);
     _equations.add(_createStandardEquation);
-    EcoreUtil.replace(are, 
-      AlphaUserFactory.createReduceExpression(
-        are.getOperator(), writeMaff, 
-        AlphaUserFactory.createRestrictExpression(peak, 
-          AlphaUserFactory.createVariableExpression(reductionVar))));
+    AlphaExpression dependenceExpr = SerializeReduction.generateDependenceExpression(are, reductionVar, peak);
+    EcoreUtil.replace(are, dependenceExpr);
     AlphaInternalStateConstructor.recomputeContextDomain(sys);
   }
 
@@ -375,6 +375,25 @@ public class SerializeReduction {
     EList<Equation> _equations = systemBody.getEquations();
     _equations.add(standardEq);
     AlphaInternalStateConstructor.recomputeContextDomain(sys);
+  }
+
+  /**
+   * Returns a dependence expression to replace a serialized reduction
+   * This will be a simple dependence expression if the peak of the
+   * serialized reduction is singular. Otherwise, it will be another
+   * reduction expression, with a smaller body.
+   */
+  private static AlphaExpression generateDependenceExpression(final AbstractReduceExpression are, final Variable newVariable, final ISLSet peak) {
+    final ISLMultiAff writeMaff = are.getProjectionExpr().getISLMultiAff();
+    final ISLMap shadowMap = writeMaff.copy().toMap().reverse().intersectRange(peak.copy());
+    final VariableExpression variableExpr = AlphaUserFactory.createVariableExpression(newVariable);
+    boolean _isSingleValued = shadowMap.isSingleValued();
+    if (_isSingleValued) {
+      return AlphaUserFactory.createDependenceExpression(ISLUtil.toMultiAff(shadowMap), variableExpr);
+    } else {
+      final RestrictExpression restrictExpr = AlphaUserFactory.createRestrictExpression(peak, variableExpr);
+      return AlphaUserFactory.createReduceExpression(are.getOperator(), writeMaff, restrictExpr);
+    }
   }
 
   /**
