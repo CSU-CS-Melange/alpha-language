@@ -9,7 +9,11 @@ import alpha.model.util.AbstractAlphaCompleteVisitor
 import alpha.model.transformation.SubstituteByDef
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import static extension alpha.model.factory.AlphaUserFactory.*
+import static extension alpha.model.util.ISLUtil.*
+import static extension alpha.model.util.AlphaUtil.*
+import alpha.model.REDUCTION_OP
 
+//import alpha.model.util.Show
 
 class AABFT extends AbstractAlphaCompleteVisitor{
 	AlphaSystem sys
@@ -19,8 +23,12 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	}
 
 	static def void apply(AlphaSystem system){
+//		println("--------------\nInput system:")
+//		println(Show.print(system))
 		val aabft = new AABFT(system)
 		system.accept(aabft)	
+//		println("--------------\nOutput system:")
+//		println(Show.print(system))
 	}
 	
 	/**
@@ -31,10 +39,15 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		val v		= se.variable
 		val e		= se.expr
 		val name	= se.variable.name
-		val dim		= se.variable.domain.nbIndices				
+		val dim		= se.variable.domain.nbIndices
+		val indices = se.variable.domain.indexNames	
 		
 		checkDim(name, dim)
-		duplicateVariable(v, sys, e)
+//		duplicateVariable(v, sys, e)
+
+		indices.forEach[index |
+			makeChecksum(v, sys, index, indices.toString)
+		]
 		
 		/*
 		print("name: ")
@@ -74,12 +87,12 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	 * @param ve - An AlphaZ VariableExpression
 	 */
 	override void inVariableExpression(VariableExpression ve){
-		val v		= ve.variable		
-		val name	= ve.variable.name
-		val dim		= ve.variable.domain.nbIndices
-		
-		checkDim(name, dim)
-		duplicateVariable(v, sys)
+//		val v		= ve.variable		
+//		val name	= ve.variable.name
+//		val dim		= ve.variable.domain.nbIndices
+//		
+////		checkDim(name, dim)
+////		duplicateVariable(v, sys)
 
 		/*
 		print("name: ")
@@ -216,23 +229,48 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		}
 	}
 	
-	static def void makeChecksum(String baseName, ISLSet baseDomain){
-		val newName = baseName+'_2'
-		val baseDim = baseDomain.nbIndices
-		val newDim  = baseDim-1
+	static def void makeChecksum(Variable v, AlphaSystem s, String index, String indices){
+		// create domain
+		val domain = String.format('[N] -> {[%s]: 0<=%s<N}', index, index).toISLSet
+		println("domain: " + domain)
 		
-		println(baseName +"->"+ newName +" | "+ baseDim +" -> "+ newDim)
+		// create checksum variable name
+		val name = String.format("check_%s_%s_", v.name, index)
 		
-		if(newDim == 0){
-			var domain = '{[]:}'
+		// create primary checksum variable
+		val checkVarPrime = createVariable(name+"0", domain)
+		s.outputs += checkVarPrime //TODO: Change to locals
+		println("check var: " + checkVarPrime.name)
+		
+		// define base variable multiaff
+		val maff = String.format("[N] -> {%s -> %s}", indices, indices).toISLMultiAff
+		println("variable maff: '" + maff)	
+				
+		// define projection multiaff
+		val fp_maff = String.format("[N] -> {%s -> [%s]}", indices, index).toISLMultiAff
+				
+		// create checksum variable		
+		val checkExp = createVariableExpression(v)
+		val checkDep = createDependenceExpression(maff, checkExp)
+		val checkRed = createReduceExpression(REDUCTION_OP.SUM, fp_maff, checkDep)
+		
+		// add checksum equation to system body 
+		val checkPrimeStdEq = createStandardEquation(checkVarPrime, checkRed)
+		s.systemBodies.get(0).equations += checkPrimeStdEq
+		
+		
+		// create comparison checksum variable
+		val checkVarComp = createVariable(name+"1", domain)
+		s.outputs += checkVarComp //TODO: Change to locals
+		println("check var: " + checkVarComp.name)
+		
+		// add comparison checksum equation to system body and substitute by definition
+		val checkCompStdEq = createStandardEquation(checkVarComp, checkRed.copyAE)
+		s.systemBodies.get(0).equations += checkCompStdEq
+		SubstituteByDef.apply(s, checkCompStdEq, v)
 			
-			// create scalar
-		}
-		else{
-			for(step: 0..<newDim){
-				var index = baseDomain.getIndexName(step)
-				println(index)
-			}
-		}
+		
+	
+		
 	}
 }

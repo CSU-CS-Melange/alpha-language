@@ -2,15 +2,22 @@ package alpha.model.transformation;
 
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
+import alpha.model.DependenceExpression;
 import alpha.model.Equation;
+import alpha.model.REDUCTION_OP;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.Variable;
 import alpha.model.VariableExpression;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
+import alpha.model.util.AlphaUtil;
+import alpha.model.util.ISLUtil;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import java.util.List;
+import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.InputOutput;
 
 @SuppressWarnings("all")
@@ -36,8 +43,12 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     final AlphaExpression e = se.getExpr();
     final String name = se.getVariable().getName();
     final int dim = se.getVariable().getDomain().getNbIndices();
+    final List<String> indices = se.getVariable().getDomain().getIndexNames();
     AABFT.checkDim(name, dim);
-    AABFT.duplicateVariable(v, this.sys, e);
+    final Consumer<String> _function = (String index) -> {
+      AABFT.makeChecksum(v, this.sys, index, indices.toString());
+    };
+    indices.forEach(_function);
   }
 
   /**
@@ -46,11 +57,6 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
    */
   @Override
   public void inVariableExpression(final VariableExpression ve) {
-    final Variable v = ve.getVariable();
-    final String name = ve.getVariable().getName();
-    final int dim = ve.getVariable().getDomain().getNbIndices();
-    AABFT.checkDim(name, dim);
-    AABFT.duplicateVariable(v, this.sys);
   }
 
   /**
@@ -182,21 +188,34 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  public static void makeChecksum(final String baseName, final ISLSet baseDomain) {
-    final String newName = (baseName + "_2");
-    final int baseDim = baseDomain.getNbIndices();
-    final int newDim = (baseDim - 1);
-    InputOutput.<String>println(((((((baseName + "->") + newName) + " | ") + Integer.valueOf(baseDim)) + " -> ") + Integer.valueOf(newDim)));
-    if ((newDim == 0)) {
-      String domain = "{[]:}";
-    } else {
-      ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, newDim, true);
-      for (final Integer step : _doubleDotLessThan) {
-        {
-          String index = baseDomain.getIndexName((step).intValue());
-          InputOutput.<String>println(index);
-        }
-      }
-    }
+  public static void makeChecksum(final Variable v, final AlphaSystem s, final String index, final String indices) {
+    final ISLSet domain = ISLUtil.toISLSet(String.format("[N] -> {[%s]: 0<=%s<N}", index, index));
+    InputOutput.<String>println(("domain: " + domain));
+    final String name = String.format("check_%s_%s_", v.getName(), index);
+    final Variable checkVarPrime = AlphaUserFactory.createVariable((name + "0"), domain);
+    EList<Variable> _outputs = s.getOutputs();
+    _outputs.add(checkVarPrime);
+    String _name = checkVarPrime.getName();
+    String _plus = ("check var: " + _name);
+    InputOutput.<String>println(_plus);
+    final ISLMultiAff maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> %s}", indices, indices));
+    InputOutput.<String>println(("variable maff: \'" + maff));
+    final ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> [%s]}", indices, index));
+    final VariableExpression checkExp = AlphaUserFactory.createVariableExpression(v);
+    final DependenceExpression checkDep = AlphaUserFactory.createDependenceExpression(maff, checkExp);
+    final ReduceExpression checkRed = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, fp_maff, checkDep);
+    final StandardEquation checkPrimeStdEq = AlphaUserFactory.createStandardEquation(checkVarPrime, checkRed);
+    EList<Equation> _equations = s.getSystemBodies().get(0).getEquations();
+    _equations.add(checkPrimeStdEq);
+    final Variable checkVarComp = AlphaUserFactory.createVariable((name + "1"), domain);
+    EList<Variable> _outputs_1 = s.getOutputs();
+    _outputs_1.add(checkVarComp);
+    String _name_1 = checkVarComp.getName();
+    String _plus_1 = ("check var: " + _name_1);
+    InputOutput.<String>println(_plus_1);
+    final StandardEquation checkCompStdEq = AlphaUserFactory.createStandardEquation(checkVarComp, AlphaUtil.<ReduceExpression>copyAE(checkRed));
+    EList<Equation> _equations_1 = s.getSystemBodies().get(0).getEquations();
+    _equations_1.add(checkCompStdEq);
+    SubstituteByDef.apply(s, checkCompStdEq, v);
   }
 }

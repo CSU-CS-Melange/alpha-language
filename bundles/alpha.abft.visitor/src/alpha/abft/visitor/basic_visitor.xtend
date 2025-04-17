@@ -15,8 +15,8 @@ import java.io.File
 
 class basic_visitor {
 	def static void main(String[] args) {
-		val in_dir   = 'resources/'
-		val out_dir  = 'resources/auto/dup/'
+		val in_dir   = 'resources/base/'
+		val out_dir  = 'resources/auto/'
 		
 		// Prompt user for input file
 		val scanner = new Scanner(System.in)

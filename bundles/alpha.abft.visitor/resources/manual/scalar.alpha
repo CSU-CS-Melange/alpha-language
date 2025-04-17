@@ -1,0 +1,9 @@
+affine scalar [N]->{: N>0}
+ inputs
+ 	a 		: {[i]   : 0<=i<N}
+ outputs
+ 	a_c		: {[]	 :	  	 }
+ 	
+ let
+ 	a_c = reduce (+, [i], a[i]);
+.

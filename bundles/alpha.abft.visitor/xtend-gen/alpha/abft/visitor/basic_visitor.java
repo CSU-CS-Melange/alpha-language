@@ -19,8 +19,8 @@ import org.eclipse.xtext.xbase.lib.InputOutput;
 public class basic_visitor {
   public static void main(final String[] args) {
     try {
-      final String in_dir = "resources/";
-      final String out_dir = "resources/auto/dup/";
+      final String in_dir = "resources/base/";
+      final String out_dir = "resources/auto/";
       final Scanner scanner = new Scanner(System.in);
       InputOutput.<String>print((("Enter input alpha file in \'" + in_dir) + "\': "));
       String sys_name = scanner.nextLine();

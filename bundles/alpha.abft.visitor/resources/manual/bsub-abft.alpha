@@ -1,0 +1,28 @@
+affine bsub_abft [N]->{: N>0}
+ inputs
+ 	U 			 : {[i,j] : 0<=i<=j<N}
+ 	b 			 : {[i]   : 0<=i<N}
+ outputs
+ 	x 			 : {[i]   : 0<=i<N}
+ 	Inv_x_c 	 : {[s]   : 0<=s<1}
+ 	
+ locals
+ 	x_c_0, x_c_1 : {[s]	 : 0<=s<1}	
+ 	
+ let
+ 	x[i] = case {
+ 		{: i = N-1} :  b[i] / U[i,i];
+ 		{: i < N-1} : (b[i] - reduce(+, [j], {: i<j<N}  : U[i,j] * x[j])) / U[i,i];
+ 	};
+
+	Inv_x_c[s] = (x_c_0 - x_c_1)/x_c_0;
+ 	
+ 	x_c_0[s] = reduce (+, [i], b[i]);
+ 	
+ 	x_c_1[s] = reduce (+, [i], 
+ 		case {
+	 		{: i = N-1} :  b[i] / U[i,i];
+	 		{: i < N-1} : (b[i] - reduce(+, [j], {: i<j<N}  : U[i,j] * x[j])) / U[i,i];
+	 	}
+ 	);
+.
