@@ -125,18 +125,22 @@ float reduce_lud_aabft_verify_L_1(long, int, int);
 float eval_verify_L(long, int, int);
 float reduce_lud_aabft_verify_check_U_i_0_1(long, int);
 float eval_verify_check_U_i_0(long, int);
+float reduce_lud_aabft_verify_check_U_i_1_2(long, int, int);
 float reduce_lud_aabft_verify_check_U_i_1_1(long, int);
 float eval_verify_check_U_i_1(long, int);
 float reduce_lud_aabft_verify_check_U_j_0_1(long, int);
 float eval_verify_check_U_j_0(long, int);
+float reduce_lud_aabft_verify_check_U_j_1_2(long, int, int);
 float reduce_lud_aabft_verify_check_U_j_1_1(long, int);
 float eval_verify_check_U_j_1(long, int);
 float reduce_lud_aabft_verify_check_L_i_0_1(long, int);
 float eval_verify_check_L_i_0(long, int);
+float reduce_lud_aabft_verify_check_L_i_1_2(long, int, int);
 float reduce_lud_aabft_verify_check_L_i_1_1(long, int);
 float eval_verify_check_L_i_1(long, int);
 float reduce_lud_aabft_verify_check_L_j_0_1(long, int);
 float eval_verify_check_L_j_0(long, int);
+float reduce_lud_aabft_verify_check_L_j_1_2(long, int, int);
 float reduce_lud_aabft_verify_check_L_j_1_1(long, int);
 float eval_verify_check_L_j_1(long, int);
 
@@ -448,12 +452,27 @@ float eval_verify_check_U_i_0(long N, int i){
 	}
 	return check_U_i_0(i);
 }
-float reduce_lud_aabft_verify_check_U_i_1_1(long N, int ip){
+float reduce_lud_aabft_verify_check_U_i_1_2(long N, int ip, int jp){
 	float reduceVar = 0;
-	#define S0(i,j) reduceVar = (reduceVar)+(eval_verify_U(N,i,j))
+	#define S0(i,j,k) reduceVar = (reduceVar)+((eval_verify_L(N,i,k))*(eval_verify_U(N,k,j)))
 	{
 		//Domain
-		//{i,j|ip>=0 && N>=ip+1 && N>=1 && i>=0 && j>=i && N>=j+1 && N>=i+1 && ip==i}
+		//{i,j,k|jp>=0 && N>=jp+1 && ip>=1 && N>=ip+1 && jp>=ip && N>=1 && i>=1 && k>=0 && i>=k+1 && N>=i+1 && j>=k && N>=j+1 && j>=0 && j>=i && ip==i && jp==j}
+		int c3;
+		for(c3=0;c3 <= ip-1;c3+=1)
+		 {
+		 	S0((ip),(jp),(c3));
+		 }
+	}
+	#undef S0
+	return reduceVar;
+}
+float reduce_lud_aabft_verify_check_U_i_1_1(long N, int ip){
+	float reduceVar = 0;
+	#define S0(i,j) reduceVar = (reduceVar)+((((i == 0 && N >= j+1 && j >= 0))?A(i,j):((A(i,j))-(reduce_lud_aabft_verify_check_U_i_1_2(N,i,j)))))
+	{
+		//Domain
+		//{i,j|ip>=0 && N>=ip+1 && i>=0 && j>=i && N>=j+1 && ip==i}
 		int c2;
 		for(c2=ip;c2 <= N-1;c2+=1)
 		 {
@@ -502,12 +521,27 @@ float eval_verify_check_U_j_0(long N, int j){
 	}
 	return check_U_j_0(j);
 }
-float reduce_lud_aabft_verify_check_U_j_1_1(long N, int ip){
+float reduce_lud_aabft_verify_check_U_j_1_2(long N, int ip, int jp){
 	float reduceVar = 0;
-	#define S0(i,j) reduceVar = (reduceVar)+(eval_verify_U(N,i,j))
+	#define S0(i,j,k) reduceVar = (reduceVar)+((eval_verify_L(N,i,k))*(eval_verify_U(N,k,j)))
 	{
 		//Domain
-		//{i,j|N>=ip+1 && ip>=0 && N>=1 && i>=0 && j>=i && N>=j+1 && j>=0 && ip==j}
+		//{i,j,k|jp>=0 && N>=jp+1 && ip>=1 && N>=ip+1 && jp>=ip && N>=1 && i>=1 && k>=0 && i>=k+1 && N>=i+1 && j>=k && N>=j+1 && j>=0 && j>=i && ip==i && jp==j}
+		int c3;
+		for(c3=0;c3 <= ip-1;c3+=1)
+		 {
+		 	S0((ip),(jp),(c3));
+		 }
+	}
+	#undef S0
+	return reduceVar;
+}
+float reduce_lud_aabft_verify_check_U_j_1_1(long N, int ip){
+	float reduceVar = 0;
+	#define S0(i,j) reduceVar = (reduceVar)+((((i == 0 && N >= j+1 && j >= 0))?A(i,j):((A(i,j))-(reduce_lud_aabft_verify_check_U_j_1_2(N,i,j)))))
+	{
+		//Domain
+		//{i,j|ip>=0 && N>=ip+1 && i>=0 && j>=i && N>=j+1 && ip==j}
 		int c1;
 		for(c1=0;c1 <= ip;c1+=1)
 		 {
@@ -556,12 +590,27 @@ float eval_verify_check_L_i_0(long N, int i){
 	}
 	return check_L_i_0(i);
 }
-float reduce_lud_aabft_verify_check_L_i_1_1(long N, int ip){
+float reduce_lud_aabft_verify_check_L_i_1_2(long N, int ip, int jp){
 	float reduceVar = 0;
-	#define S0(i,j) reduceVar = (reduceVar)+(eval_verify_L(N,i,j))
+	#define S0(i,j,k) reduceVar = (reduceVar)+((eval_verify_L(N,i,k))*(eval_verify_U(N,k,j)))
 	{
 		//Domain
-		//{i,j|N>=ip+1 && ip>=0 && N>=1 && N>=i+1 && j>=0 && i>=j && i>=0 && ip==i}
+		//{i,j,k|N>=jp+1 && ip>=0 && jp>=1 && N>=ip+1 && ip>=jp && N>=1 && j>=1 && k>=0 && j>=k+1 && N>=i+1 && N>=j+1 && i>=k && i>=j && i>=0 && ip==i && jp==j}
+		int c3;
+		for(c3=0;c3 <= jp-1;c3+=1)
+		 {
+		 	S0((ip),(jp),(c3));
+		 }
+	}
+	#undef S0
+	return reduceVar;
+}
+float reduce_lud_aabft_verify_check_L_i_1_1(long N, int ip){
+	float reduceVar = 0;
+	#define S0(i,j) reduceVar = (reduceVar)+((((j == 0 && N >= i+1 && i >= 0))?(A(i,j))/(eval_verify_U(N,j,j)):(((A(i,j))-(reduce_lud_aabft_verify_check_L_i_1_2(N,i,j)))/(eval_verify_U(N,j,j)))))
+	{
+		//Domain
+		//{i,j|ip>=0 && N>=ip+1 && N>=i+1 && j>=0 && i>=j && ip==i}
 		int c2;
 		for(c2=0;c2 <= ip;c2+=1)
 		 {
@@ -610,12 +659,27 @@ float eval_verify_check_L_j_0(long N, int j){
 	}
 	return check_L_j_0(j);
 }
-float reduce_lud_aabft_verify_check_L_j_1_1(long N, int ip){
+float reduce_lud_aabft_verify_check_L_j_1_2(long N, int ip, int jp){
 	float reduceVar = 0;
-	#define S0(i,j) reduceVar = (reduceVar)+(eval_verify_L(N,i,j))
+	#define S0(i,j,k) reduceVar = (reduceVar)+((eval_verify_L(N,i,k))*(eval_verify_U(N,k,j)))
 	{
 		//Domain
-		//{i,j|N>=ip+1 && ip>=0 && N>=1 && N>=i+1 && j>=0 && i>=j && N>=j+1 && ip==j}
+		//{i,j,k|N>=jp+1 && ip>=0 && jp>=1 && N>=ip+1 && ip>=jp && N>=1 && j>=1 && k>=0 && j>=k+1 && N>=i+1 && N>=j+1 && i>=k && i>=j && i>=0 && ip==i && jp==j}
+		int c3;
+		for(c3=0;c3 <= jp-1;c3+=1)
+		 {
+		 	S0((ip),(jp),(c3));
+		 }
+	}
+	#undef S0
+	return reduceVar;
+}
+float reduce_lud_aabft_verify_check_L_j_1_1(long N, int ip){
+	float reduceVar = 0;
+	#define S0(i,j) reduceVar = (reduceVar)+((((j == 0 && N >= i+1 && i >= 0))?(A(i,j))/(eval_verify_U(N,j,j)):(((A(i,j))-(reduce_lud_aabft_verify_check_L_j_1_2(N,i,j)))/(eval_verify_U(N,j,j)))))
+	{
+		//Domain
+		//{i,j|ip>=0 && N>=ip+1 && N>=i+1 && j>=0 && i>=j && ip==j}
 		int c1;
 		for(c1=ip;c1 <= N-1;c1+=1)
 		 {
