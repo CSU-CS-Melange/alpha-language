@@ -2,6 +2,8 @@ package alpha.model.transformation;
 
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
+import alpha.model.BINARY_OP;
+import alpha.model.BinaryExpression;
 import alpha.model.DependenceExpression;
 import alpha.model.Equation;
 import alpha.model.REDUCTION_OP;
@@ -193,8 +195,8 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     InputOutput.<String>println(("domain: " + domain));
     final String name = String.format("check_%s_%s_", v.getName(), index);
     final Variable checkVarPrime = AlphaUserFactory.createVariable((name + "0"), domain);
-    EList<Variable> _outputs = s.getOutputs();
-    _outputs.add(checkVarPrime);
+    EList<Variable> _locals = s.getLocals();
+    _locals.add(checkVarPrime);
     String _name = checkVarPrime.getName();
     String _plus = ("check var: " + _name);
     InputOutput.<String>println(_plus);
@@ -208,8 +210,8 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     EList<Equation> _equations = s.getSystemBodies().get(0).getEquations();
     _equations.add(checkPrimeStdEq);
     final Variable checkVarComp = AlphaUserFactory.createVariable((name + "1"), domain);
-    EList<Variable> _outputs_1 = s.getOutputs();
-    _outputs_1.add(checkVarComp);
+    EList<Variable> _locals_1 = s.getLocals();
+    _locals_1.add(checkVarComp);
     String _name_1 = checkVarComp.getName();
     String _plus_1 = ("check var: " + _name_1);
     InputOutput.<String>println(_plus_1);
@@ -217,5 +219,15 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     EList<Equation> _equations_1 = s.getSystemBodies().get(0).getEquations();
     _equations_1.add(checkCompStdEq);
     SubstituteByDef.apply(s, checkCompStdEq, v);
+    final Variable checkInv = AlphaUserFactory.createVariable((name + "inv"), domain);
+    EList<Variable> _outputs = s.getOutputs();
+    _outputs.add(checkInv);
+    final VariableExpression checkInvProd = AlphaUserFactory.createVariableExpression(checkVarPrime);
+    final VariableExpression checkInvVal = AlphaUserFactory.createVariableExpression(checkVarComp);
+    final BinaryExpression checkInvDiff = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<VariableExpression>copyAE(checkInvProd), checkInvVal);
+    final BinaryExpression checkInvExp = AlphaUserFactory.createBinaryExpression(BINARY_OP.DIV, checkInvDiff, checkInvProd);
+    final StandardEquation checkInvEq = AlphaUserFactory.createStandardEquation(checkInv, checkInvExp);
+    EList<Equation> _equations_2 = s.getSystemBodies().get(0).getEquations();
+    _equations_2.add(checkInvEq);
   }
 }

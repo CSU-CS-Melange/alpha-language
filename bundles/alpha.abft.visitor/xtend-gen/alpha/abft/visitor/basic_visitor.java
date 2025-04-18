@@ -6,7 +6,6 @@ import alpha.model.AlphaModelSaver;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.transformation.AABFT;
-import alpha.model.transformation.Normalize;
 import alpha.model.transformation.reduction.ReductionComposition;
 import alpha.model.util.AShow;
 import alpha.model.util.Show;
@@ -48,7 +47,6 @@ public class basic_visitor {
       String _name = system.getName();
       String _plus = (_name + "_aabft");
       system.setName(_plus);
-      Normalize.apply(system);
       ReductionComposition.apply(system);
       AlphaInternalStateConstructor.recomputeContextDomain(system);
       InputOutput.<String>println("-------------------\nNormalized system:\n");

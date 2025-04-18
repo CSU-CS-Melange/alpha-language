@@ -12,6 +12,7 @@ import static extension alpha.model.factory.AlphaUserFactory.*
 import static extension alpha.model.util.ISLUtil.*
 import static extension alpha.model.util.AlphaUtil.*
 import alpha.model.REDUCTION_OP
+import alpha.model.BINARY_OP
 
 //import alpha.model.util.Show
 
@@ -231,15 +232,18 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	
 	static def void makeChecksum(Variable v, AlphaSystem s, String index, String indices){
 		// create domain
+		// TODO: Domain generator function
 		val domain = String.format('[N] -> {[%s]: 0<=%s<N}', index, index).toISLSet
 		println("domain: " + domain)
 		
 		// create checksum variable name
+		// TODO: name generator function
 		val name = String.format("check_%s_%s_", v.name, index)
 		
 		// create primary checksum variable
+		// TODO: prime checksum generator function
 		val checkVarPrime = createVariable(name+"0", domain)
-		s.outputs += checkVarPrime //TODO: Change to locals
+		s.locals += checkVarPrime
 		println("check var: " + checkVarPrime.name)
 		
 		// define base variable multiaff
@@ -260,8 +264,9 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		
 		
 		// create comparison checksum variable
+		// TODO: comparison generator function
 		val checkVarComp = createVariable(name+"1", domain)
-		s.outputs += checkVarComp //TODO: Change to locals
+		s.locals += checkVarComp
 		println("check var: " + checkVarComp.name)
 		
 		// add comparison checksum equation to system body and substitute by definition
@@ -269,8 +274,19 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		s.systemBodies.get(0).equations += checkCompStdEq
 		SubstituteByDef.apply(s, checkCompStdEq, v)
 			
+		// TODO: Checksum invariant
+		val checkInv = createVariable(name+'inv', domain)
+		s.outputs += checkInv
 		
-	
+		val checkInvProd = createVariableExpression(checkVarPrime)
+		val checkInvVal  = createVariableExpression(checkVarComp)
+		val checkInvDiff = createBinaryExpression(BINARY_OP.SUB, checkInvProd.copyAE, checkInvVal)
+		val checkInvExp  = createBinaryExpression(BINARY_OP.DIV, checkInvDiff, checkInvProd)
+		
+		val checkInvEq   = createStandardEquation(checkInv, checkInvExp)
+		
+		s.systemBodies.get(0).equations += checkInvEq
+		
 		
 	}
 }

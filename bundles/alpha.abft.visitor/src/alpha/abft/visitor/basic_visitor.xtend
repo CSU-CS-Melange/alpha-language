@@ -57,7 +57,8 @@ class basic_visitor {
 		system.name = system.name + '_aabft'
 		
 		// Normalize the system
-		Normalize.apply(system)
+//		Normalize.apply(system)
+// TODO: Figure out why Normalize crashes
 		ReductionComposition.apply(system)
 		AlphaInternalStateConstructor.recomputeContextDomain(system)		
 
