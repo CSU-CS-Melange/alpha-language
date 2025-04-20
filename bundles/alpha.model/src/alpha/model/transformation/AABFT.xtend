@@ -13,6 +13,8 @@ import static extension alpha.model.util.ISLUtil.*
 import static extension alpha.model.util.AlphaUtil.*
 import alpha.model.REDUCTION_OP
 import alpha.model.BINARY_OP
+import alpha.model.ReduceExpression
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 
 //import alpha.model.util.Show
 
@@ -38,7 +40,6 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	 */	
 	override void inStandardEquation(StandardEquation se){
 		val v		= se.variable
-		val e		= se.expr
 		val name	= se.variable.name
 		val dim		= se.variable.domain.nbIndices
 		val indices = se.variable.domain.indexNames	
@@ -230,63 +231,120 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		}
 	}
 	
+	/**
+	 * Utility function to generate checksum variable name template.
+	 * @param v - base variable being checksummed
+	 * @param index - the index name of the variable
+	 * 
+	 * @return formatted name template
+	 */
+	static def String getNameTemplate(Variable v, String index){
+		return String.format("check_%s_%s_", v.name, index)
+	}
+	
+	/**
+	 * Generates checksum, adds it to AlphaZ system, and returns variable and it's ReduceExpression.
+	 * @param sys - AlphaZ system
+	 * @param name - checksum name template
+	 * @param domain - the domain of the checksum variable
+	 * @param b_maff - base MultiAff
+	 * @param p_maff - projected MultiAff
+	 * @param base - base variable
+	 * 
+	 * @return Pair containing the checksum variable (key) and its ReduceExpression (value)
+	 */
+	static def Pair<Variable, ReduceExpression> addChecksum(AlphaSystem sys, String name, ISLSet domain, ISLMultiAff b_maff, ISLMultiAff p_maff, Variable base){
+		val check	= createVariable(name+"0", domain)
+		
+		val varExp	= createVariableExpression(base)
+		val depExp	= createDependenceExpression(b_maff, varExp)
+		val redExp	= createReduceExpression(REDUCTION_OP.SUM, p_maff, depExp)
+		
+		val stdEq	= createStandardEquation(check, redExp)
+		
+		sys.locals	+= check
+		sys.systemBodies.get(0).equations += stdEq
+		
+		return check -> redExp
+	}
+	
+	/**
+	 * Generates checksum comparator, adds it to AlphaZ system, and returns the generated variable.
+	 * @param sys - AlphaZ system
+	 * @param name - checksum name template
+	 * @param redExp - the ReduceExpression of the primary checksum variable
+	 * @param base - base variable
+	 * 
+	 * @return The checksum comparator variable
+	 */
+	static def Variable addComparator(AlphaSystem sys, String name, ISLSet domain, ReduceExpression redExp, Variable base){
+		val comp	= createVariable(name+"1", domain)
+		sys.locals	+= comp
+		
+		val stdEq	= createStandardEquation(comp, redExp.copyAE)
+		
+		sys.systemBodies.get(0).equations += stdEq
+		SubstituteByDef.apply(sys, stdEq, base)
+		
+		return comp
+	}
+	
+	/**
+	 * Adds the checksum invariant to the AlphaZ system.
+	 * @param invariant - Declared AlphaZ variable
+	 * @param prime - Primary checksum variable
+	 * @param comp - Comparison checksum variable
+	 * 
+	 * @return Standard equation of the checksum invariant
+	 */
+	static def void addInvariant(AlphaSystem sys, String name, ISLSet domain, Variable prime, Variable comp){
+		val inv 	= createVariable(name+'inv', domain)
+		
+		val prod 	= createVariableExpression(prime)
+		val value	= createVariableExpression(comp)
+		val diff	= createBinaryExpression(BINARY_OP.SUB, prod.copyAE, value)
+		val expr	= createBinaryExpression(BINARY_OP.DIV, diff, prod)
+		
+		val stdEx	= createStandardEquation(inv, expr)	
+		
+		sys.outputs += inv
+		sys.systemBodies.get(0).equations += stdEx
+		
+	}
+	
 	static def void makeChecksum(Variable v, AlphaSystem s, String index, String indices){
+		// create checksum variable name
+		val name = getNameTemplate(v, index)
+		
+		
 		// create domain
 		// TODO: Domain generator function
 		val domain = String.format('[N] -> {[%s]: 0<=%s<N}', index, index).toISLSet
 		println("domain: " + domain)
 		
-		// create checksum variable name
-		// TODO: name generator function
-		val name = String.format("check_%s_%s_", v.name, index)
 		
-		// create primary checksum variable
-		// TODO: prime checksum generator function
-		val checkVarPrime = createVariable(name+"0", domain)
-		s.locals += checkVarPrime
-		println("check var: " + checkVarPrime.name)
 		
+		// TODO: multiAff generator function		
 		// define base variable multiaff
 		val maff = String.format("[N] -> {%s -> %s}", indices, indices).toISLMultiAff
-		println("variable maff: '" + maff)	
 				
 		// define projection multiaff
 		val fp_maff = String.format("[N] -> {%s -> [%s]}", indices, index).toISLMultiAff
-				
-		// create checksum variable		
-		val checkExp = createVariableExpression(v)
-		val checkDep = createDependenceExpression(maff, checkExp)
-		val checkRed = createReduceExpression(REDUCTION_OP.SUM, fp_maff, checkDep)
-		
-		// add checksum equation to system body 
-		val checkPrimeStdEq = createStandardEquation(checkVarPrime, checkRed)
-		s.systemBodies.get(0).equations += checkPrimeStdEq
-		
-		
-		// create comparison checksum variable
-		// TODO: comparison generator function
-		val checkVarComp = createVariable(name+"1", domain)
-		s.locals += checkVarComp
-		println("check var: " + checkVarComp.name)
-		
-		// add comparison checksum equation to system body and substitute by definition
-		val checkCompStdEq = createStandardEquation(checkVarComp, checkRed.copyAE)
-		s.systemBodies.get(0).equations += checkCompStdEq
-		SubstituteByDef.apply(s, checkCompStdEq, v)
 			
-		// TODO: Checksum invariant
-		val checkInv = createVariable(name+'inv', domain)
-		s.outputs += checkInv
+			
+		// generates checksum
+		val check = addChecksum(s, name, domain, maff, fp_maff, v)
 		
-		val checkInvProd = createVariableExpression(checkVarPrime)
-		val checkInvVal  = createVariableExpression(checkVarComp)
-		val checkInvDiff = createBinaryExpression(BINARY_OP.SUB, checkInvProd.copyAE, checkInvVal)
-		val checkInvExp  = createBinaryExpression(BINARY_OP.DIV, checkInvDiff, checkInvProd)
+		val redExp = check.getValue()
+		val prime = check.getKey()
 		
-		val checkInvEq   = createStandardEquation(checkInv, checkInvExp)
-		
-		s.systemBodies.get(0).equations += checkInvEq
-		
-		
+		// generates comparison checksum
+		val checkComp = addComparator(s, name, domain, redExp, v)
+			
+		// generates checksum invariant
+		addInvariant(s, name, domain, prime, checkComp)
 	}
+
+	
+	
 }

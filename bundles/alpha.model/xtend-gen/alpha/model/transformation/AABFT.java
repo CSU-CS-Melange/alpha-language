@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class AABFT extends AbstractAlphaCompleteVisitor {
@@ -42,7 +43,6 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
   @Override
   public void inStandardEquation(final StandardEquation se) {
     final Variable v = se.getVariable();
-    final AlphaExpression e = se.getExpr();
     final String name = se.getVariable().getName();
     final int dim = se.getVariable().getDomain().getNbIndices();
     final List<String> indices = se.getVariable().getDomain().getIndexNames();
@@ -190,44 +190,92 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     }
   }
 
+  /**
+   * Utility function to generate checksum variable name template.
+   * @param v - base variable being checksummed
+   * @param index - the index name of the variable
+   * 
+   * @return formatted name template
+   */
+  public static String getNameTemplate(final Variable v, final String index) {
+    return String.format("check_%s_%s_", v.getName(), index);
+  }
+
+  /**
+   * Generates checksum, adds it to AlphaZ system, and returns variable and it's ReduceExpression.
+   * @param sys - AlphaZ system
+   * @param name - checksum name template
+   * @param domain - the domain of the checksum variable
+   * @param b_maff - base MultiAff
+   * @param p_maff - projected MultiAff
+   * @param base - base variable
+   * 
+   * @return Pair containing the checksum variable (key) and its ReduceExpression (value)
+   */
+  public static Pair<Variable, ReduceExpression> addChecksum(final AlphaSystem sys, final String name, final ISLSet domain, final ISLMultiAff b_maff, final ISLMultiAff p_maff, final Variable base) {
+    final Variable check = AlphaUserFactory.createVariable((name + "0"), domain);
+    final VariableExpression varExp = AlphaUserFactory.createVariableExpression(base);
+    final DependenceExpression depExp = AlphaUserFactory.createDependenceExpression(b_maff, varExp);
+    final ReduceExpression redExp = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, p_maff, depExp);
+    final StandardEquation stdEq = AlphaUserFactory.createStandardEquation(check, redExp);
+    EList<Variable> _locals = sys.getLocals();
+    _locals.add(check);
+    EList<Equation> _equations = sys.getSystemBodies().get(0).getEquations();
+    _equations.add(stdEq);
+    return Pair.<Variable, ReduceExpression>of(check, redExp);
+  }
+
+  /**
+   * Generates checksum comparator, adds it to AlphaZ system, and returns the generated variable.
+   * @param sys - AlphaZ system
+   * @param name - checksum name template
+   * @param redExp - the ReduceExpression of the primary checksum variable
+   * @param base - base variable
+   * 
+   * @return The checksum comparator variable
+   */
+  public static Variable addComparator(final AlphaSystem sys, final String name, final ISLSet domain, final ReduceExpression redExp, final Variable base) {
+    final Variable comp = AlphaUserFactory.createVariable((name + "1"), domain);
+    EList<Variable> _locals = sys.getLocals();
+    _locals.add(comp);
+    final StandardEquation stdEq = AlphaUserFactory.createStandardEquation(comp, AlphaUtil.<ReduceExpression>copyAE(redExp));
+    EList<Equation> _equations = sys.getSystemBodies().get(0).getEquations();
+    _equations.add(stdEq);
+    SubstituteByDef.apply(sys, stdEq, base);
+    return comp;
+  }
+
+  /**
+   * Adds the checksum invariant to the AlphaZ system.
+   * @param invariant - Declared AlphaZ variable
+   * @param prime - Primary checksum variable
+   * @param comp - Comparison checksum variable
+   * 
+   * @return Standard equation of the checksum invariant
+   */
+  public static void addInvariant(final AlphaSystem sys, final String name, final ISLSet domain, final Variable prime, final Variable comp) {
+    final Variable inv = AlphaUserFactory.createVariable((name + "inv"), domain);
+    final VariableExpression prod = AlphaUserFactory.createVariableExpression(prime);
+    final VariableExpression value = AlphaUserFactory.createVariableExpression(comp);
+    final BinaryExpression diff = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<VariableExpression>copyAE(prod), value);
+    final BinaryExpression expr = AlphaUserFactory.createBinaryExpression(BINARY_OP.DIV, diff, prod);
+    final StandardEquation stdEx = AlphaUserFactory.createStandardEquation(inv, expr);
+    EList<Variable> _outputs = sys.getOutputs();
+    _outputs.add(inv);
+    EList<Equation> _equations = sys.getSystemBodies().get(0).getEquations();
+    _equations.add(stdEx);
+  }
+
   public static void makeChecksum(final Variable v, final AlphaSystem s, final String index, final String indices) {
+    final String name = AABFT.getNameTemplate(v, index);
     final ISLSet domain = ISLUtil.toISLSet(String.format("[N] -> {[%s]: 0<=%s<N}", index, index));
     InputOutput.<String>println(("domain: " + domain));
-    final String name = String.format("check_%s_%s_", v.getName(), index);
-    final Variable checkVarPrime = AlphaUserFactory.createVariable((name + "0"), domain);
-    EList<Variable> _locals = s.getLocals();
-    _locals.add(checkVarPrime);
-    String _name = checkVarPrime.getName();
-    String _plus = ("check var: " + _name);
-    InputOutput.<String>println(_plus);
     final ISLMultiAff maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> %s}", indices, indices));
-    InputOutput.<String>println(("variable maff: \'" + maff));
     final ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> [%s]}", indices, index));
-    final VariableExpression checkExp = AlphaUserFactory.createVariableExpression(v);
-    final DependenceExpression checkDep = AlphaUserFactory.createDependenceExpression(maff, checkExp);
-    final ReduceExpression checkRed = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, fp_maff, checkDep);
-    final StandardEquation checkPrimeStdEq = AlphaUserFactory.createStandardEquation(checkVarPrime, checkRed);
-    EList<Equation> _equations = s.getSystemBodies().get(0).getEquations();
-    _equations.add(checkPrimeStdEq);
-    final Variable checkVarComp = AlphaUserFactory.createVariable((name + "1"), domain);
-    EList<Variable> _locals_1 = s.getLocals();
-    _locals_1.add(checkVarComp);
-    String _name_1 = checkVarComp.getName();
-    String _plus_1 = ("check var: " + _name_1);
-    InputOutput.<String>println(_plus_1);
-    final StandardEquation checkCompStdEq = AlphaUserFactory.createStandardEquation(checkVarComp, AlphaUtil.<ReduceExpression>copyAE(checkRed));
-    EList<Equation> _equations_1 = s.getSystemBodies().get(0).getEquations();
-    _equations_1.add(checkCompStdEq);
-    SubstituteByDef.apply(s, checkCompStdEq, v);
-    final Variable checkInv = AlphaUserFactory.createVariable((name + "inv"), domain);
-    EList<Variable> _outputs = s.getOutputs();
-    _outputs.add(checkInv);
-    final VariableExpression checkInvProd = AlphaUserFactory.createVariableExpression(checkVarPrime);
-    final VariableExpression checkInvVal = AlphaUserFactory.createVariableExpression(checkVarComp);
-    final BinaryExpression checkInvDiff = AlphaUserFactory.createBinaryExpression(BINARY_OP.SUB, AlphaUtil.<VariableExpression>copyAE(checkInvProd), checkInvVal);
-    final BinaryExpression checkInvExp = AlphaUserFactory.createBinaryExpression(BINARY_OP.DIV, checkInvDiff, checkInvProd);
-    final StandardEquation checkInvEq = AlphaUserFactory.createStandardEquation(checkInv, checkInvExp);
-    EList<Equation> _equations_2 = s.getSystemBodies().get(0).getEquations();
-    _equations_2.add(checkInvEq);
+    final Pair<Variable, ReduceExpression> check = AABFT.addChecksum(s, name, domain, maff, fp_maff, v);
+    final ReduceExpression redExp = check.getValue();
+    final Variable prime = check.getKey();
+    final Variable checkComp = AABFT.addComparator(s, name, domain, redExp, v);
+    AABFT.addInvariant(s, name, domain, prime, checkComp);
   }
 }
