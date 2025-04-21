@@ -6,17 +6,17 @@ package tests.basic.FFT {
 			x : {[i0]: 0 <= i0 < N }
 		outputs
 			y : {[i0]: 0 <= i0 < N }
-			check_T_i0_0 : {[i0]: 0 <= i0 < N }
-			check_T_i0_1 : {[i0]: 0 <= i0 < N }
 			check_T_i0_inv : {[i0]: 0 <= i0 < N }
-			check_T_i1_0 : {[i1]: 0 <= i1 < N }
-			check_T_i1_1 : {[i1]: 0 <= i1 < N }
 			check_T_i1_inv : {[i1]: 0 <= i1 < N }
-			check_y_i0_0 : {}
-			check_y_i0_1 : {}
 			check_y_i0_inv : {}
 		locals
 			T : {[i0, i1]: 0 <= i0 < N and 0 <= i1 < N }
+			check_T_i0_0 : {[i0]: 0 <= i0 < N }
+			check_T_i0_1 : {[i0]: 0 <= i0 < N }
+			check_T_i1_0 : {[i1]: 0 <= i1 < N }
+			check_T_i1_1 : {[i1]: 0 <= i1 < N }
+			check_y_i0_0 : {}
+			check_y_i0_1 : {}
 		when {  :  } let
 			T[i0,i1] = twiddle((val[i0] * val[i1]));
 			

@@ -96,34 +96,34 @@ inline double __min_double(double x, double y){
 
 ///Global Variables
 static float** A;
-static float** L;
-static float** U;
 static float* check_U_i_0;
 static float* check_U_i_1;
-static float* check_U_i_inv;
 static float* check_U_j_0;
 static float* check_U_j_1;
-static float* check_U_j_inv;
 static float* check_L_i_0;
 static float* check_L_i_1;
-static float* check_L_i_inv;
 static float* check_L_j_0;
 static float* check_L_j_1;
+static float** L;
+static float** U;
+static float* check_U_i_inv;
+static float* check_U_j_inv;
+static float* check_L_i_inv;
 static float* check_L_j_inv;
 static char** _flag_L;
 static char** _flag_U;
+static char* _flag_check_U_i_inv;
+static char* _flag_check_U_j_inv;
+static char* _flag_check_L_i_inv;
+static char* _flag_check_L_j_inv;
 static char* _flag_check_U_i_0;
 static char* _flag_check_U_i_1;
-static char* _flag_check_U_i_inv;
 static char* _flag_check_U_j_0;
 static char* _flag_check_U_j_1;
-static char* _flag_check_U_j_inv;
 static char* _flag_check_L_i_0;
 static char* _flag_check_L_i_1;
-static char* _flag_check_L_i_inv;
 static char* _flag_check_L_j_0;
 static char* _flag_check_L_j_1;
-static char* _flag_check_L_j_inv;
 
 
 //Local Function Declarations
@@ -158,36 +158,36 @@ float eval_verify_check_L_j_inv(long, int);
 
 //Memory Macros
 #define A(i,j) A[i][j]
-#define L(i,j) L[i][j]
-#define U(i,j) U[i][j]
 #define check_U_i_0(i) check_U_i_0[i]
 #define check_U_i_1(i) check_U_i_1[i]
-#define check_U_i_inv(i) check_U_i_inv[i]
 #define check_U_j_0(j) check_U_j_0[j]
 #define check_U_j_1(j) check_U_j_1[j]
-#define check_U_j_inv(j) check_U_j_inv[j]
 #define check_L_i_0(i) check_L_i_0[i]
 #define check_L_i_1(i) check_L_i_1[i]
-#define check_L_i_inv(i) check_L_i_inv[i]
 #define check_L_j_0(j) check_L_j_0[j]
 #define check_L_j_1(j) check_L_j_1[j]
+#define L(i,j) L[i][j]
+#define U(i,j) U[i][j]
+#define check_U_i_inv(i) check_U_i_inv[i]
+#define check_U_j_inv(j) check_U_j_inv[j]
+#define check_L_i_inv(i) check_L_i_inv[i]
 #define check_L_j_inv(j) check_L_j_inv[j]
 #define _flag_L(i,j) _flag_L[i][j]
 #define _flag_U(i,j) _flag_U[i][j]
+#define _flag_check_U_i_inv(i) _flag_check_U_i_inv[i]
+#define _flag_check_U_j_inv(j) _flag_check_U_j_inv[j]
+#define _flag_check_L_i_inv(i) _flag_check_L_i_inv[i]
+#define _flag_check_L_j_inv(j) _flag_check_L_j_inv[j]
 #define _flag_check_U_i_0(i) _flag_check_U_i_0[i]
 #define _flag_check_U_i_1(i) _flag_check_U_i_1[i]
-#define _flag_check_U_i_inv(i) _flag_check_U_i_inv[i]
 #define _flag_check_U_j_0(j) _flag_check_U_j_0[j]
 #define _flag_check_U_j_1(j) _flag_check_U_j_1[j]
-#define _flag_check_U_j_inv(j) _flag_check_U_j_inv[j]
 #define _flag_check_L_i_0(i) _flag_check_L_i_0[i]
 #define _flag_check_L_i_1(i) _flag_check_L_i_1[i]
-#define _flag_check_L_i_inv(i) _flag_check_L_i_inv[i]
 #define _flag_check_L_j_0(j) _flag_check_L_j_0[j]
 #define _flag_check_L_j_1(j) _flag_check_L_j_1[j]
-#define _flag_check_L_j_inv(j) _flag_check_L_j_inv[j]
 
-void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local_U, float* _local_check_U_i_0, float* _local_check_U_i_1, float* _local_check_U_i_inv, float* _local_check_U_j_0, float* _local_check_U_j_1, float* _local_check_U_j_inv, float* _local_check_L_i_0, float* _local_check_L_i_1, float* _local_check_L_i_inv, float* _local_check_L_j_0, float* _local_check_L_j_1, float* _local_check_L_j_inv){
+void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local_U, float* _local_check_U_i_inv, float* _local_check_U_j_inv, float* _local_check_L_i_inv, float* _local_check_L_j_inv){
 	///Parameter checking
 	if (!((N >= 1))) {
 		printf("The value of parameters are not valid.\n");
@@ -197,21 +197,37 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	A = _local_A;
 	L = _local_L;
 	U = _local_U;
-	check_U_i_0 = _local_check_U_i_0;
-	check_U_i_1 = _local_check_U_i_1;
 	check_U_i_inv = _local_check_U_i_inv;
-	check_U_j_0 = _local_check_U_j_0;
-	check_U_j_1 = _local_check_U_j_1;
 	check_U_j_inv = _local_check_U_j_inv;
-	check_L_i_0 = _local_check_L_i_0;
-	check_L_i_1 = _local_check_L_i_1;
 	check_L_i_inv = _local_check_L_i_inv;
-	check_L_j_0 = _local_check_L_j_0;
-	check_L_j_1 = _local_check_L_j_1;
 	check_L_j_inv = _local_check_L_j_inv;
 	
 	//Memory Allocation
 	int mz1, mz2;
+	
+	check_U_i_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_U_i_0, (N), float);
+	
+	check_U_i_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_U_i_1, (N), float);
+	
+	check_U_j_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_U_j_0, (N), float);
+	
+	check_U_j_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_U_j_1, (N), float);
+	
+	check_L_i_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_L_i_0, (N), float);
+	
+	check_L_i_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_L_i_1, (N), float);
+	
+	check_L_j_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_L_j_0, (N), float);
+	
+	check_L_j_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_L_j_1, (N), float);
 	
 	char* _lin__flag_L = (char*)malloc(sizeof(char)*((N) * (N)));
 	mallocCheck(_lin__flag_L, ((N) * (N)), char);
@@ -231,6 +247,22 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	}
 	memset(_lin__flag_U, 'N', ((N) * (N)));
 	
+	_flag_check_U_i_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_U_i_inv, (N), char);
+	memset(_flag_check_U_i_inv, 'N', (N));
+	
+	_flag_check_U_j_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_U_j_inv, (N), char);
+	memset(_flag_check_U_j_inv, 'N', (N));
+	
+	_flag_check_L_i_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_L_i_inv, (N), char);
+	memset(_flag_check_L_i_inv, 'N', (N));
+	
+	_flag_check_L_j_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_L_j_inv, (N), char);
+	memset(_flag_check_L_j_inv, 'N', (N));
+	
 	_flag_check_U_i_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_U_i_0, (N), char);
 	memset(_flag_check_U_i_0, 'N', (N));
@@ -238,10 +270,6 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	_flag_check_U_i_1 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_U_i_1, (N), char);
 	memset(_flag_check_U_i_1, 'N', (N));
-	
-	_flag_check_U_i_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_U_i_inv, (N), char);
-	memset(_flag_check_U_i_inv, 'N', (N));
 	
 	_flag_check_U_j_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_U_j_0, (N), char);
@@ -251,10 +279,6 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	mallocCheck(_flag_check_U_j_1, (N), char);
 	memset(_flag_check_U_j_1, 'N', (N));
 	
-	_flag_check_U_j_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_U_j_inv, (N), char);
-	memset(_flag_check_U_j_inv, 'N', (N));
-	
 	_flag_check_L_i_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_L_i_0, (N), char);
 	memset(_flag_check_L_i_0, 'N', (N));
@@ -263,10 +287,6 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	mallocCheck(_flag_check_L_i_1, (N), char);
 	memset(_flag_check_L_i_1, 'N', (N));
 	
-	_flag_check_L_i_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_L_i_inv, (N), char);
-	memset(_flag_check_L_i_inv, 'N', (N));
-	
 	_flag_check_L_j_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_L_j_0, (N), char);
 	memset(_flag_check_L_j_0, 'N', (N));
@@ -274,10 +294,6 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	_flag_check_L_j_1 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_L_j_1, (N), char);
 	memset(_flag_check_L_j_1, 'N', (N));
-	
-	_flag_check_L_j_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_L_j_inv, (N), char);
-	memset(_flag_check_L_j_inv, 'N', (N));
 	#define S0(i,j) eval_verify_L(N,i,j)
 	{
 		//Domain
@@ -306,54 +322,10 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 		 }
 	}
 	#undef S0
-	#define S0(i) eval_verify_check_U_i_0(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(i) eval_verify_check_U_i_1(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
 	#define S0(i) eval_verify_check_U_i_inv(N,i)
 	{
 		//Domain
 		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_U_j_0(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_U_j_1(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
 		int c1;
 		for(c1=0;c1 <= N-1;c1+=1)
 		 {
@@ -372,54 +344,10 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 		 }
 	}
 	#undef S0
-	#define S0(i) eval_verify_check_L_i_0(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(i) eval_verify_check_L_i_1(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
 	#define S0(i) eval_verify_check_L_i_inv(N,i)
 	{
 		//Domain
 		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_L_j_0(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_L_j_1(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
 		int c1;
 		for(c1=0;c1 <= N-1;c1+=1)
 		 {
@@ -440,24 +368,32 @@ void lud_aabft_verify(long N, float** _local_A, float** _local_L, float** _local
 	#undef S0
 	
 	//Memory Free
+	free(check_U_i_0);
+	free(check_U_i_1);
+	free(check_U_j_0);
+	free(check_U_j_1);
+	free(check_L_i_0);
+	free(check_L_i_1);
+	free(check_L_j_0);
+	free(check_L_j_1);
 	free(_lin__flag_L);
 	free(_flag_L);
 	
 	free(_lin__flag_U);
 	free(_flag_U);
 	
+	free(_flag_check_U_i_inv);
+	free(_flag_check_U_j_inv);
+	free(_flag_check_L_i_inv);
+	free(_flag_check_L_j_inv);
 	free(_flag_check_U_i_0);
 	free(_flag_check_U_i_1);
-	free(_flag_check_U_i_inv);
 	free(_flag_check_U_j_0);
 	free(_flag_check_U_j_1);
-	free(_flag_check_U_j_inv);
 	free(_flag_check_L_i_0);
 	free(_flag_check_L_i_1);
-	free(_flag_check_L_i_inv);
 	free(_flag_check_L_j_0);
 	free(_flag_check_L_j_1);
-	free(_flag_check_L_j_inv);
 }
 float reduce_lud_aabft_verify_U_1(long N, int ip, int jp){
 	float reduceVar = 0;
@@ -840,34 +776,34 @@ float eval_verify_check_L_j_inv(long N, int j){
 
 //Memory Macros
 #undef A
-#undef L
-#undef U
 #undef check_U_i_0
 #undef check_U_i_1
-#undef check_U_i_inv
 #undef check_U_j_0
 #undef check_U_j_1
-#undef check_U_j_inv
 #undef check_L_i_0
 #undef check_L_i_1
-#undef check_L_i_inv
 #undef check_L_j_0
 #undef check_L_j_1
+#undef L
+#undef U
+#undef check_U_i_inv
+#undef check_U_j_inv
+#undef check_L_i_inv
 #undef check_L_j_inv
 #undef _flag_L
 #undef _flag_U
+#undef _flag_check_U_i_inv
+#undef _flag_check_U_j_inv
+#undef _flag_check_L_i_inv
+#undef _flag_check_L_j_inv
 #undef _flag_check_U_i_0
 #undef _flag_check_U_i_1
-#undef _flag_check_U_i_inv
 #undef _flag_check_U_j_0
 #undef _flag_check_U_j_1
-#undef _flag_check_U_j_inv
 #undef _flag_check_L_i_0
 #undef _flag_check_L_i_1
-#undef _flag_check_L_i_inv
 #undef _flag_check_L_j_0
 #undef _flag_check_L_j_1
-#undef _flag_check_L_j_inv
 
 
 //Common Macro undefs

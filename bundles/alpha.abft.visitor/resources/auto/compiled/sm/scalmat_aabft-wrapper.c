@@ -39,39 +39,27 @@
 
 //Memory Macros
 #define A(i,j) A[i][j]
-#define B(i,j) B[i][j]
 #define check_B_i_0(i) check_B_i_0[i]
 #define check_B_i_1(i) check_B_i_1[i]
-#define check_B_i_inv(i) check_B_i_inv[i]
 #define check_B_j_0(j) check_B_j_0[j]
 #define check_B_j_1(j) check_B_j_1[j]
+#define B(i,j) B[i][j]
+#define check_B_i_inv(i) check_B_i_inv[i]
 #define check_B_j_inv(j) check_B_j_inv[j]
 
 #define B_verify(i,j) B_verify[i][j]
-#define check_B_i_0_verify(i) check_B_i_0_verify[i]
-#define check_B_i_1_verify(i) check_B_i_1_verify[i]
 #define check_B_i_inv_verify(i) check_B_i_inv_verify[i]
-#define check_B_j_0_verify(j) check_B_j_0_verify[j]
-#define check_B_j_1_verify(j) check_B_j_1_verify[j]
 #define check_B_j_inv_verify(j) check_B_j_inv_verify[j]
 #define var_B(i,j) B(i,j)
 #define var_B_verify(i,j) B_verify(i,j)
-#define var_check_B_i_0(i) check_B_i_0(i)
-#define var_check_B_i_0_verify(i) check_B_i_0_verify(i)
-#define var_check_B_i_1(i) check_B_i_1(i)
-#define var_check_B_i_1_verify(i) check_B_i_1_verify(i)
 #define var_check_B_i_inv(i) check_B_i_inv(i)
 #define var_check_B_i_inv_verify(i) check_B_i_inv_verify(i)
-#define var_check_B_j_0(j) check_B_j_0(j)
-#define var_check_B_j_0_verify(j) check_B_j_0_verify(j)
-#define var_check_B_j_1(j) check_B_j_1(j)
-#define var_check_B_j_1_verify(j) check_B_j_1_verify(j)
 #define var_check_B_j_inv(j) check_B_j_inv(j)
 #define var_check_B_j_inv_verify(j) check_B_j_inv_verify(j)
 
 //function prototypes
-void scalmat_aabft(long, float*, float**, float**, float*, float*, float*, float*, float*, float*);
-void scalmat_aabft_verify(long, float*, float**, float**, float*, float*, float*, float*, float*, float*);
+void scalmat_aabft(long, float*, float**, float**, float*, float*);
+void scalmat_aabft_verify(long, float*, float**, float**, float*, float*);
 
 //main
 int main(int argc, char** argv) {
@@ -128,16 +116,8 @@ int main(int argc, char** argv) {
 	for (mz1=0;mz1 < N; mz1++) {
 		B[mz1] = &_lin_B[(mz1*(N))];
 	}
-	float* check_B_i_0 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(check_B_i_0, (N), float);
-	float* check_B_i_1 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(check_B_i_1, (N), float);
 	float* check_B_i_inv = (float*)malloc(sizeof(float)*(N));
 	mallocCheck(check_B_i_inv, (N), float);
-	float* check_B_j_0 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(check_B_j_0, (N), float);
-	float* check_B_j_1 = (float*)malloc(sizeof(float)*(N));
-	mallocCheck(check_B_j_1, (N), float);
 	float* check_B_j_inv = (float*)malloc(sizeof(float)*(N));
 	mallocCheck(check_B_j_inv, (N), float);
 	#ifdef VERIFY
@@ -148,16 +128,8 @@ int main(int argc, char** argv) {
 		for (mz1=0;mz1 < N; mz1++) {
 			B_verify[mz1] = &_lin_B_verify[(mz1*(N))];
 		}
-		float* check_B_i_0_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(check_B_i_0_verify, (N), float);
-		float* check_B_i_1_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(check_B_i_1_verify, (N), float);
 		float* check_B_i_inv_verify = (float*)malloc(sizeof(float)*(N));
 		mallocCheck(check_B_i_inv_verify, (N), float);
-		float* check_B_j_0_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(check_B_j_0_verify, (N), float);
-		float* check_B_j_1_verify = (float*)malloc(sizeof(float)*(N));
-		mallocCheck(check_B_j_1_verify, (N), float);
 		float* check_B_j_inv_verify = (float*)malloc(sizeof(float)*(N));
 		mallocCheck(check_B_j_inv_verify, (N), float);
 	#endif
@@ -216,7 +188,7 @@ int main(int argc, char** argv) {
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 	
-	scalmat_aabft(N, &k, A, B, check_B_i_0, check_B_i_1, check_B_i_inv, check_B_j_0, check_B_j_1, check_B_j_inv);
+	scalmat_aabft(N, &k, A, B, check_B_i_inv, check_B_j_inv);
 
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -240,7 +212,7 @@ int main(int argc, char** argv) {
 			gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 		#endif
-    	scalmat_aabft_verify(N, &k, A, B_verify, check_B_i_0_verify, check_B_i_1_verify, check_B_i_inv_verify, check_B_j_0_verify, check_B_j_1_verify, check_B_j_inv_verify);
+    	scalmat_aabft_verify(N, &k, A, B_verify, check_B_i_inv_verify, check_B_j_inv_verify);
     	#ifdef TIMING
     		gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -277,65 +249,9 @@ int main(int argc, char** argv) {
 		
 		{
 			#ifdef NO_PROMPT
-				#define S0(i) printf("%0.2f\n",var_check_B_i_0(i))
-			#else
-				#define S0(i) printf("check_B_i_0(%ld)=",(long) i);printf("%0.2f\n",var_check_B_i_0(i))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(i) printf("%0.2f\n",var_check_B_i_1(i))
-			#else
-				#define S0(i) printf("check_B_i_1(%ld)=",(long) i);printf("%0.2f\n",var_check_B_i_1(i))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
 				#define S0(i) printf("%0.2f\n",var_check_B_i_inv(i))
 			#else
 				#define S0(i) printf("check_B_i_inv(%ld)=",(long) i);printf("%0.2f\n",var_check_B_i_inv(i))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(j) printf("%0.2f\n",var_check_B_j_0(j))
-			#else
-				#define S0(j) printf("check_B_j_0(%ld)=",(long) j);printf("%0.2f\n",var_check_B_j_0(j))
-			#endif
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0(j) printf("%0.2f\n",var_check_B_j_1(j))
-			#else
-				#define S0(j) printf("check_B_j_1(%ld)=",(long) j);printf("%0.2f\n",var_check_B_j_1(j))
 			#endif
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
@@ -382,38 +298,6 @@ int main(int argc, char** argv) {
 		{
 			//Error Counter
 			int _errors_ = 0;
-			#define S0(i) if (fabsf(1.0f - var_check_B_i_0_verify(i)/var_check_B_i_0(i)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for check_B_i_0 PASSED\n");
-			}else{
-				printf("TEST for check_B_i_0 FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(i) if (fabsf(1.0f - var_check_B_i_1_verify(i)/var_check_B_i_1(i)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for check_B_i_1 PASSED\n");
-			}else{
-				printf("TEST for check_B_i_1 FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
 			#define S0(i) if (fabsf(1.0f - var_check_B_i_inv_verify(i)/var_check_B_i_inv(i)) > EPSILON) _errors_++;
 			int c1;
 			for(c1=0;c1 <= N-1;c1+=1)
@@ -425,38 +309,6 @@ int main(int argc, char** argv) {
 				printf("TEST for check_B_i_inv PASSED\n");
 			}else{
 				printf("TEST for check_B_i_inv FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(j) if (fabsf(1.0f - var_check_B_j_0_verify(j)/var_check_B_j_0(j)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for check_B_j_0 PASSED\n");
-			}else{
-				printf("TEST for check_B_j_0 FAILED. #Errors: %d\n", _errors_);
-			}
-		}
-		{
-			//Error Counter
-			int _errors_ = 0;
-			#define S0(j) if (fabsf(1.0f - var_check_B_j_1_verify(j)/var_check_B_j_1(j)) > EPSILON) _errors_++;
-			int c1;
-			for(c1=0;c1 <= N-1;c1+=1)
-			 {
-			 	S0((c1));
-			 }
-			#undef S0
-			if(_errors_ == 0){
-				printf("TEST for check_B_j_1 PASSED\n");
-			}else{
-				printf("TEST for check_B_j_1 FAILED. #Errors: %d\n", _errors_);
 			}
 		}
 		{
@@ -482,20 +334,12 @@ int main(int argc, char** argv) {
 	free(A);
 	free(_lin_B);
 	free(B);
-	free(check_B_i_0);
-	free(check_B_i_1);
 	free(check_B_i_inv);
-	free(check_B_j_0);
-	free(check_B_j_1);
 	free(check_B_j_inv);
 	#ifdef VERIFY
 		free(_lin_B_verify);
 		free(B_verify);
-		free(check_B_i_0_verify);
-		free(check_B_i_1_verify);
 		free(check_B_i_inv_verify);
-		free(check_B_j_0_verify);
-		free(check_B_j_1_verify);
 		free(check_B_j_inv_verify);
 	#endif
 	
@@ -504,12 +348,12 @@ int main(int argc, char** argv) {
 
 //Memory Macros
 #undef A
-#undef B
 #undef check_B_i_0
 #undef check_B_i_1
-#undef check_B_i_inv
 #undef check_B_j_0
 #undef check_B_j_1
+#undef B
+#undef check_B_i_inv
 #undef check_B_j_inv
 
 

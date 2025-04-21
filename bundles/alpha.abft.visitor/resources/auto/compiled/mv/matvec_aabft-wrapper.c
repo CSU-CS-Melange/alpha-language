@@ -43,21 +43,15 @@
 #define b(i) b[i]
 
 #define b_verify(i) b_verify[i]
-#define check_b_i_0_verify() check_b_i_0_verify
-#define check_b_i_1_verify() check_b_i_1_verify
 #define check_b_i_inv_verify() check_b_i_inv_verify
 #define var_b(i) b(i)
 #define var_b_verify(i) b_verify(i)
-#define var_check_b_i_0() check_b_i_0
-#define var_check_b_i_0_verify() check_b_i_0_verify
-#define var_check_b_i_1() check_b_i_1
-#define var_check_b_i_1_verify() check_b_i_1_verify
 #define var_check_b_i_inv() check_b_i_inv
 #define var_check_b_i_inv_verify() check_b_i_inv_verify
 
 //function prototypes
-void matvec_aabft(long, float**, float*, float*, float*, float*, float*);
-void matvec_aabft_verify(long, float**, float*, float*, float*, float*, float*);
+void matvec_aabft(long, float**, float*, float*, float*);
+void matvec_aabft_verify(long, float**, float*, float*, float*);
 
 //main
 int main(int argc, char** argv) {
@@ -110,14 +104,10 @@ int main(int argc, char** argv) {
 	mallocCheck(x, (N), float);
 	float* b = (float*)malloc(sizeof(float)*(N));
 	mallocCheck(b, (N), float);
-	float check_b_i_0;
-	float check_b_i_1;
 	float check_b_i_inv;
 	#ifdef VERIFY
 		float* b_verify = (float*)malloc(sizeof(float)*(N));
 		mallocCheck(b_verify, (N), float);
-		float check_b_i_0_verify;
-		float check_b_i_1_verify;
 		float check_b_i_inv_verify;
 	#endif
 
@@ -179,7 +169,7 @@ int main(int argc, char** argv) {
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 	
-	matvec_aabft(N, A, x, b, &check_b_i_0, &check_b_i_1, &check_b_i_inv);
+	matvec_aabft(N, A, x, b, &check_b_i_inv);
 
 	gettimeofday(&time, NULL);
 	elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -203,7 +193,7 @@ int main(int argc, char** argv) {
 			gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000);
 		#endif
-    	matvec_aabft_verify(N, A, x, b_verify, &check_b_i_0_verify, &check_b_i_1_verify, &check_b_i_inv_verify);
+    	matvec_aabft_verify(N, A, x, b_verify, &check_b_i_inv_verify);
     	#ifdef TIMING
     		gettimeofday(&time, NULL);
 			elapsed_time = (((double) time.tv_sec) + ((double) time.tv_usec)/1000000) - elapsed_time;
@@ -237,26 +227,6 @@ int main(int argc, char** argv) {
 		
 		{
 			#ifdef NO_PROMPT
-				#define S0() printf("%0.2f\n",var_check_b_i_0())
-			#else
-				#define S0() printf("check_b_i_0=");printf("%0.2f\n",var_check_b_i_0())
-			#endif
-			S0();
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
-				#define S0() printf("%0.2f\n",var_check_b_i_1())
-			#else
-				#define S0() printf("check_b_i_1=");printf("%0.2f\n",var_check_b_i_1())
-			#endif
-			S0();
-			#undef S0
-		}
-		
-		{
-			#ifdef NO_PROMPT
 				#define S0() printf("%0.2f\n",var_check_b_i_inv())
 			#else
 				#define S0() printf("check_b_i_inv=");printf("%0.2f\n",var_check_b_i_inv())
@@ -281,16 +251,6 @@ int main(int argc, char** argv) {
 			}else{
 				printf("TEST for b FAILED. #Errors: %d\n", _errors_);
 			}
-		}
-		if (fabsf(1.0f - var_check_b_i_0_verify()/var_check_b_i_0()) > EPSILON) {
-			printf("TEST for check_b_i_0 FAILED result: %f expected: %f\n",var_check_b_i_0(), var_check_b_i_0_verify());
-		} else {
-			printf("TEST for check_b_i_0 PASSED\n");
-		}
-		if (fabsf(1.0f - var_check_b_i_1_verify()/var_check_b_i_1()) > EPSILON) {
-			printf("TEST for check_b_i_1 FAILED result: %f expected: %f\n",var_check_b_i_1(), var_check_b_i_1_verify());
-		} else {
-			printf("TEST for check_b_i_1 PASSED\n");
 		}
 		if (fabsf(1.0f - var_check_b_i_inv_verify()/var_check_b_i_inv()) > EPSILON) {
 			printf("TEST for check_b_i_inv FAILED result: %f expected: %f\n",var_check_b_i_inv(), var_check_b_i_inv_verify());

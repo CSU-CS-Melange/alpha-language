@@ -21,15 +21,15 @@ static long N;
 static float** U;
 static float* b;
 static float* x;
+static float* check_x_i_inv;
 static float* check_x_i_0;
 static float* check_x_i_1;
-static float* check_x_i_inv;
 static float* x_NR;
 static float* check_x_i_1_NR;
 static char* _flag_x;
+static char* _flag_check_x_i_inv;
 static char* _flag_check_x_i_0;
 static char* _flag_check_x_i_1;
-static char* _flag_check_x_i_inv;
 static char* _flag_x_NR;
 static char* _flag_check_x_i_1_NR;
 
@@ -37,15 +37,15 @@ static char* _flag_check_x_i_1_NR;
 #define U(i,j) U[i][j]
 #define b(i) b[i]
 #define x(i) x[i]
-#define check_x_i_0() check_x_i_0[0]
-#define check_x_i_1() check_x_i_1[0]
 #define check_x_i_inv() check_x_i_inv[0]
+#define check_x_i_0() check_x_i_0[(0)]
+#define check_x_i_1() check_x_i_1[(0)]
 #define x_NR(i) x_NR[((-2 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define check_x_i_1_NR(i0) check_x_i_1_NR[((-2 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
 #define _flag_x(i) _flag_x[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define _flag_check_x_i_inv() _flag_check_x_i_inv[(0)]
 #define _flag_check_x_i_0() _flag_check_x_i_0[(0)]
 #define _flag_check_x_i_1() _flag_check_x_i_1[(0)]
-#define _flag_check_x_i_inv() _flag_check_x_i_inv[(0)]
 #define _flag_x_NR(i) _flag_x_NR[((-2 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define _flag_check_x_i_1_NR(i0) _flag_check_x_i_1_NR[((-2 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
 
@@ -60,7 +60,7 @@ static float reduce2(long N, long ip);
 static float eval_x_NR(long i);
 static float reduce3(long N, long i0);
 static float eval_check_x_i_1_NR(long i0);
-void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_0, float* _local_check_x_i_1, float* _local_check_x_i_inv);
+void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_inv);
 
 static float eval_x(long i) {
 	
@@ -218,7 +218,7 @@ static float eval_check_x_i_1_NR(long i0) {
 	return check_x_i_1_NR(i0);
 }
 
-void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_0, float* _local_check_x_i_1, float* _local_check_x_i_inv) {
+void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_inv) {
 	long i;
 	
 	// Copy arguments to the global variables.
@@ -226,8 +226,6 @@ void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_
 	U = _local_U;
 	b = _local_b;
 	x = _local_x;
-	check_x_i_0 = _local_check_x_i_0;
-	check_x_i_1 = _local_check_x_i_1;
 	check_x_i_inv = _local_check_x_i_inv;
 	
 	// Check parameter validity.
@@ -237,6 +235,10 @@ void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_
 	}
 	
 	// Allocate memory for local storage.
+	check_x_i_0 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(check_x_i_0,"check_x_i_0");
+	check_x_i_1 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(check_x_i_1,"check_x_i_1");
 	x_NR = (float*)(malloc((sizeof(float)) * (((-2 + N >= 0) ? ((-1 + N)) : 0))));
 	mallocCheck(x_NR,"x_NR");
 	check_x_i_1_NR = (float*)(malloc((sizeof(float)) * (((-2 + N >= 0) ? ((-1 + N)) : 0))));
@@ -246,15 +248,15 @@ void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_
 	_flag_x = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_x,"_flag_x");
 	memset(_flag_x,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_check_x_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(_flag_check_x_i_inv,"_flag_check_x_i_inv");
+	memset(_flag_check_x_i_inv,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_check_x_i_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
 	mallocCheck(_flag_check_x_i_0,"_flag_check_x_i_0");
 	memset(_flag_check_x_i_0,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_check_x_i_1 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
 	mallocCheck(_flag_check_x_i_1,"_flag_check_x_i_1");
 	memset(_flag_check_x_i_1,'N',((-1 + N >= 0) ? (1) : 0));
-	_flag_check_x_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
-	mallocCheck(_flag_check_x_i_inv,"_flag_check_x_i_inv");
-	memset(_flag_check_x_i_inv,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_x_NR = (char*)(malloc((sizeof(char)) * (((-2 + N >= 0) ? ((-1 + N)) : 0))));
 	mallocCheck(_flag_x_NR,"_flag_x_NR");
 	memset(_flag_x_NR,'N',((-2 + N >= 0) ? ((-1 + N)) : 0));
@@ -268,23 +270,19 @@ void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_
 		S0(i);
 	}
 	#undef S0
-	#define S1() eval_check_x_i_0()
+	#define S1() eval_check_x_i_inv()
 	S1();
 	#undef S1
-	#define S2() eval_check_x_i_1()
-	S2();
-	#undef S2
-	#define S3() eval_check_x_i_inv()
-	S3();
-	#undef S3
 	
 	// Free all allocated memory.
+	free(check_x_i_0);
+	free(check_x_i_1);
 	free(x_NR);
 	free(check_x_i_1_NR);
 	free(_flag_x);
+	free(_flag_check_x_i_inv);
 	free(_flag_check_x_i_0);
 	free(_flag_check_x_i_1);
-	free(_flag_check_x_i_inv);
 	free(_flag_x_NR);
 	free(_flag_check_x_i_1_NR);
 }
@@ -294,15 +292,15 @@ void bsub_aabft(long _local_N, float** _local_U, float* _local_b, float* _local_
 #undef U
 #undef b
 #undef x
+#undef check_x_i_inv
 #undef check_x_i_0
 #undef check_x_i_1
-#undef check_x_i_inv
 #undef x_NR
 #undef check_x_i_1_NR
 #undef _flag_x
+#undef _flag_check_x_i_inv
 #undef _flag_check_x_i_0
 #undef _flag_check_x_i_1
-#undef _flag_check_x_i_inv
 #undef _flag_x_NR
 #undef _flag_check_x_i_1_NR
 #undef ceild

@@ -97,20 +97,20 @@ inline double __min_double(double x, double y){
 ///Global Variables
 static float** A;
 static float** B;
-static float** C;
 static float* check_C_i_0;
 static float* check_C_i_1;
-static float* check_C_i_inv;
 static float* check_C_j_0;
 static float* check_C_j_1;
+static float** C;
+static float* check_C_i_inv;
 static float* check_C_j_inv;
 static char** _flag_C;
+static char* _flag_check_C_i_inv;
+static char* _flag_check_C_j_inv;
 static char* _flag_check_C_i_0;
 static char* _flag_check_C_i_1;
-static char* _flag_check_C_i_inv;
 static char* _flag_check_C_j_0;
 static char* _flag_check_C_j_1;
-static char* _flag_check_C_j_inv;
 
 
 //Local Function Declarations
@@ -132,22 +132,22 @@ float eval_verify_check_C_j_inv(long, int);
 //Memory Macros
 #define A(i,j) A[i][j]
 #define B(i,j) B[i][j]
-#define C(i,j) C[i][j]
 #define check_C_i_0(i) check_C_i_0[i]
 #define check_C_i_1(i) check_C_i_1[i]
-#define check_C_i_inv(i) check_C_i_inv[i]
 #define check_C_j_0(j) check_C_j_0[j]
 #define check_C_j_1(j) check_C_j_1[j]
+#define C(i,j) C[i][j]
+#define check_C_i_inv(i) check_C_i_inv[i]
 #define check_C_j_inv(j) check_C_j_inv[j]
 #define _flag_C(i,j) _flag_C[i][j]
+#define _flag_check_C_i_inv(i) _flag_check_C_i_inv[i]
+#define _flag_check_C_j_inv(j) _flag_check_C_j_inv[j]
 #define _flag_check_C_i_0(i) _flag_check_C_i_0[i]
 #define _flag_check_C_i_1(i) _flag_check_C_i_1[i]
-#define _flag_check_C_i_inv(i) _flag_check_C_i_inv[i]
 #define _flag_check_C_j_0(j) _flag_check_C_j_0[j]
 #define _flag_check_C_j_1(j) _flag_check_C_j_1[j]
-#define _flag_check_C_j_inv(j) _flag_check_C_j_inv[j]
 
-void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_0, float* _local_check_C_i_1, float* _local_check_C_i_inv, float* _local_check_C_j_0, float* _local_check_C_j_1, float* _local_check_C_j_inv){
+void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_inv, float* _local_check_C_j_inv){
 	///Parameter checking
 	if (!((N >= 1))) {
 		printf("The value of parameters are not valid.\n");
@@ -157,15 +157,23 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 	A = _local_A;
 	B = _local_B;
 	C = _local_C;
-	check_C_i_0 = _local_check_C_i_0;
-	check_C_i_1 = _local_check_C_i_1;
 	check_C_i_inv = _local_check_C_i_inv;
-	check_C_j_0 = _local_check_C_j_0;
-	check_C_j_1 = _local_check_C_j_1;
 	check_C_j_inv = _local_check_C_j_inv;
 	
 	//Memory Allocation
 	int mz1, mz2;
+	
+	check_C_i_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_C_i_0, (N), float);
+	
+	check_C_i_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_C_i_1, (N), float);
+	
+	check_C_j_0 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_C_j_0, (N), float);
+	
+	check_C_j_1 = (float*)malloc(sizeof(float)*(N));
+	mallocCheck(check_C_j_1, (N), float);
 	
 	char* _lin__flag_C = (char*)malloc(sizeof(char)*((N) * (N)));
 	mallocCheck(_lin__flag_C, ((N) * (N)), char);
@@ -176,6 +184,14 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 	}
 	memset(_lin__flag_C, 'N', ((N) * (N)));
 	
+	_flag_check_C_i_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_C_i_inv, (N), char);
+	memset(_flag_check_C_i_inv, 'N', (N));
+	
+	_flag_check_C_j_inv = (char*)malloc(sizeof(char)*(N));
+	mallocCheck(_flag_check_C_j_inv, (N), char);
+	memset(_flag_check_C_j_inv, 'N', (N));
+	
 	_flag_check_C_i_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_C_i_0, (N), char);
 	memset(_flag_check_C_i_0, 'N', (N));
@@ -184,10 +200,6 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 	mallocCheck(_flag_check_C_i_1, (N), char);
 	memset(_flag_check_C_i_1, 'N', (N));
 	
-	_flag_check_C_i_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_C_i_inv, (N), char);
-	memset(_flag_check_C_i_inv, 'N', (N));
-	
 	_flag_check_C_j_0 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_C_j_0, (N), char);
 	memset(_flag_check_C_j_0, 'N', (N));
@@ -195,10 +207,6 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 	_flag_check_C_j_1 = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_check_C_j_1, (N), char);
 	memset(_flag_check_C_j_1, 'N', (N));
-	
-	_flag_check_C_j_inv = (char*)malloc(sizeof(char)*(N));
-	mallocCheck(_flag_check_C_j_inv, (N), char);
-	memset(_flag_check_C_j_inv, 'N', (N));
 	#define S0(i,j) eval_verify_C(N,i,j)
 	{
 		//Domain
@@ -213,54 +221,10 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 		 }
 	}
 	#undef S0
-	#define S0(i) eval_verify_check_C_i_0(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(i) eval_verify_check_C_i_1(N,i)
-	{
-		//Domain
-		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
 	#define S0(i) eval_verify_check_C_i_inv(N,i)
 	{
 		//Domain
 		//{i|i>=0 && N>=i+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_C_j_0(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
-		int c1;
-		for(c1=0;c1 <= N-1;c1+=1)
-		 {
-		 	S0((c1));
-		 }
-	}
-	#undef S0
-	#define S0(j) eval_verify_check_C_j_1(N,j)
-	{
-		//Domain
-		//{j|j>=0 && N>=j+1 && N>=1}
 		int c1;
 		for(c1=0;c1 <= N-1;c1+=1)
 		 {
@@ -281,15 +245,19 @@ void matmult_aabft_verify(long N, float** _local_A, float** _local_B, float** _l
 	#undef S0
 	
 	//Memory Free
+	free(check_C_i_0);
+	free(check_C_i_1);
+	free(check_C_j_0);
+	free(check_C_j_1);
 	free(_lin__flag_C);
 	free(_flag_C);
 	
+	free(_flag_check_C_i_inv);
+	free(_flag_check_C_j_inv);
 	free(_flag_check_C_i_0);
 	free(_flag_check_C_i_1);
-	free(_flag_check_C_i_inv);
 	free(_flag_check_C_j_0);
 	free(_flag_check_C_j_1);
-	free(_flag_check_C_j_inv);
 }
 float reduce_matmult_aabft_verify_C_1(long N, int ip, int jp){
 	float reduceVar = 0;
@@ -484,20 +452,20 @@ float eval_verify_check_C_j_inv(long N, int j){
 //Memory Macros
 #undef A
 #undef B
-#undef C
 #undef check_C_i_0
 #undef check_C_i_1
-#undef check_C_i_inv
 #undef check_C_j_0
 #undef check_C_j_1
+#undef C
+#undef check_C_i_inv
 #undef check_C_j_inv
 #undef _flag_C
+#undef _flag_check_C_i_inv
+#undef _flag_check_C_j_inv
 #undef _flag_check_C_i_0
 #undef _flag_check_C_i_1
-#undef _flag_check_C_i_inv
 #undef _flag_check_C_j_0
 #undef _flag_check_C_j_1
-#undef _flag_check_C_j_inv
 
 
 //Common Macro undefs

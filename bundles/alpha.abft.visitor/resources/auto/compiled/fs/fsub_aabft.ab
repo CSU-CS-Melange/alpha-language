@@ -4,9 +4,10 @@ affine fsub_aabft { N | -1 + N >= 0  }
 		float b { i |  i >= 0  &&  -1 + N - i >= 0  };
 	output
 		float x { i |  i >= 0  &&  -1 + N - i >= 0  };
+		float check_x_i_inv {|};
+	local
 		float check_x_i_0 {|};
 		float check_x_i_1 {|};
-		float check_x_i_inv {|};
 	let
 		x = case 
 			{ i |  i == 0  &&  -1 + N >= 0  } : ((i->i)@(b) / (i->i,i)@(L));

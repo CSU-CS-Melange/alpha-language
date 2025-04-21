@@ -5,9 +5,10 @@ affine bsub_aabft [N] -> {  : N > 0 }
 		b : {[i]: 0 <= i < N }
 	outputs
 		x : {[i]: 0 <= i < N }
+		check_x_i_inv : {}
+	locals
 		check_x_i_0 : {}
 		check_x_i_1 : {}
-		check_x_i_inv : {}
 	when {  : N > 0 } let
 		x[i] = case  {
 			{: i = -1 + N } : (b[i] / U[i,i]);

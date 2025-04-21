@@ -97,14 +97,14 @@ inline double __min_double(double x, double y){
 ///Global Variables
 static float** U;
 static float* b;
-static float* x;
 static float check_x_i_0;
 static float check_x_i_1;
+static float* x;
 static float check_x_i_inv;
 static char* _flag_x;
+static char _flag_check_x_i_inv;
 static char _flag_check_x_i_0;
 static char _flag_check_x_i_1;
-static char _flag_check_x_i_inv;
 
 
 //Local Function Declarations
@@ -123,7 +123,7 @@ float eval_verify_check_x_i_inv(long);
 #define x(i) x[i]
 #define _flag_x(i) _flag_x[i]
 
-void bsub_aabft_verify(long N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_0, float* _local_check_x_i_1, float* _local_check_x_i_inv){
+void bsub_aabft_verify(long N, float** _local_U, float* _local_b, float* _local_x, float* _local_check_x_i_inv){
 	///Parameter checking
 	if (!((N >= 1))) {
 		printf("The value of parameters are not valid.\n");
@@ -135,20 +135,20 @@ void bsub_aabft_verify(long N, float** _local_U, float* _local_b, float* _local_
 	x = _local_x;
 	
 	
-	
-	
 	//Memory Allocation
 	int mz1;
+	
+	
 	
 	_flag_x = (char*)malloc(sizeof(char)*(N));
 	mallocCheck(_flag_x, (N), char);
 	memset(_flag_x, 'N', (N));
 	
+	_flag_check_x_i_inv = 'N';
+	
 	_flag_check_x_i_0 = 'N';
 	
 	_flag_check_x_i_1 = 'N';
-	
-	_flag_check_x_i_inv = 'N';
 	#define S0(i) eval_verify_x(N,i)
 	{
 		//Domain
@@ -160,20 +160,6 @@ void bsub_aabft_verify(long N, float** _local_U, float* _local_b, float* _local_
 		 }
 	}
 	#undef S0
-	#define S0() eval_verify_check_x_i_0(N)
-	{
-		//Domain
-		//{|N>=1}
-		S0();
-	}
-	#undef S0
-	#define S0() eval_verify_check_x_i_1(N)
-	{
-		//Domain
-		//{|N>=1}
-		S0();
-	}
-	#undef S0
 	#define S0() eval_verify_check_x_i_inv(N)
 	{
 		//Domain
@@ -182,11 +168,11 @@ void bsub_aabft_verify(long N, float** _local_U, float* _local_b, float* _local_
 	}
 	#undef S0
 	//Copy scalars to output
-	*_local_check_x_i_0 = check_x_i_0;
-	*_local_check_x_i_1 = check_x_i_1;
 	*_local_check_x_i_inv = check_x_i_inv;
 	
 	//Memory Free
+	
+	
 	free(_flag_x);
 	
 	

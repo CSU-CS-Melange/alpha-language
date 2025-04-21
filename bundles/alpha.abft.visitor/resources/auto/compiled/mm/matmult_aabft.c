@@ -21,21 +21,21 @@ static long N;
 static float** A;
 static float** B;
 static float** C;
+static float* check_C_i_inv;
+static float* check_C_j_inv;
 static float* check_C_i_0;
 static float* check_C_i_1;
-static float* check_C_i_inv;
 static float* check_C_j_0;
 static float* check_C_j_1;
-static float* check_C_j_inv;
 static float* check_C_i_1_NR;
 static float* check_C_j_1_NR;
 static char* _flag_C;
+static char* _flag_check_C_i_inv;
+static char* _flag_check_C_j_inv;
 static char* _flag_check_C_i_0;
 static char* _flag_check_C_i_1;
-static char* _flag_check_C_i_inv;
 static char* _flag_check_C_j_0;
 static char* _flag_check_C_j_1;
-static char* _flag_check_C_j_inv;
 static char* _flag_check_C_i_1_NR;
 static char* _flag_check_C_j_1_NR;
 
@@ -43,21 +43,21 @@ static char* _flag_check_C_j_1_NR;
 #define A(i,j) A[i][j]
 #define B(i,j) B[i][j]
 #define C(i,j) C[i][j]
-#define check_C_i_0(i) check_C_i_0[i]
-#define check_C_i_1(i) check_C_i_1[i]
 #define check_C_i_inv(i) check_C_i_inv[i]
-#define check_C_j_0(j) check_C_j_0[j]
-#define check_C_j_1(j) check_C_j_1[j]
 #define check_C_j_inv(j) check_C_j_inv[j]
+#define check_C_i_0(i) check_C_i_0[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define check_C_i_1(i) check_C_i_1[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define check_C_j_0(j) check_C_j_0[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
+#define check_C_j_1(j) check_C_j_1[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define check_C_i_1_NR(i0,i1) check_C_i_1_NR[((-1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + i1 >= 0 && -1 + N - i1 >= 0) ? ((N * i0 + i1)) : (i1 == 0 && -1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + N >= 0) ? (N * i0) : (i0 == 0 && -1 + N - i1 >= 0 && -1 + N >= 0 && -1 + i1 >= 0) ? (i1) : 0)]
 #define check_C_j_1_NR(i0,i1) check_C_j_1_NR[((-1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + i1 >= 0 && -1 + N - i1 >= 0) ? ((N * i0 + i1)) : (i1 == 0 && -1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + N >= 0) ? (N * i0) : (i0 == 0 && -1 + N - i1 >= 0 && -1 + N >= 0 && -1 + i1 >= 0) ? (i1) : 0)]
 #define _flag_C(i,j) _flag_C[((-1 + i >= 0 && -1 + N - i >= 0 && -1 + j >= 0 && -1 + N - j >= 0) ? ((N * i + j)) : (j == 0 && -1 + i >= 0 && -1 + N - i >= 0 && -1 + N >= 0) ? (N * i) : (i == 0 && -1 + N - j >= 0 && -1 + N >= 0 && -1 + j >= 0) ? (j) : 0)]
+#define _flag_check_C_i_inv(i) _flag_check_C_i_inv[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define _flag_check_C_j_inv(j) _flag_check_C_j_inv[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define _flag_check_C_i_0(i) _flag_check_C_i_0[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define _flag_check_C_i_1(i) _flag_check_C_i_1[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
-#define _flag_check_C_i_inv(i) _flag_check_C_i_inv[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
 #define _flag_check_C_j_0(j) _flag_check_C_j_0[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define _flag_check_C_j_1(j) _flag_check_C_j_1[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
-#define _flag_check_C_j_inv(j) _flag_check_C_j_inv[((-1 + N - j >= 0 && -1 + j >= 0) ? (j) : 0)]
 #define _flag_check_C_i_1_NR(i0,i1) _flag_check_C_i_1_NR[((-1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + i1 >= 0 && -1 + N - i1 >= 0) ? ((N * i0 + i1)) : (i1 == 0 && -1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + N >= 0) ? (N * i0) : (i0 == 0 && -1 + N - i1 >= 0 && -1 + N >= 0 && -1 + i1 >= 0) ? (i1) : 0)]
 #define _flag_check_C_j_1_NR(i0,i1) _flag_check_C_j_1_NR[((-1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + i1 >= 0 && -1 + N - i1 >= 0) ? ((N * i0 + i1)) : (i1 == 0 && -1 + i0 >= 0 && -1 + N - i0 >= 0 && -1 + N >= 0) ? (N * i0) : (i0 == 0 && -1 + N - i1 >= 0 && -1 + N >= 0 && -1 + i1 >= 0) ? (i1) : 0)]
 
@@ -78,7 +78,7 @@ static float reduce5(long N, long i0, long i1);
 static float eval_check_C_i_1_NR(long i0, long i1);
 static float reduce6(long N, long i0, long i1);
 static float eval_check_C_j_1_NR(long i0, long i1);
-void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_0, float* _local_check_C_i_1, float* _local_check_C_i_inv, float* _local_check_C_j_0, float* _local_check_C_j_1, float* _local_check_C_j_inv);
+void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_inv, float* _local_check_C_j_inv);
 
 static float reduce0(long N, long ip, long jp) {
 	float reduceVar;
@@ -329,7 +329,7 @@ static float eval_check_C_j_1_NR(long i0, long i1) {
 	return check_C_j_1_NR(i0,i1);
 }
 
-void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_0, float* _local_check_C_i_1, float* _local_check_C_i_inv, float* _local_check_C_j_0, float* _local_check_C_j_1, float* _local_check_C_j_inv) {
+void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _local_C, float* _local_check_C_i_inv, float* _local_check_C_j_inv) {
 	long i;
 	long j;
 	
@@ -338,11 +338,7 @@ void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _l
 	A = _local_A;
 	B = _local_B;
 	C = _local_C;
-	check_C_i_0 = _local_check_C_i_0;
-	check_C_i_1 = _local_check_C_i_1;
 	check_C_i_inv = _local_check_C_i_inv;
-	check_C_j_0 = _local_check_C_j_0;
-	check_C_j_1 = _local_check_C_j_1;
 	check_C_j_inv = _local_check_C_j_inv;
 	
 	// Check parameter validity.
@@ -352,6 +348,14 @@ void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _l
 	}
 	
 	// Allocate memory for local storage.
+	check_C_i_0 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(check_C_i_0,"check_C_i_0");
+	check_C_i_1 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(check_C_i_1,"check_C_i_1");
+	check_C_j_0 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(check_C_j_0,"check_C_j_0");
+	check_C_j_1 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(check_C_j_1,"check_C_j_1");
 	check_C_i_1_NR = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N*N) : 0))));
 	mallocCheck(check_C_i_1_NR,"check_C_i_1_NR");
 	check_C_j_1_NR = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N*N) : 0))));
@@ -361,24 +365,24 @@ void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _l
 	_flag_C = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N*N) : 0))));
 	mallocCheck(_flag_C,"_flag_C");
 	memset(_flag_C,'N',((-1 + N >= 0) ? (N*N) : 0));
+	_flag_check_C_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_check_C_i_inv,"_flag_check_C_i_inv");
+	memset(_flag_check_C_i_inv,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_check_C_j_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_check_C_j_inv,"_flag_check_C_j_inv");
+	memset(_flag_check_C_j_inv,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_check_C_i_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_check_C_i_0,"_flag_check_C_i_0");
 	memset(_flag_check_C_i_0,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_check_C_i_1 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_check_C_i_1,"_flag_check_C_i_1");
 	memset(_flag_check_C_i_1,'N',((-1 + N >= 0) ? (N) : 0));
-	_flag_check_C_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(_flag_check_C_i_inv,"_flag_check_C_i_inv");
-	memset(_flag_check_C_i_inv,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_check_C_j_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_check_C_j_0,"_flag_check_C_j_0");
 	memset(_flag_check_C_j_0,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_check_C_j_1 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_check_C_j_1,"_flag_check_C_j_1");
 	memset(_flag_check_C_j_1,'N',((-1 + N >= 0) ? (N) : 0));
-	_flag_check_C_j_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
-	mallocCheck(_flag_check_C_j_inv,"_flag_check_C_j_inv");
-	memset(_flag_check_C_j_inv,'N',((-1 + N >= 0) ? (N) : 0));
 	_flag_check_C_i_1_NR = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N*N) : 0))));
 	mallocCheck(_flag_check_C_i_1_NR,"_flag_check_C_i_1_NR");
 	memset(_flag_check_C_i_1_NR,'N',((-1 + N >= 0) ? (N*N) : 0));
@@ -394,47 +398,31 @@ void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _l
 		}
 	}
 	#undef S0
-	#define S1(i) eval_check_C_i_0(i)
+	#define S1(i) eval_check_C_i_inv(i)
 	for (i = 0; i < N; i += 1) {
 		S1(i);
 	}
 	#undef S1
-	#define S2(i) eval_check_C_i_1(i)
-	for (i = 0; i < N; i += 1) {
-		S2(i);
+	#define S2(j) eval_check_C_j_inv(j)
+	for (j = 0; j < N; j += 1) {
+		S2(j);
 	}
 	#undef S2
-	#define S3(i) eval_check_C_i_inv(i)
-	for (i = 0; i < N; i += 1) {
-		S3(i);
-	}
-	#undef S3
-	#define S4(j) eval_check_C_j_0(j)
-	for (j = 0; j < N; j += 1) {
-		S4(j);
-	}
-	#undef S4
-	#define S5(j) eval_check_C_j_1(j)
-	for (j = 0; j < N; j += 1) {
-		S5(j);
-	}
-	#undef S5
-	#define S6(j) eval_check_C_j_inv(j)
-	for (j = 0; j < N; j += 1) {
-		S6(j);
-	}
-	#undef S6
 	
 	// Free all allocated memory.
+	free(check_C_i_0);
+	free(check_C_i_1);
+	free(check_C_j_0);
+	free(check_C_j_1);
 	free(check_C_i_1_NR);
 	free(check_C_j_1_NR);
 	free(_flag_C);
+	free(_flag_check_C_i_inv);
+	free(_flag_check_C_j_inv);
 	free(_flag_check_C_i_0);
 	free(_flag_check_C_i_1);
-	free(_flag_check_C_i_inv);
 	free(_flag_check_C_j_0);
 	free(_flag_check_C_j_1);
-	free(_flag_check_C_j_inv);
 	free(_flag_check_C_i_1_NR);
 	free(_flag_check_C_j_1_NR);
 }
@@ -444,21 +432,21 @@ void matmult_aabft(long _local_N, float** _local_A, float** _local_B, float** _l
 #undef A
 #undef B
 #undef C
+#undef check_C_i_inv
+#undef check_C_j_inv
 #undef check_C_i_0
 #undef check_C_i_1
-#undef check_C_i_inv
 #undef check_C_j_0
 #undef check_C_j_1
-#undef check_C_j_inv
 #undef check_C_i_1_NR
 #undef check_C_j_1_NR
 #undef _flag_C
+#undef _flag_check_C_i_inv
+#undef _flag_check_C_j_inv
 #undef _flag_check_C_i_0
 #undef _flag_check_C_i_1
-#undef _flag_check_C_i_inv
 #undef _flag_check_C_j_0
 #undef _flag_check_C_j_1
-#undef _flag_check_C_j_inv
 #undef _flag_check_C_i_1_NR
 #undef _flag_check_C_j_1_NR
 #undef ceild

@@ -5,12 +5,13 @@ affine matmult_aabft [N] -> {  : N > 0 }
 		B : {[i, j]: 0 <= i < N and 0 <= j < N }
 	outputs
 		C : {[i, j]: 0 <= i < N and 0 <= j < N }
+		check_C_i_inv : {[i]: 0 <= i < N }
+		check_C_j_inv : {[j]: 0 <= j < N }
+	locals
 		check_C_i_0 : {[i]: 0 <= i < N }
 		check_C_i_1 : {[i]: 0 <= i < N }
-		check_C_i_inv : {[i]: 0 <= i < N }
 		check_C_j_0 : {[j]: 0 <= j < N }
 		check_C_j_1 : {[j]: 0 <= j < N }
-		check_C_j_inv : {[j]: 0 <= j < N }
 	when {  : N > 0 } let
 		C[i,j] = reduce(+, (i,j,k->i,j), (A[i,k] * B[k,j]));
 		

@@ -21,28 +21,28 @@ static long N;
 static float** A;
 static float* x;
 static float* b;
+static float* check_b_i_inv;
 static float* check_b_i_0;
 static float* check_b_i_1;
-static float* check_b_i_inv;
 static float* check_b_i_1_NR;
 static char* _flag_b;
+static char* _flag_check_b_i_inv;
 static char* _flag_check_b_i_0;
 static char* _flag_check_b_i_1;
-static char* _flag_check_b_i_inv;
 static char* _flag_check_b_i_1_NR;
 
 // Memory Macros
 #define A(i,j) A[i][j]
 #define x(i) x[i]
 #define b(i) b[i]
-#define check_b_i_0() check_b_i_0[0]
-#define check_b_i_1() check_b_i_1[0]
 #define check_b_i_inv() check_b_i_inv[0]
+#define check_b_i_0() check_b_i_0[(0)]
+#define check_b_i_1() check_b_i_1[(0)]
 #define check_b_i_1_NR(i0) check_b_i_1_NR[((-1 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
 #define _flag_b(i) _flag_b[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define _flag_check_b_i_inv() _flag_check_b_i_inv[(0)]
 #define _flag_check_b_i_0() _flag_check_b_i_0[(0)]
 #define _flag_check_b_i_1() _flag_check_b_i_1[(0)]
-#define _flag_check_b_i_inv() _flag_check_b_i_inv[(0)]
 #define _flag_check_b_i_1_NR(i0) _flag_check_b_i_1_NR[((-1 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
 
 // Function Declarations
@@ -55,7 +55,7 @@ static float eval_check_b_i_1();
 static float eval_check_b_i_inv();
 static float reduce3(long N, long i0);
 static float eval_check_b_i_1_NR(long i0);
-void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_0, float* _local_check_b_i_1, float* _local_check_b_i_inv);
+void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_inv);
 
 static float reduce0(long N, long ip) {
 	float reduceVar;
@@ -197,7 +197,7 @@ static float eval_check_b_i_1_NR(long i0) {
 	return check_b_i_1_NR(i0);
 }
 
-void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_0, float* _local_check_b_i_1, float* _local_check_b_i_inv) {
+void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_inv) {
 	long i;
 	
 	// Copy arguments to the global variables.
@@ -205,8 +205,6 @@ void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _loca
 	A = _local_A;
 	x = _local_x;
 	b = _local_b;
-	check_b_i_0 = _local_check_b_i_0;
-	check_b_i_1 = _local_check_b_i_1;
 	check_b_i_inv = _local_check_b_i_inv;
 	
 	// Check parameter validity.
@@ -216,6 +214,10 @@ void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _loca
 	}
 	
 	// Allocate memory for local storage.
+	check_b_i_0 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(check_b_i_0,"check_b_i_0");
+	check_b_i_1 = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(check_b_i_1,"check_b_i_1");
 	check_b_i_1_NR = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(check_b_i_1_NR,"check_b_i_1_NR");
 	
@@ -223,15 +225,15 @@ void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _loca
 	_flag_b = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_b,"_flag_b");
 	memset(_flag_b,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_check_b_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(_flag_check_b_i_inv,"_flag_check_b_i_inv");
+	memset(_flag_check_b_i_inv,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_check_b_i_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
 	mallocCheck(_flag_check_b_i_0,"_flag_check_b_i_0");
 	memset(_flag_check_b_i_0,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_check_b_i_1 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
 	mallocCheck(_flag_check_b_i_1,"_flag_check_b_i_1");
 	memset(_flag_check_b_i_1,'N',((-1 + N >= 0) ? (1) : 0));
-	_flag_check_b_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
-	mallocCheck(_flag_check_b_i_inv,"_flag_check_b_i_inv");
-	memset(_flag_check_b_i_inv,'N',((-1 + N >= 0) ? (1) : 0));
 	_flag_check_b_i_1_NR = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
 	mallocCheck(_flag_check_b_i_1_NR,"_flag_check_b_i_1_NR");
 	memset(_flag_check_b_i_1_NR,'N',((-1 + N >= 0) ? (N) : 0));
@@ -242,22 +244,18 @@ void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _loca
 		S0(i);
 	}
 	#undef S0
-	#define S1() eval_check_b_i_0()
+	#define S1() eval_check_b_i_inv()
 	S1();
 	#undef S1
-	#define S2() eval_check_b_i_1()
-	S2();
-	#undef S2
-	#define S3() eval_check_b_i_inv()
-	S3();
-	#undef S3
 	
 	// Free all allocated memory.
+	free(check_b_i_0);
+	free(check_b_i_1);
 	free(check_b_i_1_NR);
 	free(_flag_b);
+	free(_flag_check_b_i_inv);
 	free(_flag_check_b_i_0);
 	free(_flag_check_b_i_1);
-	free(_flag_check_b_i_inv);
 	free(_flag_check_b_i_1_NR);
 }
 
@@ -266,14 +264,14 @@ void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _loca
 #undef A
 #undef x
 #undef b
+#undef check_b_i_inv
 #undef check_b_i_0
 #undef check_b_i_1
-#undef check_b_i_inv
 #undef check_b_i_1_NR
 #undef _flag_b
+#undef _flag_check_b_i_inv
 #undef _flag_check_b_i_0
 #undef _flag_check_b_i_1
-#undef _flag_check_b_i_inv
 #undef _flag_check_b_i_1_NR
 #undef ceild
 #undef floord
