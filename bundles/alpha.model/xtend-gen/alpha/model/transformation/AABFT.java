@@ -25,7 +25,7 @@ import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class AABFT extends AbstractAlphaCompleteVisitor {
-  private static Boolean DEBUG = Boolean.valueOf(true);
+  private static Boolean DEBUG = Boolean.valueOf(false);
 
   private AlphaSystem sys;
 

@@ -18,7 +18,7 @@ import static extension alpha.model.util.AlphaUtil.*
 
 
 class AABFT extends AbstractAlphaCompleteVisitor{
-	static Boolean DEBUG = true
+	static Boolean DEBUG = false
 	AlphaSystem sys
 	
 	private new(AlphaSystem system){
