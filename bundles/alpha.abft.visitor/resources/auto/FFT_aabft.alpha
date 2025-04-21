@@ -1,0 +1,75 @@
+
+package tests.basic.FFT {
+	external twiddle(1)
+	affine DFT_aabft [N] -> {  :  }
+		inputs
+			x : {[i0]: 0 <= i0 < N }
+		outputs
+			y : {[i0]: 0 <= i0 < N }
+			check_T_i0_0 : {[i0]: 0 <= i0 < N }
+			check_T_i0_1 : {[i0]: 0 <= i0 < N }
+			check_T_i0_inv : {[i0]: 0 <= i0 < N }
+			check_T_i1_0 : {[i1]: 0 <= i1 < N }
+			check_T_i1_1 : {[i1]: 0 <= i1 < N }
+			check_T_i1_inv : {[i1]: 0 <= i1 < N }
+			check_y_i0_0 : {}
+			check_y_i0_1 : {}
+			check_y_i0_inv : {}
+		locals
+			T : {[i0, i1]: 0 <= i0 < N and 0 <= i1 < N }
+		when {  :  } let
+			T[i0,i1] = twiddle((val[i0] * val[i1]));
+			
+			y[i0] = reduce(+, (i,j->i), (T[i,j] * x[j]));
+			
+			check_T_i0_0[i0] = reduce(+, (i0,i1->i0), T[i0,i1]);
+			
+			check_T_i0_1[i0] = reduce(+, (i0,i1->i0), (i0,i1->i0,i1)@({[i0, i1]: 0 <= i0 < N and 0 <= i1 < N } : twiddle((val(i,j->i) * val(i,j->j)))));
+			
+			check_T_i0_inv[i0] = ((check_T_i0_0 - check_T_i0_1) / check_T_i0_0);
+			
+			check_T_i1_0[i1] = reduce(+, (i0,i1->i1), T[i0,i1]);
+			
+			check_T_i1_1[i1] = reduce(+, (i0,i1->i1), (i0,i1->i0,i1)@({[i0, i1]: 0 <= i0 < N and 0 <= i1 < N } : twiddle((val(i,j->i) * val(i,j->j)))));
+			
+			check_T_i1_inv[i1] = ((check_T_i1_0 - check_T_i1_1) / check_T_i1_0);
+			
+			check_y_i0_0 = reduce(+, (i0->), y[i0]);
+			
+			check_y_i0_1 = reduce(+, (i0->), (i0->i0)@({[i0]: 0 <= i0 < N } : reduce(+, (i,j->i), ((i,j->i,j)@T * (i,j->j)@x))));
+			
+			check_y_i0_inv = ((check_y_i0_0 - check_y_i0_1) / check_y_i0_0);
+	.
+	
+	affine FFT [N] -> {  : N >= 2 }
+		inputs
+			x : {[i0]: 0 <= i0 < N }
+		outputs
+			y : {[i0]: 0 <= i0 < N }
+		locals
+			p : {[i0, i1]: 0 <= i0 <= 1 and i1 >= 0 and 2i1 <= -2 + N }
+			q : {[i0, i1]: 0 <= i0 <= 1 and i1 >= 0 and 2i1 <= -2 + N }
+			r : {[i0, i1]: 0 <= i0 <= 1 and i1 >= 0 and 2i1 <= -2 + N }
+			s : {[i0, i1]: i0 >= 0 and 2i0 <= -2 + N and 0 <= i1 <= 1 }
+		when {  : N = 2 } let
+			 with [i0] : (y) = DFT_aabft[N](x);
+		
+		when {  : (N) mod 2 = 0 and N >= 3 } let
+			p[i0,i1] = case  {
+				{: i0 = 0 } : x[2i1];
+				{: i0 = 1 } : x[2i1+1];
+			};
+			
+			over {[k]: 0 <= k <= 1 } with [i] : (q[k,i]) = FFT[(N)/2](p[k,i]);
+			
+			r[i0,i1] = (twiddle(val[i1]) * q[i0,i1]);
+			
+			over {[k]: k >= 0 and 2k <= -2 + N } with [i] : (s[k,i]) = DFT_aabft[2](r[i,k]);
+			
+			y[i0] = s[floor((i0)/2),i0-2*floor((i0)/2)];
+		
+		when {  : (1 + N) mod 2 = 0 and N >= 2 } let
+			 with [i0] : (y) = DFT_aabft[N](x);
+	.
+}
+

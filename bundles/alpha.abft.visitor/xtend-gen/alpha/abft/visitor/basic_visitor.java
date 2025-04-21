@@ -30,7 +30,7 @@ public class basic_visitor {
         sys_name = sys_name.concat(".alpha");
       }
       final String in_file = (in_dir + sys_name);
-      final String out_file = (out_dir + sys_name);
+      final String out_file = basic_visitor.getOutFile(out_dir, sys_name);
       final File file = new File(in_file);
       if (((!file.exists()) || file.isDirectory())) {
         InputOutput.<String>println((("ERROR:  \'" + in_file) + "\' does not exist. Exiting..."));
@@ -57,5 +57,19 @@ public class basic_visitor {
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
+  }
+
+  /**
+   * Generates the output filepath
+   * @param dir - output directory
+   * @param name - original filename
+   * 
+   * @return Output filepath
+   */
+  public static String getOutFile(final String dir, final String name) {
+    String[] parts = name.split("\\.alpha");
+    String _get = parts[0];
+    String _plus = (dir + _get);
+    return (_plus + "_aabft.alpha");
   }
 }

@@ -25,6 +25,8 @@ import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class AABFT extends AbstractAlphaCompleteVisitor {
+  private static Boolean DEBUG = Boolean.valueOf(true);
+
   private AlphaSystem sys;
 
   private AABFT(final AlphaSystem system) {
@@ -83,8 +85,7 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
           {
             StringBuilder sb = new StringBuilder(msg);
             sb.insert(index, "(scalar) ");
-            msg = sb.toString();
-            _xblockexpression_1 = InputOutput.<String>println(msg);
+            _xblockexpression_1 = msg = sb.toString();
           }
           _xifexpression_1 = _xblockexpression_1;
         } else {
@@ -94,12 +95,11 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
             {
               StringBuilder sb = new StringBuilder(msg);
               sb.insert(index, "(vector) ");
-              msg = sb.toString();
-              _xblockexpression_2 = InputOutput.<String>println(msg);
+              _xblockexpression_2 = msg = sb.toString();
             }
             _xifexpression_2 = _xblockexpression_2;
           } else {
-            _xifexpression_2 = InputOutput.<String>println(msg);
+            _xifexpression_2 = null;
           }
           _xifexpression_1 = _xifexpression_2;
         }
@@ -218,8 +218,13 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     final DependenceExpression depExp = AlphaUserFactory.createDependenceExpression(b_maff, varExp);
     final ReduceExpression redExp = AlphaUserFactory.createReduceExpression(REDUCTION_OP.SUM, p_maff, depExp);
     final StandardEquation stdEq = AlphaUserFactory.createStandardEquation(check, redExp);
-    EList<Variable> _locals = sys.getLocals();
-    _locals.add(check);
+    if ((AABFT.DEBUG).booleanValue()) {
+      EList<Variable> _outputs = sys.getOutputs();
+      _outputs.add(check);
+    } else {
+      EList<Variable> _locals = sys.getLocals();
+      _locals.add(check);
+    }
     EList<Equation> _equations = sys.getSystemBodies().get(0).getEquations();
     _equations.add(stdEq);
     return Pair.<Variable, ReduceExpression>of(check, redExp);
@@ -236,8 +241,13 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
    */
   public static Variable addComparator(final AlphaSystem sys, final String name, final ISLSet domain, final ReduceExpression redExp, final Variable base) {
     final Variable comp = AlphaUserFactory.createVariable((name + "1"), domain);
-    EList<Variable> _locals = sys.getLocals();
-    _locals.add(comp);
+    if ((AABFT.DEBUG).booleanValue()) {
+      EList<Variable> _outputs = sys.getOutputs();
+      _outputs.add(comp);
+    } else {
+      EList<Variable> _locals = sys.getLocals();
+      _locals.add(comp);
+    }
     final StandardEquation stdEq = AlphaUserFactory.createStandardEquation(comp, AlphaUtil.<ReduceExpression>copyAE(redExp));
     EList<Equation> _equations = sys.getSystemBodies().get(0).getEquations();
     _equations.add(stdEq);
@@ -266,13 +276,56 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
     _equations.add(stdEx);
   }
 
+  /**
+   * Generates the domain definition of the checksum variable.
+   * @param v - the base variable being checksummed
+   * @param index - the current index iterator along which the checksum is produced
+   * 
+   * @return The checksum variable's domain as an ISLSet
+   */
+  public static ISLSet getDomain(final Variable v, final String index) {
+    final int dim = v.getDomain().getNbIndices();
+    final int p_dim = (dim - 1);
+    String _xifexpression = null;
+    if ((p_dim == 0)) {
+      _xifexpression = "[N] -> {[]\t :\t  \t }";
+    } else {
+      _xifexpression = String.format("[N] -> {[%s]: 0<=%s<N}", index, index);
+    }
+    String domain = _xifexpression;
+    return ISLUtil.toISLSet(domain);
+  }
+
+  /**
+   * Generates the ISL MultiAff definitions for the checksum variable.
+   * @param v - the base variable being checksummed
+   * @param currentIndex - the current index iterator along which the checksum is produced
+   * @param indices - the indices associated with the base variable
+   * 
+   * @return Pair containing the base MultiAff (key) and the projection MultiAff (value)
+   */
+  public static Pair<ISLMultiAff, ISLMultiAff> getMultiAffs(final Variable v, final String currentIndex, final String indices) {
+    final int dim = v.getDomain().getNbIndices();
+    final int p_dim = (dim - 1);
+    final ISLMultiAff b_maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> %s}", indices, indices));
+    String _xifexpression = null;
+    if ((p_dim == 0)) {
+      _xifexpression = String.format("[N] -> {%s ->[]}", indices);
+    } else {
+      _xifexpression = String.format("[N] -> {%s -> [%s]}", indices, currentIndex);
+    }
+    final String pmStr = _xifexpression;
+    final ISLMultiAff p_maff = ISLUtil.toISLMultiAff(pmStr);
+    return Pair.<ISLMultiAff, ISLMultiAff>of(b_maff, p_maff);
+  }
+
   public static void makeChecksum(final Variable v, final AlphaSystem s, final String index, final String indices) {
     final String name = AABFT.getNameTemplate(v, index);
-    final ISLSet domain = ISLUtil.toISLSet(String.format("[N] -> {[%s]: 0<=%s<N}", index, index));
-    InputOutput.<String>println(("domain: " + domain));
-    final ISLMultiAff maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> %s}", indices, indices));
-    final ISLMultiAff fp_maff = ISLUtil.toISLMultiAff(String.format("[N] -> {%s -> [%s]}", indices, index));
-    final Pair<Variable, ReduceExpression> check = AABFT.addChecksum(s, name, domain, maff, fp_maff, v);
+    final ISLSet domain = AABFT.getDomain(v, index);
+    Pair<ISLMultiAff, ISLMultiAff> maffs = AABFT.getMultiAffs(v, index, indices);
+    final ISLMultiAff b_maff = maffs.getKey();
+    final ISLMultiAff p_maff = maffs.getValue();
+    final Pair<Variable, ReduceExpression> check = AABFT.addChecksum(s, name, domain, b_maff, p_maff, v);
     final ReduceExpression redExp = check.getValue();
     final Variable prime = check.getKey();
     final Variable checkComp = AABFT.addComparator(s, name, domain, redExp, v);

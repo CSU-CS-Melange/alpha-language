@@ -1,0 +1,283 @@
+// This code was auto-generated with AlphaZ.
+
+#include <float.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Function Macros
+#define ceild(n,d) ((int)ceil(((double)(n))/((double)(d))))
+#define floord(n,d) ((int)floor(((double)(n))/((double)(d))))
+#define div(a,b) (ceild((a),(b)))
+#define max(a,b) (((a)>(b))?(a):(b))
+#define min(a,b) (((a)<(b))?(a):(b))
+#define mallocCheck(v,s) if ((v) == NULL) { printf("Failed to allocate memory for variable: %s\n", (s)); exit(-1); }
+
+// Global Variables
+static long N;
+static float** A;
+static float* x;
+static float* b;
+static float* check_b_i_0;
+static float* check_b_i_1;
+static float* check_b_i_inv;
+static float* check_b_i_1_NR;
+static char* _flag_b;
+static char* _flag_check_b_i_0;
+static char* _flag_check_b_i_1;
+static char* _flag_check_b_i_inv;
+static char* _flag_check_b_i_1_NR;
+
+// Memory Macros
+#define A(i,j) A[i][j]
+#define x(i) x[i]
+#define b(i) b[i]
+#define check_b_i_0() check_b_i_0[0]
+#define check_b_i_1() check_b_i_1[0]
+#define check_b_i_inv() check_b_i_inv[0]
+#define check_b_i_1_NR(i0) check_b_i_1_NR[((-1 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
+#define _flag_b(i) _flag_b[((-1 + N - i >= 0 && -1 + i >= 0) ? (i) : 0)]
+#define _flag_check_b_i_0() _flag_check_b_i_0[(0)]
+#define _flag_check_b_i_1() _flag_check_b_i_1[(0)]
+#define _flag_check_b_i_inv() _flag_check_b_i_inv[(0)]
+#define _flag_check_b_i_1_NR(i0) _flag_check_b_i_1_NR[((-1 + N - i0 >= 0 && -1 + i0 >= 0) ? (i0) : 0)]
+
+// Function Declarations
+static float reduce0(long N, long ip);
+static float eval_b(long i);
+static float reduce1(long N);
+static float eval_check_b_i_0();
+static float reduce2(long N);
+static float eval_check_b_i_1();
+static float eval_check_b_i_inv();
+static float reduce3(long N, long i0);
+static float eval_check_b_i_1_NR(long i0);
+void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_0, float* _local_check_b_i_1, float* _local_check_b_i_inv);
+
+static float reduce0(long N, long ip) {
+	float reduceVar;
+	long k;
+	
+	reduceVar = 0.0f;
+	#define RP0(i,k) (A(((i)),((k)))) * (x(((k))))
+	#define R0(i,k) reduceVar = (reduceVar) + (RP0((i),(k)))
+	for (k = 0; k < N; k += 1) {
+		R0(ip, k);
+	}
+	#undef RP0
+	#undef R0
+	return reduceVar;
+}
+
+static float eval_b(long i) {
+	
+	// Check the flags.
+	if ((_flag_b(i)) == ('N')) {
+		_flag_b(i) = 'I';
+		b(i) = reduce0(N,i);
+		_flag_b(i) = 'F';
+	}
+	else if ((_flag_b(i)) == ('I')) {
+		printf("There is a self dependence on b at (%ld)\n",i);
+		exit(-1);
+	}
+	
+	return b(i);
+}
+
+static float reduce1(long N) {
+	float reduceVar;
+	long i;
+	
+	reduceVar = 0.0f;
+	#define RP1(i) eval_b(((i)))
+	#define R1(i) reduceVar = (reduceVar) + (RP1((i)))
+	for (i = 0; i < N; i += 1) {
+		R1(i);
+	}
+	#undef RP1
+	#undef R1
+	return reduceVar;
+}
+
+static float eval_check_b_i_0() {
+	
+	// Check the flags.
+	if ((_flag_check_b_i_0()) == ('N')) {
+		_flag_check_b_i_0() = 'I';
+		check_b_i_0() = reduce1(N);
+		_flag_check_b_i_0() = 'F';
+	}
+	else if ((_flag_check_b_i_0()) == ('I')) {
+		printf("There is a self dependence on check_b_i_0 at ()\n");
+		exit(-1);
+	}
+	
+	return check_b_i_0();
+}
+
+static float reduce2(long N) {
+	float reduceVar;
+	long i0;
+	
+	reduceVar = 0.0f;
+	#define RP2(i0) eval_check_b_i_1_NR(i0)
+	#define R2(i0) reduceVar = (reduceVar) + (RP2((i0)))
+	for (i0 = 0; i0 < N; i0 += 1) {
+		R2(i0);
+	}
+	#undef RP2
+	#undef R2
+	return reduceVar;
+}
+
+static float eval_check_b_i_1() {
+	
+	// Check the flags.
+	if ((_flag_check_b_i_1()) == ('N')) {
+		_flag_check_b_i_1() = 'I';
+		check_b_i_1() = reduce2(N);
+		_flag_check_b_i_1() = 'F';
+	}
+	else if ((_flag_check_b_i_1()) == ('I')) {
+		printf("There is a self dependence on check_b_i_1 at ()\n");
+		exit(-1);
+	}
+	
+	return check_b_i_1();
+}
+
+static float eval_check_b_i_inv() {
+	
+	// Check the flags.
+	if ((_flag_check_b_i_inv()) == ('N')) {
+		_flag_check_b_i_inv() = 'I';
+		check_b_i_inv() = ((eval_check_b_i_0()) - (eval_check_b_i_1())) / (eval_check_b_i_0());
+		_flag_check_b_i_inv() = 'F';
+	}
+	else if ((_flag_check_b_i_inv()) == ('I')) {
+		printf("There is a self dependence on check_b_i_inv at ()\n");
+		exit(-1);
+	}
+	
+	return check_b_i_inv();
+}
+
+static float reduce3(long N, long i0) {
+	float reduceVar;
+	long k;
+	
+	reduceVar = 0.0f;
+	#define RP3(i,k) (A(((i)),((k)))) * (x(((k))))
+	#define R3(i,k) reduceVar = (reduceVar) + (RP3((i),(k)))
+	for (k = 0; k < N; k += 1) {
+		R3(i0, k);
+	}
+	#undef RP3
+	#undef R3
+	return reduceVar;
+}
+
+static float eval_check_b_i_1_NR(long i0) {
+	
+	// Check the flags.
+	if ((_flag_check_b_i_1_NR(i0)) == ('N')) {
+		_flag_check_b_i_1_NR(i0) = 'I';
+		check_b_i_1_NR(i0) = reduce3(N,i0);
+		_flag_check_b_i_1_NR(i0) = 'F';
+	}
+	else if ((_flag_check_b_i_1_NR(i0)) == ('I')) {
+		printf("There is a self dependence on check_b_i_1_NR at (%ld)\n",i0);
+		exit(-1);
+	}
+	
+	return check_b_i_1_NR(i0);
+}
+
+void matvec_aabft(long _local_N, float** _local_A, float* _local_x, float* _local_b, float* _local_check_b_i_0, float* _local_check_b_i_1, float* _local_check_b_i_inv) {
+	long i;
+	
+	// Copy arguments to the global variables.
+	N = _local_N;
+	A = _local_A;
+	x = _local_x;
+	b = _local_b;
+	check_b_i_0 = _local_check_b_i_0;
+	check_b_i_1 = _local_check_b_i_1;
+	check_b_i_inv = _local_check_b_i_inv;
+	
+	// Check parameter validity.
+	if (!((-1 + N) >= (0))) {
+		printf("The value of the parameters are invalid.\n");
+		exit(-1);
+	}
+	
+	// Allocate memory for local storage.
+	check_b_i_1_NR = (float*)(malloc((sizeof(float)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(check_b_i_1_NR,"check_b_i_1_NR");
+	
+	// Allocate and initialize flag variables.
+	_flag_b = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_b,"_flag_b");
+	memset(_flag_b,'N',((-1 + N >= 0) ? (N) : 0));
+	_flag_check_b_i_0 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(_flag_check_b_i_0,"_flag_check_b_i_0");
+	memset(_flag_check_b_i_0,'N',((-1 + N >= 0) ? (1) : 0));
+	_flag_check_b_i_1 = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(_flag_check_b_i_1,"_flag_check_b_i_1");
+	memset(_flag_check_b_i_1,'N',((-1 + N >= 0) ? (1) : 0));
+	_flag_check_b_i_inv = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (1) : 0))));
+	mallocCheck(_flag_check_b_i_inv,"_flag_check_b_i_inv");
+	memset(_flag_check_b_i_inv,'N',((-1 + N >= 0) ? (1) : 0));
+	_flag_check_b_i_1_NR = (char*)(malloc((sizeof(char)) * (((-1 + N >= 0) ? (N) : 0))));
+	mallocCheck(_flag_check_b_i_1_NR,"_flag_check_b_i_1_NR");
+	memset(_flag_check_b_i_1_NR,'N',((-1 + N >= 0) ? (N) : 0));
+	
+	// Evaluate all the outputs.
+	#define S0(i) eval_b(i)
+	for (i = 0; i < N; i += 1) {
+		S0(i);
+	}
+	#undef S0
+	#define S1() eval_check_b_i_0()
+	S1();
+	#undef S1
+	#define S2() eval_check_b_i_1()
+	S2();
+	#undef S2
+	#define S3() eval_check_b_i_inv()
+	S3();
+	#undef S3
+	
+	// Free all allocated memory.
+	free(check_b_i_1_NR);
+	free(_flag_b);
+	free(_flag_check_b_i_0);
+	free(_flag_check_b_i_1);
+	free(_flag_check_b_i_inv);
+	free(_flag_check_b_i_1_NR);
+}
+
+
+// Undefine the Memory and Function Macros
+#undef A
+#undef x
+#undef b
+#undef check_b_i_0
+#undef check_b_i_1
+#undef check_b_i_inv
+#undef check_b_i_1_NR
+#undef _flag_b
+#undef _flag_check_b_i_0
+#undef _flag_check_b_i_1
+#undef _flag_check_b_i_inv
+#undef _flag_check_b_i_1_NR
+#undef ceild
+#undef floord
+#undef div
+#undef max
+#undef min
+#undef mallocCheck

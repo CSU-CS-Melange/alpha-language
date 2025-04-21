@@ -1,0 +1,24 @@
+affine fsub_aabft { N | -1 + N >= 0  }
+	input
+		float L { i,j |  -1 + N - i >= 0  &&  j >= 0  &&  i - j >= 0  };
+		float b { i |  i >= 0  &&  -1 + N - i >= 0  };
+	output
+		float x { i |  i >= 0  &&  -1 + N - i >= 0  };
+		float check_x_i_0 {|};
+		float check_x_i_1 {|};
+		float check_x_i_inv {|};
+	let
+		x = case 
+			{ i |  i == 0  &&  -1 + N >= 0  } : ((i->i)@(b) / (i->i,i)@(L));
+			{ i |  -1 + N >= 0  &&  -1 + i >= 0  } : (((i->i)@(b) - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  j >= 0  &&  -1 + i - j >= 0  } : ((i,j->i,j)@(L) * (i,j->j)@(x)))) / (i->i,i)@(L));
+		esac;
+		
+		check_x_i_0 = reduce(+, (i->), (i->i)@(x));
+		
+		check_x_i_1 = reduce(+, (i->), (i->i)@({ i |  i >= 0  &&  -1 + N - i >= 0  } : case 
+			{ i |  i == 0  &&  -1 + N >= 0  } : ((i->i)@(b) / (i->i,i)@(L));
+			{ i |  -1 + N >= 0  &&  -1 + i >= 0  } : (((i->i)@(b) - reduce(+, (i,j->i), { i,j |  -1 + N >= 0  &&  j >= 0  &&  -1 + i - j >= 0  } : ((i,j->i,j)@(L) * (i,j->j)@(x)))) / (i->i,i)@(L));
+		esac));
+		
+		check_x_i_inv = ((check_x_i_0 - check_x_i_1) / check_x_i_0);
+.

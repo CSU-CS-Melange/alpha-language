@@ -5,20 +5,20 @@ import alpha.model.Variable
 import alpha.model.AlphaExpression
 import alpha.model.VariableExpression
 import alpha.model.StandardEquation
+import alpha.model.ReduceExpression
+import alpha.model.REDUCTION_OP
+import alpha.model.BINARY_OP
 import alpha.model.util.AbstractAlphaCompleteVisitor
 import alpha.model.transformation.SubstituteByDef
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import static extension alpha.model.factory.AlphaUserFactory.*
 import static extension alpha.model.util.ISLUtil.*
 import static extension alpha.model.util.AlphaUtil.*
-import alpha.model.REDUCTION_OP
-import alpha.model.BINARY_OP
-import alpha.model.ReduceExpression
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 
-//import alpha.model.util.Show
 
 class AABFT extends AbstractAlphaCompleteVisitor{
+	static Boolean DEBUG = true
 	AlphaSystem sys
 	
 	private new(AlphaSystem system){
@@ -145,16 +145,16 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 			var sb = new StringBuilder(msg)
 			sb.insert(index, "(scalar) ")
 			msg = sb.toString()
-			println(msg)
+//			println(msg)
 		}
 		else if(check == 1){
 			var sb = new StringBuilder(msg)
 			sb.insert(index, "(vector) ")
 			msg = sb.toString()
-			println(msg)
+//			println(msg)
 		}
 		else{
-			println(msg)
+//			println(msg)
 		}
 	}
 		
@@ -262,7 +262,14 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		
 		val stdEq	= createStandardEquation(check, redExp)
 		
-		sys.locals	+= check
+		if(DEBUG){
+			sys.outputs += check
+		}
+		else{
+			sys.locals	+= check
+		}
+			
+		
 		sys.systemBodies.get(0).equations += stdEq
 		
 		return check -> redExp
@@ -279,7 +286,13 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	 */
 	static def Variable addComparator(AlphaSystem sys, String name, ISLSet domain, ReduceExpression redExp, Variable base){
 		val comp	= createVariable(name+"1", domain)
-		sys.locals	+= comp
+		
+		if(DEBUG){
+			sys.outputs += comp
+		}
+		else{
+			sys.locals	+= comp
+		}
 		
 		val stdEq	= createStandardEquation(comp, redExp.copyAE)
 		
@@ -312,29 +325,60 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		
 	}
 	
-	static def void makeChecksum(Variable v, AlphaSystem s, String index, String indices){
-		// create checksum variable name
-		val name = getNameTemplate(v, index)
+	/**
+	 * Generates the domain definition of the checksum variable.
+	 * @param v - the base variable being checksummed
+	 * @param index - the current index iterator along which the checksum is produced
+	 * 
+	 * @return The checksum variable's domain as an ISLSet
+	 */
+	static def ISLSet getDomain(Variable v, String index){
+		val dim		= v.domain.nbIndices
+		val p_dim	= dim-1
 		
+		var domain = if(p_dim == 0) "[N] -> {[]	 :	  	 }" else String.format('[N] -> {[%s]: 0<=%s<N}', index, index)
 		
-		// create domain
-		// TODO: Domain generator function
-		val domain = String.format('[N] -> {[%s]: 0<=%s<N}', index, index).toISLSet
-		println("domain: " + domain)
+		return domain.toISLSet
+	}
+	
+	/**
+	 * Generates the ISL MultiAff definitions for the checksum variable.
+	 * @param v - the base variable being checksummed
+	 * @param currentIndex - the current index iterator along which the checksum is produced
+	 * @param indices - the indices associated with the base variable 
+	 * 
+	 * @return Pair containing the base MultiAff (key) and the projection MultiAff (value)
+	 */
+	static def Pair<ISLMultiAff, ISLMultiAff> getMultiAffs(Variable v, String currentIndex, String indices){
+		val dim		= v.domain.nbIndices
+		val p_dim	= dim-1
 		
-		
-		
-		// TODO: multiAff generator function		
 		// define base variable multiaff
-		val maff = String.format("[N] -> {%s -> %s}", indices, indices).toISLMultiAff
-				
+		val b_maff = String.format("[N] -> {%s -> %s}", indices, indices).toISLMultiAff
+		
 		// define projection multiaff
-		val fp_maff = String.format("[N] -> {%s -> [%s]}", indices, index).toISLMultiAff
+		
+		val pmStr = if(p_dim==0) String.format("[N] -> {%s ->[]}", indices) else String.format("[N] -> {%s -> [%s]}", indices, currentIndex)
+		val p_maff = pmStr.toISLMultiAff
+				
+		return b_maff -> p_maff
+	}
+	
+	static def void makeChecksum(Variable v, AlphaSystem s, String index, String indices){
+		// generate checksum variable name template
+		val name	= getNameTemplate(v, index)
+				
+		// generate checksum domain
+		val domain	= getDomain(v, index)
+		
+		// generate MultiAffs
+		var maffs	= getMultiAffs(v, index, indices)
+		val b_maff	= maffs.getKey()
+		val p_maff	= maffs.getValue()
 			
 			
 		// generates checksum
-		val check = addChecksum(s, name, domain, maff, fp_maff, v)
-		
+		val check = addChecksum(s, name, domain, b_maff, p_maff, v)
 		val redExp = check.getValue()
 		val prime = check.getKey()
 		
@@ -345,6 +389,5 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 		addInvariant(s, name, domain, prime, checkComp)
 	}
 
-	
 	
 }

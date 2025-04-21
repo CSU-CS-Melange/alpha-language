@@ -5,19 +5,18 @@ affine lud_aabft [N] -> {  : N > 0 }
 	outputs
 		L : {[i, j]: i < N and 0 <= j <= i }
 		U : {[i, j]: i >= 0 and i <= j < N }
-		check_U_i_inv : {[i]: 0 <= i < N }
-		check_U_j_inv : {[j]: 0 <= j < N }
-		check_L_i_inv : {[i]: 0 <= i < N }
-		check_L_j_inv : {[j]: 0 <= j < N }
-	locals
 		check_U_i_0 : {[i]: 0 <= i < N }
 		check_U_i_1 : {[i]: 0 <= i < N }
+		check_U_i_inv : {[i]: 0 <= i < N }
 		check_U_j_0 : {[j]: 0 <= j < N }
 		check_U_j_1 : {[j]: 0 <= j < N }
+		check_U_j_inv : {[j]: 0 <= j < N }
 		check_L_i_0 : {[i]: 0 <= i < N }
 		check_L_i_1 : {[i]: 0 <= i < N }
+		check_L_i_inv : {[i]: 0 <= i < N }
 		check_L_j_0 : {[j]: 0 <= j < N }
 		check_L_j_1 : {[j]: 0 <= j < N }
+		check_L_j_inv : {[j]: 0 <= j < N }
 	when {  : N > 0 } let
 		U[i,j] = case  {
 			{: i = 0 } : A[i,j];

@@ -1,0 +1,11 @@
+affine matvec_abft [N]->{: N>0}
+ inputs
+  A 	: {[i,j] : 0<=i,j<N}
+  x 	: {[i]	 : 0<=i<N  }
+ outputs
+  b 	: {[i]   : 0<=i<N  }
+  check_b_i_0 : {}
+ let
+  b[i] = reduce(+, [k], A[i,k]*x[k]);
+  check_b_i_0 = reduce(+, (i->), b[i]);
+.

@@ -1,0 +1,25 @@
+
+affine bsub_aabft [N] -> {  : N > 0 }
+	inputs
+		U : {[i, j]: i >= 0 and i <= j < N }
+		b : {[i]: 0 <= i < N }
+	outputs
+		x : {[i]: 0 <= i < N }
+		check_x_i_0 : {}
+		check_x_i_1 : {}
+		check_x_i_inv : {}
+	when {  : N > 0 } let
+		x[i] = case  {
+			{: i = -1 + N } : (b[i] / U[i,i]);
+			{: i <= -2 + N } : ((b[i] - reduce(+, (i,j->i), {: i < j < N } : (U[i,j] * x[j]))) / U[i,i]);
+		};
+		
+		check_x_i_0 = reduce(+, (i->), x[i]);
+		
+		check_x_i_1 = reduce(+, (i->), (i->i)@({[i]: 0 <= i < N } : case  {
+			{[i]: i = -1 + N and N > 0 } : ((i->i)@b / (i->i,i)@U);
+			{[i]: N > 0 and i <= -2 + N } : (((i->i)@b - reduce(+, (i,j->i), {[i, j]: N > 0 and i < j < N } : ((i,j->i,j)@U * (i,j->j)@x))) / (i->i,i)@U);
+		}));
+		
+		check_x_i_inv = ((check_x_i_0 - check_x_i_1) / check_x_i_0);
+.

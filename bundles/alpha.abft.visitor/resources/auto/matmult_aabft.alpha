@@ -1,0 +1,28 @@
+
+affine matmult_aabft [N] -> {  : N > 0 }
+	inputs
+		A : {[i, j]: 0 <= i < N and 0 <= j < N }
+		B : {[i, j]: 0 <= i < N and 0 <= j < N }
+	outputs
+		C : {[i, j]: 0 <= i < N and 0 <= j < N }
+		check_C_i_0 : {[i]: 0 <= i < N }
+		check_C_i_1 : {[i]: 0 <= i < N }
+		check_C_i_inv : {[i]: 0 <= i < N }
+		check_C_j_0 : {[j]: 0 <= j < N }
+		check_C_j_1 : {[j]: 0 <= j < N }
+		check_C_j_inv : {[j]: 0 <= j < N }
+	when {  : N > 0 } let
+		C[i,j] = reduce(+, (i,j,k->i,j), (A[i,k] * B[k,j]));
+		
+		check_C_i_0[i] = reduce(+, (i,j->i), C[i,j]);
+		
+		check_C_i_1[i] = reduce(+, (i,j->i), (i,j->i,j)@({[i, j]: 0 <= i < N and 0 <= j < N } : reduce(+, (i,j,k->i,j), ((i,j,k->i,k)@A * (i,j,k->k,j)@B))));
+		
+		check_C_i_inv[i] = ((check_C_i_0 - check_C_i_1) / check_C_i_0);
+		
+		check_C_j_0[j] = reduce(+, (i,j->j), C[i,j]);
+		
+		check_C_j_1[j] = reduce(+, (i,j->j), (i,j->i,j)@({[i, j]: 0 <= i < N and 0 <= j < N } : reduce(+, (i,j,k->i,j), ((i,j,k->i,k)@A * (i,j,k->k,j)@B))));
+		
+		check_C_j_inv[j] = ((check_C_j_0 - check_C_j_1) / check_C_j_0);
+.

@@ -11,7 +11,7 @@ import alpha.model.transformation.reduction.ReductionComposition
 import alpha.loader.AlphaLoader
 import java.util.Scanner
 import java.io.File
-
+import java.util.Arrays
 
 class basic_visitor {
 	def static void main(String[] args) {
@@ -30,7 +30,8 @@ class basic_visitor {
 		
 		// Define input/output files		
 		val in_file = in_dir + sys_name
-		val out_file = out_dir + sys_name
+		
+		val out_file = getOutFile(out_dir, sys_name)
 		
 		// Check if input file exists
 		val file = new File(in_file)
@@ -75,4 +76,18 @@ class basic_visitor {
 		println("Done")
 		
 	}
+		
+	/**
+	 * Generates the output filepath
+	 * @param dir - output directory
+	 * @param name - original filename
+	 * 
+	 * @return Output filepath 
+	 */
+	static def String getOutFile(String dir, String name){
+		var parts = name.split('\\.alpha')
+		
+		return dir + parts.get(0) + "_aabft.alpha"
+	} 
+	
 }

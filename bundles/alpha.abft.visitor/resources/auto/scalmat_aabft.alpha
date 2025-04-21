@@ -1,0 +1,28 @@
+
+affine scalmat_aabft [N] -> {  : N > 0 }
+	inputs
+		k : {[]: }
+		A : {[i, j]: 0 <= i < N and 0 <= j < N }
+	outputs
+		B : {[i, j]: 0 <= i < N and 0 <= j < N }
+		check_B_i_0 : {[i]: 0 <= i < N }
+		check_B_i_1 : {[i]: 0 <= i < N }
+		check_B_i_inv : {[i]: 0 <= i < N }
+		check_B_j_0 : {[j]: 0 <= j < N }
+		check_B_j_1 : {[j]: 0 <= j < N }
+		check_B_j_inv : {[j]: 0 <= j < N }
+	when {  : N > 0 } let
+		B[i,j] = (k[] * A[i,j]);
+		
+		check_B_i_0[i] = reduce(+, (i,j->i), B[i,j]);
+		
+		check_B_i_1[i] = reduce(+, (i,j->i), (i,j->i,j)@({[i, j]: 0 <= i < N and 0 <= j < N } : ((i,j->)@k * (i,j->i,j)@A)));
+		
+		check_B_i_inv[i] = ((check_B_i_0 - check_B_i_1) / check_B_i_0);
+		
+		check_B_j_0[j] = reduce(+, (i,j->j), B[i,j]);
+		
+		check_B_j_1[j] = reduce(+, (i,j->j), (i,j->i,j)@({[i, j]: 0 <= i < N and 0 <= j < N } : ((i,j->)@k * (i,j->i,j)@A)));
+		
+		check_B_j_inv[j] = ((check_B_j_0 - check_B_j_1) / check_B_j_0);
+.

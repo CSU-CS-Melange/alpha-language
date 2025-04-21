@@ -1,0 +1,18 @@
+affine matvec_aabft { N | -1 + N >= 0  }
+	input
+		float A { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+		float x { i |  i >= 0  &&  -1 + N - i >= 0  };
+	output
+		float b { i |  i >= 0  &&  -1 + N - i >= 0  };
+		float check_b_i_0 {|};
+		float check_b_i_1 {|};
+		float check_b_i_inv {|};
+	let
+		b = reduce(+, (i,k->i), ((i,k->i,k)@(A) * (i,k->k)@(x)));
+		
+		check_b_i_0 = reduce(+, (i->), (i->i)@(b));
+		
+		check_b_i_1 = reduce(+, (i->), (i->i)@({ i |  i >= 0  &&  -1 + N - i >= 0  } : reduce(+, (i,k->i), ((i,k->i,k)@(A) * (i,k->k)@(x)))));
+		
+		check_b_i_inv = ((check_b_i_0 - check_b_i_1) / check_b_i_0);
+.
