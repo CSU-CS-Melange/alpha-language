@@ -2,7 +2,6 @@ package alpha.model.transformation
 
 import alpha.model.AlphaSystem
 import alpha.model.Variable
-import alpha.model.AlphaExpression
 import alpha.model.VariableExpression
 import alpha.model.StandardEquation
 import alpha.model.ReduceExpression
@@ -26,12 +25,9 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	}
 
 	static def void apply(AlphaSystem system){
-//		println("--------------\nInput system:")
-//		println(Show.print(system))
 		val aabft = new AABFT(system)
 		system.accept(aabft)	
-//		println("--------------\nOutput system:")
-//		println(Show.print(system))
+
 	}
 	
 	/**
@@ -40,48 +36,14 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	 */	
 	override void inStandardEquation(StandardEquation se){
 		val v		= se.variable
-		val name	= se.variable.name
-		val dim		= se.variable.domain.nbIndices
-		val indices = se.variable.domain.indexNames	
+		val indices = v.domain.indexNames	
 		
-		checkDim(name, dim)
-//		duplicateVariable(v, sys, e)
+		checkDim(v, false)
 
 		indices.forEach[index |
 			makeChecksum(v, sys, index, indices.toString)
 		]
 		
-		/*
-		print("name: ")
-		println(se.variable.name)
-		
-		print("domain: ")
-		println(se.variable.domain)
-		
-		print("basic sets: ")
-		println(se.variable.domain.nbBasicSets)
-		
-		print("constants: ")
-		println(se.variable.domain.nbConstants)
-		
-		print("divs: ")
-		println(se.variable.domain.nbDivs)
-		
-		print("indices: ")
-		println(se.variable.domain.nbIndices)
-		
-		print("params: ")
-		println(se.variable.domain.nbParams)
-		
-		print("points: ")
-		println(se.variable.domain.nbPoints)
-		
-		print("expr: ")
-		println(se.expr)
-		
-		println("se done")
-		* 
-		*/
 	}
 	
 	/**
@@ -128,10 +90,13 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 	
 	/**
 	 * Utility function. Checks dimensions of variable domain to ensure a checksum (T-1 dimensions) could be generated.
-	 * @param name - The name of the variable
-	 * @param dim - The number of dimensions in the variable's domain
+	 * @param v - The variable being checked
+	 * @param verbose - Flag for printing non-error information about the variable
 	 */
-	static def checkDim(String name, int dim){
+	static def void checkDim(Variable v, Boolean verbose){
+		val name  = v.name
+		val dim   = v.domain.nbIndices
+		
 		val check = dim-1
 		
 		var msg = "The variable \'" + name + "\' has a (" + dim + ")-dimensional domain, which would produce a "+ check +"-dimensional checksum."
@@ -145,91 +110,19 @@ class AABFT extends AbstractAlphaCompleteVisitor{
 			var sb = new StringBuilder(msg)
 			sb.insert(index, "(scalar) ")
 			msg = sb.toString()
-//			println(msg)
+			if(verbose) println(msg)
 		}
 		else if(check == 1){
 			var sb = new StringBuilder(msg)
 			sb.insert(index, "(vector) ")
 			msg = sb.toString()
-//			println(msg)
+			if(verbose) println(msg)
 		}
 		else{
-//			println(msg)
+			if(verbose) println(msg)
 		}
 	}
-		
-	/**
-	 * Duplicates variable expression (input) variable and inserts into AlphaZ system.
-	 * @param v - An AlphaZ Variable
-	 * @param s - An AlphaZ System
-	 * @returns The new AlphaZ Variable that was added to the system. 
-	 */
-	static def Variable duplicateVariable(Variable v, AlphaSystem s){
-		val baseName	= v.name
-		val baseDomain	= v.domain
-		val newName		= baseName+'_2'
-		val newDomain	= baseDomain.copy()
-		val newVar		= createVariable(newName, newDomain)
-
-		switch (getVariableGroup(v)) {
-			case 1: {
-				s.inputs += newVar
-			}
-			case 2: {
-				s.locals += newVar
-			}
-			case 3: {
-				s.outputs += newVar
-			}
-			default: {
-				println("Base variable not found in Alpha system.")
-				return null
-			}
-		}
-		
-		return newVar
-	}
-	/**
-	 * Duplicates standard equation (output) variable and inserts into AlphaZ system.
-	 * Overloaded function that calls variable expression version.
-	 * @param v - An AlphaZ Variable
-	 * @param s - An AlphaZ System
-	 * @param e - An AlphaZ AlphaExpression
-	 */
-	static def void duplicateVariable(Variable v, AlphaSystem s, AlphaExpression e){
-		val newVar		= duplicateVariable(v, s)
-		// TODO: Fix conversion from StandardEquation to ReductionExpression
-		if(newVar !== null && false){
-			val newEq	= createStandardEquation(newVar, e)
-		
-			s.systemBodies.get(0).equations += newEq
-			SubstituteByDef.apply(s, newEq, newVar)
-		}
-	}
-
-	/**
-	 * Utility function. Gets the system group of a variable.
-	 * @param v - An AlphaZ Variable
-	 * @returns An integer representing the variable's group:
-	 * 1 = input,
-	 * 2 = local,
-	 * 3 = output,
-	 * 0 = none
-	 */
-	static def int getVariableGroup(Variable v){
-		if(v.isInput){
-			return 1
-		}
-		else if(v.isLocal){
-			return 2
-		}
-		else if(v.isOutput){
-			return 3
-		}
-		else{
-			return 0
-		}
-	}
+	
 	
 	/**
 	 * Utility function to generate checksum variable name template.

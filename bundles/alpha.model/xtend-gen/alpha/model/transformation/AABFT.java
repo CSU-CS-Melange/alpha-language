@@ -1,6 +1,5 @@
 package alpha.model.transformation;
 
-import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
 import alpha.model.BINARY_OP;
 import alpha.model.BinaryExpression;
@@ -45,10 +44,8 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
   @Override
   public void inStandardEquation(final StandardEquation se) {
     final Variable v = se.getVariable();
-    final String name = se.getVariable().getName();
-    final int dim = se.getVariable().getDomain().getNbIndices();
-    final List<String> indices = se.getVariable().getDomain().getIndexNames();
-    AABFT.checkDim(name, dim);
+    final List<String> indices = v.getDomain().getIndexNames();
+    AABFT.checkDim(v, Boolean.valueOf(false));
     final Consumer<String> _function = (String index) -> {
       AABFT.makeChecksum(v, this.sys, index, indices.toString());
     };
@@ -65,126 +62,38 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
 
   /**
    * Utility function. Checks dimensions of variable domain to ensure a checksum (T-1 dimensions) could be generated.
-   * @param name - The name of the variable
-   * @param dim - The number of dimensions in the variable's domain
+   * @param v - The variable being checked
+   * @param verbose - Flag for printing non-error information about the variable
    */
-  public static String checkDim(final String name, final int dim) {
-    String _xblockexpression = null;
-    {
-      final int check = (dim - 1);
-      String msg = (((((("The variable \'" + name) + "\' has a (") + Integer.valueOf(dim)) + ")-dimensional domain, which would produce a ") + Integer.valueOf(check)) + "-dimensional checksum.");
-      final int index = 83;
-      String _xifexpression = null;
-      if ((check < 0)) {
-        InputOutput.<String>println(("ERROR: Invalid variable detected. " + msg));
-        System.exit(1);
-      } else {
-        String _xifexpression_1 = null;
-        if ((check == 0)) {
-          String _xblockexpression_1 = null;
-          {
-            StringBuilder sb = new StringBuilder(msg);
-            sb.insert(index, "(scalar) ");
-            _xblockexpression_1 = msg = sb.toString();
-          }
-          _xifexpression_1 = _xblockexpression_1;
-        } else {
-          String _xifexpression_2 = null;
-          if ((check == 1)) {
-            String _xblockexpression_2 = null;
-            {
-              StringBuilder sb = new StringBuilder(msg);
-              sb.insert(index, "(vector) ");
-              _xblockexpression_2 = msg = sb.toString();
-            }
-            _xifexpression_2 = _xblockexpression_2;
-          } else {
-            _xifexpression_2 = null;
-          }
-          _xifexpression_1 = _xifexpression_2;
-        }
-        _xifexpression = _xifexpression_1;
-      }
-      _xblockexpression = _xifexpression;
-    }
-    return _xblockexpression;
-  }
-
-  /**
-   * Duplicates variable expression (input) variable and inserts into AlphaZ system.
-   * @param v - An AlphaZ Variable
-   * @param s - An AlphaZ System
-   * @returns The new AlphaZ Variable that was added to the system.
-   */
-  public static Variable duplicateVariable(final Variable v, final AlphaSystem s) {
-    final String baseName = v.getName();
-    final ISLSet baseDomain = v.getDomain();
-    final String newName = (baseName + "_2");
-    final ISLSet newDomain = baseDomain.copy();
-    final Variable newVar = AlphaUserFactory.createVariable(newName, newDomain);
-    int _variableGroup = AABFT.getVariableGroup(v);
-    switch (_variableGroup) {
-      case 1:
-        EList<Variable> _inputs = s.getInputs();
-        _inputs.add(newVar);
-        break;
-      case 2:
-        EList<Variable> _locals = s.getLocals();
-        _locals.add(newVar);
-        break;
-      case 3:
-        EList<Variable> _outputs = s.getOutputs();
-        _outputs.add(newVar);
-        break;
-      default:
-        {
-          InputOutput.<String>println("Base variable not found in Alpha system.");
-          return null;
-        }
-    }
-    return newVar;
-  }
-
-  /**
-   * Duplicates standard equation (output) variable and inserts into AlphaZ system.
-   * Overloaded function that calls variable expression version.
-   * @param v - An AlphaZ Variable
-   * @param s - An AlphaZ System
-   * @param e - An AlphaZ AlphaExpression
-   */
-  public static void duplicateVariable(final Variable v, final AlphaSystem s, final AlphaExpression e) {
-    final Variable newVar = AABFT.duplicateVariable(v, s);
-    if (((newVar != null) && false)) {
-      final StandardEquation newEq = AlphaUserFactory.createStandardEquation(newVar, e);
-      EList<Equation> _equations = s.getSystemBodies().get(0).getEquations();
-      _equations.add(newEq);
-      SubstituteByDef.apply(s, newEq, newVar);
-    }
-  }
-
-  /**
-   * Utility function. Gets the system group of a variable.
-   * @param v - An AlphaZ Variable
-   * @returns An integer representing the variable's group:
-   * 1 = input,
-   * 2 = local,
-   * 3 = output,
-   * 0 = none
-   */
-  public static int getVariableGroup(final Variable v) {
-    Boolean _isInput = v.isInput();
-    if ((_isInput).booleanValue()) {
-      return 1;
+  public static void checkDim(final Variable v, final Boolean verbose) {
+    final String name = v.getName();
+    final int dim = v.getDomain().getNbIndices();
+    final int check = (dim - 1);
+    String msg = (((((("The variable \'" + name) + "\' has a (") + Integer.valueOf(dim)) + ")-dimensional domain, which would produce a ") + Integer.valueOf(check)) + "-dimensional checksum.");
+    final int index = 83;
+    if ((check < 0)) {
+      InputOutput.<String>println(("ERROR: Invalid variable detected. " + msg));
+      System.exit(1);
     } else {
-      Boolean _isLocal = v.isLocal();
-      if ((_isLocal).booleanValue()) {
-        return 2;
+      if ((check == 0)) {
+        StringBuilder sb = new StringBuilder(msg);
+        sb.insert(index, "(scalar) ");
+        msg = sb.toString();
+        if ((verbose).booleanValue()) {
+          InputOutput.<String>println(msg);
+        }
       } else {
-        Boolean _isOutput = v.isOutput();
-        if ((_isOutput).booleanValue()) {
-          return 3;
+        if ((check == 1)) {
+          StringBuilder sb_1 = new StringBuilder(msg);
+          sb_1.insert(index, "(vector) ");
+          msg = sb_1.toString();
+          if ((verbose).booleanValue()) {
+            InputOutput.<String>println(msg);
+          }
         } else {
-          return 0;
+          if ((verbose).booleanValue()) {
+            InputOutput.<String>println(msg);
+          }
         }
       }
     }
