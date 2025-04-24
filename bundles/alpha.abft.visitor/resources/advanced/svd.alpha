@@ -1,0 +1,16 @@
+
+affine svd [N]->{: N>0}
+ inputs
+   M	: {[i,j] : 0<=i,j<N}
+ 
+ outputs
+   U	: {[i,j] : 0<=i,j<N}
+   S	: {[i,j] : 0<=i,j<N}
+   V_T	: {[i,j] : 0<=i,j<N}
+   
+ let
+   U 	= M;
+   S 	= M;
+   V_T	= M;
+ 	
+.

@@ -1,0 +1,11 @@
+
+affine k_means [N]->{: N>0}
+ inputs
+   k	: {[]		:}
+   pts	: {[i]		: 0<=i<N}
+ outputs
+   S	: {[i,j]	: 0<i,j<=N}
+ 
+ let
+   S[i,j] = k[];
+.
