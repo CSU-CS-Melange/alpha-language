@@ -1,0 +1,11 @@
+affine ext { N | -1 + N >= 0  }
+	input
+		float a {|};
+	output
+		float b {|};
+		float c {|};
+	let
+		b = (2 * a);
+		
+		c = (a - 1);
+.
