@@ -1,0 +1,21 @@
+package tests.SR {
+	affine affineDependence [N] -> { : N > 0 }
+		inputs
+			A : [N]
+		outputs
+			C1, C2 : [N,N]
+		let
+			C1[i, j] =  case {
+				{ : i = 0 and j > 0} : A[j];
+				{ : j = 0 and i >= 0} : A[i];
+				{ : i > 0 and j > 0} : A[i];
+			}; 
+			C2[i, j] =  case {
+				{ : i = 0 and j > 0} : A[j];
+				{ : j = 0 and i >= 0} : A[i];
+				{ : i > 0 and j > 0} : C1[j, i - 1] + C1[j - 1, i];
+			}; 
+	.
+}
+
+

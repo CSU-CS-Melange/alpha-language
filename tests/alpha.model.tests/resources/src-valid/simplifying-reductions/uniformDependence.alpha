@@ -1,0 +1,19 @@
+package tests.SR {
+	affine uniformDependence [N] -> { : N > 0 }
+		inputs
+			A : [N]
+		outputs
+			C1, C2 : [N,N]
+		let
+			C1[i, j] = A[i] + A[j];
+
+			C2[i, j] =  case {
+				{ : i = 0 and j = 0 } : A[0];
+				{ : i = 0 and j > 0 } : A[j];
+				{ : j = 0 and i > 0 } : A[i];
+				{ : j = N - 1  and i > 0} : A[j];
+				{ : i > 0 and N - 1 > j > 0} : C1[i - 1, j + 1] + C1[i - 1, j - 1];
+			}; 
+	.
+}
+
