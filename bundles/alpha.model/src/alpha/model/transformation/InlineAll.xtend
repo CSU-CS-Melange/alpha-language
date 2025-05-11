@@ -26,7 +26,6 @@ class InlineAll extends AbstractAlphaCompleteVisitor {
 			visitor.accept(system)
 			
 			if(!visitor.validVars.empty) {
-				println(visitor.validVars)
 				SubstituteByDef.apply(system, visitor.validVars.get(0))
 				RemoveUnusedEquations.apply(system)
 			} else canInline = false

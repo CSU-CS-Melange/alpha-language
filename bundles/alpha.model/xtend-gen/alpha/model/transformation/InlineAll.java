@@ -8,7 +8,6 @@ import alpha.model.util.AbstractAlphaCompleteVisitor;
 import com.google.common.base.Objects;
 import java.util.ArrayList;
 import java.util.List;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 
 /**
  * Based on the transformation of the same name in AlphaZ V1.
@@ -32,7 +31,6 @@ public class InlineAll extends AbstractAlphaCompleteVisitor {
         boolean _isEmpty = visitor.validVars.isEmpty();
         boolean _not = (!_isEmpty);
         if (_not) {
-          InputOutput.<List<Variable>>println(visitor.validVars);
           SubstituteByDef.apply(system, visitor.validVars.get(0));
           RemoveUnusedEquations.apply(system);
         } else {
