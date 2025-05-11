@@ -32,6 +32,7 @@ public class InlineAll extends AbstractAlphaCompleteVisitor {
         boolean _not = (!_isEmpty);
         if (_not) {
           SubstituteByDef.apply(system, visitor.validVars.get(0));
+          Normalize.apply(system);
           RemoveUnusedEquations.apply(system);
         } else {
           canInline = false;
