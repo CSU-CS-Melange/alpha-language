@@ -8,9 +8,10 @@ import alpha.model.StandardEquation
 import alpha.model.VariableExpression
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import alpha.model.util.ISLUtil
+import static extension alpha.model.util.ISLUtil.*
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import alpha.model.exception.CausalityViolationException
+import alpha.model.util.ISLUtil.Dims
 
 class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 	var Scheduler scheduler
@@ -49,42 +50,45 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 	override void visitVariableExpression(VariableExpression ve) {
 		if(ve.variable.isInput) return;
 		
-		val ISLMultiAff dependenceTimestampMaff = ISLUtil.toMultiAff(scheduler.getScheduleMap(ve.variable.name).copy.clearInputTupleName)
-		val ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(dependenceMaffs.peek.copy)
-		var ISLMultiAff writeTimestampMaff = ISLUtil.toMultiAff(scheduler.getScheduleMap(sourceNames.peek).copy.clearInputTupleName)
+		val ISLMultiAff dependenceTS = scheduler.getAnonymousMap(ve.variable.name).toMultiAff
+		val ISLMultiAff readTS = dependenceTS.pullback(dependenceMaffs.peek.copy)
+		var ISLMultiAff writeTS = scheduler.getAnonymousMap(sourceNames.peek).toMultiAff
 		
 		// Need to add a dimension to the write timestamp if in a reduction body
-		if(writeTimestampMaff.dim(ISLDimType.isl_dim_in) != readTimestampMaff.dim(ISLDimType.isl_dim_in)) {
-			writeTimestampMaff = writeTimestampMaff.addDims(
-				ISLDimType.isl_dim_in, 
-				readTimestampMaff.dim(ISLDimType.isl_dim_in) - writeTimestampMaff.dim(ISLDimType.isl_dim_in)
-			)
+		if(writeTS.dim(Dims.IN) != readTS.dim(ISLDimType.isl_dim_in)) {
+			val extraDims = readTS.dim(Dims.IN) - writeTS.dim(Dims.IN)
+			writeTS = writeTS.addDims(Dims.IN, extraDims)
 		}
 		
-		verifyCausality(writeTimestampMaff, readTimestampMaff)
+		verifyCausality(writeTS, readTS)
 	}
 	
-	def protected void verifyCausality(ISLMultiAff writeTimestampMaff, ISLMultiAff readTimestampMaff) {
+	def protected void verifyCausality(ISLMultiAff writeTS, ISLMultiAff readTS) {
 		val ISLSet domain = domains.peek.copy
 		 
-		val int timestampDims = writeTimestampMaff.getNbOutputs
+		val int TSDims = writeTS.getNbOutputs
 		// Start with the empty set in the relevant space
 		var coveredSet = ISLSet.buildEmpty(domain.getSpace.copy)
-		for(var i = 0; i < timestampDims; i++) {
+		for(var i = 0; i < TSDims; i++) {
 			// The points where causality holds at dimension i, plus the ones that are already covered
 			val causalitySet = coveredSet.copy.union(
-				ISLSet.buildGESet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i))
+				ISLSet.buildGESet(writeTS.getAff(i), readTS.getAff(i))
 			)
 			
 			if(!domain.isSubset(causalitySet)) {
-				throw new CausalityViolationException(dependenceMaffs.peek.copy.toMap, writeTimestampMaff, 
-					readTimestampMaff, domain.copy.subtract(causalitySet.copy), i)
+				throw new CausalityViolationException(dependenceMaffs.peek.copy.toMap, writeTS, 
+					readTS, domain.copy.subtract(causalitySet.copy), i)
 			}
 			
 			// We are no longer concerned with points where T_w_i > T_r_i (so they enter the covered set)
 			coveredSet = coveredSet.union(
-				ISLSet.buildGTSet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i))
+				ISLSet.buildGTSet(writeTS.getAff(i), readTS.getAff(i))
 			)
+		}
+		
+		if(!domain.isSubset(coveredSet)) {
+			throw new CausalityViolationException(dependenceMaffs.peek.copy.toMap, writeTS, 
+				readTS, domain.copy.subtract(coveredSet.copy), TSDims-1)
 		}
 	}
 	

@@ -64,40 +64,46 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
     if ((_isInput).booleanValue()) {
       return;
     }
-    final ISLMultiAff dependenceTimestampMaff = ISLUtil.toMultiAff(this.scheduler.getScheduleMap(ve.getVariable().getName()).copy().clearInputTupleName());
-    final ISLMultiAff readTimestampMaff = dependenceTimestampMaff.pullback(this.dependenceMaffs.peek().copy());
-    ISLMultiAff writeTimestampMaff = ISLUtil.toMultiAff(this.scheduler.getScheduleMap(this.sourceNames.peek()).copy().clearInputTupleName());
-    int _dim = writeTimestampMaff.dim(ISLDimType.isl_dim_in);
-    int _dim_1 = readTimestampMaff.dim(ISLDimType.isl_dim_in);
+    final ISLMultiAff dependenceTS = ISLUtil.toMultiAff(this.scheduler.getAnonymousMap(ve.getVariable().getName()));
+    final ISLMultiAff readTS = dependenceTS.pullback(this.dependenceMaffs.peek().copy());
+    ISLMultiAff writeTS = ISLUtil.toMultiAff(this.scheduler.getAnonymousMap(this.sourceNames.peek()));
+    int _dim = writeTS.dim(ISLUtil.Dims.IN);
+    int _dim_1 = readTS.dim(ISLDimType.isl_dim_in);
     boolean _notEquals = (_dim != _dim_1);
     if (_notEquals) {
-      int _dim_2 = readTimestampMaff.dim(ISLDimType.isl_dim_in);
-      int _dim_3 = writeTimestampMaff.dim(ISLDimType.isl_dim_in);
-      int _minus = (_dim_2 - _dim_3);
-      writeTimestampMaff = writeTimestampMaff.addDims(
-        ISLDimType.isl_dim_in, _minus);
+      int _dim_2 = readTS.dim(ISLUtil.Dims.IN);
+      int _dim_3 = writeTS.dim(ISLUtil.Dims.IN);
+      final int extraDims = (_dim_2 - _dim_3);
+      writeTS = writeTS.addDims(ISLUtil.Dims.IN, extraDims);
     }
-    this.verifyCausality(writeTimestampMaff, readTimestampMaff);
+    this.verifyCausality(writeTS, readTS);
   }
 
-  protected void verifyCausality(final ISLMultiAff writeTimestampMaff, final ISLMultiAff readTimestampMaff) {
+  protected void verifyCausality(final ISLMultiAff writeTS, final ISLMultiAff readTS) {
     final ISLSet domain = this.domains.peek().copy();
-    final int timestampDims = writeTimestampMaff.getNbOutputs();
+    final int TSDims = writeTS.getNbOutputs();
     ISLSet coveredSet = ISLSet.buildEmpty(domain.getSpace().copy());
-    for (int i = 0; (i < timestampDims); i++) {
+    for (int i = 0; (i < TSDims); i++) {
       {
         final ISLSet causalitySet = coveredSet.copy().union(
-          ISLSet.buildGESet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i)));
+          ISLSet.buildGESet(writeTS.getAff(i), readTS.getAff(i)));
         boolean _isSubset = domain.isSubset(causalitySet);
         boolean _not = (!_isSubset);
         if (_not) {
           ISLMap _map = this.dependenceMaffs.peek().copy().toMap();
           ISLSet _subtract = domain.copy().subtract(causalitySet.copy());
-          throw new CausalityViolationException(_map, writeTimestampMaff, readTimestampMaff, _subtract, i);
+          throw new CausalityViolationException(_map, writeTS, readTS, _subtract, i);
         }
         coveredSet = coveredSet.union(
-          ISLSet.buildGTSet(writeTimestampMaff.getAff(i), readTimestampMaff.getAff(i)));
+          ISLSet.buildGTSet(writeTS.getAff(i), readTS.getAff(i)));
       }
+    }
+    boolean _isSubset = domain.isSubset(coveredSet);
+    boolean _not = (!_isSubset);
+    if (_not) {
+      ISLMap _map = this.dependenceMaffs.peek().copy().toMap();
+      ISLSet _subtract = domain.copy().subtract(coveredSet.copy());
+      throw new CausalityViolationException(_map, writeTS, readTS, _subtract, (TSDims - 1));
     }
   }
 
