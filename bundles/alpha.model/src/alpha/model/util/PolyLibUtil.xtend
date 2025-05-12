@@ -12,6 +12,7 @@ import static alpha.model.util.AffineFunctionOperations.*
 import static alpha.model.util.ISLUtil.*
 import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
 import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet
 
 class PolyLibUtil {
 	
@@ -133,5 +134,30 @@ class PolyLibUtil {
     	}
     	constraints.fold(ISLSet.buildUniverse(setSpace.copy), [acc, constraint | acc.addConstraint(constraint)]).simplify
     } 
+    
+    static def PolyLibPolyhedron fromISLBasicSet(ISLBasicSet set) {
+    	var PolyLibMatrix constraints = PolyLibMatrix.allocate(set.copy.nbConstraints, set.copy.nbConstants + set.copy.nbIndices + set.copy.nbParams + 1)
+    	var constraintNum = 0
+		for(constraint : set.copy.constraints) {
+			if(!constraint.equality) {
+				constraints.setAt(constraintNum, 0, 1)
+			}
+			for(var index = 0; index < set.copy.nbIndices; index++) {
+				constraints.setAt(constraintNum, index + 1, constraint.copy.getCoefficient(ISLDimType.isl_dim_out, index))
+			}
+			for(var param = 0; param < set.copy.nbParams; param++) {
+				constraints.setAt(constraintNum, set.copy.nbIndices + param + 1, constraint.copy.getCoefficient(ISLDimType.isl_dim_param, param))
+			}
+			constraints.setAt(constraintNum, set.copy.nbIndices + set.copy.nbParams + 1, constraint.copy.getConstant())
+			constraintNum++
+		}
+    	for(var i = 0; i < constraints.nbRows; i++) {
+       		for(var j = 0; j < constraints.nbColumns; j++){
+       			print(constraints.getAt(i, j) + " ")
+       		}
+       		println()
+       	}
+    	PolyLibPolyhedron.buildFromConstraints(constraints, 10)
+    }
     
 }
