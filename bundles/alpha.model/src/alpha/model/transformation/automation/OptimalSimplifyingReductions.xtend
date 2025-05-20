@@ -41,6 +41,8 @@ import static extension alpha.model.util.AlphaUtil.getContainerRoot
 import static extension alpha.model.util.AlphaUtil.getContainerSystemBody
 import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension java.lang.String.format
+import alpha.model.prdg.DependenceCone
+import alpha.model.prdg.PRDGGenerator
 
 /**
  * Implements Algorithm 2 in the Simplifying Reductions paper. The current
@@ -110,7 +112,7 @@ class OptimalSimplifyingReductions {
 		osr.run
 		return osr
 	}
-	
+
 	/** 
 	 * Preprocess the input program. After preprocessing all reductions are
 	 * normalized and the body of every reduction is a single convex polyhedron
@@ -127,11 +129,13 @@ class OptimalSimplifyingReductions {
 		PermutationCaseReduce.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
+		val prdg = PRDGGenerator.apply(systemBody.system)
+		val cone = new DependenceCone(prdg)
 		
 		debug('After preprocessing:')
 		debug(Show.print(systemBody))
 		
-		val state = new State(systemBody, newLinkedList)
+		val state = new State(systemBody, newLinkedList, cone)
 		
 		(0..<state.complexity).forEach[i | optimizations.put(i, newLinkedList)]
 		
@@ -206,7 +210,7 @@ class OptimalSimplifyingReductions {
 		}
 		
 		// Enumerate the list of candidate dynamic programming steps
-		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression)
+		val candidates = enumerateCandidates(targetEq.expr as ReduceExpression, state)
 		candidates.forEach[c |
 			debug("candidate: " + c.description)
 		]
@@ -222,7 +226,13 @@ class OptimalSimplifyingReductions {
 			val steps = newLinkedList
 			steps.addAll(state.steps)
 			steps += step
-			val newState = new State(optimizedBody, steps)
+			var DependenceCone newCone
+			if(step instanceof StepSimplifyingReduction) {
+				newCone = state.cone.addDependence(targetEq.name, (step as StepSimplifyingReduction).reuseDepNoParams)
+			} else {
+				newCone = state.cone.addVarMapping(targetEq.name, optimizedEq.name)
+			}
+			val newState = new State(optimizedBody, steps, newCone)
 			optimizeUnexploredEquations(newState)
 		}
 		
@@ -279,7 +289,7 @@ class OptimalSimplifyingReductions {
 	 * Creates a list of possible transformations that are valid steps in the DP
 	 * 
 	 */
-	protected def enumerateCandidates(AbstractReduceExpression targetRE) {
+	protected def enumerateCandidates(AbstractReduceExpression targetRE, State state) {
 		val nbParams = targetRE.expressionDomain.nbParams
 		val SSAR = ShareSpaceAnalysis.apply(targetRE)
 		
@@ -288,7 +298,7 @@ class OptimalSimplifyingReductions {
 		// SimplifyingReductions 
 		val shouldSimplify = targetRE.shouldSimplify
 		if (shouldSimplify) {
-			val candidateReuse = new CandidateReuse(targetRE, SSAR)
+			val candidateReuse = new CandidateReuse(targetRE, SSAR, state.cone)
 			if (candidateReuse.hasIdenticalAnswers) {
 				/*
 				 * If identical answers are found, then do not continue processing other DP steps. 
@@ -490,10 +500,12 @@ class OptimalSimplifyingReductions {
 	static class State {
 		SystemBody body
 		List<DynamicProgrammingStep> steps
+		DependenceCone cone
 		
-		new (SystemBody body, List<DynamicProgrammingStep> steps) {
+		new (SystemBody body, List<DynamicProgrammingStep> steps, DependenceCone cone) {
 			this.body = body
 			this.steps = steps
+			this.cone = cone
 		}
 		
 		def root() {
@@ -502,6 +514,10 @@ class OptimalSimplifyingReductions {
 		
 		def complexity() {
 			body.complexity
+		}
+		
+		def cone() {
+			this.cone
 		}
 		
 		def showSteps() {

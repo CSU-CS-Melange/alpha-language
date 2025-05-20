@@ -1,6 +1,8 @@
 package alpha.model.analysis.reduction;
 
 import alpha.model.AbstractReduceExpression;
+import alpha.model.StandardEquation;
+import alpha.model.prdg.DependenceCone;
 import alpha.model.transformation.reduction.SimplifyingReductions;
 import alpha.model.util.AffineFunctionOperations;
 import alpha.model.util.CommonExtensions;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtend.lib.annotations.AccessorType;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.Conversions;
@@ -46,6 +49,8 @@ public class CandidateReuse {
 
   private long[] reuseVectorWithIdenticalAnswers;
 
+  private DependenceCone cone;
+
   @Accessors(AccessorType.PUBLIC_GETTER)
   private ISLSet identicalAnswerDomain;
 
@@ -65,6 +70,16 @@ public class CandidateReuse {
     LinkedList<long[]> _linkedList = new LinkedList<long[]>();
     this.vectors = _linkedList;
     this.hasIdenticalAnswers = false;
+    this.generateCandidateReuseVectors();
+  }
+
+  public CandidateReuse(final AbstractReduceExpression are, final ShareSpaceAnalysisResult SSAR, final DependenceCone cone) {
+    this.are = are;
+    this.SSAR = SSAR;
+    LinkedList<long[]> _linkedList = new LinkedList<long[]>();
+    this.vectors = _linkedList;
+    this.hasIdenticalAnswers = false;
+    this.cone = cone;
     this.generateCandidateReuseVectors();
   }
 
@@ -96,7 +111,20 @@ public class CandidateReuse {
     if ((areSS == null)) {
       return;
     }
-    final ISLBasicSet reuseSpace = DomainOperations.toBasicSetFromKernel(areSS, this.are.getBody().getContextDomain().getSpace());
+    ISLBasicSet tempSpace = DomainOperations.toBasicSetFromKernel(areSS, this.are.getBody().getContextDomain().getSpace());
+    if ((this.cone != null)) {
+      InputOutput.<String>println("NOT NULL");
+      EObject parent = this.are.eContainer();
+      while ((parent.eClass() instanceof StandardEquation)) {
+        parent = parent.eContainer();
+      }
+      tempSpace = this.cone.intersectReuseSpace(tempSpace, ((StandardEquation) parent).getVariable().getName());
+    }
+    boolean _isEmpty = tempSpace.isEmpty();
+    if (_isEmpty) {
+      tempSpace = this.cone.subtractInvalidReuse(tempSpace, "Y");
+    }
+    final ISLBasicSet reuseSpace = tempSpace.copy();
     final Face face = this.are.getFacet();
     String _string = face.toLinearSpace().toString();
     String _plus = ("(candidateReuse) Lp = " + _string);
@@ -155,8 +183,8 @@ public class CandidateReuse {
         CandidateReuse.debug(_plus_6);
         final ISLSet accumulationSpace = ISLUtil.nullSpace(this.are.getProjection());
         this.identicalAnswerDomain = CandidateReuse.computeIdenticalAnswerDomain(labeling, ((Face[])Conversions.unwrapArray(facets, Face.class)), accumulationSpace);
-        boolean _isEmpty = this.identicalAnswerDomain.isEmpty();
-        boolean _not = (!_isEmpty);
+        boolean _isEmpty_1 = this.identicalAnswerDomain.isEmpty();
+        boolean _not = (!_isEmpty_1);
         if (_not) {
           CandidateReuse.debug("results in identical answers");
           this.hasIdenticalAnswers = true;

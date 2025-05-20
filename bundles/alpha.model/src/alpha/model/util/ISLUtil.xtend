@@ -259,7 +259,27 @@ class ISLUtil {
 		val piece = pma.getPiece(0)
 		piece.maff
 	}
-	 
+	
+	/**
+	 * Inverts a ISL Set
+	 */
+	 def static ISLBasicSet invertSet(ISLBasicSet set) {
+	 	var newSet = ISLBasicSet.buildUniverse(set.space)
+	 	for(constraint : set.copy.constraints) {
+	 		println("Constraint: " + constraint.copy)
+	 		var newConstraint = ISLConstraint.buildInequality(set.copy.space)
+	 		if(constraint.equality) {
+	 			newConstraint = ISLConstraint.buildEquality(set.space)
+	 		}
+	 		for(var index = 0; index < set.nbIndices; index++) {
+	 			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, index, -constraint.getCoefficient(ISLDimType.isl_dim_out, index).intValue)
+	 		}
+	 		newConstraint = newConstraint.copy.setConstant(constraint.constant)
+	 		println("New Constraint: " + newConstraint.copy)
+	 		newSet = newSet.copy.addConstraint(newConstraint)
+	 	}
+	 	newSet
+	 }
 	 
 	 
 	 

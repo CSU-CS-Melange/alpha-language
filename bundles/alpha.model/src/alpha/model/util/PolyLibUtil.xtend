@@ -1,18 +1,17 @@
 package alpha.model.util
 
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import java.util.ArrayList
-import java.util.List
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
-
-import static alpha.model.util.AffineFunctionOperations.*
-import static alpha.model.util.ISLUtil.*
-import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import fr.irisa.cairn.jnimap.polylib.PolyLibMatrix
+import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
+import java.util.ArrayList
+import java.util.List
+
+import static alpha.model.util.ISLUtil.*
 
 class PolyLibUtil {
 	

@@ -21,6 +21,8 @@ import static extension alpha.model.util.ISLUtil.dimensionality
 import static extension alpha.model.util.ISLUtil.integerPointClosestToOrigin
 import static extension alpha.model.util.ISLUtil.isTrivial
 import static extension alpha.model.util.ISLUtil.nullSpace
+import alpha.model.prdg.DependenceCone
+import alpha.model.StandardEquation
 
 class CandidateReuse {
 	
@@ -35,6 +37,7 @@ class CandidateReuse {
 	AbstractReduceExpression are
 	ShareSpaceAnalysisResult SSAR
 	long[] reuseVectorWithIdenticalAnswers
+	DependenceCone cone
 	
 	@Accessors(PUBLIC_GETTER)
 	ISLSet identicalAnswerDomain
@@ -53,10 +56,19 @@ class CandidateReuse {
 		this.SSAR = SSAR
 		this.vectors = new LinkedList<long[]>()
 		this.hasIdenticalAnswers = false
-		
+
 		generateCandidateReuseVectors
 	}
 	
+	new(AbstractReduceExpression are, ShareSpaceAnalysisResult SSAR, DependenceCone cone) {
+		this.are = are
+		this.SSAR = SSAR
+		this.vectors = new LinkedList<long[]>()
+		this.hasIdenticalAnswers = false
+		this.cone = cone
+		
+		generateCandidateReuseVectors
+	}
 	
 	/** 
 	 * Returns the reuse vector spanning the dimension along which identical
@@ -85,9 +97,27 @@ class CandidateReuse {
 		if (areSS === null)
 			return;
 		
-		// construct reuse space
-		val reuseSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
+		var tempSpace = areSS.toBasicSetFromKernel(are.body.contextDomain.space)
+		var parent = are.eContainer
+		while(parent.eClass instanceof StandardEquation) {
+			parent = parent.eContainer
+		}
+		val parentName = (parent as StandardEquation).variable.name
 		
+		//TODO: Filtering for invalid reuse based off of the dependence cone
+		if(cone !== null) {
+			println("NOT NULL")
+
+			tempSpace = cone.intersectReuseSpace(tempSpace, parentName)
+		} 
+		
+		if(tempSpace.isEmpty) {
+			tempSpace = cone.subtractInvalidReuse(tempSpace, parentName)
+		}
+		
+		// construct reuse space
+		val reuseSpace = tempSpace.copy
+
 		// construct face lattice
 		val face = are.facet
 		debug('(candidateReuse) Lp = ' + face.toLinearSpace.toString)
@@ -107,7 +137,7 @@ class CandidateReuse {
 		                                       .toList
 		
 		// select the reuse vector for each labeling domain (closest to the origin)
-		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin]
+		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin.map[x | -x]]
 		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]
 		
 		if (DEBUG) {

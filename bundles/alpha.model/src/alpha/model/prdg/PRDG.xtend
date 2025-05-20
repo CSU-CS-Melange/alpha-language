@@ -76,7 +76,7 @@ class PRDG {
 		this.domains
 	}
 	
-	// This function converst from our map structure to union map that
+	// This function converts from our map structure to union map that
 	// ISL can use to schedule based off of the causality described by the 
 	// PRDG
 	def ISLUnionMap generateISLPRDG() {

@@ -13,6 +13,9 @@ import alpha.model.analysis.reduction.CandidateReuse;
 import alpha.model.analysis.reduction.ShareSpaceAnalysis;
 import alpha.model.analysis.reduction.ShareSpaceAnalysisResult;
 import alpha.model.matrix.MatrixOperations;
+import alpha.model.prdg.DependenceCone;
+import alpha.model.prdg.PRDG;
+import alpha.model.prdg.PRDGGenerator;
 import alpha.model.transformation.Normalize;
 import alpha.model.transformation.SplitUnionIntoCase;
 import alpha.model.transformation.reduction.Distributivity;
@@ -294,6 +297,8 @@ public class OptimalSimplifyingReductions {
 
   protected boolean verbose;
 
+  protected DependenceCone cone;
+
   /**
    * This maps contains the simplified versions of the program obtained
    * during exploration. Simplified versions are grouped by complexity.
@@ -324,6 +329,7 @@ public class OptimalSimplifyingReductions {
     this.targetComplexity = complexity;
     this.trySplitting = trySplitting;
     this.verbose = verbose;
+    this.cone = null;
   }
 
   /**
@@ -352,6 +358,9 @@ public class OptimalSimplifyingReductions {
     PermutationCaseReduce.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
     Normalize.apply(this.systemBody);
+    final PRDG prdg = PRDGGenerator.apply(this.systemBody.getSystem());
+    DependenceCone _dependenceCone = new DependenceCone(prdg);
+    this.cone = _dependenceCone;
     this.debug("After preprocessing:");
     this.debug(Show.<SystemBody>print(this.systemBody));
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
@@ -460,6 +469,7 @@ public class OptimalSimplifyingReductions {
         final SystemBody optimizedBody = optimizedRoot.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID);
         final StandardEquation optimizedEq = this.getEquation(optimizedRoot, targetEq.getName());
         this.applyDPStep(optimizedEq.getExpr(), step);
+        this.cone = null;
         optimizedEq.setExplored(Boolean.valueOf(OptimalSimplifyingReductions.isNotReduceExpr(optimizedEq.getExpr())));
         final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> steps = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
         steps.addAll(state.steps);
@@ -534,7 +544,7 @@ public class OptimalSimplifyingReductions {
     final LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = new LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep>();
     final boolean shouldSimplify = this.shouldSimplify(targetRE);
     if (shouldSimplify) {
-      final CandidateReuse candidateReuse = new CandidateReuse(targetRE, SSAR);
+      final CandidateReuse candidateReuse = new CandidateReuse(targetRE, SSAR, this.cone);
       boolean _isHasIdenticalAnswers = candidateReuse.isHasIdenticalAnswers();
       if (_isHasIdenticalAnswers) {
         ISLMultiAff _identicalAnswerBasis = candidateReuse.identicalAnswerBasis();
