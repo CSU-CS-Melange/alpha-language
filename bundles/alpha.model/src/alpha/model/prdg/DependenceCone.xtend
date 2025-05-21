@@ -7,13 +7,9 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
 import java.util.ArrayList
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Accessors
-
-import static alpha.model.util.ISLUtil.*
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import java.util.List
 
 /* 
@@ -22,22 +18,52 @@ import java.util.List
  * simplify reductions in the case of dependent reductions
  */
 class DependenceCone {
+	
+	// A useful variable, set to true to debug output
+	public static boolean DEBUG = false;
+
+	private static def void debug(String msg) {
+		if (DEBUG)
+			println("[SimplifyingReductions] " + msg)
+	}
+	
+	/*
+	 * In our dependence cone we build up all our variable dependences in a single
+	 * ISLSpace. The indices represent which index the variable
+	 * starts at, the params and variables are maps representing the number of parameters
+	 * and variables each program variable has. The projection functions are the projection
+	 * function from the reduction space to the variable (aka the write function).
+	 * The actual dependences are represented by the sets. Which define the different
+	 * sets for the dependence polyhedron. They are kept as taking their union simplified some
+	 * important information. To generate the new reuse space we take the union of the 
+	 * reuse space with each one and then union the results. The space represents the ISLSpace
+	 * of all the variables and params
+	 */
 	var HashMap<String, Integer> indices
 	var HashMap<String, Integer> params
-	var HashMap<String, Integer> numVars
-	@Accessors(PUBLIC_GETTER)
-	var ISLSet cone 
+	var HashMap<String, Integer> variables
 	var HashMap<String, ISLMultiAff> projectionFunctions
+	@Accessors(PUBLIC_GETTER)
 	var List<ISLBasicSet> sets
+	val ISLSpace space
 	
-	new (HashMap<String, Integer> indices, HashMap<String, Integer> params, HashMap<String, Integer> numVars, ISLSet cone, HashMap<String, ISLMultiAff> projs, List<ISLBasicSet> sets) {
+	/**
+	 * Takes all the individual items necessary for a dependence cone and builds a new one
+	 * 
+	 * @param indices
+	 * @param params
+	 * @param variables
+	 * @param projectionFunctions
+	 * @param sets
+	 * @param space
+	 */
+	new (HashMap<String, Integer> indices, HashMap<String, Integer> params, HashMap<String, Integer> variables, HashMap<String, ISLMultiAff> projs, List<ISLBasicSet> sets, ISLSpace space) {
 		this.indices = indices
 		this.params = params
-		this.numVars = numVars
-		this.cone = cone.copy
-		println(cone.copy)
+		this.variables = variables
 		this.projectionFunctions = projs	
 		this.sets = sets
+		this.space = space
 	}
 	
 	/**
@@ -49,31 +75,31 @@ class DependenceCone {
 	new (PRDG dependences) {
 		indices = newHashMap
 		params = newHashMap
-		numVars = newHashMap
+		variables = newHashMap
 		projectionFunctions = newHashMap
-		var num = dependences.nodes.filter[node | !node.reductionNode].fold(0, [sum, node | sum + node.domain.copy.nbParams + node.domain.copy.nbIndices])
-		cone = ISLSet.buildEmpty(ISLSpace.allocSetSpace(0, num))
+		var num = dependences.nodes.filter[node | !(node.name.contains("_result") && node.name.contains("_reduce")) || !(node.name.contains("_body") && node.name.contains("_reduce")) ]
+			.fold(0, [sum, node | sum + node.domain.copy.nbParams + node.domain.copy.nbIndices])
+		space = ISLSpace.allocSetSpace(0, num)
 		this.sets = newArrayList()
 		var current = 0
 		
-		for(edge : dependences.edges.filter[node | !node.dest.name.equals("A")]) {
+		for(edge : dependences.edges) {
 			if(edge.dest.name.contains("reduce") && edge.dest.name.contains("result")) {
 				var bodyToResultEdge = dependences.edges.filter(e | e.source.name == edge.dest.name).get(0)
 				var edgeFunction = ISLUtil.toMultiAff(edge.function.copy.toMap.reverse)
 				var proj = edgeFunction.pullback(bodyToResultEdge.function.copy)
-				println(proj.copy)
 				projectionFunctions.put(edge.source.name, proj)
 			} else if(!edge.source.isReductionNode && !edge.dest.isReductionNode) {
 				if(!indices.containsKey(edge.source.name)) {
 					indices.put(edge.source.name, current)
 					params.put(edge.source.name, edge.source.domain.nbParams)
-					numVars.put(edge.source.name, edge.source.domain.nbIndices)
+					variables.put(edge.source.name, edge.source.domain.nbIndices)
 					current += edge.source.domain.nbIndices + edge.source.domain.nbParams
 				}
 				if(!indices.containsKey(edge.dest.name)) {
 					indices.put(edge.dest.name, current)
 					params.put(edge.dest.name, edge.dest.domain.nbParams)
-					numVars.put(edge.dest.name, edge.dest.domain.nbIndices)
+					variables.put(edge.dest.name, edge.dest.domain.nbIndices)
 					current += edge.dest.domain.nbIndices + edge.dest.domain.nbParams
 				}
 				val map = edge.function.copy.toBasicMap
@@ -84,140 +110,137 @@ class DependenceCone {
 
 				domain = liftDomain(domain.copy, edge.source.name, edge.dest.name, edge.dest.domain.copy)
 				sets.add(domain.copy)
-				var union = cone.copy.union(domain.toSet)
-				
-				cone = union.copy
-			}
-			
+			}	
 		}
+		debug("Set: ")
+		sets.forEach[ set | debug(set.copy.toString) ]
 	}
 	
 	/**
-	 * Takes a reuseSpace of possible reuse vectors and 
+	 * Takes a reuseSpace of possible reuse vectors and restricts it by intersecting it with the projection
+	 * of the dependence cone
 	 * 
 	 * @param self
 	 * @param reuseSpace
 	 * @param variable
 	 * @return 
 	 */
-	 //TODO: Check direction of reuse vector
-	def ISLBasicSet intersectReuseSpace(ISLBasicSet reuseSpace, String variable) {
-		println("Variable: " + variable)
-		mergeShareSpace(reuseSpace, variable, [one, two | one.intersect(two)])
+	def ISLSet intersectReuseSpace(ISLBasicSet reuseSpace, String variable) {
+		mergeShareSpace(reuseSpace, variable, [one, two | one.intersect(two).toSet])
 	}
 	
-	//TODO: Figure out the subtraction space as it will involve potentially multiple basic sets
-	def ISLBasicSet subtractInvalidReuse(ISLBasicSet reuseSpace, String variable) {
-//		mergeShareSpace(reuseSpace, variable, [one, two | one.toSet.subtract(two.toSet).basicSets.get(0)])
-		
-		mergeShareSpace(reuseSpace, variable, [one, two | one.intersect(two)])
-		
+	/**
+	 * Takes a reuseSpace of possible reuse vectors and restricts it by subtracting the projection
+	 * of the dependence cone
+	 * 
+	 * @param self
+	 * @param reuseSpace
+	 * @param variable
+	 * @return 
+	 */
+	def ISLSet subtractInvalidReuse(ISLBasicSet reuseSpace, String variable) {
+		mergeShareSpace(reuseSpace, variable, [one, two | one.toSet.subtract(two.toSet)])
 	}
 	
-	def private ISLBasicSet mergeShareSpace(ISLBasicSet reuseSpace, String alphaVar, (ISLBasicSet, ISLBasicSet) => ISLBasicSet f) {
-		println("Cone: " + cone.copy)
-		println("Variable: " + alphaVar)
-		println("Indices: " + indices)
-		println("start index: " + indices.get(alphaVar))
-		println("Share Space: " + reuseSpace.copy)
+	/**
+	 *	The function that 
+	 * 
+	 * @param self
+	 * @param reuseSpace
+	 * @param alphaVar
+	 * @param function
+	 * @return 
+	 */
+	def private ISLSet mergeShareSpace(ISLBasicSet reuseSpace, String alphaVar, (ISLBasicSet, ISLBasicSet) => ISLSet f) {
 		var variable = alphaVar
 		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
-			variable = variable.split("_NR").get(0)
+			var vars = variable.split("_")
+			variable = vars.take(vars.length - 1).join("_")
 		}
-		println("Updated Var: " + variable)
 		val projection = projectionFunctions.get(variable).copy
-		println("Share Space: " + reuseSpace.copy)
 		val projectedSpace = reuseSpace.copy.apply(projection.copy.toBasicMap)
 		val projectedCone = projectOnto(variable)
-//		val invertedCone = invertSet(projectedCone.copy)
-		println("Projected Space: " + projectedSpace.copy)
-		println("Projected Cone: " + projectedCone.copy)
 		val correctParams = projectedCone.moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, 0, params.get(variable))
-		println("Corrected: " + correctParams.copy)
 		val ISLBasicSet updatedParams = correctParams.renameParams(projectedSpace.copy.paramNames)
 		val ISLBasicSet updatedNames = updatedParams.renameIndices(projectedSpace.copy.indexNames)
-		println("Updated Names: " + updatedNames.copy)
 
 		val reverseProjected = updatedNames.copy.apply(projection.toBasicMap.reverse)
-		println("Reverse Projection: " + reverseProjected)
-		val combination = f.apply(reverseProjected.copy, reuseSpace)
-		println("Intersection: " + combination.copy)
-		val fin = combination.copy.eliminate(ISLDimType.isl_dim_param, 0, reverseProjected.copy.nbParams)
-//		val reversed = invertSet(fin)
-		
-		println("Final: " + reverseProjected.copy)
-		println("Final (no params): " + fin)
-//		println("Reverse: " + reversed)
-		fin
+		val combination = f.apply(reuseSpace, reverseProjected.copy)
+		combination.copy.eliminate(ISLDimType.isl_dim_param, 0, reverseProjected.copy.nbParams)		
 	}
 	
-	def DependenceCone addVarMapping(String variable, String newVar) {
+	def DependenceCone addVarMapping(String variable) {
+		var lookup = variable
+		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
+			var vars = variable.split("_")
+			lookup = vars.take(vars.length - 1).join("_")
+		}
 		var newInd = indices
-		newInd.put(newVar, indices.get(variable))
-		var newVars = numVars
-		newVars.put(newVar, numVars.get(variable))
+		newInd.put(variable + "_pos", indices.get(lookup))
+		newInd.put(variable + "_neg", indices.get(lookup))
+		
+		var newVars = variables
+		newVars.put(variable + "_pos", variables.get(lookup))
+		newVars.put(variable + "_neg", variables.get(lookup))
+		
 		var newParams = params
-		newParams.put(newVar, params.get(variable))
+		newParams.put(variable + "_pos", params.get(lookup))
+		newParams.put(variable + "_neg", params.get(lookup))
 		var newProjs = projectionFunctions
-		newProjs.put(newVar, projectionFunctions.get(variable))
-		new DependenceCone(newInd, newParams, newVars, cone.copy, projectionFunctions, sets)
+		newProjs.put(variable + "_pos", projectionFunctions.get(lookup))
+		newProjs.put(variable + "_neg", projectionFunctions.get(lookup))
+		new DependenceCone(newInd, newParams, newVars, projectionFunctions, sets, space.copy)
 	}
 
 	def DependenceCone addDependence(String variable, long[] vector) {
-		println("Adding a new dependence vector to the cone")
-		println(variable)
+		var lookup = variable
+		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
+			var vars = variable.split("_")
+			lookup = vars.take(vars.length - 1).join("_")
+		}
 		var newInd = indices
-		newInd.put(variable + "_pos", indices.get(variable))
-		var newVars = numVars
-		newVars.put(variable + "_pos", numVars.get(variable))
+		newInd.put(variable + "_pos", indices.get(lookup))
+		newInd.put(variable + "_neg", indices.get(lookup))
+		
+		var newVars = variables
+		newVars.put(variable + "_pos", variables.get(lookup))
+		newVars.put(variable + "_neg", variables.get(lookup))
+		
 		var newParams = params
-		newParams.put(variable + "_pos", params.get(variable))
+		newParams.put(variable + "_pos", params.get(lookup))
+		newParams.put(variable + "_neg", params.get(lookup))
 		var newProjs = projectionFunctions
-		newProjs.put(variable + "_pos", projectionFunctions.get(variable))
+		newProjs.put(variable + "_pos", projectionFunctions.get(lookup))
+		newProjs.put(variable + "_neg", projectionFunctions.get(lookup))
 		var ArrayList<Long> vect
-		var ISLConstraint newConstraint = ISLConstraint.buildInequality(cone.copy.space)
-		if(projectionFunctions.containsKey(variable)) {
+		var ISLConstraint newConstraint = ISLConstraint.buildInequality(space.copy)
+		if(projectionFunctions.containsKey(lookup)) {
 			var ArrayList<Long> newVect = new ArrayList<Long>()
-			val f = projectionFunctions.get(variable)
-//			val f = ISLUtil.toISLMultiAff("[N] -> {[i, j] -> [i + j + 1]}")
-			println(f.copy)
+			val f = projectionFunctions.get(lookup)
 			for(var i = 0; i < f.affs.size; i++) {
-				println(f.affs.get(i))
 				var Long sum = 0L
 				for(var j = 0; j < vector.length; j++) {
-					println(f.copy.affs.get(i).space)
 					sum = sum + (f.copy.affs.get(i).getCoefficientVal(ISLDimType.isl_dim_in, j).asLong * vector.get(j))
 				}
 				newVect.add(sum)
 			}
 			vect = newVect
 		} else {
-			for(var i = 0; i < vector.size; i++) {
-				vect.add(vector.get(i))
-			}
+			vect = newArrayList
+			vect = vector.fold(vect, [acc, x | acc.add(x); acc])			
 		}
 			
-//		}
-//		println(projectionFunctions)
-//		val projectedVector = projectionFunctions.get(variable).copy
 		for(var i = 0; i < vect.size; i++) {
-			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, indices.get(variable) + i, vect.get(i).intValue)
+			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, indices.get(lookup) + i, vect.get(i).intValue)
 		}
-		println("New Constraint: " + newConstraint.copy)
-		println
-		for(var i = 0; i < vect.size; i++) {
-			print(vect.get(i) + " ")
-		}
-		println
-		new DependenceCone(newInd, newParams, newVars, cone.copy, newProjs, sets)
+		var newSets = sets
+		var newDomain = ISLBasicSet.buildEmpty(space.copy)
+		newDomain = newDomain.copy.addConstraint(newConstraint)
+		newSets.add(newDomain)
+		new DependenceCone(newInd, newParams, newVars, newProjs, newSets, space.copy)
 	}
 	
 	def ISLBasicSet projectOnto(String variable){
-		println("Projection: " + variable)
-		println("Indices: " + indices.get(variable))
-		println("Index: " + indices)
-		println("Keys: " +  indices.filter[k, v| k != variable && v != indices.get(variable)])
-		println("Cone: " + cone.copy)
 		var HashMap<String, Integer> newIndices = newHashMap
 		var oldIndices = indices.filter[k, v| k != variable && v != indices.get(variable)].entrySet
 		for(entry : oldIndices) {
@@ -225,91 +248,62 @@ class DependenceCone {
 				newIndices.put(entry.key, entry.value)
 			}
 		} 
-		
-		//		map.intersectRange()
-		var output = newIndices.entrySet.sortWith(x, y | y.value - x.value)
-			.map[x | x.key].fold(cone.copy, [updated, key | updated.copy.projectOut(ISLDimType.isl_dim_out, indices.get(key), numVars.get(key) + params.get(key))])
-//			.keySet.fold(cone.copy, [updated, key | updated.copy.projectOut(ISLDimType.isl_dim_out, indices.get(key), numVars.get(variable) + params.get(variable))])
 
 		val ind = newIndices
-//		println("newIndices: " + ind)
-//		println("Sets:")
-//		sets.forEach[x | println(x.copy)]
-//		println("New Sets:")
 		var newSets = sets.map[set | 
 			ind.entrySet.sortWith(x, y | y.value - x.value)
-				.map[x | x.key].fold(set.copy, [updated, key | updated.copy.projectOut(ISLDimType.isl_dim_out, indices.get(key), numVars.get(key) + params.get(key))])]
-		newSets.forEach[x | println(x.copy)]
-//		println("Projected Output: " + output.copy)	
-//		println("Output: " + output.copy.convexHull)
-		var testSet = ISLUtil.toISLBasicSet("{ [i0, i1] :  }")
-//		println("Test Empty: " + testSet.copy.isPlainUniverse)
-//		println("Test: " + testSet.union(ISLUtil.toISLBasicSet("{ [i0, i1] : i0 > 0 and i1 >= i0 }")))
-		var out = newSets.fold(ISLSet.buildEmpty(ISLSpace.allocSetSpace(0, numVars.get(variable) + params.get(variable))), [acc, set | 
+				.map[x | x.key].fold(set.copy, [updated, key | updated.copy.projectOut(ISLDimType.isl_dim_out, indices.get(key), variables.get(key) + params.get(key))])]
+		var out = newSets.fold(ISLSet.buildEmpty(ISLSpace.allocSetSpace(0, variables.get(variable) + params.get(variable))), [acc, set | 
 			if(!set.copy.isPlainUniverse) { set.copy.toSet.union(acc) } else { acc }
 		]).convexHull
-//		println("Out: " + out)
 		out
 	}
 	
 	def private ISLBasicSet liftDomain(ISLBasicSet set, String sourceVar, String destVar, ISLSet destDomain) {
-		var ISLBasicSet newDomain = ISLBasicSet.buildUniverse(cone.copy.space)
-//		println("Var: " + this.indices)
-//		println("output: " + newDomain.copy)
+		var ISLBasicSet newDomain = ISLBasicSet.buildUniverse(space.copy)
 		val constraints = set.copy.constraints
 		val nbCons = constraints.size
 
 		for(var constraint = 0; constraint < nbCons; constraint++) {
 			var newConstraint = ISLConstraint.buildInequality(newDomain.copy.space)
-//			println("Old Constraint: " + constraints.get(constraint))
 			if(constraints.get(constraint).equality) {
 				newConstraint = ISLConstraint.buildEquality(newDomain.copy.space)
 			}
-			for(var ind = 0; ind < this.numVars.get(sourceVar); ind++) {
+			for(var ind = 0; ind < this.variables.get(sourceVar); ind++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
 					this.indices.get(sourceVar) + ind, constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_out, ind).intValue)
 			}
-			for(var ind = 0; ind < this.numVars.get(destVar); ind++) {
+			for(var ind = 0; ind < this.variables.get(destVar); ind++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
-					this.indices.get(destVar) + ind, constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_out, ind + this.numVars.get(sourceVar)).intValue)
+					this.indices.get(destVar) + ind, constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_out, ind + this.variables.get(sourceVar)).intValue)
 			}
 			for(var param = 0; param < this.params.get(sourceVar); param++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
-					this.indices.get(sourceVar) + this.numVars.get(sourceVar) + param, 
+					this.indices.get(sourceVar) + this.variables.get(sourceVar) + param, 
 					constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_param, param).intValue)
 			}
 			newConstraint = newConstraint.copy.setConstant(constraints.get(constraint).constant)
-//			println("Constraint: " + newConstraint.copy)
-			newDomain = newDomain.copy.addConstraint(newConstraint)
-//			println("output: " + newDomain.copy)
-			
+			newDomain = newDomain.copy.addConstraint(newConstraint)			
 		}
 		
 		val destConstraints = destDomain.copy.simpleHull.constraints
-//		println("HERE")
 		for(var constraint = 0; constraint < destConstraints.size; constraint++) {
 			var newConstraint = ISLConstraint.buildInequality(newDomain.copy.space)
-//			println("Old Constraint: " + destConstraints.get(constraint))
 			if(destConstraints.get(constraint).equality) {
 				newConstraint = ISLConstraint.buildEquality(newDomain.copy.space)
 			}
-			for(var ind = 0; ind < this.numVars.get(destVar); ind++) {
+			for(var ind = 0; ind < this.variables.get(destVar); ind++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
 					this.indices.get(destVar) + ind, destConstraints.get(constraint).getCoefficient(ISLDimType.isl_dim_out, ind).intValue)
 			}
 			for(var param = 0; param < this.params.get(destVar); param++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
-					this.indices.get(destVar) + this.numVars.get(destVar) + param, 
+					this.indices.get(destVar) + this.variables.get(destVar) + param, 
 					destConstraints.get(constraint).getCoefficient(ISLDimType.isl_dim_param, param).intValue)
 			}
 			newConstraint = newConstraint.copy.setConstant(constraints.get(constraint).constant)
-//			println("Constraint: " + newConstraint.copy)
-			newDomain = newDomain.copy.addConstraint(newConstraint)
-//			println("output: " + newDomain.copy)
-			
+			newDomain = newDomain.copy.addConstraint(newConstraint)			
 		}
-//		println("output: " + newDomain.copy)
 		newDomain
 	}
-
 }

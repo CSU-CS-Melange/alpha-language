@@ -104,19 +104,16 @@ class CandidateReuse {
 		}
 		val parentName = (parent as StandardEquation).variable.name
 		
-		//TODO: Filtering for invalid reuse based off of the dependence cone
-		if(cone !== null) {
-			println("NOT NULL")
-
-			tempSpace = cone.intersectReuseSpace(tempSpace, parentName)
-		} 
-		
-		if(tempSpace.isEmpty) {
-			tempSpace = cone.subtractInvalidReuse(tempSpace, parentName)
-		}
-		
 		// construct reuse space
-		val reuseSpace = tempSpace.copy
+		//Filtering for invalid reuse based off of the dependence cone if the cone is not empty
+		var initReuseSpace = tempSpace.copy.toSet
+		if(cone !== null) {
+			initReuseSpace = cone.intersectReuseSpace(tempSpace.copy, parentName)
+			if(initReuseSpace.copy.isEmpty) {
+				initReuseSpace = cone.subtractInvalidReuse(tempSpace.copy, parentName)
+			} 
+		} 
+		val reuseSpace = initReuseSpace.copy
 
 		// construct face lattice
 		val face = are.facet
@@ -132,10 +129,11 @@ class CandidateReuse {
 		// find the labelings that have none-empty domains
 		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
 		                                       .reject[ld | ld.value.isTrivial]
-		                                       .map[ld | ld.key -> ld.value.intersect(reuseSpace.copy)]
-		                                       .reject[ld | ld.value.isTrivial]
+		                                       .map[ld | ld.key -> reuseSpace.copy.basicSets.map[ s | ld.value.copy.intersect(s.copy)].findFirst[ intersection | !intersection.copy.isTrivial ]]
+		                                       .reject[ld | ld.value === null ]
 		                                       .toList
 		
+		labelingInducingDomains.forEach[label | println(label)]
 		// select the reuse vector for each labeling domain (closest to the origin)
 		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin.map[x | -x]]
 		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]

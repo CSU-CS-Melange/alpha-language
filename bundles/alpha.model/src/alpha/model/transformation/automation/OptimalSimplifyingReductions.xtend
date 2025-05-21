@@ -230,7 +230,7 @@ class OptimalSimplifyingReductions {
 			if(step instanceof StepSimplifyingReduction) {
 				newCone = state.cone.addDependence(targetEq.name, (step as StepSimplifyingReduction).reuseDepNoParams)
 			} else {
-				newCone = state.cone.addVarMapping(targetEq.name, optimizedEq.name)
+				newCone = state.cone.addVarMapping(targetEq.name)
 			}
 			val newState = new State(optimizedBody, steps, newCone)
 			optimizeUnexploredEquations(newState)
