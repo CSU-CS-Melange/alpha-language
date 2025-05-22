@@ -159,4 +159,13 @@ class PolyLibUtil {
     	PolyLibPolyhedron.buildFromConstraints(constraints, 10)
     }
     
+    static def print(PolyLibMatrix mat) {
+    	for(var i = 0; i < mat.nbRows; i++) {
+    		for(var j = 0; j < mat.nbColumns; j++) {
+    			print(mat.getAt(i, j) + " ")
+    		}
+    		println()
+    	}
+    }
+    
 }

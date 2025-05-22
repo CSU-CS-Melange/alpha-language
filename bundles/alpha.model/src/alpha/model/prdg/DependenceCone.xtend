@@ -11,6 +11,8 @@ import java.util.ArrayList
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Accessors
 import java.util.List
+import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
+import alpha.model.util.PolyLibUtil
 
 /* 
  * The class represents the Dependence Cone, built out of a PRDG
@@ -24,7 +26,7 @@ class DependenceCone {
 
 	private static def void debug(String msg) {
 		if (DEBUG)
-			println("[SimplifyingReductions] " + msg)
+			println("[DependenceCone] " + msg)
 	}
 	
 	/*
@@ -66,6 +68,14 @@ class DependenceCone {
 		this.space = space
 	}
 	
+	def private static boolean isReduction(PRDGNode node) {
+		 (node.name.contains("_result") && node.name.contains("_reduce")) || (node.name.contains("_body") && node.name.contains("_reduce"))
+	}
+	
+	def private static HashMap<String, Integer> copyMap(HashMap<String, Integer> map) {
+		map.entrySet.fold(newHashMap, [newMap, value | newMap.put(value.key, value.value); newMap])
+	}
+	
 	/**
 	 * Takes a program dependence graph and creates a cone representing the dependence space 
 	 * 
@@ -77,43 +87,66 @@ class DependenceCone {
 		params = newHashMap
 		variables = newHashMap
 		projectionFunctions = newHashMap
-		var num = dependences.nodes.filter[node | !(node.name.contains("_result") && node.name.contains("_reduce")) || !(node.name.contains("_body") && node.name.contains("_reduce")) ]
+		var num = dependences.nodes.filter[node | !isReduction(node)]
 			.fold(0, [sum, node | sum + node.domain.copy.nbParams + node.domain.copy.nbIndices])
 		space = ISLSpace.allocSetSpace(0, num)
 		this.sets = newArrayList()
 		var current = 0
 		
+		for(node : dependences.nodes) {
+			if(!isReduction(node)) {
+				if(!indices.containsKey(node.name)) {
+					indices.put(node.name, current)
+					params.put(node.name, node.domain.nbParams)
+					variables.put(node.name, node.domain.nbIndices)
+					current += node.domain.nbIndices + node.domain.nbParams
+				}
+			}	
+		}
+
 		for(edge : dependences.edges) {
-			if(edge.dest.name.contains("reduce") && edge.dest.name.contains("result")) {
-				var bodyToResultEdge = dependences.edges.filter(e | e.source.name == edge.dest.name).get(0)
+			if(isReduction(edge.dest) && edge.dest.name.contains("result")) {
+				val bodyToResultEdge = dependences.edges.filter(e | e.source.name == edge.dest.name).get(0)
+				
 				var edgeFunction = ISLUtil.toMultiAff(edge.function.copy.toMap.reverse)
 				var proj = edgeFunction.pullback(bodyToResultEdge.function.copy)
 				projectionFunctions.put(edge.source.name, proj)
-			} else if(!edge.source.isReductionNode && !edge.dest.isReductionNode) {
-				if(!indices.containsKey(edge.source.name)) {
-					indices.put(edge.source.name, current)
-					params.put(edge.source.name, edge.source.domain.nbParams)
-					variables.put(edge.source.name, edge.source.domain.nbIndices)
-					current += edge.source.domain.nbIndices + edge.source.domain.nbParams
+				for(e : dependences.edges.filter[e | e.source.name == bodyToResultEdge.dest.name]) {
+					if(indices.containsKey(e.dest.name)) {
+						val numAdditional = proj.nbInputs
+						
+						var names = proj.copy.toMap.outputNames + e.function.copy.toBasicMap.inputNames
+						var domOne = e.function.copy.toBasicMap.toBasicSet.addDims(ISLDimType.isl_dim_out, proj.copy.nbOutputs)
+						var domTwo = proj.copy.toBasicMap.toBasicSet.intersect(edge.source.domain.copy.simpleHull.addDims(ISLDimType.isl_dim_out, numAdditional))
+							.addDims(ISLDimType.isl_dim_out, e.function.copy.nbOutputs)
+	
+						var domain = domOne.copy.intersect(domTwo.copy).projectOut(ISLDimType.isl_dim_out, 0, e.function.copy.nbInputs)
+						domain = liftDomain(domain.copy, edge.source.name, e.dest.name, e.dest.domain.copy)
+						sets.add(domain.copy)
+						
+					}
 				}
-				if(!indices.containsKey(edge.dest.name)) {
-					indices.put(edge.dest.name, current)
-					params.put(edge.dest.name, edge.dest.domain.nbParams)
-					variables.put(edge.dest.name, edge.dest.domain.nbIndices)
-					current += edge.dest.domain.nbIndices + edge.dest.domain.nbParams
-				}
+			} else if(!isReduction(edge.dest) && !isReduction(edge.source)) {
+				if(indices.containsKey(edge.dest.name) && indices.containsKey(edge.source.name)) {
+				
 				val map = edge.function.copy.toBasicMap
 				val numAdditional = edge.function.nbOutputs
-
 				var ISLBasicSet domain = map.copy.toBasicSet.intersect(
 					edge.source.domain.copy.simpleHull.addDims(ISLDimType.isl_dim_out, numAdditional))
 
 				domain = liftDomain(domain.copy, edge.source.name, edge.dest.name, edge.dest.domain.copy)
+				
 				sets.add(domain.copy)
-			}	
+
+				}
+			}
+			
 		}
+		debug("Indices: " + indices.toString)
 		debug("Set: ")
+
 		sets.forEach[ set | debug(set.copy.toString) ]
+		
 	}
 	
 	/**
@@ -160,13 +193,16 @@ class DependenceCone {
 		val projection = projectionFunctions.get(variable).copy
 		val projectedSpace = reuseSpace.copy.apply(projection.copy.toBasicMap)
 		val projectedCone = projectOnto(variable)
-		val correctParams = projectedCone.moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, 0, params.get(variable))
+		val correctParams = projectedCone.copy.moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, variables.get(variable), params.get(variable))
 		val ISLBasicSet updatedParams = correctParams.renameParams(projectedSpace.copy.paramNames)
 		val ISLBasicSet updatedNames = updatedParams.renameIndices(projectedSpace.copy.indexNames)
 
 		val reverseProjected = updatedNames.copy.apply(projection.toBasicMap.reverse)
 		val combination = f.apply(reuseSpace, reverseProjected.copy)
-		combination.copy.eliminate(ISLDimType.isl_dim_param, 0, reverseProjected.copy.nbParams)		
+
+		val output = combination.copy.eliminate(ISLDimType.isl_dim_param, 0, reverseProjected.copy.nbParams)	
+		debug("Restricted Reuse Space: " + output.copy.toString)
+		output	
 	}
 	
 	def DependenceCone addVarMapping(String variable) {
@@ -175,18 +211,18 @@ class DependenceCone {
 			var vars = variable.split("_")
 			lookup = vars.take(vars.length - 1).join("_")
 		}
-		var newInd = indices
+		var newInd = copyMap(indices)
 		newInd.put(variable + "_pos", indices.get(lookup))
 		newInd.put(variable + "_neg", indices.get(lookup))
 		
-		var newVars = variables
+		var newVars = copyMap(variables)
 		newVars.put(variable + "_pos", variables.get(lookup))
 		newVars.put(variable + "_neg", variables.get(lookup))
 		
-		var newParams = params
+		var newParams = copyMap(params)
 		newParams.put(variable + "_pos", params.get(lookup))
 		newParams.put(variable + "_neg", params.get(lookup))
-		var newProjs = projectionFunctions
+		var newProjs = projectionFunctions.entrySet.fold(newHashMap, [acc, x | acc.put(x.key, x.value.copy); acc])
 		newProjs.put(variable + "_pos", projectionFunctions.get(lookup))
 		newProjs.put(variable + "_neg", projectionFunctions.get(lookup))
 		new DependenceCone(newInd, newParams, newVars, projectionFunctions, sets, space.copy)
@@ -198,18 +234,18 @@ class DependenceCone {
 			var vars = variable.split("_")
 			lookup = vars.take(vars.length - 1).join("_")
 		}
-		var newInd = indices
+		var newInd = copyMap(indices)
 		newInd.put(variable + "_pos", indices.get(lookup))
 		newInd.put(variable + "_neg", indices.get(lookup))
 		
-		var newVars = variables
+		var newVars = copyMap(variables)
 		newVars.put(variable + "_pos", variables.get(lookup))
 		newVars.put(variable + "_neg", variables.get(lookup))
 		
-		var newParams = params
+		var newParams = copyMap(params)
 		newParams.put(variable + "_pos", params.get(lookup))
 		newParams.put(variable + "_neg", params.get(lookup))
-		var newProjs = projectionFunctions
+		var newProjs = projectionFunctions.entrySet.fold(newHashMap, [acc, x | acc.put(x.key, x.value.copy); acc])
 		newProjs.put(variable + "_pos", projectionFunctions.get(lookup))
 		newProjs.put(variable + "_neg", projectionFunctions.get(lookup))
 		var ArrayList<Long> vect
@@ -220,23 +256,26 @@ class DependenceCone {
 			for(var i = 0; i < f.affs.size; i++) {
 				var Long sum = 0L
 				for(var j = 0; j < vector.length; j++) {
-					sum = sum + (f.copy.affs.get(i).getCoefficientVal(ISLDimType.isl_dim_in, j).asLong * vector.get(j))
+					sum = sum + (f.copy.affs.get(i).getCoefficientVal(ISLDimType.isl_dim_in, j).asLong * -vector.get(j))
 				}
 				newVect.add(sum)
 			}
 			vect = newVect
 		} else {
 			vect = newArrayList
-			vect = vector.fold(vect, [acc, x | acc.add(x); acc])			
+			vect = vector.fold(vect, [acc, x | acc.add(-x); acc])			
 		}
+		debug("Adding Dependence: [" + vect.fold("", [acc, x | acc + " " + x.toString]) + " ] (Projected) to variable: " + variable)
+		
 			
 		for(var i = 0; i < vect.size; i++) {
 			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, indices.get(lookup) + i, vect.get(i).intValue)
 		}
-		var newSets = sets
-		var newDomain = ISLBasicSet.buildEmpty(space.copy)
-		newDomain = newDomain.copy.addConstraint(newConstraint)
-		newSets.add(newDomain)
+		val finalConstraint = newConstraint.copy
+		var newSets = sets.fold(newArrayList, [acc, x | acc.add(x.copy.addConstraint(finalConstraint.copy)); acc])
+		var newDomain = ISLBasicSet.buildUniverse(space.copy)
+		newDomain = newDomain.copy.addConstraint(finalConstraint.copy)
+		newSets.add(newDomain.copy)
 		new DependenceCone(newInd, newParams, newVars, newProjs, newSets, space.copy)
 	}
 	
@@ -277,7 +316,7 @@ class DependenceCone {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
 					this.indices.get(destVar) + ind, constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_out, ind + this.variables.get(sourceVar)).intValue)
 			}
-			for(var param = 0; param < this.params.get(sourceVar); param++) {
+			for(var param = 0; param < constraints.get(constraint).copy.space.nbParams; param++) {
 				newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, 
 					this.indices.get(sourceVar) + this.variables.get(sourceVar) + param, 
 					constraints.get(constraint).getCoefficient(ISLDimType.isl_dim_param, param).intValue)
@@ -301,7 +340,7 @@ class DependenceCone {
 					this.indices.get(destVar) + this.variables.get(destVar) + param, 
 					destConstraints.get(constraint).getCoefficient(ISLDimType.isl_dim_param, param).intValue)
 			}
-			newConstraint = newConstraint.copy.setConstant(constraints.get(constraint).constant)
+			newConstraint = newConstraint.copy.setConstant(destConstraints.get(constraint).constant)
 			newDomain = newDomain.copy.addConstraint(newConstraint)			
 		}
 		newDomain

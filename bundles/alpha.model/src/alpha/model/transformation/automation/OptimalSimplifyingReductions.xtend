@@ -226,11 +226,13 @@ class OptimalSimplifyingReductions {
 			val steps = newLinkedList
 			steps.addAll(state.steps)
 			steps += step
-			var DependenceCone newCone
-			if(step instanceof StepSimplifyingReduction) {
-				newCone = state.cone.addDependence(targetEq.name, (step as StepSimplifyingReduction).reuseDepNoParams)
-			} else {
-				newCone = state.cone.addVarMapping(targetEq.name)
+			var DependenceCone newCone = null
+			if(state.cone !== null) {
+				if(step instanceof StepSimplifyingReduction) {
+					newCone = state.cone.addDependence(targetEq.name, (step as StepSimplifyingReduction).reuseDepNoParams)
+				} else {
+					newCone = state.cone.addVarMapping(targetEq.name)
+				}
 			}
 			val newState = new State(optimizedBody, steps, newCone)
 			optimizeUnexploredEquations(newState)
