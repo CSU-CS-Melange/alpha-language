@@ -70,6 +70,7 @@ class OptimalSimplifyingReductions {
 	protected int throttleLimit
 	protected long optimizationNum
 	protected int targetComplexity
+	protected boolean dependent
 	protected boolean trySplitting
 	protected boolean verbose
 	
@@ -84,7 +85,7 @@ class OptimalSimplifyingReductions {
 	/**
 	 * Creates an OSR instance and initializes exploration space parameters 
 	 */
-	protected new (AlphaSystem system, int limit, int complexity, boolean trySplitting, boolean verbose) {
+	protected new (AlphaSystem system, int limit, int complexity, boolean trySplitting, boolean verbose, boolean dependent) {
 		if (system.systemBodies.size > 1) {
 			throw new IllegalArgumentException("AlphaSystems with multiple system bodies is not yet supported.")
 		}
@@ -101,6 +102,7 @@ class OptimalSimplifyingReductions {
 		this.targetComplexity = complexity
 		this.trySplitting = trySplitting
 		this.verbose = verbose
+		this.dependent = dependent
 	}
 	
 	/** 
@@ -108,7 +110,17 @@ class OptimalSimplifyingReductions {
 	 * If no limit is specified, then it will explore all possible simplifications.
 	 */
 	static def apply(AlphaSystem system, int limit, int targetComplexity, boolean trySplitting, boolean verbose) {
-		val osr = new OptimalSimplifyingReductions(system, limit, targetComplexity, trySplitting, verbose)
+		val osr = new OptimalSimplifyingReductions(system, limit, targetComplexity, trySplitting, verbose, false)
+		osr.run
+		return osr
+	}
+	
+	/** 
+	 * Entry points to the optimal simplification algorithm.
+	 * If no limit is specified, then it will explore all possible simplifications.
+	 */
+	static def apply(AlphaSystem system, int limit, int targetComplexity, boolean trySplitting, boolean verbose, boolean dependent) {
+		val osr = new OptimalSimplifyingReductions(system, limit, targetComplexity, trySplitting, verbose, dependent)
 		osr.run
 		return osr
 	}
@@ -129,8 +141,11 @@ class OptimalSimplifyingReductions {
 		PermutationCaseReduce.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
 		Normalize.apply(systemBody)
-		val prdg = PRDGGenerator.apply(systemBody.system)
-		val cone = new DependenceCone(prdg)
+		var DependenceCone cone = null
+		if(dependent) {
+			val prdg = PRDGGenerator.apply(systemBody.system)
+			cone = new DependenceCone(prdg)
+		}
 		
 		debug('After preprocessing:')
 		debug(Show.print(systemBody))

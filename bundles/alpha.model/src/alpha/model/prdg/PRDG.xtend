@@ -1,14 +1,12 @@
 package alpha.model.prdg
 
-import java.util.List
-import java.util.LinkedList
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import java.util.Set
 import java.util.HashSet
+import java.util.Set
 
 class PRDG {
 	Set<PRDGNode> nodes

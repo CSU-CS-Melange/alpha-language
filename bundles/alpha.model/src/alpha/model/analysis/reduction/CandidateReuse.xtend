@@ -129,14 +129,14 @@ class CandidateReuse {
 		// find the labelings that have none-empty domains
 		val labelingInducingDomains = labelings.map[l | face.getLabelingDomain(l)]
 		                                       .reject[ld | ld.value.isTrivial]
-		                                       .map[ld | ld.key -> reuseSpace.copy.basicSets.map[ s | ld.value.copy.intersect(s.copy)].findFirst[ intersection | !intersection.copy.isTrivial ]]
+		                                       .map[ld | ld.key -> reuseSpace.copy.basicSets.map[ s | ld.value.copy.intersect(s.copy)].filter[ intersection | !intersection.copy.isTrivial ]]
 		                                       .reject[ld | ld.value === null ]
 		                                       .toList
 		
 		labelingInducingDomains.forEach[label | println(label)]
 		// select the reuse vector for each labeling domain (closest to the origin)
-		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.integerPointClosestToOrigin.map[x | -x]]
-		val validReuseVectors = candidateReuseVectors.filter[lv | testLegality(are, lv.value)]
+		val candidateReuseVectors = labelingInducingDomains.map[ld | ld.key -> ld.value.map[ facet | facet.integerPointClosestToOrigin]]
+		val validReuseVectors = candidateReuseVectors.map[lv | lv.key -> lv.value.filter[reuse |testLegality(are, reuse)]]
 		
 		if (DEBUG) {
 			for (f : facets) {
@@ -146,18 +146,19 @@ class CandidateReuse {
 		
 		for (labelingAndReuse : validReuseVectors) {
 			val labeling = labelingAndReuse.key
-			val reuseVector = labelingAndReuse.value
-			
-			debug('labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
-			val accumulationSpace = are.projection.nullSpace
-			identicalAnswerDomain = labeling.computeIdenticalAnswerDomain(facets, accumulationSpace)
-			if (!identicalAnswerDomain.isEmpty) {
-				debug('results in identical answers')
-				hasIdenticalAnswers = true
-				reuseVectorWithIdenticalAnswers = reuseVector
-				return
+//			val reuseVector = labelingAndReuse.value
+			for(reuseVector : labelingAndReuse.value) {
+				debug('labeling ' + labeling.toString + ' induced by ' + reuseVector.toString)
+				val accumulationSpace = are.projection.nullSpace
+				identicalAnswerDomain = labeling.computeIdenticalAnswerDomain(facets, accumulationSpace)
+				if (!identicalAnswerDomain.isEmpty) {
+					debug('results in identical answers')
+					hasIdenticalAnswers = true
+					reuseVectorWithIdenticalAnswers = reuseVector
+					return
+				}
+				vectors.add(reuseVector)
 			}
-			vectors.add(reuseVector)
 		}
 	}
 	

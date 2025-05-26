@@ -266,7 +266,6 @@ class ISLUtil {
 	 def static ISLBasicSet invertSet(ISLBasicSet set) {
 	 	var newSet = ISLBasicSet.buildUniverse(set.space)
 	 	for(constraint : set.copy.constraints) {
-	 		println("Constraint: " + constraint.copy)
 	 		var newConstraint = ISLConstraint.buildInequality(set.copy.space)
 	 		if(constraint.equality) {
 	 			newConstraint = ISLConstraint.buildEquality(set.space)
@@ -274,8 +273,10 @@ class ISLUtil {
 	 		for(var index = 0; index < set.nbIndices; index++) {
 	 			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, index, -constraint.getCoefficient(ISLDimType.isl_dim_out, index).intValue)
 	 		}
+	 		for(var index = 0; index < set.nbParams; index++) {
+	 			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_param, index, constraint.getCoefficient(ISLDimType.isl_dim_param, index).intValue)
+	 		}
 	 		newConstraint = newConstraint.copy.setConstant(constraint.constant)
-	 		println("New Constraint: " + newConstraint.copy)
 	 		newSet = newSet.copy.addConstraint(newConstraint)
 	 	}
 	 	newSet

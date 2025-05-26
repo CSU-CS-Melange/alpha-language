@@ -14,6 +14,10 @@ import java.util.List
 import fr.irisa.cairn.jnimap.polylib.PolyLibPolyhedron
 import alpha.model.util.PolyLibUtil
 
+import static extension alpha.model.util.ISLUtil.*
+import java.util.Set
+import fr.irisa.cairn.jnimap.isl.ISLBasicMap
+
 /* 
  * The class represents the Dependence Cone, built out of a PRDG
  * It is used mainly by automatic simplifying reductions to help
@@ -46,7 +50,7 @@ class DependenceCone {
 	var HashMap<String, Integer> variables
 	var HashMap<String, ISLMultiAff> projectionFunctions
 	@Accessors(PUBLIC_GETTER)
-	var List<ISLBasicSet> sets
+	var Set<ISLBasicSet> sets
 	val ISLSpace space
 	
 	/**
@@ -59,7 +63,7 @@ class DependenceCone {
 	 * @param sets
 	 * @param space
 	 */
-	new (HashMap<String, Integer> indices, HashMap<String, Integer> params, HashMap<String, Integer> variables, HashMap<String, ISLMultiAff> projs, List<ISLBasicSet> sets, ISLSpace space) {
+	new (HashMap<String, Integer> indices, HashMap<String, Integer> params, HashMap<String, Integer> variables, HashMap<String, ISLMultiAff> projs, Set<ISLBasicSet> sets, ISLSpace space) {
 		this.indices = indices
 		this.params = params
 		this.variables = variables
@@ -90,7 +94,7 @@ class DependenceCone {
 		var num = dependences.nodes.filter[node | !isReduction(node)]
 			.fold(0, [sum, node | sum + node.domain.copy.nbParams + node.domain.copy.nbIndices])
 		space = ISLSpace.allocSetSpace(0, num)
-		this.sets = newArrayList()
+		this.sets = newHashSet()
 		var current = 0
 		
 		for(node : dependences.nodes) {
@@ -115,7 +119,6 @@ class DependenceCone {
 					if(indices.containsKey(e.dest.name)) {
 						val numAdditional = proj.nbInputs
 						
-						var names = proj.copy.toMap.outputNames + e.function.copy.toBasicMap.inputNames
 						var domOne = e.function.copy.toBasicMap.toBasicSet.addDims(ISLDimType.isl_dim_out, proj.copy.nbOutputs)
 						var domTwo = proj.copy.toBasicMap.toBasicSet.intersect(edge.source.domain.copy.simpleHull.addDims(ISLDimType.isl_dim_out, numAdditional))
 							.addDims(ISLDimType.isl_dim_out, e.function.copy.nbOutputs)
@@ -123,7 +126,6 @@ class DependenceCone {
 						var domain = domOne.copy.intersect(domTwo.copy).projectOut(ISLDimType.isl_dim_out, 0, e.function.copy.nbInputs)
 						domain = liftDomain(domain.copy, edge.source.name, e.dest.name, e.dest.domain.copy)
 						sets.add(domain.copy)
-						
 					}
 				}
 			} else if(!isReduction(edge.dest) && !isReduction(edge.source)) {
@@ -159,7 +161,7 @@ class DependenceCone {
 	 * @return 
 	 */
 	def ISLSet intersectReuseSpace(ISLBasicSet reuseSpace, String variable) {
-		mergeShareSpace(reuseSpace, variable, [one, two | one.intersect(two).toSet])
+		mergeShareSpace(reuseSpace, sets.map[x | x.copy.invertSet].toSet, variable, [one, two | one.intersect(two).toSet])
 	}
 	
 	/**
@@ -172,7 +174,7 @@ class DependenceCone {
 	 * @return 
 	 */
 	def ISLSet subtractInvalidReuse(ISLBasicSet reuseSpace, String variable) {
-		mergeShareSpace(reuseSpace, variable, [one, two | one.toSet.subtract(two.toSet)])
+		mergeShareSpace(reuseSpace, sets, variable, [one, two | one.toSet.subtract(two.toSet)])
 	}
 	
 	/**
@@ -184,7 +186,7 @@ class DependenceCone {
 	 * @param function
 	 * @return 
 	 */
-	def private ISLSet mergeShareSpace(ISLBasicSet reuseSpace, String alphaVar, (ISLBasicSet, ISLBasicSet) => ISLSet f) {
+	def private ISLSet mergeShareSpace(ISLBasicSet reuseSpace, Set<ISLBasicSet> intersectionSets, String alphaVar, (ISLBasicSet, ISLBasicSet) => ISLSet f) {
 		var variable = alphaVar
 		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
 			var vars = variable.split("_")
@@ -192,7 +194,7 @@ class DependenceCone {
 		}
 		val projection = projectionFunctions.get(variable).copy
 		val projectedSpace = reuseSpace.copy.apply(projection.copy.toBasicMap)
-		val projectedCone = projectOnto(variable)
+		val projectedCone = projectOnto(variable, intersectionSets)
 		val correctParams = projectedCone.copy.moveDims(ISLDimType.isl_dim_param, 0, ISLDimType.isl_dim_out, variables.get(variable), params.get(variable))
 		val ISLBasicSet updatedParams = correctParams.renameParams(projectedSpace.copy.paramNames)
 		val ISLBasicSet updatedNames = updatedParams.renameIndices(projectedSpace.copy.indexNames)
@@ -205,6 +207,11 @@ class DependenceCone {
 		output	
 	}
 	
+	/*
+	 * During reduction simplification a number of new variables are often introduced
+	 * This handles that introduction and replicates the dependences from which the new
+	 * variable was derived
+	 */
 	def DependenceCone addVarMapping(String variable) {
 		var lookup = variable
 		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
@@ -228,6 +235,9 @@ class DependenceCone {
 		new DependenceCone(newInd, newParams, newVars, projectionFunctions, sets, space.copy)
 	}
 
+	/*
+	 * 
+	 */
 	def DependenceCone addDependence(String variable, long[] vector) {
 		var lookup = variable
 		if(!indices.keySet.contains(variable) && variable.contains("_NR")) {
@@ -272,7 +282,7 @@ class DependenceCone {
 			newConstraint = newConstraint.copy.setCoefficient(ISLDimType.isl_dim_out, indices.get(lookup) + i, vect.get(i).intValue)
 		}
 		val finalConstraint = newConstraint.copy
-		var newSets = sets.fold(newArrayList, [acc, x | acc.add(x.copy.addConstraint(finalConstraint.copy)); acc])
+		var newSets = sets.fold(newHashSet, [acc, x | acc.add(x.copy.addConstraint(finalConstraint.copy)); acc])
 		var newDomain = ISLBasicSet.buildUniverse(space.copy)
 		newDomain = newDomain.copy.addConstraint(finalConstraint.copy)
 		newSets.add(newDomain.copy)
@@ -280,6 +290,10 @@ class DependenceCone {
 	}
 	
 	def ISLBasicSet projectOnto(String variable){
+		projectOnto(variable, sets)
+	}
+	
+	def ISLBasicSet projectOnto(String variable, Set<ISLBasicSet> origsets) {
 		var HashMap<String, Integer> newIndices = newHashMap
 		var oldIndices = indices.filter[k, v| k != variable && v != indices.get(variable)].entrySet
 		for(entry : oldIndices) {
@@ -289,7 +303,7 @@ class DependenceCone {
 		} 
 
 		val ind = newIndices
-		var newSets = sets.map[set | 
+		var newSets = origsets.map[set | 
 			ind.entrySet.sortWith(x, y | y.value - x.value)
 				.map[x | x.key].fold(set.copy, [updated, key | updated.copy.projectOut(ISLDimType.isl_dim_out, indices.get(key), variables.get(key) + params.get(key))])]
 		var out = newSets.fold(ISLSet.buildEmpty(ISLSpace.allocSetSpace(0, variables.get(variable) + params.get(variable))), [acc, set | 
