@@ -13,6 +13,10 @@ class ManualMemoryMapper implements MemoryMapper {
 	
 	Map<String, MemoryMap> maps
 	
+	new(Map<String, MemoryMap> maps) {
+		this.maps = maps
+	}
+	
 	new(Map<String, String> maps, Map<String, String> destinations) {
 		this.maps = new HashMap()
 		maps.forEach[ name, map | this.maps.put(name, new MemoryMap(destinations.get(name), toISLMap(map)))]

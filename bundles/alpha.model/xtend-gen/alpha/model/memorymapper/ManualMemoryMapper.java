@@ -11,6 +11,10 @@ import java.util.function.BiConsumer;
 public class ManualMemoryMapper implements MemoryMapper {
   private Map<String, MemoryMap> maps;
 
+  public ManualMemoryMapper(final Map<String, MemoryMap> maps) {
+    this.maps = maps;
+  }
+
   public ManualMemoryMapper(final Map<String, String> maps, final Map<String, String> destinations) {
     HashMap<String, MemoryMap> _hashMap = new HashMap<String, MemoryMap>();
     this.maps = _hashMap;
