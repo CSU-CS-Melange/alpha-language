@@ -1,5 +1,7 @@
 package alpha.model.prdg;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
@@ -75,7 +77,7 @@ public class PRDG {
     ISLUnionSet _xblockexpression = null;
     {
       if ((this.domains != null)) {
-        return this.domains;
+        return this.domains.copy();
       }
       for (final PRDGNode node : this.nodes) {
         {
@@ -91,16 +93,56 @@ public class PRDG {
       if ((this.domains == null)) {
         throw new NullPointerException();
       }
-      _xblockexpression = this.domains;
+      _xblockexpression = this.domains.copy();
     }
     return _xblockexpression;
+  }
+
+  /**
+   * Collapses all reduction nodes.
+   * Since the schedule for reduction nodes goes unused, there is no reason
+   * not to call this function at the time of writing this comment.
+   */
+  public void inlineReductions() {
+    while (IterableExtensions.<PRDGNode>exists(this.nodes, ((Function1<PRDGNode, Boolean>) (PRDGNode it) -> {
+      return Boolean.valueOf(it.isReductionNode());
+    }))) {
+      {
+        final Function1<PRDGNode, Boolean> _function = (PRDGNode it) -> {
+          return Boolean.valueOf(it.isReductionNode());
+        };
+        final PRDGNode reduction = IterableExtensions.<PRDGNode>findFirst(this.nodes, _function);
+        final Function1<PRDGEdge, Boolean> _function_1 = (PRDGEdge it) -> {
+          PRDGNode _dest = it.getDest();
+          return Boolean.valueOf(Objects.equal(_dest, reduction));
+        };
+        final PRDGEdge e1 = IterableExtensions.<PRDGEdge>findFirst(this.edges, _function_1);
+        final Function1<PRDGEdge, Boolean> _function_2 = (PRDGEdge it) -> {
+          PRDGNode _source = it.getSource();
+          return Boolean.valueOf(Objects.equal(_source, reduction));
+        };
+        final Function1<PRDGEdge, PRDGEdge> _function_3 = (PRDGEdge e2) -> {
+          PRDGNode _source = e1.getSource();
+          PRDGNode _dest = e2.getDest();
+          ISLMap _applyRange = e1.getMap().applyRange(e2.getMap());
+          return new PRDGEdge(_source, _dest, _applyRange);
+        };
+        final Iterable<PRDGEdge> newEdges = IterableExtensions.<PRDGEdge, PRDGEdge>map(IterableExtensions.<PRDGEdge>filter(this.edges, _function_2), _function_3);
+        final Function1<PRDGEdge, Boolean> _function_4 = (PRDGEdge it) -> {
+          return Boolean.valueOf((Objects.equal(it.getDest(), reduction) || Objects.equal(it.getSource(), reduction)));
+        };
+        Iterable<PRDGEdge> _reject = IterableExtensions.<PRDGEdge>reject(this.edges, _function_4);
+        this.edges = IterableExtensions.<PRDGEdge>toSet(Iterables.<PRDGEdge>concat(_reject, newEdges));
+        this.nodes.remove(reduction);
+      }
+    }
   }
 
   public ISLUnionMap generateISLPRDG() {
     ISLUnionMap _xblockexpression = null;
     {
       if ((this.islPRDG != null)) {
-        return this.islPRDG;
+        return this.islPRDG.copy();
       }
       if ((this.domains != null)) {
         this.generateDomains();
@@ -115,7 +157,7 @@ public class PRDG {
           this.islPRDG = this.islPRDG.union(map.copy().toUnionMap());
         }
       }
-      _xblockexpression = this.islPRDG;
+      _xblockexpression = this.islPRDG.copy();
     }
     return _xblockexpression;
   }

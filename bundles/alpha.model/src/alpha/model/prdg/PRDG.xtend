@@ -49,7 +49,7 @@ class PRDG {
 	
 	def ISLUnionSet generateDomains() {
 		if (this.domains !== null) {
-			return this.domains
+			return this.domains.copy
 		}
 		
 		for (PRDGNode node : this.nodes) {
@@ -64,7 +64,29 @@ class PRDG {
 		if (domains === null) {
 			throw new NullPointerException();
 		}
-		this.domains
+		this.domains.copy
+	}
+	
+	/**
+	 * Collapses all reduction nodes.
+	 * Since the schedule for reduction nodes goes unused, there is no reason
+	 * not to call this function at the time of writing this comment.
+	 */
+	def void inlineReductions() {
+		while(nodes.exists[isReductionNode]) {
+			val reduction = nodes.findFirst[isReductionNode]
+			val e1 = edges.findFirst[dest == reduction]
+			
+			val newEdges = edges.filter[source == reduction]
+				.map[e2 | new PRDGEdge(e1.source, e2.dest, e1.map.applyRange(e2.map))]
+			
+			edges = (
+				edges.reject[dest == reduction || source == reduction] +
+				newEdges
+			).toSet
+			
+			nodes.remove(reduction)
+		}
 	}
 	
 	// This function converst from our map structure to union map that
@@ -72,7 +94,7 @@ class PRDG {
 	// PRDG
 	def ISLUnionMap generateISLPRDG() {
 		if (this.islPRDG !== null) {
-			return this.islPRDG
+			return this.islPRDG.copy
 		}
 		if (this.domains !== null) {
 			this.generateDomains
@@ -88,7 +110,7 @@ class PRDG {
 			this.islPRDG = islPRDG.union(map.copy.toUnionMap)
 		}		
 		
-		this.islPRDG
+		this.islPRDG.copy
 	}
 	
 	override boolean equals(Object other) {
