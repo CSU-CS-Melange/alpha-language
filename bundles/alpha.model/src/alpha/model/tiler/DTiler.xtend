@@ -13,6 +13,7 @@ import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static extension alpha.model.util.ISLUtil.*
+import alpha.model.util.ISLUtil.Dims
 
 class DTiler implements Tiler {
 	protected ISLMap tileMap
@@ -26,29 +27,27 @@ class DTiler implements Tiler {
 	 */
 	new(List<Integer> tileSizes, ISLSpace scheduleSpace, int startDim, int endDim) {
 		this.tileSizes = tileSizes
+		this.startDim = startDim
+		this.endDim = endDim
 		val int scheduleDim = scheduleSpace.dim(ISLDimType.isl_dim_out)
 		val int bandDim = endDim - startDim + 1
 		
 		argumentCheck(tileSizes, scheduleSpace, startDim, endDim, scheduleDim, bandDim)
 	
 		val ISLSpace space = scheduleSpace.copy
+				
+		var tileAffs = (startDim..endDim).map[ i |
+			ISLAff.buildVarOnDomain(space.copy.toLocalSpace, Dims.OUT, i)
+				.scaleDown(tileSizes.get(i - startDim)).floor
+		]
 		
-		var affs = new ArrayList<ISLAff>
+		var iterAffs = (0..<scheduleDim).map[ i |
+			ISLAff.buildVarOnDomain(space.copy.toLocalSpace, Dims.OUT, i)
+		]
 		
-		for(var i = startDim; i <= endDim; i++) {
-			var aff = ISLAff.buildVarOnDomain(space.copy.toLocalSpace, ISLDimType.isl_dim_out, i)
-			aff = aff.scaleDown(tileSizes.get(i - startDim)).floor
-			affs.add(aff)
-		}
-		
-		for(var i = 0; i < scheduleDim; i++) {
-			var aff = ISLAff.buildVarOnDomain(space.copy.toLocalSpace, ISLDimType.isl_dim_out, i)
-			affs.add(aff)
-		}
-		
-		this.startDim = startDim
-		this.endDim = endDim
-		this.tileMap = affs.convertToMultiAff.toMap
+		this.tileMap = (tileAffs + iterAffs).toList
+			.convertToMultiAff
+			.toMap
 	}
 	
 	def void argumentCheck(List<Integer> tileSizes, ISLSpace scheduleSpace, int startDim, int endDim,
