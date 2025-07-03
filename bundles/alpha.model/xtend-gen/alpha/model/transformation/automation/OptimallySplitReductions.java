@@ -3,9 +3,6 @@ package alpha.model.transformation.automation;
 import alpha.model.AbstractReduceExpression;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
-import alpha.model.AlphaVisitable;
-import alpha.model.ReduceExpression;
-import alpha.model.Variable;
 import alpha.model.prdg.PRDG;
 import alpha.model.prdg.PRDGEdge;
 import alpha.model.prdg.PRDGGenerator;
@@ -13,9 +10,7 @@ import alpha.model.prdg.PRDGNode;
 import alpha.model.scheduler.FoutrierScheduler;
 import alpha.model.scheduler.Scheduler;
 import alpha.model.transformation.reduction.NormalizeReduction;
-import alpha.model.transformation.reduction.SerializeReduction;
 import alpha.model.transformation.reduction.SplitReduction;
-import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
@@ -28,9 +23,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
@@ -55,43 +48,6 @@ public class OptimallySplitReductions {
   private static class DummyNode extends PRDGNode {
     public DummyNode(final String name, final ISLSet domain) {
       super(name, domain, false);
-    }
-  }
-
-  /**
-   * A helper visitor that serializes each piece of a reduction.
-   * `expr` should have each piece of the reduction as its descendants.
-   * `reuseDepMap` maps domains to multi-reuse dependences. If the domain of
-   * a reduction is a subset of one of the keys of `reuseDepMap`, then it will
-   * be serialized according to the respective value.
-   */
-  private static class ReductionSerializer extends AbstractAlphaCompleteVisitor {
-    private Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap;
-
-    protected Set<Variable> newVariables;
-
-    public static void apply(final AlphaVisitable expr, final Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
-      final OptimallySplitReductions.ReductionSerializer serializer = new OptimallySplitReductions.ReductionSerializer(reuseDepMap);
-      expr.accept(serializer);
-    }
-
-    public ReductionSerializer(final Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
-      this.reuseDepMap = reuseDepMap;
-      HashSet<Variable> _hashSet = new HashSet<Variable>();
-      this.newVariables = _hashSet;
-    }
-
-    @Override
-    public void outReduceExpression(final ReduceExpression reduceExpression) {
-      final ISLSet domain = reduceExpression.getBody().getContextDomain();
-      final Function1<ISLSet, Boolean> _function = (ISLSet key) -> {
-        return Boolean.valueOf(domain.copy().isSubset(key.copy()));
-      };
-      final ISLSet superDomain = IterableExtensions.<ISLSet>findFirst(this.reuseDepMap.keySet(), _function);
-      final Iterable<ISLMultiAff> reuseDeps = this.reuseDepMap.get(superDomain);
-      for (final ISLMultiAff dep : reuseDeps) {
-        this.newVariables.add(SerializeReduction.applyOneShot(reduceExpression, dep));
-      }
     }
   }
 

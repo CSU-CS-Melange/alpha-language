@@ -2,9 +2,6 @@ package alpha.model.transformation.automation
 
 import alpha.model.AbstractReduceExpression
 import alpha.model.AlphaSystem
-import alpha.model.AlphaVisitable
-import alpha.model.ReduceExpression
-import alpha.model.Variable
 import alpha.model.prdg.PRDG
 import alpha.model.prdg.PRDGEdge
 import alpha.model.prdg.PRDGGenerator
@@ -12,9 +9,7 @@ import alpha.model.prdg.PRDGNode
 import alpha.model.scheduler.FoutrierScheduler
 import alpha.model.scheduler.Scheduler
 import alpha.model.transformation.reduction.NormalizeReduction
-import alpha.model.transformation.reduction.SerializeReduction
 import alpha.model.transformation.reduction.SplitReduction
-import alpha.model.util.AbstractAlphaCompleteVisitor
 import alpha.model.util.ISLUtil.Dims
 import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
@@ -22,9 +17,6 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
-import java.util.HashSet
-import java.util.Map
-import java.util.Set
 
 import static extension alpha.model.util.ISLUtil.*
 
@@ -43,38 +35,6 @@ class OptimallySplitReductions {
 	private static class DummyNode extends PRDGNode {
 		new(String name, ISLSet domain) {
 			super(name, domain, false)
-		}
-	}
-	
-	/**
-	 * A helper visitor that serializes each piece of a reduction.
-	 * `expr` should have each piece of the reduction as its descendants.
-	 * `reuseDepMap` maps domains to multi-reuse dependences. If the domain of 
-	 * a reduction is a subset of one of the keys of `reuseDepMap`, then it will
-	 * be serialized according to the respective value.
-	 */
-	private static class ReductionSerializer extends AbstractAlphaCompleteVisitor {		
-		Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap
-		protected Set<Variable> newVariables
-		
-		def static void apply(AlphaVisitable expr, Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
-			val serializer = new ReductionSerializer(reuseDepMap)
-			expr.accept(serializer)
-		}
-		
-		new(Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
-			this.reuseDepMap = reuseDepMap
-			this.newVariables = new HashSet<Variable>()
-		}
-		
-		override void outReduceExpression(ReduceExpression reduceExpression) {
-			val domain = reduceExpression.body.getContextDomain
-			val superDomain = reuseDepMap.keySet.findFirst[key | domain.copy.isSubset(key.copy)]
-			val reuseDeps = reuseDepMap.get(superDomain)
-			
-			for(ISLMultiAff dep : reuseDeps) {
-				newVariables.add(SerializeReduction.applyOneShot(reduceExpression, dep))
-			}
 		}
 	}
 	
