@@ -7,15 +7,18 @@ import alpha.model.VariableExpression;
 import alpha.model.exception.CausalityViolationException;
 import alpha.model.util.AbstractAlphaCompleteVisitor;
 import alpha.model.util.ISLUtil;
+import com.google.common.base.Objects;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.Stack;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
 public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
-  private Scheduler scheduler;
+  private Iterable<ISLMap> maps;
 
   private Stack<ISLMultiAff> dependenceMaffs;
 
@@ -24,7 +27,17 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
   private Stack<ISLSet> domains;
 
   public ScheduleVerifier(final Scheduler scheduler) {
-    this.scheduler = scheduler;
+    this.maps = scheduler.getMaps().getMaps();
+    Stack<ISLMultiAff> _stack = new Stack<ISLMultiAff>();
+    this.dependenceMaffs = _stack;
+    Stack<String> _stack_1 = new Stack<String>();
+    this.sourceNames = _stack_1;
+    Stack<ISLSet> _stack_2 = new Stack<ISLSet>();
+    this.domains = _stack_2;
+  }
+
+  public ScheduleVerifier(final Iterable<ISLMap> maps) {
+    this.maps = maps;
     Stack<ISLMultiAff> _stack = new Stack<ISLMultiAff>();
     this.dependenceMaffs = _stack;
     Stack<String> _stack_1 = new Stack<String>();
@@ -64,9 +77,9 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
     if ((_isInput).booleanValue()) {
       return;
     }
-    final ISLMultiAff dependenceTS = ISLUtil.toMultiAff(this.scheduler.getAnonymousMap(ve.getVariable().getName()));
+    final ISLMultiAff dependenceTS = this.getMaff(ve.getVariable().getName());
     final ISLMultiAff readTS = dependenceTS.pullback(this.dependenceMaffs.peek().copy());
-    ISLMultiAff writeTS = ISLUtil.toMultiAff(this.scheduler.getAnonymousMap(this.sourceNames.peek()));
+    ISLMultiAff writeTS = this.getMaff(this.sourceNames.peek());
     int _dim = writeTS.dim(ISLUtil.Dims.IN);
     int _dim_1 = readTS.dim(ISLDimType.isl_dim_in);
     boolean _notEquals = (_dim != _dim_1);
@@ -110,5 +123,13 @@ public class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
   public static void verify(final AlphaSystem sys, final Scheduler scheduler) {
     ScheduleVerifier verifier = new ScheduleVerifier(scheduler);
     verifier.accept(sys);
+  }
+
+  protected ISLMultiAff getMaff(final String name) {
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      String _inputTupleName = it.getInputTupleName();
+      return Boolean.valueOf(Objects.equal(_inputTupleName, name));
+    };
+    return ISLUtil.toMultiAff(IterableExtensions.<ISLMap>findFirst(this.maps, _function).copy().clearInputTupleName());
   }
 }

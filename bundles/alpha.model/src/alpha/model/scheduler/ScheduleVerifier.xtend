@@ -12,15 +12,23 @@ import static extension alpha.model.util.ISLUtil.*
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import alpha.model.exception.CausalityViolationException
 import alpha.model.util.ISLUtil.Dims
+import fr.irisa.cairn.jnimap.isl.ISLMap
 
 class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
-	var Scheduler scheduler
+	var Iterable<ISLMap> maps
 	var Stack<ISLMultiAff> dependenceMaffs
 	var Stack<String> sourceNames
 	var Stack<ISLSet> domains
 	
 	new(Scheduler scheduler) {
-		this.scheduler = scheduler
+		maps = scheduler.getMaps.maps
+		dependenceMaffs = new Stack()
+		sourceNames = new Stack()
+		domains = new Stack()
+	}
+	
+	new(Iterable<ISLMap> maps) {
+		this.maps = maps
 		dependenceMaffs = new Stack()
 		sourceNames = new Stack()
 		domains = new Stack()
@@ -50,9 +58,9 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 	override void visitVariableExpression(VariableExpression ve) {
 		if(ve.variable.isInput) return;
 		
-		val ISLMultiAff dependenceTS = scheduler.getAnonymousMap(ve.variable.name).toMultiAff
+		val ISLMultiAff dependenceTS = getMaff(ve.variable.name)
 		val ISLMultiAff readTS = dependenceTS.pullback(dependenceMaffs.peek.copy)
-		var ISLMultiAff writeTS = scheduler.getAnonymousMap(sourceNames.peek).toMultiAff
+		var ISLMultiAff writeTS = getMaff(sourceNames.peek)
 		
 		// Need to add a dimension to the write timestamp if in a reduction body
 		if(writeTS.dim(Dims.IN) != readTS.dim(ISLDimType.isl_dim_in)) {
@@ -95,5 +103,11 @@ class ScheduleVerifier extends AbstractAlphaCompleteVisitor {
 	def static void verify(AlphaSystem sys, Scheduler scheduler) {
 		var verifier = new ScheduleVerifier(scheduler)
 		verifier.accept(sys)
+	}
+	
+	def protected ISLMultiAff getMaff(String name) {
+		return maps.findFirst[inputTupleName == name]
+			.copy.clearInputTupleName.toMultiAff
+		
 	}
 }
