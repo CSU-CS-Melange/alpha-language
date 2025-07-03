@@ -3,19 +3,24 @@ package alpha.codegen.scheduledC;
 import alpha.codegen.ArrayAccessExpr;
 import alpha.codegen.AssignmentStmt;
 import alpha.codegen.BaseDataType;
+import alpha.codegen.BinaryExpr;
+import alpha.codegen.BinaryOperator;
 import alpha.codegen.CallExpr;
 import alpha.codegen.CastExpr;
+import alpha.codegen.CodegenOptions;
 import alpha.codegen.CustomExpr;
 import alpha.codegen.DataType;
 import alpha.codegen.Expression;
 import alpha.codegen.ExpressionStmt;
 import alpha.codegen.Factory;
 import alpha.codegen.FunctionBuilder;
+import alpha.codegen.LoopStmt;
 import alpha.codegen.MacroStmt;
 import alpha.codegen.ParenthesizedExpr;
 import alpha.codegen.Program;
 import alpha.codegen.Statement;
 import alpha.codegen.VariableDecl;
+import alpha.codegen.alphaBase.AlphaBaseHelpers;
 import alpha.codegen.alphaBase.AlphaNameChecker;
 import alpha.codegen.alphaBase.CodeGeneratorBase;
 import alpha.codegen.isl.ASTConversionResult;
@@ -24,7 +29,10 @@ import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
+import alpha.codegen.postprocessing.OmpPragmaInserter;
 import alpha.model.AlphaSystem;
+import alpha.model.Equation;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
@@ -39,7 +47,7 @@ import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
 import com.google.common.base.Objects;
-import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings;
+import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.IISLSingleSpaceMapMethods;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
 import fr.irisa.cairn.jnimap.isl.ISLConstraint;
@@ -59,7 +67,9 @@ import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.IteratorExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
@@ -79,33 +89,21 @@ public class ScheduledC extends CodeGeneratorBase {
    */
   protected final Scheduler scheduler;
 
-  protected final Tiler tiler;
-
   protected final MemoryMapper mapper;
 
-  /**
-   * Tells the code generator to add the inline keyword to the evaluate function
-   */
-  protected final boolean inlineFunction;
-
-  /**
-   * Tells the code generator to manually inline the function (replace the function call with the actual function body
-   */
-  protected final boolean inlineCode;
+  protected final Tiler tiler;
 
   protected Map<String, AssignmentStmt> variableStatements;
 
-  public ScheduledC(final SystemBody systemBody, final AlphaNameChecker nameChecker, final ScheduledTypeGenerator typeGenerator, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper, final boolean cycleDetection, final boolean inlineFunction, final boolean inlineCode) {
-    super(systemBody, nameChecker, typeGenerator, cycleDetection);
-    ScheduledExprConverter _scheduledExprConverter = new ScheduledExprConverter(typeGenerator, nameChecker, this.program, scheduler, tiler, mapper);
-    this.exprConverter = _scheduledExprConverter;
+  public ScheduledC(final SystemBody systemBody, final ScheduledTypeGenerator typeGen, final AlphaNameChecker nameChecker, final Scheduler scheduler, final CodegenOptions options) {
+    super(systemBody, nameChecker, typeGen, options);
+    this.tiler = options.getTiler();
+    this.mapper = options.getMapper();
     this.scheduler = scheduler;
-    this.tiler = tiler;
-    this.inlineFunction = inlineFunction;
-    this.inlineCode = inlineCode;
+    ScheduledExprConverter _scheduledExprConverter = new ScheduledExprConverter(typeGen, nameChecker, this.program, scheduler, options);
+    this.exprConverter = _scheduledExprConverter;
     HashMap<String, AssignmentStmt> _hashMap = new HashMap<String, AssignmentStmt>();
     this.variableStatements = _hashMap;
-    this.mapper = mapper;
   }
 
   /**
@@ -140,10 +138,6 @@ public class ScheduledC extends CodeGeneratorBase {
     return ScheduledC.addTotalOrderInequality(IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, index, true), domain.copy(), _function), originalParamCount, index);
   }
 
-  public static ISLPWQPolynomial card(final ISLSet domain) {
-    return BarvinokBindings.card(domain.copy());
-  }
-
   @Override
   public void declareMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
@@ -160,11 +154,47 @@ public class ScheduledC extends CodeGeneratorBase {
     String storageName = _elvis;
     ISLSet domain = variable.getDomain().copy();
     final List<String> names = domain.getIndexNames();
+    int _dim = memoryMap.dim(ISLDimType.isl_dim_out);
+    int _minus = (_dim - 1);
+    final Function2<ISLMap, Integer, ISLMap> _function = (ISLMap map, Integer i) -> {
+      return map.setDimName(ISLDimType.isl_dim_out, (i).intValue(), ("i" + i));
+    };
+    memoryMap = IterableExtensions.<Integer, ISLMap>fold(new IntegerRange(0, _minus), memoryMap, _function);
     final ISLMap mappedDomain = memoryMap.copy().intersectDomain(domain.copy()).<IISLSingleSpaceMapMethods>renameInputs(names).<ISLMap>setTupleName(ISLDimType.isl_dim_in, memoryName);
-    final ISLPWQPolynomial rank = MemoryUtils.rank(domain);
+    final ISLSet memoryDomain = domain.copy().apply(memoryMap.copy());
+    final ISLPWQPolynomial rank = MemoryUtils.boxRank(memoryDomain);
     final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
     final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression);
-    final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), macroReplacement);
+    final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(memoryDomain.getIndexNames(), String.class)), macroReplacement);
+    final ArrayList<CustomExpr> indexExprs = AffineConverter.convertMultiAff(ISLUtil.toMultiAff(mappedDomain));
+    final CallExpr statement = Factory.callExpr(memoryName, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
+    final MacroStmt mappedMacroStatement = Factory.macroStmt(name, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), statement);
+    this.program.addMemoryMacro(macroStmt);
+    this.program.addMemoryMacro(mappedMacroStatement);
+  }
+
+  @Override
+  public void declareReductionMemoryMacro(final ReduceExpression re) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(re);
+    final Variable variable = ((StandardEquation) _containerEquation).getVariable();
+    final String name = AlphaUtil.getReductionName(re);
+    final String memoryName = ("mem_" + name);
+    ISLMap memoryMap = re.getProjectionExpr().getISLMultiAff().toMap().applyRange(this.mapper.getMemoryMap(variable));
+    String storageName = name;
+    ISLSet domain = re.getBody().getContextDomain().copy();
+    final List<String> names = re.getBody().getContextDomain().getIndexNames();
+    int _dim = memoryMap.dim(ISLDimType.isl_dim_out);
+    int _minus = (_dim - 1);
+    final Function2<ISLMap, Integer, ISLMap> _function = (ISLMap map, Integer i) -> {
+      return map.setDimName(ISLDimType.isl_dim_out, (i).intValue(), ("i" + i));
+    };
+    memoryMap = IterableExtensions.<Integer, ISLMap>fold(new IntegerRange(0, _minus), memoryMap, _function);
+    final ISLMap mappedDomain = memoryMap.copy().intersectDomain(domain.copy()).<IISLSingleSpaceMapMethods>renameInputs(names).<ISLMap>setTupleName(ISLDimType.isl_dim_in, memoryName);
+    final ISLSet memoryDomain = domain.copy().apply(memoryMap.copy());
+    final ISLPWQPolynomial rank = MemoryUtils.boxRank(memoryDomain);
+    final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
+    final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression);
+    final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(memoryDomain.getIndexNames(), String.class)), macroReplacement);
     final ArrayList<CustomExpr> indexExprs = AffineConverter.convertMultiAff(ISLUtil.toMultiAff(mappedDomain));
     final CallExpr statement = Factory.callExpr(memoryName, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
     final MacroStmt mappedMacroStatement = Factory.macroStmt(name, ((String[])Conversions.unwrapArray(domain.getIndexNames(), String.class)), statement);
@@ -181,7 +211,7 @@ public class ScheduledC extends CodeGeneratorBase {
   public void declareEvaluation(final StandardEquation equation) {
     final DataType returnType = Factory.dataType(BaseDataType.VOID);
     final String evalName = this.nameChecker.getVariableReadName(equation.getVariable());
-    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.inlineFunction, returnType, ("eval_" + evalName));
+    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.options.getInlineFunction(), returnType, ("eval_" + evalName));
     final List<String> indexNames = equation.getExpr().getContextDomain().getIndexNames();
     final Consumer<String> _function = (String it) -> {
       evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
@@ -192,10 +222,38 @@ public class ScheduledC extends CodeGeneratorBase {
     final AssignmentStmt computeAndStore = Factory.assignmentStmt(this.identityAccess(equation, false), computeValue);
     this.exprConverter.setTarget("");
     evalBuilder.addStatement(computeAndStore);
-    if ((!this.inlineCode)) {
+    boolean _inlineCode = this.options.getInlineCode();
+    boolean _not = (!_inlineCode);
+    if (_not) {
       this.program.addFunction(evalBuilder.getInstance());
     } else {
       this.variableStatements.put(equation.getName(), computeAndStore);
+    }
+  }
+
+  @Override
+  public void declareReductionEvaluation(final ReduceExpression re) {
+    final DataType returnType = Factory.dataType(BaseDataType.VOID);
+    final String evalName = AlphaUtil.getReductionName(re);
+    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.options.getInlineFunction(), returnType, ("eval_" + evalName));
+    final List<String> indexNames = re.getBody().getContextDomain().getIndexNames();
+    final Consumer<String> _function = (String it) -> {
+      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
+    };
+    indexNames.forEach(_function);
+    this.exprConverter.setTarget(evalName);
+    final CallExpr memValue = Factory.callExpr(evalName, ((String[])Conversions.unwrapArray(indexNames, String.class)));
+    final BinaryOperator op = AlphaBaseHelpers.getOperator(re.getOperator());
+    final BinaryExpr computeValue = Factory.binaryExpr(op, memValue, this.exprConverter.convertExpr(re.getBody()));
+    final AssignmentStmt computeAndStore = Factory.assignmentStmt(Factory.callExpr(evalName, ((String[])Conversions.unwrapArray(indexNames, String.class))), computeValue);
+    this.exprConverter.setTarget("");
+    evalBuilder.addStatement(computeAndStore);
+    boolean _inlineCode = this.options.getInlineCode();
+    boolean _not = (!_inlineCode);
+    if (_not) {
+      this.program.addFunction(evalBuilder.getInstance());
+    } else {
+      this.variableStatements.put(evalName, computeAndStore);
     }
   }
 
@@ -237,8 +295,45 @@ public class ScheduledC extends CodeGeneratorBase {
     this.entryPoint.addStatement(mallocCheckCall);
   }
 
+  @Override
+  public void allocateReduction(final ReduceExpression re) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(re);
+    final Variable variable = ((StandardEquation) _containerEquation).getVariable();
+    final ISLSet domain = re.getBody().getContextDomain().copy();
+    final String name = AlphaUtil.getReductionName(re);
+    final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
+    this.allocatedVariables.add(name);
+    final ISLMap memoryMap = re.getProjectionExpr().getISLMultiAff().toMap().applyRange(this.mapper.getMemoryMap(variable));
+    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(domain.apply(memoryMap));
+    final CastExpr mallocCall = Factory.mallocCall(dataType, cardinalityExpr);
+    final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
+    this.entryPoint.addStatement(mallocAssignment);
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("\"");
+    _builder.append(name);
+    _builder.append("\"");
+    final CustomExpr nameStringExpr = Factory.customExpr(_builder.toString());
+    final ExpressionStmt mallocCheckCall = Factory.callStmt("mallocCheck", Factory.customExpr(name), nameStringExpr);
+    this.entryPoint.addStatement(mallocCheckCall);
+  }
+
+  @Override
+  public void initializeReduction(final ReduceExpression re) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(re);
+    final Variable variable = ((StandardEquation) _containerEquation).getVariable();
+    final ISLSet domain = re.getBody().getContextDomain().copy();
+    final ISLMap memoryMap = re.getProjectionExpr().getISLMultiAff().toMap().applyRange(this.mapper.getMemoryMap(variable));
+    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(domain.apply(memoryMap));
+    final BinaryExpr conditional = Factory.binaryExpr(BinaryOperator.LT, Factory.customExpr("i"), cardinalityExpr);
+    final ArrayAccessExpr memExpr = Factory.arrayAccessExpr(AlphaUtil.getReductionName(re), "i");
+    final AssignmentStmt initializeStmt = Factory.assignmentStmt(memExpr, AlphaBaseHelpers.getReductionInitialValue(this.options.getValueType(), re.getOperator()));
+    final LoopStmt loop = Factory.loopStmt("i", Factory.customExpr("0"), conditional, Factory.customExpr("1"), initializeStmt);
+    this.entryPoint.addVariable(Factory.variableDecl(this.typeGenerator.getIndexType(), "i"));
+    this.entryPoint.addStatement(loop);
+  }
+
   protected ParenthesizedExpr getCardinalityExpr(final ISLSet domain) {
-    final ISLPWQPolynomial cardinalityPolynomial = BarvinokBindings.card(domain);
+    final ISLPWQPolynomial cardinalityPolynomial = MemoryUtils.boxCard(domain);
     return PolynomialConverter.convert(cardinalityPolynomial);
   }
 
@@ -262,72 +357,96 @@ public class ScheduledC extends CodeGeneratorBase {
   protected FunctionBuilder evaluateAllPoints(final List<Variable> variables) {
     FunctionBuilder _xblockexpression = null;
     {
-      ISLUnionMap scheduleMaps = null;
-      List<ISLMap> _maps = this.scheduler.getMaps().getMaps();
-      for (final ISLMap map : _maps) {
-        for (final Variable variable : variables) {
-          {
-            String name = map.copy().getInputTupleName();
-            String _name = variable.getName();
-            boolean _equals = Objects.equal(name, _name);
-            if (_equals) {
-              if ((scheduleMaps == null)) {
-                scheduleMaps = map.copy().toUnionMap();
-              } else {
-                scheduleMaps = scheduleMaps.copy().addMap(map.copy());
-              }
-            }
-          }
-        }
+      final Function1<Variable, String> _function = (Variable it) -> {
+        return it.getName();
+      };
+      Iterable<String> scheduledVars = ListExtensions.<Variable, String>map(variables, _function);
+      boolean _scheduledReductions = this.options.getScheduledReductions();
+      if (_scheduledReductions) {
+        final Function1<ReduceExpression, String> _function_1 = (ReduceExpression it) -> {
+          return AlphaUtil.getReductionName(it);
+        };
+        List<String> _list = IteratorExtensions.<String>toList(IteratorExtensions.<ReduceExpression, String>map(AlphaUtil.getContainedReductions(this.systemBody), _function_1));
+        Iterable<String> _plus = Iterables.<String>concat(scheduledVars, _list);
+        scheduledVars = _plus;
+      }
+      final Function1<String, ISLMap> _function_2 = (String it) -> {
+        return this.scheduler.getScheduleMap(it);
+      };
+      ISLUnionMap scheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<String, ISLMap>map(scheduledVars, _function_2)));
+      if ((this.tiler != null)) {
+        scheduleMaps = scheduleMaps.applyRange(this.tiler.getTileMap().toUnionMap());
       }
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
       ISLUnionMap namedScheduleMaps = null;
-      List<ISLMap> _maps_1 = scheduleMaps.getMaps();
-      for (final ISLMap map_1 : _maps_1) {
-        {
-          final String name = map_1.copy().getInputTupleName();
-          ISLMap newMap = map_1.copy();
-          if ((this.tiler != null)) {
-            newMap = newMap.applyRange(this.tiler.getTileMap());
-          }
-          if (this.inlineCode) {
-            String macroName = null;
-            do {
-              {
-                macroName = ("S" + Integer.valueOf(this.nextStatementId));
-                int _nextStatementId = this.nextStatementId;
-                this.nextStatementId = (_nextStatementId + 1);
-              }
-            } while(this.nameChecker.isGlobalOrKeyword(macroName));
-            final Function1<Variable, Boolean> _function = (Variable x) -> {
-              String _name = x.getName();
-              return Boolean.valueOf(Objects.equal(_name, name));
-            };
-            final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function));
-            final MacroStmt macro = Factory.macroStmt(macroName, ((String[])Conversions.unwrapArray(variable_1.getDomain().getIndexNames(), String.class)), this.variableStatements.get(name));
-            this.entryPoint.addStatement(macro);
-            newMap = newMap.<ISLMap>setInputTupleName(macroName);
-          } else {
-            newMap = newMap.<ISLMap>setInputTupleName(("eval_" + name));
-          }
-          if ((namedScheduleMaps == null)) {
-            namedScheduleMaps = newMap.copy().toUnionMap();
-          } else {
-            namedScheduleMaps = namedScheduleMaps.addMap(newMap);
-          }
-        }
+      boolean _inlineCode = this.options.getInlineCode();
+      if (_inlineCode) {
+        final List<ISLMap> maps = scheduleMaps.getMaps();
+        final Function1<ISLMap, Boolean> _function_3 = (ISLMap it) -> {
+          final Function1<Variable, Boolean> _function_4 = (Variable v) -> {
+            String _name = v.getName();
+            String _inputTupleName = it.getInputTupleName();
+            return Boolean.valueOf(Objects.equal(_name, _inputTupleName));
+          };
+          return Boolean.valueOf(IterableExtensions.<Variable>exists(variables, _function_4));
+        };
+        final Function1<ISLMap, MacroStmt> _function_4 = (ISLMap it) -> {
+          String _inputTupleName = it.getInputTupleName();
+          String _plus_1 = ("eval_" + _inputTupleName);
+          final Function1<Variable, Boolean> _function_5 = (Variable v) -> {
+            String _name = v.getName();
+            String _inputTupleName_1 = it.getInputTupleName();
+            return Boolean.valueOf(Objects.equal(_name, _inputTupleName_1));
+          };
+          return Factory.macroStmt(_plus_1, ((String[])Conversions.unwrapArray(IterableExtensions.<Variable>findFirst(variables, _function_5).getDomain().getIndexNames(), String.class)), this.variableStatements.get(it.getInputTupleName()));
+        };
+        Iterable<MacroStmt> _map = IterableExtensions.<ISLMap, MacroStmt>map(IterableExtensions.<ISLMap>filter(maps, _function_3), _function_4);
+        final Function1<ISLMap, Boolean> _function_5 = (ISLMap it) -> {
+          final Function1<Variable, Boolean> _function_6 = (Variable v) -> {
+            String _name = v.getName();
+            String _inputTupleName = it.getInputTupleName();
+            return Boolean.valueOf(Objects.equal(_name, _inputTupleName));
+          };
+          return Boolean.valueOf(IterableExtensions.<Variable>exists(variables, _function_6));
+        };
+        final Function1<ISLMap, MacroStmt> _function_6 = (ISLMap it) -> {
+          String _inputTupleName = it.getInputTupleName();
+          String _plus_1 = ("eval_" + _inputTupleName);
+          return Factory.macroStmt(_plus_1, ((String[])Conversions.unwrapArray(AlphaUtil.getReductionByName(this.systemBody, it.getInputTupleName()).getBody().getContextDomain().getIndexNames(), String.class)), this.variableStatements.get(it.getInputTupleName()));
+        };
+        Iterable<MacroStmt> _map_1 = IterableExtensions.<ISLMap, MacroStmt>map(IterableExtensions.<ISLMap>reject(maps, _function_5), _function_6);
+        Iterable<MacroStmt> macros = Iterables.<MacroStmt>concat(_map, _map_1);
+        final Consumer<MacroStmt> _function_7 = (MacroStmt it) -> {
+          this.entryPoint.addStatement(it);
+        };
+        macros.forEach(_function_7);
       }
+      final Function1<ISLMap, ISLMap> _function_8 = (ISLMap it) -> {
+        return it.simplify();
+      };
+      final Function1<ISLMap, ISLMap> _function_9 = (ISLMap it) -> {
+        String _inputTupleName = it.getInputTupleName();
+        String _plus_1 = ("eval_" + _inputTupleName);
+        return it.<ISLMap>setInputTupleName(_plus_1);
+      };
+      namedScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(scheduleMaps.getMaps(), _function_8), _function_9)));
       final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
-      final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function = (String it) -> {
+      ASTConversionResult loopResult = ASTConverter.convert(islAST);
+      boolean _ompPragmas = this.options.getOmpPragmas();
+      if (_ompPragmas) {
+        final int timeDims = ISLUtil.countTimeDimensions(AlphaUtil.getContainerSystem(this.systemBody), this.scheduler.getMaps());
+        OmpPragmaInserter.apply(loopResult, timeDims);
+      }
+      final Function1<String, VariableDecl> _function_10 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_10));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;
   }
 
+  @Deprecated
   public static Program convert(final AlphaSystem system, final BaseDataType valueType, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper, final boolean normalize, final boolean inlineFunction, final boolean inlineCode) {
     int _length = ((Object[])Conversions.unwrapArray(system.getSystemBodies(), Object.class)).length;
     boolean _notEquals = (_length != 1);
@@ -361,8 +480,48 @@ public class ScheduledC extends CodeGeneratorBase {
       }
     }
     SystemBody _get = alteredSystem.getSystemBodies().get(0);
-    AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
     ScheduledTypeGenerator _scheduledTypeGenerator = new ScheduledTypeGenerator(valueType, false);
-    return new ScheduledC(_get, _alphaNameChecker, _scheduledTypeGenerator, scheduler, tiler, mapper, false, inlineFunction, inlineCode).convertSystemBody();
+    AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
+    CodegenOptions _codegenOptions = new CodegenOptions(valueType);
+    return new ScheduledC(_get, _scheduledTypeGenerator, _alphaNameChecker, scheduler, _codegenOptions).convertSystemBody();
+  }
+
+  public static Program convert(final AlphaSystem system, final Scheduler scheduler, final CodegenOptions options) {
+    int _length = ((Object[])Conversions.unwrapArray(system.getSystemBodies(), Object.class)).length;
+    boolean _notEquals = (_length != 1);
+    if (_notEquals) {
+      throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.");
+    }
+    AlphaSystem alteredSystem = AlphaUtil.<AlphaSystem>copyAE(system);
+    Normalize.apply(alteredSystem);
+    EList<Variable> _locals = alteredSystem.getLocals();
+    for (final Variable local : _locals) {
+      List<ISLMap> _maps = scheduler.getMaps().getMaps();
+      for (final ISLMap map : _maps) {
+        String _tupleName = map.getTupleName(ISLDimType.isl_dim_out);
+        String _name = local.getName();
+        boolean _equals = Objects.equal(_tupleName, _name);
+        if (_equals) {
+          ChangeOfBasis.apply(alteredSystem, local, ISLUtil.toMultiAff(map));
+        }
+      }
+    }
+    EList<Variable> _inputs = alteredSystem.getInputs();
+    for (final Variable input : _inputs) {
+      List<ISLMap> _maps_1 = scheduler.getMaps().getMaps();
+      for (final ISLMap map_1 : _maps_1) {
+        String _tupleName_1 = map_1.getTupleName(ISLDimType.isl_dim_in);
+        String _name_1 = input.getName();
+        boolean _equals_1 = Objects.equal(_tupleName_1, _name_1);
+        if (_equals_1) {
+          ChangeOfBasis.apply(alteredSystem, input, ISLUtil.toMultiAff(map_1));
+        }
+      }
+    }
+    SystemBody _get = alteredSystem.getSystemBodies().get(0);
+    BaseDataType _valueType = options.getValueType();
+    ScheduledTypeGenerator _scheduledTypeGenerator = new ScheduledTypeGenerator(_valueType, false);
+    AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
+    return new ScheduledC(_get, _scheduledTypeGenerator, _alphaNameChecker, scheduler, options).convertSystemBody();
   }
 }

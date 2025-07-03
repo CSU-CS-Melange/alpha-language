@@ -2,6 +2,7 @@ package alpha.codegen.alphaBase;
 
 import alpha.codegen.AssignmentStmt;
 import alpha.codegen.BaseDataType;
+import alpha.codegen.CodegenOptions;
 import alpha.codegen.DataType;
 import alpha.codegen.Expression;
 import alpha.codegen.ExpressionStmt;
@@ -17,10 +18,13 @@ import alpha.codegen.Statement;
 import alpha.codegen.UnaryOperator;
 import alpha.codegen.isl.ConditionalConverter;
 import alpha.model.AlphaSystem;
+import alpha.model.Equation;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
 import alpha.model.Variable;
+import alpha.model.util.AlphaUtil;
 import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +34,9 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.IteratorExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
+import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 
 @SuppressWarnings("all")
 public abstract class CodeGeneratorBase {
@@ -50,9 +56,9 @@ public abstract class CodeGeneratorBase {
   protected final TypeGeneratorBase typeGenerator;
 
   /**
-   * If true, the flags variables used for cycle detection will be generated. Otherwise, the won't be.
+   * An object to store all the codegen options
    */
-  protected final boolean cycleDetection;
+  protected final CodegenOptions options;
 
   /**
    * The builder for the program representing this system body.
@@ -79,11 +85,11 @@ public abstract class CodeGeneratorBase {
    * @throws IllegalArgumentException If the link from the system body to the parent Alpha system is null. This can happen
    *         if the "alpha.model.util.AlphaUtil.copyAE" function was used to copy only the system body, and not the entire system.
    */
-  public CodeGeneratorBase(final SystemBody systemBody, final AlphaNameChecker nameChecker, final TypeGeneratorBase typeGenerator, final boolean cycleDetection) {
+  public CodeGeneratorBase(final SystemBody systemBody, final AlphaNameChecker nameChecker, final TypeGeneratorBase typeGenerator, final CodegenOptions options) {
     this.systemBody = systemBody;
     this.nameChecker = nameChecker;
     this.typeGenerator = typeGenerator;
-    this.cycleDetection = cycleDetection;
+    this.options = options;
     this.program = ProgramBuilder.start(nameChecker);
     this.entryPoint = this.program.startFunction(BaseDataType.VOID, systemBody.getSystem().getName());
     this.allocatedVariables = CollectionLiterals.<String>newArrayList();
@@ -115,32 +121,51 @@ public abstract class CodeGeneratorBase {
       this.declareMemoryMacro(it);
     };
     system.getVariables().forEach(_function_2);
-    if (this.cycleDetection) {
-      final Consumer<Variable> _function_3 = (Variable it) -> {
-        this.declareFlagVariable(it);
+    boolean _scheduledReductions = this.options.getScheduledReductions();
+    if (_scheduledReductions) {
+      final Procedure1<ReduceExpression> _function_3 = (ReduceExpression it) -> {
+        this.declareReductionGlobalVariable(it);
       };
-      system.getOutputs().forEach(_function_3);
-      final Consumer<Variable> _function_4 = (Variable it) -> {
-        this.declareFlagMemoryMacro(it);
+      IteratorExtensions.<ReduceExpression>forEach(AlphaUtil.getContainedReductions(system), _function_3);
+      final Procedure1<ReduceExpression> _function_4 = (ReduceExpression it) -> {
+        this.declareReductionMemoryMacro(it);
       };
-      system.getOutputs().forEach(_function_4);
+      IteratorExtensions.<ReduceExpression>forEach(AlphaUtil.getContainedReductions(system), _function_4);
+    }
+    boolean _cycleDetection = this.options.getCycleDetection();
+    if (_cycleDetection) {
       final Consumer<Variable> _function_5 = (Variable it) -> {
         this.declareFlagVariable(it);
       };
-      system.getLocals().forEach(_function_5);
+      system.getOutputs().forEach(_function_5);
       final Consumer<Variable> _function_6 = (Variable it) -> {
         this.declareFlagMemoryMacro(it);
       };
-      system.getLocals().forEach(_function_6);
+      system.getOutputs().forEach(_function_6);
+      final Consumer<Variable> _function_7 = (Variable it) -> {
+        this.declareFlagVariable(it);
+      };
+      system.getLocals().forEach(_function_7);
+      final Consumer<Variable> _function_8 = (Variable it) -> {
+        this.declareFlagMemoryMacro(it);
+      };
+      system.getLocals().forEach(_function_8);
     }
-    final Consumer<StandardEquation> _function_7 = (StandardEquation it) -> {
+    final Consumer<StandardEquation> _function_9 = (StandardEquation it) -> {
       this.declareEvaluation(it);
     };
-    this.systemBody.getStandardEquations().forEach(_function_7);
-    final Consumer<UseEquation> _function_8 = (UseEquation it) -> {
+    this.systemBody.getStandardEquations().forEach(_function_9);
+    final Consumer<UseEquation> _function_10 = (UseEquation it) -> {
       this.declareEvaluation(it);
     };
-    this.systemBody.getUseEquations().forEach(_function_8);
+    this.systemBody.getUseEquations().forEach(_function_10);
+    boolean _scheduledReductions_1 = this.options.getScheduledReductions();
+    if (_scheduledReductions_1) {
+      final Procedure1<ReduceExpression> _function_11 = (ReduceExpression it) -> {
+        this.declareReductionEvaluation(it);
+      };
+      IteratorExtensions.<ReduceExpression>forEach(AlphaUtil.getContainedReductions(system), _function_11);
+    }
     this.addEntryPoint();
     return this.program.getInstance();
   }
@@ -183,17 +208,34 @@ public abstract class CodeGeneratorBase {
       this.allocateVariable(it);
     };
     system.getLocals().forEach(_function_6);
+    boolean _scheduledReductions = this.options.getScheduledReductions();
+    if (_scheduledReductions) {
+      final Procedure1<ReduceExpression> _function_7 = (ReduceExpression it) -> {
+        this.allocateReduction(it);
+      };
+      IteratorExtensions.<ReduceExpression>forEach(AlphaUtil.getContainedReductions(system), _function_7);
+    }
+    this.entryPoint.addEmptyLine();
+    this.entryPoint.addComment("Initialize reduction variables.");
+    boolean _scheduledReductions_1 = this.options.getScheduledReductions();
+    if (_scheduledReductions_1) {
+      final Procedure1<ReduceExpression> _function_8 = (ReduceExpression it) -> {
+        this.initializeReduction(it);
+      };
+      IteratorExtensions.<ReduceExpression>forEach(AlphaUtil.getContainedReductions(system), _function_8);
+    }
     this.entryPoint.addEmptyLine();
     this.entryPoint.addComment("Allocate and initialize flag variables.");
-    if (this.cycleDetection) {
-      final Consumer<Variable> _function_7 = (Variable it) -> {
+    boolean _cycleDetection = this.options.getCycleDetection();
+    if (_cycleDetection) {
+      final Consumer<Variable> _function_9 = (Variable it) -> {
         this.allocateFlagsVariable(it);
       };
-      system.getOutputs().forEach(_function_7);
-      final Consumer<Variable> _function_8 = (Variable it) -> {
+      system.getOutputs().forEach(_function_9);
+      final Consumer<Variable> _function_10 = (Variable it) -> {
         this.allocateFlagsVariable(it);
       };
-      system.getLocals().forEach(_function_8);
+      system.getLocals().forEach(_function_10);
     }
     this.entryPoint.addEmptyLine();
     this.performEvaluations();
@@ -256,13 +298,29 @@ public abstract class CodeGeneratorBase {
   }
 
   /**
+   * Declares a global variable for the given Alpha reduction.
+   */
+  public void declareReductionGlobalVariable(final ReduceExpression re) {
+    Equation _containerEquation = AlphaUtil.getContainerEquation(re);
+    final Variable variable = ((StandardEquation) _containerEquation).getVariable();
+    final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
+    final String name = AlphaUtil.getReductionName(re);
+    this.program.addGlobalVariable(true, dataType, name);
+  }
+
+  /**
    * Declares a memory macro for the given Alpha variable.
    */
   public abstract void declareMemoryMacro(final Variable variable);
 
   /**
+   * Declares a memory macro for the given Alpha reudction.
+   */
+  public abstract void declareReductionMemoryMacro(final ReduceExpression re);
+
+  /**
    * Declares a global variable for the "flags" variable
-   * associated with the given Alpha variable.
+   * associated with the given Alpha variable.variable
    */
   public void declareFlagVariable(final Variable variable) {
     final DataType dataType = this.typeGenerator.getFlagVariableType(variable);
@@ -285,6 +343,11 @@ public abstract class CodeGeneratorBase {
    * Declares whatever is needed (macro, function, etc.) for evaluating the given equation.
    */
   public abstract void declareEvaluation(final UseEquation equation);
+
+  /**
+   * Declares whatever is needed (macro, function, etc.) for evaluating the given reduction.
+   */
+  public abstract void declareReductionEvaluation(final ReduceExpression expr);
 
   /**
    * Creates a function argument for the given Alpha system parameter.
@@ -352,6 +415,16 @@ public abstract class CodeGeneratorBase {
    * Allocates memory for the given variable.
    */
   public abstract void allocateVariable(final Variable variable);
+
+  /**
+   * Allocates memory for the given reduction.
+   */
+  public abstract void allocateReduction(final ReduceExpression re);
+
+  /**
+   * Initializes a reduction variable to the appropriate values
+   */
+  public abstract void initializeReduction(final ReduceExpression re);
 
   /**
    * Allocates memory for the flags variable associated with the given variable.

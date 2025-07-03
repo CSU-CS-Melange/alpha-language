@@ -16,6 +16,9 @@ import alpha.model.transformation.Normalize
 import alpha.model.transformation.StandardizeNames
 import alpha.model.transformation.reduction.NormalizeReduction
 import java.util.ArrayList
+import alpha.codegen.CodegenOptions
+import static extension alpha.model.util.AlphaUtil.*
+import alpha.model.ReduceExpression
 
 abstract class CodeGeneratorBase {
 	/////////////////////////////////////////////////////////////////
@@ -31,8 +34,8 @@ abstract class CodeGeneratorBase {
 	/** Generates data types for Alpha variables. */
 	protected val TypeGeneratorBase typeGenerator
 	
-	/** If true, the flags variables used for cycle detection will be generated. Otherwise, the won't be. */
-	protected val boolean cycleDetection
+	/** An object to store all the codegen options */
+	protected val CodegenOptions options
 	
 	/** The builder for the program representing this system body. */
 	protected val ProgramBuilder program
@@ -57,11 +60,11 @@ abstract class CodeGeneratorBase {
 	 * @throws IllegalArgumentException If the link from the system body to the parent Alpha system is null. This can happen
 	 *         if the "alpha.model.util.AlphaUtil.copyAE" function was used to copy only the system body, and not the entire system.
 	 */
-	new(SystemBody systemBody, AlphaNameChecker nameChecker, TypeGeneratorBase typeGenerator, boolean cycleDetection) {
+	new(SystemBody systemBody, AlphaNameChecker nameChecker, TypeGeneratorBase typeGenerator, CodegenOptions options) {
 		this.systemBody = systemBody
 		this.nameChecker = nameChecker
 		this.typeGenerator = typeGenerator
-		this.cycleDetection = cycleDetection
+		this.options = options
 		
 		this.program = ProgramBuilder.start(nameChecker)
 		this.entryPoint = program.startFunction(BaseDataType.VOID, systemBody.system.name)
@@ -97,10 +100,15 @@ abstract class CodeGeneratorBase {
 		system.variables.forEach[declareGlobalVariable]
 		system.variables.forEach[declareMemoryMacro]
 		
+		if(options.scheduledReductions) {
+			system.containedReductions.forEach[declareReductionGlobalVariable]
+			system.containedReductions.forEach[declareReductionMemoryMacro]
+		}
+		
 		// If cycle detection is being performed, generate the flag variables
 		// and memory macros for the Alpha variables being computed.
 		// That is, outputs and locals.
-		if (cycleDetection) {
+		if (options.cycleDetection) {
 			system.outputs.forEach[declareFlagVariable]
 			system.outputs.forEach[declareFlagMemoryMacro]
 			
@@ -111,6 +119,10 @@ abstract class CodeGeneratorBase {
 		// Declare how to evaluate each equation.
 		systemBody.standardEquations.forEach[declareEvaluation]
 		systemBody.useEquations.forEach[declareEvaluation]
+		
+		if(options.scheduledReductions) {
+			system.containedReductions.forEach[declareReductionEvaluation]
+		}
 		
 		// Add the entry point to the program, then we're done!
 		addEntryPoint
@@ -143,10 +155,19 @@ abstract class CodeGeneratorBase {
 		// for all variables computed by the system body (i.e., outputs and locals).
 		entryPoint.addComment("Allocate memory for local storage.")
 		system.locals.forEach[allocateVariable]
+		if (options.scheduledReductions) {
+			system.containedReductions.forEach[allocateReduction]
+		}
+		entryPoint.addEmptyLine
+		
+		entryPoint.addComment("Initialize reduction variables.")
+		if (options.scheduledReductions) {
+			system.containedReductions.forEach[initializeReduction]
+		}
 		entryPoint.addEmptyLine
 		
 		entryPoint.addComment("Allocate and initialize flag variables.")
-		if (cycleDetection) {
+		if (options.cycleDetection) {
 			system.outputs.forEach[allocateFlagsVariable]
 			system.locals.forEach[allocateFlagsVariable]
 		}
@@ -216,12 +237,23 @@ abstract class CodeGeneratorBase {
 		program.addGlobalVariable(true, dataType, name)
 	}
 	
+	/** Declares a global variable for the given Alpha reduction. */
+	def void declareReductionGlobalVariable(ReduceExpression re) {
+		val variable = (re.getContainerEquation as StandardEquation).variable
+		val dataType = typeGenerator.getAlphaVariableType(variable)
+		val name = re.reductionName
+		program.addGlobalVariable(true, dataType, name)
+	}
+	
 	/** Declares a memory macro for the given Alpha variable. */
 	def void declareMemoryMacro(Variable variable)
 	
+	/** Declares a memory macro for the given Alpha reudction. */
+	def void declareReductionMemoryMacro(ReduceExpression re)
+	
 	/**
 	 * Declares a global variable for the "flags" variable
-	 * associated with the given Alpha variable.
+	 * associated with the given Alpha variable.variable
 	 */
 	def void declareFlagVariable(Variable variable) {
 		val dataType = typeGenerator.getFlagVariableType(variable)
@@ -246,6 +278,9 @@ abstract class CodeGeneratorBase {
 	/** Declares whatever is needed (macro, function, etc.) for evaluating the given equation. */
 	def void declareEvaluation(UseEquation equation)
 	
+	
+	/** Declares whatever is needed (macro, function, etc.) for evaluating the given reduction. */
+	def void declareReductionEvaluation(ReduceExpression expr)
 	
 	/////////////////////////////////////////////////////////////////////////////
 	// Entry Point Function Declaration
@@ -316,6 +351,12 @@ abstract class CodeGeneratorBase {
 	
 	/** Allocates memory for the given variable. */
 	def void allocateVariable(Variable variable)
+	
+	/** Allocates memory for the given reduction. */
+	def void allocateReduction(ReduceExpression re)
+	
+	/** Initializes a reduction variable to the appropriate values */
+	def void initializeReduction(ReduceExpression re)
 	
 	/** Allocates memory for the flags variable associated with the given variable. */
 	def void allocateFlagsVariable(Variable variable)

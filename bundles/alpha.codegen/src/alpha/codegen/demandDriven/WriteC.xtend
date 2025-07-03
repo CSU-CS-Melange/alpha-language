@@ -2,6 +2,7 @@ package alpha.codegen.demandDriven
 
 import alpha.codegen.BaseDataType
 import alpha.codegen.BinaryOperator
+import alpha.codegen.CodegenOptions
 import alpha.codegen.DataType
 import alpha.codegen.Factory
 import alpha.codegen.IfStmtBuilder
@@ -14,12 +15,12 @@ import alpha.codegen.isl.LoopGenerator
 import alpha.codegen.isl.MemoryUtils
 import alpha.codegen.isl.PolynomialConverter
 import alpha.model.AlphaSystem
+import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
 import alpha.model.SystemBody
 import alpha.model.UseEquation
 import alpha.model.Variable
 import alpha.model.transformation.Normalize
-import alpha.model.transformation.StandardizeNames
 import alpha.model.transformation.reduction.NormalizeReduction
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLSet
@@ -92,7 +93,8 @@ class WriteC extends CodeGeneratorBase {
 	 * created before "super(...)" is called.
 	 */
 	private new(SystemBody systemBody, BaseDataType valueType, boolean oldAlphaZCompatible, WriteCTypeGenerator typeGenerator) {
-		super(systemBody, new AlphaNameChecker(true), typeGenerator, true)
+		super(systemBody, new AlphaNameChecker(true), typeGenerator, new CodegenOptions(valueType))
+		options.setCycleDetection()
 		this.oldAlphaZCompatible = oldAlphaZCompatible
 		this.exprConverter = new WriteCExprConverter(typeGenerator, nameChecker, program)
 	}
@@ -336,12 +338,26 @@ class WriteC extends CodeGeneratorBase {
 	override preprocess() {
 		Normalize.apply(systemBody)
 		NormalizeReduction.apply(systemBody)
-		/*
-		 * Demand driven codegen incorrectly produces macros with duplicate names, see #103
-		 * The issue is caused by StandardizeNames, commenting out fixes the issue.
-		 */
-
-//		StandardizeNames.apply(systemBody)
+	}
+	
+	/** Scheduled reductions are not supported by WriteC */
+	override allocateReduction(ReduceExpression re) {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
+	}
+	
+	/** Scheduled reductions are not supported by WriteC */
+	override declareReductionMemoryMacro(ReduceExpression re) {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
+	}
+	
+	/** Scheduled reductions are not supported by WriteC */
+	override declareReductionEvaluation(ReduceExpression expr) {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
+	}
+	
+	/** Scheduled reductions are not supported by WriteC */
+	override initializeReduction(ReduceExpression re) {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
 	}
 	
 }

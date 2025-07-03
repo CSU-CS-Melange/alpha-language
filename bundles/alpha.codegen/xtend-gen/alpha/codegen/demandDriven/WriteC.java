@@ -7,6 +7,7 @@ import alpha.codegen.BinaryExpr;
 import alpha.codegen.BinaryOperator;
 import alpha.codegen.CallExpr;
 import alpha.codegen.CastExpr;
+import alpha.codegen.CodegenOptions;
 import alpha.codegen.CustomExpr;
 import alpha.codegen.DataType;
 import alpha.codegen.Expression;
@@ -31,6 +32,7 @@ import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
 import alpha.model.AlphaSystem;
+import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
 import alpha.model.SystemBody;
 import alpha.model.UseEquation;
@@ -115,7 +117,8 @@ public class WriteC extends CodeGeneratorBase {
    * created before "super(...)" is called.
    */
   private WriteC(final SystemBody systemBody, final BaseDataType valueType, final boolean oldAlphaZCompatible, final WriteCTypeGenerator typeGenerator) {
-    super(systemBody, new AlphaNameChecker(true), typeGenerator, true);
+    super(systemBody, new AlphaNameChecker(true), typeGenerator, new CodegenOptions(valueType));
+    this.options.setCycleDetection();
     this.oldAlphaZCompatible = oldAlphaZCompatible;
     WriteCExprConverter _writeCExprConverter = new WriteCExprConverter(typeGenerator, this.nameChecker, this.program);
     this.exprConverter = _writeCExprConverter;
@@ -365,5 +368,37 @@ public class WriteC extends CodeGeneratorBase {
   public void preprocess() {
     Normalize.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);
+  }
+
+  /**
+   * Scheduled reductions are not supported by WriteC
+   */
+  @Override
+  public void allocateReduction(final ReduceExpression re) {
+    throw new UnsupportedOperationException("TODO: auto-generated method stub");
+  }
+
+  /**
+   * Scheduled reductions are not supported by WriteC
+   */
+  @Override
+  public void declareReductionMemoryMacro(final ReduceExpression re) {
+    throw new UnsupportedOperationException("TODO: auto-generated method stub");
+  }
+
+  /**
+   * Scheduled reductions are not supported by WriteC
+   */
+  @Override
+  public void declareReductionEvaluation(final ReduceExpression expr) {
+    throw new UnsupportedOperationException("TODO: auto-generated method stub");
+  }
+
+  /**
+   * Scheduled reductions are not supported by WriteC
+   */
+  @Override
+  public void initializeReduction(final ReduceExpression re) {
+    throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 }

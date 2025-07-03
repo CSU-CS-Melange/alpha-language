@@ -25,6 +25,12 @@ import alpha.codegen.isl.AffineConverter
 
 import static alpha.model.util.ISLUtil.*
 import alpha.model.tiler.Tiler
+import alpha.codegen.CodegenOptions
+import static extension alpha.model.util.AlphaUtil.getReductionName
+import alpha.codegen.postprocessing.OmpPragmaInserter
+import alpha.codegen.Statement
+import java.util.ArrayList
+import alpha.codegen.LoopStmt
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -40,8 +46,12 @@ class ScheduledExprConverter extends ExprConverter {
 	/** Generates data types compatible with WriteC. */
 	protected val ScheduledTypeGenerator typeGenerator
 	
+	protected val CodegenOptions options
+	
 	/** Generates the schedule to be used by the ISL LoopGenerator */
 	protected val Scheduler scheduler
+	
+	protected var MemoryMapper mapper
 	
 	protected val Tiler tiler
 	
@@ -51,7 +61,6 @@ class ScheduledExprConverter extends ExprConverter {
 	/** Represents the number of reductions for the current reduction target for schedule lookup */
 	protected var reductionTargetNumber = 0
 	
-	protected var MemoryMapper mapper
 		
 	/**
 	 * A counter for the number of reductions that have been created.
@@ -61,15 +70,16 @@ class ScheduledExprConverter extends ExprConverter {
 	
 	/** Constructs a new converter for expressions. */
 	new(ScheduledTypeGenerator typeGenerator, AlphaNameChecker nameChecker, 
-		ProgramBuilder program, Scheduler scheduler, Tiler tiler, MemoryMapper mapper
+		ProgramBuilder program, Scheduler scheduler, CodegenOptions options
 	) {
 		super(typeGenerator, nameChecker)
 		this.program = program
 		this.typeGenerator = typeGenerator
 		this.scheduler = scheduler
-		this.tiler = tiler
+		this.tiler = options.tiler
+		this.mapper = options.mapper
 		this.reductionTarget = ""
-		this.mapper = mapper
+		this.options = options
 	}
 	
 	def setTarget(String reductionTarget) { 
@@ -84,8 +94,15 @@ class ScheduledExprConverter extends ExprConverter {
 	 * and the appropriate function call expression is returned.
 	 */
 	def dispatch Expression convertExpr(ReduceExpression expr) {
+		
+		if(options.scheduledReductions) {
+			val callArguments = expr.body.contextDomain.indexNames
+			return Factory.callExpr(expr.reductionName, callArguments)
+		}
+		
 		// Create the reduce function and add it to the program.
 		val reduceFunction = createReduceFunction(program, expr, this.reductionTarget)
+		
 		program.addFunction(reduceFunction)
 		
 		// Return a call to the reduce function.
@@ -140,9 +157,11 @@ class ScheduledExprConverter extends ExprConverter {
 		loopDomain = loopDomain.intersect(generatedDomain)
 		
 		// We also take the map from the scheduler as well
-		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) ?: loopDomain.copy.identity		
 		
-		if(tiler !== null) scheduleMap = scheduleMap.applyRange(tiler.getTileMap)
+		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) 
+		
+		if(scheduleMap !== null && tiler !== null) scheduleMap = scheduleMap.applyRange(tiler.getTileMap)
+		scheduleMap = scheduleMap ?: loopDomain.copy.identity
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
 			loopDomain.copy,
@@ -151,9 +170,20 @@ class ScheduledExprConverter extends ExprConverter {
 		// The size parameters for the loop domain need to be added as function parameters.
 		function.addParameter(loopDomain.copy.paramNames.map[toParameter])
 		
-		// Add declarations for all the loop variables and add the loops themselves to the function.
+		// Add declarations for all the loop variables 
 		val loopResult = ASTConverter.convert(islAST)
 		loopResult.declarations.forEach[function.addVariable(typeGenerator.indexType, it)]
+		
+		// Add OMP parallel reduce pragma, if desired
+		if(options.ompPragmas) {
+			var pragmaString = "#pragma omp parallel for "
+				+ "private(" + loopResult.declarations.join(",") + ") "
+				+ "reduction(" + expr.operator + ":" + reduceVarName + ")"
+			val pragma = Factory.customStmt(pragmaString)
+			function.addStatement(pragma)
+		}
+		
+		//Add the loops themselves to the function.
 		function.addStatement(loopResult.statements)
 			
 		// Undefine the macros, then have the function return the reduce variable.

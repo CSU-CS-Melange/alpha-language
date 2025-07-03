@@ -4,8 +4,10 @@ import alpha.codegen.AssignmentStmt;
 import alpha.codegen.BinaryExpr;
 import alpha.codegen.BinaryOperator;
 import alpha.codegen.CallExpr;
+import alpha.codegen.CodegenOptions;
 import alpha.codegen.CustomExpr;
 import alpha.codegen.Expression;
+import alpha.codegen.ExpressionStmt;
 import alpha.codegen.Factory;
 import alpha.codegen.Function;
 import alpha.codegen.FunctionBuilder;
@@ -30,6 +32,7 @@ import alpha.model.IfExpression;
 import alpha.model.IndexExpression;
 import alpha.model.MultiArgExpression;
 import alpha.model.PolynomialIndexExpression;
+import alpha.model.REDUCTION_OP;
 import alpha.model.ReduceExpression;
 import alpha.model.RestrictExpression;
 import alpha.model.UnaryExpression;
@@ -37,6 +40,7 @@ import alpha.model.VariableExpression;
 import alpha.model.memorymapper.MemoryMapper;
 import alpha.model.scheduler.Scheduler;
 import alpha.model.tiler.Tiler;
+import alpha.model.util.AlphaUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
@@ -56,6 +60,7 @@ import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 /**
@@ -79,10 +84,14 @@ public class ScheduledExprConverter extends ExprConverter {
    */
   protected final ScheduledTypeGenerator typeGenerator;
 
+  protected final CodegenOptions options;
+
   /**
    * Generates the schedule to be used by the ISL LoopGenerator
    */
   protected final Scheduler scheduler;
+
+  protected MemoryMapper mapper;
 
   protected final Tiler tiler;
 
@@ -96,8 +105,6 @@ public class ScheduledExprConverter extends ExprConverter {
    */
   protected int reductionTargetNumber = 0;
 
-  protected MemoryMapper mapper;
-
   /**
    * A counter for the number of reductions that have been created.
    * This is used for determining the names of functions and macros which will be emitted.
@@ -107,14 +114,15 @@ public class ScheduledExprConverter extends ExprConverter {
   /**
    * Constructs a new converter for expressions.
    */
-  public ScheduledExprConverter(final ScheduledTypeGenerator typeGenerator, final AlphaNameChecker nameChecker, final ProgramBuilder program, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper) {
+  public ScheduledExprConverter(final ScheduledTypeGenerator typeGenerator, final AlphaNameChecker nameChecker, final ProgramBuilder program, final Scheduler scheduler, final CodegenOptions options) {
     super(typeGenerator, nameChecker);
     this.program = program;
     this.typeGenerator = typeGenerator;
     this.scheduler = scheduler;
-    this.tiler = tiler;
+    this.tiler = options.getTiler();
+    this.mapper = options.getMapper();
     this.reductionTarget = "";
-    this.mapper = mapper;
+    this.options = options;
   }
 
   public String setTarget(final String reductionTarget) {
@@ -135,12 +143,17 @@ public class ScheduledExprConverter extends ExprConverter {
    * and the appropriate function call expression is returned.
    */
   protected Expression _convertExpr(final ReduceExpression expr) {
+    boolean _scheduledReductions = this.options.getScheduledReductions();
+    if (_scheduledReductions) {
+      final List<String> callArguments = expr.getBody().getContextDomain().getIndexNames();
+      return Factory.callExpr(AlphaUtil.getReductionName(expr), ((String[])Conversions.unwrapArray(callArguments, String.class)));
+    }
     final Function reduceFunction = this.createReduceFunction(this.program, expr, this.reductionTarget);
     this.program.addFunction(reduceFunction);
     List<String> _paramNames = expr.getContextDomain().getParamNames();
     List<String> _indexNames = expr.getContextDomain().getIndexNames();
-    final Iterable<String> callArguments = Iterables.<String>concat(Collections.<List<String>>unmodifiableList(CollectionLiterals.<List<String>>newArrayList(_paramNames, _indexNames)));
-    return Factory.callExpr(reduceFunction.getName(), ((String[])Conversions.unwrapArray(callArguments, String.class)));
+    final Iterable<String> callArguments_1 = Iterables.<String>concat(Collections.<List<String>>unmodifiableList(CollectionLiterals.<List<String>>newArrayList(_paramNames, _indexNames)));
+    return Factory.callExpr(reduceFunction.getName(), ((String[])Conversions.unwrapArray(callArguments_1, String.class)));
   }
 
   /**
@@ -180,18 +193,18 @@ public class ScheduledExprConverter extends ExprConverter {
     ISLSet loopDomain = _elvis;
     loopDomain = loopDomain.setTupleName(reduceBodyName);
     loopDomain = loopDomain.intersect(generatedDomain);
+    ISLMap scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
+    if (((scheduleMap != null) && (this.tiler != null))) {
+      scheduleMap = scheduleMap.applyRange(this.tiler.getTileMap());
+    }
     ISLMap _elvis_1 = null;
-    ISLMap _scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
-    if (_scheduleMap != null) {
-      _elvis_1 = _scheduleMap;
+    if (scheduleMap != null) {
+      _elvis_1 = scheduleMap;
     } else {
       ISLMap _identity = loopDomain.copy().identity();
       _elvis_1 = _identity;
     }
-    ISLMap scheduleMap = _elvis_1;
-    if ((this.tiler != null)) {
-      scheduleMap = scheduleMap.applyRange(this.tiler.getTileMap());
-    }
+    scheduleMap = _elvis_1;
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
       scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());
@@ -204,6 +217,20 @@ public class ScheduledExprConverter extends ExprConverter {
       function.addVariable(this.typeGenerator.getIndexType(), it);
     };
     loopResult.getDeclarations().forEach(_function_1);
+    boolean _ompPragmas = this.options.getOmpPragmas();
+    if (_ompPragmas) {
+      String _join = IterableExtensions.join(loopResult.getDeclarations(), ",");
+      String _plus = (("#pragma omp parallel for " + "private(") + _join);
+      String _plus_1 = (_plus + ") ");
+      String _plus_2 = (_plus_1 + "reduction(");
+      REDUCTION_OP _operator = expr.getOperator();
+      String _plus_3 = (_plus_2 + _operator);
+      String _plus_4 = (_plus_3 + ":");
+      String _plus_5 = (_plus_4 + ScheduledExprConverter.reduceVarName);
+      String pragmaString = (_plus_5 + ")");
+      final ExpressionStmt pragma = Factory.customStmt(pragmaString);
+      function.addStatement(pragma);
+    }
     function.addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     function.addUndefine(reducePointMacro, accumulateMacro).addReturn(ScheduledExprConverter.reduceVarExpr());
     return function.getInstance();
