@@ -57,8 +57,6 @@ class ScheduledC extends CodeGeneratorBase {
 	
 	protected val Tiler tiler
 	
-	/**  */
-	
 	protected var Map<String, AssignmentStmt> variableStatements
 	
 	new(SystemBody systemBody, ScheduledTypeGenerator typeGen, AlphaNameChecker nameChecker, Scheduler scheduler, CodegenOptions options) {
@@ -71,14 +69,16 @@ class ScheduledC extends CodeGeneratorBase {
 		this.variableStatements = new HashMap()
 	}
 	
-	/** Normalizes the system body and standardizes all names prior to conversion. */
-	/** Overide the preprocess step to not normalize reductions */
+	/** 
+	 * Normalizes the system body and standardizes all names prior to conversion. 
+	 * Overide the preprocess step to not normalize reductions 
+	 */
 	override void preprocess() {
 		Normalize.apply(systemBody)
 		StandardizeNames.apply(systemBody)
 	}
 	
-		/** Constructs an equality constraint that index i equals the parameter for that index. */
+	/** Constructs an equality constraint that index i equals the parameter for that index. */
 	def private static addTotalOrderEquality(ISLSet domain, int originalParamCount, int index) {
 		val constraint = ISLConstraint.buildEquality(domain.space)
 			.setCoefficient(ISLDimType.isl_dim_param, originalParamCount + index, 1)
@@ -125,8 +125,8 @@ class ScheduledC extends CodeGeneratorBase {
 
 		val memoryDomain = domain.copy.apply(memoryMap.copy)
 		
-		//TODO: revert
-		val rank = MemoryUtils.boxRank(memoryDomain)
+		val rank = options.polyhedralMemory ? 
+			MemoryUtils.rank(memoryDomain) : MemoryUtils.boxRank(memoryDomain)
 		val accessExpression = PolynomialConverter.convert(rank)
 		val ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression)
 		val macroStmt = Factory.macroStmt(memoryName, memoryDomain.indexNames, macroReplacement)
@@ -165,8 +165,8 @@ class ScheduledC extends CodeGeneratorBase {
 
 		val memoryDomain = domain.copy.apply(memoryMap.copy)
 		
-		//TODO: revert
-		val rank = MemoryUtils.boxRank(memoryDomain)
+		val rank = options.polyhedralMemory ? 
+			MemoryUtils.rank(memoryDomain) : MemoryUtils.boxRank(memoryDomain)
 		val accessExpression = PolynomialConverter.convert(rank)
 		val ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression)
 		val macroStmt = Factory.macroStmt(memoryName, memoryDomain.indexNames, macroReplacement)
@@ -317,8 +317,8 @@ class ScheduledC extends CodeGeneratorBase {
 	}
 	
 	def protected getCardinalityExpr(ISLSet domain) {
-		//TODO: Revert
-		val cardinalityPolynomial = MemoryUtils.boxCard(domain)
+		val cardinalityPolynomial = options.polyhedralMemory ?
+			MemoryUtils.card(domain) : MemoryUtils.boxCard(domain)
 		return PolynomialConverter.convert(cardinalityPolynomial)
 	}
 	

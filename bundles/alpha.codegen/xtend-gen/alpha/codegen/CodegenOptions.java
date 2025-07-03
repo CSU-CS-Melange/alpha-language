@@ -10,23 +10,55 @@ import alpha.model.tiler.Tiler;
  */
 @SuppressWarnings("all")
 public class CodegenOptions {
+  /**
+   * The base data type of the program (typically float)
+   */
   private BaseDataType valueType;
 
+  /**
+   * The tiler (optional)
+   */
   private Tiler tiler = null;
 
+  /**
+   * The memory mapper object
+   */
   private MemoryMapper mapper;
 
+  /**
+   * Whether to normalize the system before codegen
+   */
   private boolean normalize = false;
 
+  /**
+   * Whether to add the inline keyword to the evaluate function
+   */
   private boolean inlineFunction = false;
 
+  /**
+   * Whether to manually inline functions (replace the function call with the actual function body)
+   */
   private boolean inlineCode = false;
 
+  /**
+   * Whether to accumulate points in a reduction according to a schedule as opposed to ad hoc reductions
+   */
   private boolean scheduledReductions = false;
 
+  /**
+   * Whether to detect cycles in codegen. May or may not work with ScheduledC.
+   */
   private boolean cycleDetection = false;
 
+  /**
+   * Whether to insert OpenMP parallel pragmas automatically.
+   */
   private boolean ompPragmas = false;
+
+  /**
+   * Whether to allocate only the memory needed for variables, as opposed to allocating the bounding box.
+   */
+  private boolean polyhedralMemory = false;
 
   public CodegenOptions(final BaseDataType valueType) {
     this.valueType = valueType;
@@ -110,6 +142,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setPolyhedralMemory() {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.polyhedralMemory = true;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public CodegenOptions setNormalize(final boolean b) {
     CodegenOptions _xblockexpression = null;
     {
@@ -164,6 +205,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setPolyhedralMemory(final boolean b) {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.polyhedralMemory = b;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public BaseDataType getValueType() {
     return this.valueType;
   }
@@ -198,5 +248,9 @@ public class CodegenOptions {
 
   public boolean getOmpPragmas() {
     return this.ompPragmas;
+  }
+
+  public boolean getPolyhedralMemory() {
+    return this.polyhedralMemory;
   }
 }

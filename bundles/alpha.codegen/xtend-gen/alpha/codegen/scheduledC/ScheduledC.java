@@ -107,6 +107,7 @@ public class ScheduledC extends CodeGeneratorBase {
   }
 
   /**
+   * Normalizes the system body and standardizes all names prior to conversion.
    * Overide the preprocess step to not normalize reductions
    */
   @Override
@@ -162,7 +163,14 @@ public class ScheduledC extends CodeGeneratorBase {
     memoryMap = IterableExtensions.<Integer, ISLMap>fold(new IntegerRange(0, _minus), memoryMap, _function);
     final ISLMap mappedDomain = memoryMap.copy().intersectDomain(domain.copy()).<IISLSingleSpaceMapMethods>renameInputs(names).<ISLMap>setTupleName(ISLDimType.isl_dim_in, memoryName);
     final ISLSet memoryDomain = domain.copy().apply(memoryMap.copy());
-    final ISLPWQPolynomial rank = MemoryUtils.boxRank(memoryDomain);
+    ISLPWQPolynomial _xifexpression = null;
+    boolean _polyhedralMemory = this.options.getPolyhedralMemory();
+    if (_polyhedralMemory) {
+      _xifexpression = MemoryUtils.rank(memoryDomain);
+    } else {
+      _xifexpression = MemoryUtils.boxRank(memoryDomain);
+    }
+    final ISLPWQPolynomial rank = _xifexpression;
     final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
     final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression);
     final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(memoryDomain.getIndexNames(), String.class)), macroReplacement);
@@ -191,7 +199,14 @@ public class ScheduledC extends CodeGeneratorBase {
     memoryMap = IterableExtensions.<Integer, ISLMap>fold(new IntegerRange(0, _minus), memoryMap, _function);
     final ISLMap mappedDomain = memoryMap.copy().intersectDomain(domain.copy()).<IISLSingleSpaceMapMethods>renameInputs(names).<ISLMap>setTupleName(ISLDimType.isl_dim_in, memoryName);
     final ISLSet memoryDomain = domain.copy().apply(memoryMap.copy());
-    final ISLPWQPolynomial rank = MemoryUtils.boxRank(memoryDomain);
+    ISLPWQPolynomial _xifexpression = null;
+    boolean _polyhedralMemory = this.options.getPolyhedralMemory();
+    if (_polyhedralMemory) {
+      _xifexpression = MemoryUtils.rank(memoryDomain);
+    } else {
+      _xifexpression = MemoryUtils.boxRank(memoryDomain);
+    }
+    final ISLPWQPolynomial rank = _xifexpression;
     final ParenthesizedExpr accessExpression = PolynomialConverter.convert(rank);
     final ArrayAccessExpr macroReplacement = Factory.arrayAccessExpr(storageName, accessExpression);
     final MacroStmt macroStmt = Factory.macroStmt(memoryName, ((String[])Conversions.unwrapArray(memoryDomain.getIndexNames(), String.class)), macroReplacement);
@@ -333,7 +348,14 @@ public class ScheduledC extends CodeGeneratorBase {
   }
 
   protected ParenthesizedExpr getCardinalityExpr(final ISLSet domain) {
-    final ISLPWQPolynomial cardinalityPolynomial = MemoryUtils.boxCard(domain);
+    ISLPWQPolynomial _xifexpression = null;
+    boolean _polyhedralMemory = this.options.getPolyhedralMemory();
+    if (_polyhedralMemory) {
+      _xifexpression = MemoryUtils.card(domain);
+    } else {
+      _xifexpression = MemoryUtils.boxCard(domain);
+    }
+    final ISLPWQPolynomial cardinalityPolynomial = _xifexpression;
     return PolynomialConverter.convert(cardinalityPolynomial);
   }
 
