@@ -8,12 +8,11 @@ import alpha.model.exception.CyclicDefinitionException
 import alpha.model.util.AlphaUtil
 import alpha.model.util.Face
 import alpha.model.util.FaceLattice
-import alpha.model.util.Show
-import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
+import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 import fr.irisa.cairn.jnimap.runtime.JNIObject
 import java.util.LinkedList
 import java.util.List
@@ -677,10 +676,6 @@ abstract class AlphaExpression extends AlphaNode, AlphaExpressionVisitable {
 		}
 		
 		return AlphaUtil.renameIndices(dom)
-	}
-	
-	op String toString() {
-		return Show.print(this)
 	}
 }
 
