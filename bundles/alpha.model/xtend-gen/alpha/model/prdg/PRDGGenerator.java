@@ -28,8 +28,6 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
   private Stack<ISLMultiAff> functions;
 
-  private int numberReductions;
-
   private final boolean includeInputs;
 
   public static PRDG apply(final AlphaSystem system) {
@@ -75,14 +73,12 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     ISLSet _copy = standardEquation.getVariable().getDomain().copy();
     PRDGNode _pRDGNode = new PRDGNode(_name, _copy, false);
     this.sources.push(_pRDGNode);
-    this.numberReductions = 0;
   }
 
   @Override
   public void outStandardEquation(final StandardEquation se) {
     this.sources.pop();
     this.functions.pop();
-    this.numberReductions = 0;
   }
 
   @Override
@@ -124,10 +120,7 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 
   @Override
   public void inReduceExpression(final ReduceExpression reduceExpression) {
-    String _name = this.sources.peek().getName();
-    String _plus = (_name + "_reduce");
-    final String bodyName = (_plus + Integer.valueOf(this.numberReductions));
-    this.numberReductions++;
+    final String bodyName = AlphaUtil.getReductionName(reduceExpression);
     final ISLMap useToRes = this.functions.peek().copy().toMap();
     ISLSet _xifexpression = null;
     boolean _empty = this.domains.empty();

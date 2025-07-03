@@ -13,13 +13,13 @@ import java.util.Stack
 
 import static extension alpha.model.util.AlphaUtil.copyAE
 import fr.irisa.cairn.jnimap.isl.ISLMap
+import static extension alpha.model.util.AlphaUtil.*
 
 class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	PRDG prdg = new PRDG()
 	var Stack<PRDGNode> sources
 	var Stack<ISLSet> domains
 	var Stack<ISLMultiAff> functions
-	var int numberReductions
 	val boolean includeInputs
 	
 	static def PRDG apply(AlphaSystem system) {
@@ -45,13 +45,11 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	override void inStandardEquation(StandardEquation standardEquation) {		
 		this.functions.push(ISLMultiAff.buildIdentity(standardEquation.variable.domain.copy.identity.space))
 		this.sources.push(new PRDGNode(standardEquation.variable.name, standardEquation.variable.domain.copy, false))
-		this.numberReductions = 0
 	}
 
 	override void outStandardEquation(StandardEquation se) {
 		this.sources.pop
 		this.functions.pop
-		this.numberReductions = 0
 	}
 
 	override void inDependenceExpression(DependenceExpression dependenceExpression) {
@@ -76,8 +74,7 @@ class PRDGGenerator extends AbstractAlphaCompleteVisitor {
 	
 	override void inReduceExpression(ReduceExpression reduceExpression) {
 
-		val bodyName = this.sources.peek.name + "_reduce" + this.numberReductions
-		this.numberReductions++
+		val bodyName = reduceExpression.getReductionName
 		
 		//Dependence from use to the result
 		val useToRes = this.functions.peek.copy.toMap
