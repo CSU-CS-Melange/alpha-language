@@ -17,7 +17,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
 @SuppressWarnings("all")
 public class DTiler implements Tiler {
-  private ISLMap tileMap;
+  protected ISLMap tileMap;
 
   private int startDim;
 
@@ -36,18 +36,16 @@ public class DTiler implements Tiler {
     this.argumentCheck(tileSizes, scheduleSpace, startDim, endDim, scheduleDim, bandDim);
     final ISLSpace space = scheduleSpace.copy();
     ArrayList<ISLAff> affs = new ArrayList<ISLAff>();
-    for (int i = 0; (i < scheduleDim); i++) {
+    for (int i = startDim; (i <= endDim); i++) {
       {
         ISLAff aff = ISLAff.buildVarOnDomain(space.copy().toLocalSpace(), ISLDimType.isl_dim_out, i);
-        if (((i >= startDim) && (i <= endDim))) {
-          aff = aff.scaleDown((tileSizes.get((i - startDim))).intValue()).floor();
-        }
+        aff = aff.scaleDown((tileSizes.get((i - startDim))).intValue()).floor();
         affs.add(aff);
       }
     }
-    for (int i = 0; (i < bandDim); i++) {
+    for (int i = 0; (i < scheduleDim); i++) {
       {
-        ISLAff aff = ISLAff.buildVarOnDomain(space.copy().toLocalSpace(), ISLDimType.isl_dim_out, (i + startDim));
+        ISLAff aff = ISLAff.buildVarOnDomain(space.copy().toLocalSpace(), ISLDimType.isl_dim_out, i);
         affs.add(aff);
       }
     }

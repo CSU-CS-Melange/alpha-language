@@ -1,20 +1,21 @@
 package alpha.model.tiler
 
-import fr.irisa.cairn.jnimap.isl.ISLMap
-import java.util.stream.IntStream
-import java.util.stream.Collectors
-import java.util.Set
-import fr.irisa.cairn.jnimap.isl.ISLSet
-import java.util.List
-import fr.irisa.cairn.jnimap.isl.ISLSpace
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLAff
-import java.util.ArrayList
-import static extension alpha.model.util.ISLUtil.*
 import alpha.model.scheduler.Scheduler
+import fr.irisa.cairn.jnimap.isl.ISLAff
+import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLSpace
+import java.util.ArrayList
+import java.util.List
+import java.util.Set
+import java.util.stream.Collectors
+import java.util.stream.IntStream
+
+import static extension alpha.model.util.ISLUtil.*
 
 class DTiler implements Tiler {
-	ISLMap tileMap
+	protected ISLMap tileMap
 	int startDim
 	int endDim
 	List<Integer> tileSizes
@@ -34,15 +35,14 @@ class DTiler implements Tiler {
 		
 		var affs = new ArrayList<ISLAff>
 		
+		for(var i = startDim; i <= endDim; i++) {
+			var aff = ISLAff.buildVarOnDomain(space.copy.toLocalSpace, ISLDimType.isl_dim_out, i)
+			aff = aff.scaleDown(tileSizes.get(i - startDim)).floor
+			affs.add(aff)
+		}
+		
 		for(var i = 0; i < scheduleDim; i++) {
 			var aff = ISLAff.buildVarOnDomain(space.copy.toLocalSpace, ISLDimType.isl_dim_out, i)
-			if(i >= startDim && i <= endDim)
-				aff = aff.scaleDown(tileSizes.get(i - startDim)).floor
-			affs.add(aff)
-		} 
-		
-		for(var i = 0; i < bandDim; i++) {
-			var aff = ISLAff.buildVarOnDomain(space.copy.toLocalSpace, ISLDimType.isl_dim_out, i+startDim)
 			affs.add(aff)
 		}
 		
