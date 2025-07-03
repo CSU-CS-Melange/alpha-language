@@ -118,11 +118,14 @@ class SerializeReduction {
 		serialize(are, accumulationMaffs.get(accumulationMaffs.length-1), newName)
 	}
 	
-	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff) {
+	/**
+	 * Returns the variable created by the serialization process.
+	 */
+	static def Variable applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff) {
 		applyOneShot(are, accumulationMaff, generateReductionName(are))
 	}
 	
-	static def void applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
+	static def Variable applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
 		checkArguments(are, #[accumulationMaff], newName, true)
 		serializeOneShot(are, accumulationMaff, newName)
 	}
@@ -141,7 +144,7 @@ class SerializeReduction {
 	 * May have an exponential number of domains
 	 * But avoids schedule bloat from having more variables than needed
 	 */
-	private static def void serializeOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
+	private static def Variable serializeOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
 		val ISLSet body = are.body.getContextDomain	
 		val ISLMultiAff writeMaff = are.projectionExpr.getISLMultiAff
 
@@ -188,7 +191,7 @@ class SerializeReduction {
 		val infoFlowMaps = edgeFlowVecs
 			.map[buildTranslationMaff.toMap]
 			.map[intersectDomain(top.copy.intersect(top.copy.apply(it.copy.reverse)))]
-			.reject[domain().isEmpty]
+			.reject[getDomain().isEmpty]
 			 + #[accumulationMaff.copy.toMap.intersectDomain(basin)]
 			 
 		// The peak is the remaining set of unaccumulated points
@@ -217,6 +220,8 @@ class SerializeReduction {
 		EcoreUtil.replace(are, dependenceExpr)
 		
 		AlphaInternalStateConstructor.recomputeContextDomain(sys)
+		
+		return reductionVar
 	}
 	
 	/**

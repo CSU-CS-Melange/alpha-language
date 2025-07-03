@@ -152,13 +152,20 @@ public class SerializeReduction {
     SerializeReduction.serialize(are, ((ISLMultiAff[])Conversions.unwrapArray(_converted_accumulationMaffs_1, ISLMultiAff.class))[_minus], newName);
   }
 
-  public static void applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff) {
-    SerializeReduction.applyOneShot(are, accumulationMaff, SerializeReduction.generateReductionName(are));
+  /**
+   * Returns the variable created by the serialization process.
+   */
+  public static Variable applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff) {
+    return SerializeReduction.applyOneShot(are, accumulationMaff, SerializeReduction.generateReductionName(are));
   }
 
-  public static void applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
-    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, true);
-    SerializeReduction.serializeOneShot(are, accumulationMaff, newName);
+  public static Variable applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
+    Variable _xblockexpression = null;
+    {
+      SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, true);
+      _xblockexpression = SerializeReduction.serializeOneShot(are, accumulationMaff, newName);
+    }
+    return _xblockexpression;
   }
 
   private static String generateReductionName(final AbstractReduceExpression are) {
@@ -177,7 +184,7 @@ public class SerializeReduction {
    * May have an exponential number of domains
    * But avoids schedule bloat from having more variables than needed
    */
-  private static void serializeOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
+  private static Variable serializeOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
     final ISLSet body = are.getBody().getContextDomain();
     final ISLMultiAff writeMaff = are.getProjectionExpr().getISLMultiAff();
     AlphaExpression coreExpr = are.getBody();
@@ -227,7 +234,7 @@ public class SerializeReduction {
       return it.intersectDomain(top.copy().intersect(top.copy().apply(it.copy().reverse())));
     };
     final Function1<ISLMap, Boolean> _function_9 = (ISLMap it) -> {
-      return Boolean.valueOf(it.domain().isEmpty());
+      return Boolean.valueOf(it.getDomain().isEmpty());
     };
     Iterable<ISLMap> _reject = IterableExtensions.<ISLMap>reject(IterableExtensions.<ISLMap, ISLMap>map(IterableExtensions.<ISLPoint, ISLMap>map(edgeFlowVecs, _function_7), _function_8), _function_9);
     ISLMap _intersectDomain = accumulationMaff.copy().toMap().intersectDomain(basin);
@@ -247,6 +254,7 @@ public class SerializeReduction {
     AlphaExpression dependenceExpr = SerializeReduction.generateDependenceExpression(are, reductionVar, peak);
     EcoreUtil.replace(are, dependenceExpr);
     AlphaInternalStateConstructor.recomputeContextDomain(sys);
+    return reductionVar;
   }
 
   /**
