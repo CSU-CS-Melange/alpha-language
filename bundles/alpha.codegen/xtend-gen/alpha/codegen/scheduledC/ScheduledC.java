@@ -89,10 +89,19 @@ public class ScheduledC extends CodeGeneratorBase {
    */
   protected final Scheduler scheduler;
 
+  /**
+   * An object that contains memory maps to apply to each variable
+   */
   protected final MemoryMapper mapper;
 
+  /**
+   * An optional object that contains a tile map
+   */
   protected final Tiler tiler;
 
+  /**
+   * The variable assignemnt statements that have been generated, for use in macro generation
+   */
   protected Map<String, AssignmentStmt> variableStatements;
 
   public ScheduledC(final SystemBody systemBody, final ScheduledTypeGenerator typeGen, final AlphaNameChecker nameChecker, final Scheduler scheduler, final CodegenOptions options) {
@@ -226,42 +235,34 @@ public class ScheduledC extends CodeGeneratorBase {
   public void declareEvaluation(final StandardEquation equation) {
     final DataType returnType = Factory.dataType(BaseDataType.VOID);
     final String evalName = this.nameChecker.getVariableReadName(equation.getVariable());
-    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.options.getInlineFunction(), returnType, ("eval_" + evalName));
     final List<String> indexNames = equation.getExpr().getContextDomain().getIndexNames();
-    final Consumer<String> _function = (String it) -> {
-      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
-    };
-    indexNames.forEach(_function);
     this.exprConverter.setTarget(equation.getName());
     final Expression computeValue = this.exprConverter.convertExpr(equation.getExpr());
     final AssignmentStmt computeAndStore = Factory.assignmentStmt(this.identityAccess(equation, false), computeValue);
     this.exprConverter.setTarget("");
-    evalBuilder.addStatement(computeAndStore);
-    boolean _inlineCode = this.options.getInlineCode();
-    boolean _not = (!_inlineCode);
-    if (_not) {
-      this.program.addFunction(evalBuilder.getInstance());
-    } else {
-      this.variableStatements.put(equation.getName(), computeAndStore);
-    }
+    this.declareStatementEvaluation(evalName, returnType, indexNames, computeAndStore);
   }
 
   @Override
   public void declareReductionEvaluation(final ReduceExpression re) {
     final DataType returnType = Factory.dataType(BaseDataType.VOID);
     final String evalName = AlphaUtil.getReductionName(re);
-    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.options.getInlineFunction(), returnType, ("eval_" + evalName));
     final List<String> indexNames = re.getBody().getContextDomain().getIndexNames();
-    final Consumer<String> _function = (String it) -> {
-      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
-    };
-    indexNames.forEach(_function);
     this.exprConverter.setTarget(evalName);
     final CallExpr memValue = Factory.callExpr(evalName, ((String[])Conversions.unwrapArray(indexNames, String.class)));
     final BinaryOperator op = AlphaBaseHelpers.getOperator(re.getOperator());
     final BinaryExpr computeValue = Factory.binaryExpr(op, memValue, this.exprConverter.convertExpr(re.getBody()));
     final AssignmentStmt computeAndStore = Factory.assignmentStmt(Factory.callExpr(evalName, ((String[])Conversions.unwrapArray(indexNames, String.class))), computeValue);
     this.exprConverter.setTarget("");
+    this.declareStatementEvaluation(evalName, returnType, indexNames, computeAndStore);
+  }
+
+  protected void declareStatementEvaluation(final String evalName, final DataType returnType, final Iterable<String> indexNames, final AssignmentStmt computeAndStore) {
+    final FunctionBuilder evalBuilder = this.program.startFunction(true, this.options.getInlineFunction(), returnType, ("eval_" + evalName));
+    final Consumer<String> _function = (String it) -> {
+      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
+    };
+    indexNames.forEach(_function);
     evalBuilder.addStatement(computeAndStore);
     boolean _inlineCode = this.options.getInlineCode();
     boolean _not = (!_inlineCode);
@@ -284,6 +285,9 @@ public class ScheduledC extends CodeGeneratorBase {
     throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 
+  /**
+   * Allocates memory for a standard variable.
+   */
   @Override
   public void allocateVariable(final Variable variable) {
     String _elvis = null;
@@ -297,19 +301,13 @@ public class ScheduledC extends CodeGeneratorBase {
     final String name = _elvis;
     final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
     this.allocatedVariables.add(name);
-    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(variable.getDomain().apply(this.mapper.getMemoryMap(variable)));
-    final CastExpr mallocCall = Factory.mallocCall(dataType, cardinalityExpr);
-    final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
-    this.entryPoint.addStatement(mallocAssignment);
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("\"");
-    _builder.append(name);
-    _builder.append("\"");
-    final CustomExpr nameStringExpr = Factory.customExpr(_builder.toString());
-    final ExpressionStmt mallocCheckCall = Factory.callStmt("mallocCheck", Factory.customExpr(name), nameStringExpr);
-    this.entryPoint.addStatement(mallocCheckCall);
+    final ISLSet mappedDomain = variable.getDomain().apply(this.mapper.getMemoryMap(variable));
+    this.allocateMemory(name, dataType, mappedDomain);
   }
 
+  /**
+   * Allocates memory for a reduction body.
+   */
   @Override
   public void allocateReduction(final ReduceExpression re) {
     Equation _containerEquation = AlphaUtil.getContainerEquation(re);
@@ -317,19 +315,31 @@ public class ScheduledC extends CodeGeneratorBase {
     final ISLSet domain = re.getBody().getContextDomain().copy();
     final String name = AlphaUtil.getReductionName(re);
     final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
-    this.allocatedVariables.add(name);
     final ISLMap memoryMap = re.getProjectionExpr().getISLMultiAff().toMap().applyRange(this.mapper.getMemoryMap(variable));
-    final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(domain.apply(memoryMap));
-    final CastExpr mallocCall = Factory.mallocCall(dataType, cardinalityExpr);
-    final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
-    this.entryPoint.addStatement(mallocAssignment);
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("\"");
-    _builder.append(name);
-    _builder.append("\"");
-    final CustomExpr nameStringExpr = Factory.customExpr(_builder.toString());
-    final ExpressionStmt mallocCheckCall = Factory.callStmt("mallocCheck", Factory.customExpr(name), nameStringExpr);
-    this.entryPoint.addStatement(mallocCheckCall);
+    final ISLSet mappedDomain = domain.apply(memoryMap);
+    this.allocateMemory(name, dataType, mappedDomain);
+  }
+
+  /**
+   * Helper for allocating reduction and standard variables
+   */
+  protected FunctionBuilder allocateMemory(final String name, final DataType dataType, final ISLSet mappedDomain) {
+    FunctionBuilder _xblockexpression = null;
+    {
+      this.allocatedVariables.add(name);
+      final ParenthesizedExpr cardinalityExpr = this.getCardinalityExpr(mappedDomain);
+      final CastExpr mallocCall = Factory.mallocCall(dataType, cardinalityExpr);
+      final AssignmentStmt mallocAssignment = Factory.assignmentStmt(name, mallocCall);
+      this.entryPoint.addStatement(mallocAssignment);
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("\"");
+      _builder.append(name);
+      _builder.append("\"");
+      final CustomExpr nameStringExpr = Factory.customExpr(_builder.toString());
+      final ExpressionStmt mallocCheckCall = Factory.callStmt("mallocCheck", Factory.customExpr(name), nameStringExpr);
+      _xblockexpression = this.entryPoint.addStatement(mallocCheckCall);
+    }
+    return _xblockexpression;
   }
 
   @Override
@@ -466,46 +476,6 @@ public class ScheduledC extends CodeGeneratorBase {
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;
-  }
-
-  @Deprecated
-  public static Program convert(final AlphaSystem system, final BaseDataType valueType, final Scheduler scheduler, final Tiler tiler, final MemoryMapper mapper, final boolean normalize, final boolean inlineFunction, final boolean inlineCode) {
-    int _length = ((Object[])Conversions.unwrapArray(system.getSystemBodies(), Object.class)).length;
-    boolean _notEquals = (_length != 1);
-    if (_notEquals) {
-      throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.");
-    }
-    AlphaSystem alteredSystem = AlphaUtil.<AlphaSystem>copyAE(system);
-    Normalize.apply(alteredSystem);
-    EList<Variable> _locals = alteredSystem.getLocals();
-    for (final Variable local : _locals) {
-      List<ISLMap> _maps = scheduler.getMaps().getMaps();
-      for (final ISLMap map : _maps) {
-        String _tupleName = map.getTupleName(ISLDimType.isl_dim_out);
-        String _name = local.getName();
-        boolean _equals = Objects.equal(_tupleName, _name);
-        if (_equals) {
-          ChangeOfBasis.apply(alteredSystem, local, ISLUtil.toMultiAff(map));
-        }
-      }
-    }
-    EList<Variable> _inputs = alteredSystem.getInputs();
-    for (final Variable input : _inputs) {
-      List<ISLMap> _maps_1 = scheduler.getMaps().getMaps();
-      for (final ISLMap map_1 : _maps_1) {
-        String _tupleName_1 = map_1.getTupleName(ISLDimType.isl_dim_in);
-        String _name_1 = input.getName();
-        boolean _equals_1 = Objects.equal(_tupleName_1, _name_1);
-        if (_equals_1) {
-          ChangeOfBasis.apply(alteredSystem, input, ISLUtil.toMultiAff(map_1));
-        }
-      }
-    }
-    SystemBody _get = alteredSystem.getSystemBodies().get(0);
-    ScheduledTypeGenerator _scheduledTypeGenerator = new ScheduledTypeGenerator(valueType, false);
-    AlphaNameChecker _alphaNameChecker = new AlphaNameChecker(false);
-    CodegenOptions _codegenOptions = new CodegenOptions(valueType);
-    return new ScheduledC(_get, _scheduledTypeGenerator, _alphaNameChecker, scheduler, _codegenOptions).convertSystemBody();
   }
 
   public static Program convert(final AlphaSystem system, final Scheduler scheduler, final CodegenOptions options) {

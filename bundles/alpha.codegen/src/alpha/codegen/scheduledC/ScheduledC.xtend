@@ -3,8 +3,11 @@ package alpha.codegen.scheduledC
 import alpha.codegen.ArrayAccessExpr
 import alpha.codegen.AssignmentStmt
 import alpha.codegen.BaseDataType
+import alpha.codegen.BinaryOperator
 import alpha.codegen.CodegenOptions
+import alpha.codegen.DataType
 import alpha.codegen.Factory
+import alpha.codegen.alphaBase.AlphaBaseHelpers
 import alpha.codegen.alphaBase.AlphaNameChecker
 import alpha.codegen.alphaBase.CodeGeneratorBase
 import alpha.codegen.isl.ASTConverter
@@ -12,6 +15,7 @@ import alpha.codegen.isl.AffineConverter
 import alpha.codegen.isl.LoopGenerator
 import alpha.codegen.isl.MemoryUtils
 import alpha.codegen.isl.PolynomialConverter
+import alpha.codegen.postprocessing.OmpPragmaInserter
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
 import alpha.model.StandardEquation
@@ -37,10 +41,6 @@ import static extension alpha.codegen.alphaBase.AlphaBaseHelpers.getOperator
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.*
-import alpha.codegen.BinaryOperator
-import alpha.codegen.alphaBase.AlphaBaseHelpers
-import org.eclipse.xtext.util.Tuples
-import alpha.codegen.postprocessing.OmpPragmaInserter
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -53,10 +53,13 @@ class ScheduledC extends CodeGeneratorBase {
 	/** An object that returns the schedule of the outputted C code */
 	protected val Scheduler scheduler
 	
+	/** An object that contains memory maps to apply to each variable */
 	protected val MemoryMapper mapper
 	
+	/** An optional object that contains a tile map */
 	protected val Tiler tiler
 	
+	/** The variable assignemnt statements that have been generated, for use in macro generation */
 	protected var Map<String, AssignmentStmt> variableStatements
 	
 	new(SystemBody systemBody, ScheduledTypeGenerator typeGen, AlphaNameChecker nameChecker, Scheduler scheduler, CodegenOptions options) {
@@ -190,13 +193,10 @@ class ScheduledC extends CodeGeneratorBase {
 		// Start building a static, non-inlined function.
 		val returnType = Factory.dataType(BaseDataType.VOID)
 		val evalName = nameChecker.getVariableReadName(equation.variable)
-		val evalBuilder = program.startFunction(true, options.inlineFunction, returnType, "eval_" + evalName)
 		
 		// Add a function parameter for each index of the variable's domain.
 		val indexNames = equation.expr.contextDomain.indexNames
-		indexNames.forEach[evalBuilder.addParameter(typeGenerator.indexType, it)]
 		
-		/** TODO: Expand to multiple edges */
 		exprConverter.target = equation.name
 
 		val computeValue = exprConverter.convertExpr(equation.expr)
@@ -204,24 +204,14 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		exprConverter.target = ""
 		
-		// If we want to inline the code fully then we won't add a new function
-		// Instead we will store the variable assignment generated using the expression converter
-		// To be used later when generating code in the evaluateAllPoints function
-		evalBuilder.addStatement(computeAndStore)
-		if(!options.inlineCode) {
-			program.addFunction(evalBuilder.instance)
-		} else {
-			variableStatements.put(equation.name, computeAndStore)
-		}
+		declareStatementEvaluation(evalName, returnType, indexNames, computeAndStore)
 	}
 	
 	override declareReductionEvaluation(ReduceExpression re) {
 		val returnType = Factory.dataType(BaseDataType.VOID)
 		val evalName = re.reductionName
-		val evalBuilder = program.startFunction(true, options.inlineFunction, returnType, "eval_" + evalName)
 		
 		val indexNames = re.body.contextDomain.indexNames
-		indexNames.forEach[evalBuilder.addParameter(typeGenerator.indexType, it)]
 		
 		exprConverter.target = evalName
 
@@ -233,6 +223,17 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		exprConverter.target = ""
 		
+		declareStatementEvaluation(evalName, returnType, indexNames, computeAndStore)
+	}
+	
+	def protected void declareStatementEvaluation(String evalName, DataType returnType, Iterable<String> indexNames, AssignmentStmt computeAndStore) {
+		val evalBuilder = program.startFunction(true, options.inlineFunction, returnType, "eval_" + evalName)
+		
+		indexNames.forEach[evalBuilder.addParameter(typeGenerator.indexType, it)]
+		
+		// If we want to inline the code fully then we won't add a new function
+		// Instead we will store the variable assignment generated using the expression converter
+		// To be used later when generating code in the evaluateAllPoints function
 		evalBuilder.addStatement(computeAndStore)
 		if(!options.inlineCode) {
 			program.addFunction(evalBuilder.instance)
@@ -250,6 +251,7 @@ class ScheduledC extends CodeGeneratorBase {
 		throw new UnsupportedOperationException("TODO: auto-generated method stub")
 	}
 	
+	/** Allocates memory for a standard variable. */
 	override allocateVariable(Variable variable) {
 		// Note: only local variables will be allocated, so we don't
 		// need to worry about compatibility with old AlphaZ system.
@@ -258,19 +260,12 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		allocatedVariables.add(name)
 		
-		// Call "malloc" to allocate memory and assign it to the variable.
-		val cardinalityExpr = variable.domain.apply(mapper.getMemoryMap(variable)).cardinalityExpr
-		val mallocCall = Factory.mallocCall(dataType, cardinalityExpr)
-		val mallocAssignment = Factory.assignmentStmt(name, mallocCall)
-		entryPoint.addStatement(mallocAssignment)
+		val mappedDomain = variable.domain.apply(mapper.getMemoryMap(variable))
 		
-		// Call our custom "checkMalloc" macro function to check if malloc succeeded
-		// and terminate the program if it didn't.
-		val nameStringExpr = Factory.customExpr('''"«name»"''')
-		val mallocCheckCall = Factory.callStmt("mallocCheck", Factory.customExpr(name), nameStringExpr)
-		entryPoint.addStatement(mallocCheckCall)
+		allocateMemory(name, dataType, mappedDomain)
 	}
 	
+	/** Allocates memory for a reduction body. */
 	override allocateReduction(ReduceExpression re) {
 		val variable = (re.getContainerEquation as StandardEquation).variable
 		val domain = re.body.contextDomain.copy
@@ -278,12 +273,18 @@ class ScheduledC extends CodeGeneratorBase {
 		val name = re.reductionName
 		val dataType = typeGenerator.getAlphaVariableType(variable)
 		
-		allocatedVariables.add(name)
-		
 		val memoryMap = re.projectionExpr.ISLMultiAff.toMap
 			.applyRange(mapper.getMemoryMap(variable))
+		val mappedDomain = domain.apply(memoryMap)
 		
-		val cardinalityExpr = domain.apply(memoryMap).cardinalityExpr
+		allocateMemory(name, dataType, mappedDomain)
+	}
+	
+	/** Helper for allocating reduction and standard variables */
+	def protected allocateMemory(String name, DataType dataType, ISLSet mappedDomain) {
+		allocatedVariables.add(name)
+		
+		val cardinalityExpr = mappedDomain.cardinalityExpr
 		val mallocCall = Factory.mallocCall(dataType, cardinalityExpr)
 		val mallocAssignment = Factory.assignmentStmt(name, mallocCall)
 		entryPoint.addStatement(mallocAssignment)
@@ -395,39 +396,6 @@ class ScheduledC extends CodeGeneratorBase {
 			.addStatement(loopResult.statements)
 	}
 	
-	@Deprecated
-	def static convert(AlphaSystem system, BaseDataType valueType, Scheduler scheduler, Tiler tiler, 
-		MemoryMapper mapper, boolean normalize, boolean inlineFunction, boolean inlineCode
-	) {
-		if (system.systemBodies.length != 1) {
-			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
-		}				
-		var alteredSystem = system.copyAE
-		Normalize.apply(alteredSystem)
-
-		for(Variable local : alteredSystem.locals) {
-			for(ISLMap map : scheduler.maps.maps) {
-				if(map.getTupleName(ISLDimType.isl_dim_out) == local.name) {
-					ChangeOfBasis.apply(alteredSystem, local, toMultiAff(map))
-				}
-			}
-		}
-		
-		for(Variable input : alteredSystem.inputs) {
-			for(ISLMap map : scheduler.maps.maps) {
-				if(map.getTupleName(ISLDimType.isl_dim_in) == input.name) {
-					ChangeOfBasis.apply(alteredSystem, input, toMultiAff(map))
-				}	
-			}
-		}
-		
-		
-		return (new ScheduledC(
-			alteredSystem.systemBodies.get(0), new ScheduledTypeGenerator(valueType, false), 
-			new AlphaNameChecker(false), scheduler, new CodegenOptions(valueType)
-		)).convertSystemBody
-	}
-
 	def static convert(AlphaSystem system, Scheduler scheduler, CodegenOptions options) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
