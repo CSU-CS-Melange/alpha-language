@@ -8,6 +8,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.ISLUtil.*
 import java.util.Set
+import alpha.model.util.ISLUtil.Dims
 
 /**
  * Checks whether a particular schedule is tiling-legal.
@@ -24,7 +25,7 @@ class AdmitsTiling {
 	}
 	
 	def static boolean check(PRDG prdg, Scheduler scheduler) {
-		check(prdg, scheduler, (0 ..< scheduler.maps.getNbOutputs).toSet)
+		check(prdg, scheduler, (0 ..< scheduler.maps.maps.findFirst[true].getNbOutputs).toSet)
 	}
 	
 	/**
@@ -36,7 +37,17 @@ class AdmitsTiling {
 	}
 	
 	def static void verify(PRDG prdg, Scheduler scheduler) {
-		verify(prdg, scheduler, (0 ..< scheduler.maps.getNbOutputs).toSet)
+		verify(prdg, scheduler, (0 ..< scheduler.maps.maps.findFirst[true].getNbOutputs).toSet)
+	}
+	
+	/**
+	 * Returns a set containing the dimensions of the schedule 
+	 * which are tileable
+	 */
+	def static Set<Integer> tileableDims(PRDG prdg, Scheduler scheduler) {
+		(0 ..< scheduler.maps.maps.findFirst[true].getNbOutputs)
+			.filter[check(prdg, scheduler, #[it].toSet)]
+			.toSet
 	}
 	
 	/**
@@ -49,7 +60,7 @@ class AdmitsTiling {
 		val destTimestamp = edge.map.applyRange(scheduler.getAnonymousMap(edge.dest.name)).lexMax.toMultiAff
 		
 		val violationSets = tiledDims.map[ dim | 
-			val violationSet = ISLSet.buildLTSet(sourceTimestamp.getAff(dim), destTimestamp.getAff(dim))
+			val violationSet = ISLSet.buildLTSet(sourceTimestamp.getAff(dim).copy, destTimestamp.getAff(dim).copy)
 				.intersect(edge.domain)
 			
 			if(noisy && !violationSet.isEmpty) {

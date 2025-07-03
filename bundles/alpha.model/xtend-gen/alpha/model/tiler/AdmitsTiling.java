@@ -8,7 +8,9 @@ import alpha.model.util.ISLUtil;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
+import java.util.Collections;
 import java.util.Set;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.InputOutput;
@@ -33,7 +35,10 @@ public class AdmitsTiling {
   }
 
   public static boolean check(final PRDG prdg, final Scheduler scheduler) {
-    int _nbOutputs = scheduler.getMaps().getNbOutputs();
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      return Boolean.valueOf(true);
+    };
+    int _nbOutputs = IterableExtensions.<ISLMap>findFirst(scheduler.getMaps().getMaps(), _function).getNbOutputs();
     return AdmitsTiling.check(prdg, scheduler, IterableExtensions.<Integer>toSet(new ExclusiveRange(0, _nbOutputs, true)));
   }
 
@@ -49,8 +54,26 @@ public class AdmitsTiling {
   }
 
   public static void verify(final PRDG prdg, final Scheduler scheduler) {
-    int _nbOutputs = scheduler.getMaps().getNbOutputs();
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      return Boolean.valueOf(true);
+    };
+    int _nbOutputs = IterableExtensions.<ISLMap>findFirst(scheduler.getMaps().getMaps(), _function).getNbOutputs();
     AdmitsTiling.verify(prdg, scheduler, IterableExtensions.<Integer>toSet(new ExclusiveRange(0, _nbOutputs, true)));
+  }
+
+  /**
+   * Returns a set containing the dimensions of the schedule
+   * which are tileable
+   */
+  public static Set<Integer> tileableDims(final PRDG prdg, final Scheduler scheduler) {
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      return Boolean.valueOf(true);
+    };
+    int _nbOutputs = IterableExtensions.<ISLMap>findFirst(scheduler.getMaps().getMaps(), _function).getNbOutputs();
+    final Function1<Integer, Boolean> _function_1 = (Integer it) -> {
+      return Boolean.valueOf(AdmitsTiling.check(prdg, scheduler, IterableExtensions.<Integer>toSet(Collections.<Integer>unmodifiableList(CollectionLiterals.<Integer>newArrayList(it)))));
+    };
+    return IterableExtensions.<Integer>toSet(IterableExtensions.<Integer>filter(new ExclusiveRange(0, _nbOutputs, true), _function_1));
   }
 
   /**
@@ -61,7 +84,7 @@ public class AdmitsTiling {
     final ISLMultiAff sourceTimestamp = ISLUtil.toMultiAff(scheduler.getAnonymousMap(edge.getSource().getName()));
     final ISLMultiAff destTimestamp = ISLUtil.toMultiAff(edge.getMap().applyRange(scheduler.getAnonymousMap(edge.getDest().getName())).lexMax());
     final Function1<Integer, ISLSet> _function = (Integer dim) -> {
-      final ISLSet violationSet = ISLSet.buildLTSet(sourceTimestamp.getAff((dim).intValue()), destTimestamp.getAff((dim).intValue())).intersect(edge.getDomain());
+      final ISLSet violationSet = ISLSet.buildLTSet(sourceTimestamp.getAff((dim).intValue()).copy(), destTimestamp.getAff((dim).intValue()).copy()).intersect(edge.getDomain());
       if ((noisy && (!violationSet.isEmpty()))) {
         InputOutput.<String>println("Intra-tile causality is invalid for the given schedule.");
         ISLMap _map = edge.getMap();
