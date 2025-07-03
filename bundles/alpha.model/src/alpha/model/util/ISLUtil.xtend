@@ -211,12 +211,36 @@ class ISLUtil {
 	}
 	
 	/**
-	 * Determines the number of effective dimensions for the set.
+	 * Determines the number of dimensions of the polyhedron proper.
 	 * For example, if the set represents a 2D object embedded in 3D space,
 	 * this will indicate that the set is 2D.
+	 * Paramentric dimension is not counted.
+	 */
+	def static int polyDimension(ISLSet set) {
+		set.copy.simpleHull.polyDimension
+	}
+	
+	def static int polyDimension(ISLBasicSet set) {
+		if (set.isEmpty) {
+			return 0
+		}
+		
+		val flatDims = set.copy
+			.detectEqualities.removeRedundancies
+			.constraints
+			.filter[involvesDims(Dims.SET, 0, set.dim(Dims.SET))]
+			.filter[isEquality]
+			.size
+			
+		return set.dim(Dims.SET) - flatDims
+	}
+	 
+	/**
+	 * Determines the number of effective *unbounded* dimensions for the set.
+	 * dimensions along which a polyhedron has a bounded width are not considered.
 	 */
 	def static int dimensionality(ISLSet set) {
-		set.copy.computeDivs.basicSets.map[dimensionality].max
+		set.copy.simpleHull.dimensionality
 	}
 	
 	def static int dimensionality(ISLBasicSet set) {
@@ -227,15 +251,18 @@ class ISLUtil {
 			return 0
 		}
 		
-		val effectivelySaturatedCount =
+		val effectivelySaturatedConstraints =
 			set.constraints
-			.filter[c | c.involvesDims(ISLDimType.isl_dim_out, 0, set.space.nbOutputs)]
-			.filter[c | c.isEffectivelySaturated(set)]
-			.map[aff.toLinearUnitVector.toString]
-			.toSet
-			.size
+			.filter[involvesDims(ISLDimType.isl_dim_out, 0, set.space.nbOutputs)]
+			.filter[isEffectivelySaturated(set)]
 		
-		return set.nbIndices - effectivelySaturatedCount
+		val saturatedSpace = effectivelySaturatedConstraints
+			.map[copy.setConstant(0)]
+			.fold(ISLBasicSet.buildUniverse(set.space.copy), [s, c | s.addConstraint(c)])
+			.projectOut(Dims.PARAM, 0, set.dim(Dims.PARAM))
+		
+		
+		return saturatedSpace.polyDimension
 	}
 	
 	/**
@@ -264,9 +291,11 @@ class ISLUtil {
 	def static List<ISLPoint> getBasisVectors(ISLSet set) {
 		var vectors = new ArrayList<ISLPoint>()
 		var ISLSet workingSet = set.copy.affineHull.toSet
+		
 		//The working set must be aligned to the origin or empty intersections may occur
 		workingSet = workingSet.apply(workingSet.copy.samplePoint.buildTranslationMaff.toMap.reverse)
-		val dim = workingSet.dimensionality
+		val dim = workingSet.polyDimension
+		
 		for(var i = 0; i < dim; i++) {
 			val ISLPoint basisVector = workingSet.copy.getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas.samplePoint
 			vectors += basisVector

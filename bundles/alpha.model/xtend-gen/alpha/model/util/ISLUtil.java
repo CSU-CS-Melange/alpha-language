@@ -281,15 +281,37 @@ public class ISLUtil {
   }
 
   /**
-   * Determines the number of effective dimensions for the set.
+   * Determines the number of dimensions of the polyhedron proper.
    * For example, if the set represents a 2D object embedded in 3D space,
    * this will indicate that the set is 2D.
+   * Paramentric dimension is not counted.
+   */
+  public static int polyDimension(final ISLSet set) {
+    return ISLUtil.polyDimension(set.copy().simpleHull());
+  }
+
+  public static int polyDimension(final ISLBasicSet set) {
+    boolean _isEmpty = set.isEmpty();
+    if (_isEmpty) {
+      return 0;
+    }
+    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint it) -> {
+      return Boolean.valueOf(it.involvesDims(ISLUtil.Dims.SET, 0, set.dim(ISLUtil.Dims.SET)));
+    };
+    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint it) -> {
+      return Boolean.valueOf(it.isEquality());
+    };
+    final int flatDims = IterableExtensions.size(IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(set.copy().detectEqualities().removeRedundancies().getConstraints(), _function), _function_1));
+    int _dim = set.dim(ISLUtil.Dims.SET);
+    return (_dim - flatDims);
+  }
+
+  /**
+   * Determines the number of effective *unbounded* dimensions for the set.
+   * dimensions along which a polyhedron has a bounded width are not considered.
    */
   public static int dimensionality(final ISLSet set) {
-    final Function1<ISLBasicSet, Integer> _function = (ISLBasicSet it) -> {
-      return Integer.valueOf(ISLUtil.dimensionality(it));
-    };
-    return (int) IterableExtensions.<Integer>max(ListExtensions.<ISLBasicSet, Integer>map(set.copy().computeDivs().getBasicSets(), _function));
+    return ISLUtil.dimensionality(set.copy().simpleHull());
   }
 
   public static int dimensionality(final ISLBasicSet set) {
@@ -297,18 +319,21 @@ public class ISLUtil {
     if (_isEmpty) {
       return 0;
     }
-    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint c) -> {
-      return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, 0, set.getSpace().getNbOutputs()));
+    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint it) -> {
+      return Boolean.valueOf(it.involvesDims(ISLDimType.isl_dim_out, 0, set.getSpace().getNbOutputs()));
     };
-    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint c) -> {
-      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, set));
+    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint it) -> {
+      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(it, set));
     };
-    final Function1<ISLConstraint, String> _function_2 = (ISLConstraint it) -> {
-      return ((List<Long>)Conversions.doWrapArray(ISLUtil.toLinearUnitVector(it.getAff()))).toString();
+    final Iterable<ISLConstraint> effectivelySaturatedConstraints = IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function), _function_1);
+    final Function1<ISLConstraint, ISLConstraint> _function_2 = (ISLConstraint it) -> {
+      return it.copy().setConstant(0);
     };
-    final int effectivelySaturatedCount = IterableExtensions.<String>toSet(IterableExtensions.<ISLConstraint, String>map(IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function), _function_1), _function_2)).size();
-    int _nbIndices = set.getNbIndices();
-    return (_nbIndices - effectivelySaturatedCount);
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_3 = (ISLBasicSet s, ISLConstraint c) -> {
+      return s.addConstraint(c);
+    };
+    final ISLBasicSet saturatedSpace = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(IterableExtensions.<ISLConstraint, ISLConstraint>map(effectivelySaturatedConstraints, _function_2), ISLBasicSet.buildUniverse(set.getSpace().copy()), _function_3).projectOut(ISLUtil.Dims.PARAM, 0, set.dim(ISLUtil.Dims.PARAM));
+    return ISLUtil.polyDimension(saturatedSpace);
   }
 
   /**
@@ -344,7 +369,7 @@ public class ISLUtil {
     ArrayList<ISLPoint> vectors = new ArrayList<ISLPoint>();
     ISLSet workingSet = set.copy().affineHull().toSet();
     workingSet = workingSet.apply(ISLUtil.buildTranslationMaff(workingSet.copy().samplePoint()).toMap().reverse());
-    final int dim = ISLUtil.dimensionality(workingSet);
+    final int dim = ISLUtil.polyDimension(workingSet);
     for (int i = 0; (i < dim); i++) {
       {
         final ISLPoint basisVector = workingSet.copy().getLexNextMap(set.dim(ISLDimType.isl_dim_out)).deltas().samplePoint();
