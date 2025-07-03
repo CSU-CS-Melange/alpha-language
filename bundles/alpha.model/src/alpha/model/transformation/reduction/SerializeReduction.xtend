@@ -122,12 +122,12 @@ class SerializeReduction {
 	 * Returns the variable created by the serialization process.
 	 */
 	static def Variable applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff) {
-		applyOneShot(are, accumulationMaff, generateReductionName(are))
+		return applyOneShot(are, accumulationMaff, generateReductionName(are))
 	}
 	
 	static def Variable applyOneShot(AbstractReduceExpression are, ISLMultiAff accumulationMaff, String newName) {
 		checkArguments(are, #[accumulationMaff], newName, true)
-		serializeOneShot(are, accumulationMaff, newName)
+		return serializeOneShot(are, accumulationMaff, newName)
 	}
 	
 	private static def String generateReductionName(AbstractReduceExpression are) {

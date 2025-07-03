@@ -160,12 +160,8 @@ public class SerializeReduction {
   }
 
   public static Variable applyOneShot(final AbstractReduceExpression are, final ISLMultiAff accumulationMaff, final String newName) {
-    Variable _xblockexpression = null;
-    {
-      SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, true);
-      _xblockexpression = SerializeReduction.serializeOneShot(are, accumulationMaff, newName);
-    }
-    return _xblockexpression;
+    SerializeReduction.checkArguments(are, Collections.<ISLMultiAff>unmodifiableList(CollectionLiterals.<ISLMultiAff>newArrayList(accumulationMaff)), newName, true);
+    return SerializeReduction.serializeOneShot(are, accumulationMaff, newName);
   }
 
   private static String generateReductionName(final AbstractReduceExpression are) {
