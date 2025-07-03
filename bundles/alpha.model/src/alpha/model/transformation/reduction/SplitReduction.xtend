@@ -133,6 +133,8 @@ class SplitReduction {
 	static def Map<ISLSet, ISLMultiAff> applyDominanceSplit(AbstractReduceExpression are, Iterable<ISLMultiAff> maffs) {
 		if (are.body.contextDomain.nbBasicSets > 1)
 			throw new Exception("Cannot split a reduction body with multiple basic sets")
+		if (maffs.size < 1)
+			throw new Exception("Cannot split a reduction body without at least one dominance maff")
 			
 		val caseExpr = createCaseExpression()
 		val DS = new HashMap<ISLSet, ISLMultiAff>

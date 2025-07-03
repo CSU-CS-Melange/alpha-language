@@ -152,6 +152,11 @@ public class SplitReduction {
       if (_greaterThan) {
         throw new Exception("Cannot split a reduction body with multiple basic sets");
       }
+      int _size = IterableExtensions.size(maffs);
+      boolean _lessThan = (_size < 1);
+      if (_lessThan) {
+        throw new Exception("Cannot split a reduction body without at least one dominance maff");
+      }
       final CaseExpression caseExpr = AlphaUserFactory.createCaseExpression();
       final HashMap<ISLSet, ISLMultiAff> DS = new HashMap<ISLSet, ISLMultiAff>();
       for (int i = 0; (i < IterableExtensions.size(maffs)); i++) {
