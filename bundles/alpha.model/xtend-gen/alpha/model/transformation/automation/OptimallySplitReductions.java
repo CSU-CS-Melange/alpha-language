@@ -4,8 +4,8 @@ import alpha.model.AbstractReduceExpression;
 import alpha.model.AlphaExpression;
 import alpha.model.AlphaSystem;
 import alpha.model.AlphaVisitable;
-import alpha.model.Equation;
 import alpha.model.ReduceExpression;
+import alpha.model.Variable;
 import alpha.model.prdg.PRDG;
 import alpha.model.prdg.PRDGEdge;
 import alpha.model.prdg.PRDGGenerator;
@@ -24,11 +24,11 @@ import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
-import fr.irisa.cairn.jnimap.isl.ISLPoint;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,8 +39,6 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
-import org.eclipse.xtext.xbase.lib.ListExtensions;
-import org.eclipse.xtext.xbase.lib.MapExtensions;
 
 @SuppressWarnings("all")
 public class OptimallySplitReductions {
@@ -70,6 +68,8 @@ public class OptimallySplitReductions {
   private static class ReductionSerializer extends AbstractAlphaCompleteVisitor {
     private Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap;
 
+    protected Set<Variable> newVariables;
+
     public static void apply(final AlphaVisitable expr, final Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
       final OptimallySplitReductions.ReductionSerializer serializer = new OptimallySplitReductions.ReductionSerializer(reuseDepMap);
       expr.accept(serializer);
@@ -77,6 +77,8 @@ public class OptimallySplitReductions {
 
     public ReductionSerializer(final Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
       this.reuseDepMap = reuseDepMap;
+      HashSet<Variable> _hashSet = new HashSet<Variable>();
+      this.newVariables = _hashSet;
     }
 
     @Override
@@ -88,11 +90,14 @@ public class OptimallySplitReductions {
       final ISLSet superDomain = IterableExtensions.<ISLSet>findFirst(this.reuseDepMap.keySet(), _function);
       final Iterable<ISLMultiAff> reuseDeps = this.reuseDepMap.get(superDomain);
       for (final ISLMultiAff dep : reuseDeps) {
-        SerializeReduction.applyOneShot(reduceExpression, dep);
+        this.newVariables.add(SerializeReduction.applyOneShot(reduceExpression, dep));
       }
     }
   }
 
+  /**
+   * Applies the optimal splitting process to a system.
+   */
   public static void apply(final AlphaSystem sys) {
     NormalizeReduction.apply(sys);
     final PRDG prdg = PRDGGenerator.apply(sys);
@@ -114,10 +119,6 @@ public class OptimallySplitReductions {
     final PRDG extendedPrdg = OptimallySplitReductions.extendPRDG(prdg, splittableEdges);
     final FoutrierScheduler scheduler = new FoutrierScheduler(extendedPrdg);
     OptimallySplitReductions.split(sys, scheduler, extendedPrdg);
-  }
-
-  public static void FoutrierScheduler(final ISLUnionMap map) {
-    throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 
   private static PRDG extendPRDG(final PRDG prdg, final Iterable<PRDGEdge> splittableEdges) {
@@ -298,64 +299,65 @@ public class OptimallySplitReductions {
   }
 
   /**
-   * Splitting
+   * Splits every reduction in a system according to read function dominance.
    */
-  private static void split(final AlphaSystem sys, final Scheduler scheduler, final PRDG prdg) {
-    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
-      PRDGNode _node = prdg.getNode(it.getInputTupleName());
-      return Boolean.valueOf((_node instanceof OptimallySplitReductions.DummyNode));
-    };
-    final ISLUnionMap realScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<ISLMap>reject(scheduler.getMaps().getMaps(), _function)));
-    final int nTimeDims = ISLUtil.countTimeDimensions(sys, realScheduleMaps);
-    final Function1<PRDGNode, Boolean> _function_1 = (PRDGNode it) -> {
-      return Boolean.valueOf(it.isReductionNode());
-    };
-    final Consumer<PRDGNode> _function_2 = (PRDGNode it) -> {
-      OptimallySplitReductions.splitNode(it, sys, scheduler, prdg, nTimeDims);
-    };
-    IterableExtensions.<PRDGNode>filter(prdg.getNodes(), _function_1).forEach(_function_2);
+  private static Object split(final AlphaSystem sys, final Scheduler scheduler, final PRDG prdg) {
+    Object _xblockexpression = null;
+    {
+      final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+        PRDGNode _node = prdg.getNode(it.getInputTupleName());
+        return Boolean.valueOf((_node instanceof OptimallySplitReductions.DummyNode));
+      };
+      final ISLUnionMap realScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<ISLMap>reject(scheduler.getMaps().getMaps(), _function)));
+      final int nTimeDims = ISLUtil.countTimeDimensions(sys, realScheduleMaps);
+      final Function1<PRDGNode, Boolean> _function_1 = (PRDGNode it) -> {
+        return Boolean.valueOf(it.isReductionNode());
+      };
+      final Function1<PRDGNode, Boolean> _function_2 = (PRDGNode it) -> {
+        return Boolean.valueOf(OptimallySplitReductions.hasMultipleDependences(it, prdg));
+      };
+      final Consumer<PRDGNode> _function_3 = (PRDGNode it) -> {
+        OptimallySplitReductions.splitNode(it, sys, scheduler, prdg, nTimeDims);
+      };
+      IterableExtensions.<PRDGNode>filter(IterableExtensions.<PRDGNode>filter(prdg.getNodes(), _function_1), _function_2).forEach(_function_3);
+      _xblockexpression = null;
+    }
+    return _xblockexpression;
   }
 
+  /**
+   * Splits a single reduction such that each piece is dominated by one read function.
+   */
   private static void splitNode(final PRDGNode node, final AlphaSystem sys, final Scheduler scheduler, final PRDG prdg, final int nTimeDims) {
     AlphaExpression _expr = node.getOriginEquation(sys).getExpr();
     final AbstractReduceExpression are = ((AbstractReduceExpression) _expr);
-    final int nullspaceDim = ISLUtil.dimensionality(ISLUtil.nullSpace(are.getProjection().copy()));
-    final Function1<ISLPoint, ISLMultiAff> _function = (ISLPoint it) -> {
-      return ISLUtil.buildProjectionMaff(it);
-    };
-    final Function2<ISLMultiAff, ISLMultiAff, ISLMultiAff> _function_1 = (ISLMultiAff m1, ISLMultiAff m2) -> {
-      return m1.add(m2);
-    };
-    final ISLMultiAff projMaff = IterableExtensions.<ISLMultiAff>reduce(ListExtensions.<ISLPoint, ISLMultiAff>map(ISLUtil.getBasisVectors(ISLUtil.nullSpace(are.getProjection().copy())), _function), _function_1);
-    final Function1<OptimallySplitReductions.DummyNode, ISLMap> _function_2 = (OptimallySplitReductions.DummyNode it) -> {
+    final Function1<OptimallySplitReductions.DummyNode, ISLMap> _function = (OptimallySplitReductions.DummyNode it) -> {
       return OptimallySplitReductions.processDummySchedule(it, node, scheduler);
     };
-    final Function1<ISLMap, List<ISLAff>> _function_3 = (ISLMap it) -> {
+    final Function1<ISLMap, List<ISLAff>> _function_1 = (ISLMap it) -> {
       return ISLUtil.toMultiAff(it).getAffs().subList(0, nTimeDims);
     };
-    final Function1<List<ISLAff>, Iterable<ISLAff>> _function_4 = (List<ISLAff> it) -> {
+    final Function1<List<ISLAff>, Iterable<ISLAff>> _function_2 = (List<ISLAff> it) -> {
       return OptimallySplitReductions.reduceAffs(it);
     };
-    final Function1<Iterable<ISLAff>, ISLMultiAff> _function_5 = (Iterable<ISLAff> it) -> {
+    final Function1<Iterable<ISLAff>, ISLMultiAff> _function_3 = (Iterable<ISLAff> it) -> {
       return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(it));
     };
-    final Iterable<ISLMultiAff> timeMaffs = IterableExtensions.<Iterable<ISLAff>, ISLMultiAff>map(IterableExtensions.<List<ISLAff>, Iterable<ISLAff>>map(IterableExtensions.<ISLMap, List<ISLAff>>map(IterableExtensions.<OptimallySplitReductions.DummyNode, ISLMap>map(OptimallySplitReductions.correspondingDummyNodes(prdg, node), _function_2), _function_3), _function_4), _function_5);
-    final Map<ISLSet, ISLMultiAff> splitPieces = SplitReduction.applyDominanceSplit(are, timeMaffs);
-    final Equation equation = node.getOriginEquation(sys);
-    final Function1<ISLMultiAff, Iterable<ISLMultiAff>> _function_6 = (ISLMultiAff it) -> {
-      final Function1<ISLAff, ISLAff> _function_7 = (ISLAff it_1) -> {
-        return it_1.pullback(projMaff.copy());
-      };
-      final Function1<ISLAff, ISLMultiAff> _function_8 = (ISLAff it_1) -> {
-        return ISLUtil.buildTranslationMaff(ISLUtil.affToVector(it_1.negate()));
-      };
-      final Function1<ISLMultiAff, Boolean> _function_9 = (ISLMultiAff it_1) -> {
-        return Boolean.valueOf(it_1.isIdentity());
-      };
-      return IterableExtensions.<ISLMultiAff>take(IterableExtensions.<ISLMultiAff>reject(ListExtensions.<ISLAff, ISLMultiAff>map(ListExtensions.<ISLAff, ISLAff>map(it.getAffs(), _function_7), _function_8), _function_9), nullspaceDim);
+    final Iterable<ISLMultiAff> timeMaffs = IterableExtensions.<Iterable<ISLAff>, ISLMultiAff>map(IterableExtensions.<List<ISLAff>, Iterable<ISLAff>>map(IterableExtensions.<ISLMap, List<ISLAff>>map(IterableExtensions.<OptimallySplitReductions.DummyNode, ISLMap>map(OptimallySplitReductions.correspondingDummyNodes(prdg, node), _function), _function_1), _function_2), _function_3);
+    SplitReduction.applyDominanceSplit(are, timeMaffs);
+  }
+
+  /**
+   * Returns whether the given node has multiple dependences.
+   * If not, it should not be split.
+   */
+  private static boolean hasMultipleDependences(final PRDGNode node, final PRDG prdg) {
+    final Function1<PRDGEdge, Boolean> _function = (PRDGEdge it) -> {
+      PRDGNode _source = it.getSource();
+      return Boolean.valueOf(Objects.equal(_source, node));
     };
-    final Map<ISLSet, Iterable<ISLMultiAff>> splitDeps = MapExtensions.<ISLSet, ISLMultiAff, Iterable<ISLMultiAff>>mapValues(splitPieces, _function_6);
-    OptimallySplitReductions.ReductionSerializer.apply(equation, splitDeps);
+    int _size = IterableExtensions.size(IterableExtensions.<PRDGEdge>filter(prdg.getEdges(), _function));
+    return (_size > 1);
   }
 
   /**

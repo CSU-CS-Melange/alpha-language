@@ -3,38 +3,30 @@ package alpha.model.transformation.automation
 import alpha.model.AbstractReduceExpression
 import alpha.model.AlphaSystem
 import alpha.model.AlphaVisitable
-import alpha.model.Equation
 import alpha.model.ReduceExpression
+import alpha.model.Variable
 import alpha.model.prdg.PRDG
 import alpha.model.prdg.PRDGEdge
 import alpha.model.prdg.PRDGGenerator
 import alpha.model.prdg.PRDGNode
+import alpha.model.scheduler.FoutrierScheduler
+import alpha.model.scheduler.Scheduler
 import alpha.model.transformation.reduction.NormalizeReduction
 import alpha.model.transformation.reduction.SerializeReduction
 import alpha.model.transformation.reduction.SplitReduction
 import alpha.model.util.AbstractAlphaCompleteVisitor
+import alpha.model.util.ISLUtil.Dims
 import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLLocalSpace
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLMultiAff
-import fr.irisa.cairn.jnimap.isl.ISLSchedule
-import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
 import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import java.util.ArrayList
-import java.util.List
+import java.util.HashSet
 import java.util.Map
 import java.util.Set
 
 import static extension alpha.model.util.ISLUtil.*
-import alpha.model.util.Show
-import fr.irisa.cairn.jnimap.isl.ISLVal
-import alpha.model.util.ISLUtil.Dims
-import alpha.model.scheduler.FoutrierScheduler
-import alpha.model.scheduler.Scheduler
 
 class OptimallySplitReductions {
 	
@@ -63,14 +55,16 @@ class OptimallySplitReductions {
 	 */
 	private static class ReductionSerializer extends AbstractAlphaCompleteVisitor {		
 		Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap
+		protected Set<Variable> newVariables
 		
-		def static apply(AlphaVisitable expr, Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
+		def static void apply(AlphaVisitable expr, Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
 			val serializer = new ReductionSerializer(reuseDepMap)
 			expr.accept(serializer)
 		}
 		
 		new(Map<ISLSet, Iterable<ISLMultiAff>> reuseDepMap) {
 			this.reuseDepMap = reuseDepMap
+			this.newVariables = new HashSet<Variable>()
 		}
 		
 		override void outReduceExpression(ReduceExpression reduceExpression) {
@@ -79,12 +73,15 @@ class OptimallySplitReductions {
 			val reuseDeps = reuseDepMap.get(superDomain)
 			
 			for(ISLMultiAff dep : reuseDeps) {
-				SerializeReduction.applyOneShot(reduceExpression, dep)
+				newVariables.add(SerializeReduction.applyOneShot(reduceExpression, dep))
 			}
 		}
 	}
 	
-	static def apply(AlphaSystem sys) {
+	/**
+	 * Applies the optimal splitting process to a system.
+	 */
+	def static void apply(AlphaSystem sys) {
 		// NormalizeReduction must be applied so that reduction PRDGNodes can be mapped back
 		// to the corresponding ReduceExpression.
 		NormalizeReduction.apply(sys)
@@ -96,18 +93,13 @@ class OptimallySplitReductions {
 		]
 		
 		// Only extend the PRDG if there are reductions that can be split
-		if(splittableEdges.empty) return 
+		if(splittableEdges.empty) return
 		
 		val extendedPrdg = extendPRDG(prdg, splittableEdges)
 		val scheduler = new FoutrierScheduler(extendedPrdg)
 		
 		split(sys, scheduler, extendedPrdg)
 	}
-	
-	def static FoutrierScheduler(ISLUnionMap map) {
-		throw new UnsupportedOperationException("TODO: auto-generated method stub")
-	}
-	
 	
 	def static private PRDG extendPRDG(PRDG prdg, Iterable<PRDGEdge> splittableEdges) {
 		val reductionBodyNodes = splittableEdges.map[source]
@@ -267,25 +259,28 @@ class OptimallySplitReductions {
 	 *          Splitting              *
 	 ***********************************/
 	
-	def static private void split(AlphaSystem sys, Scheduler scheduler, PRDG prdg) {
+	/**
+	 * Splits every reduction in a system according to read function dominance.
+	 */ 
+	static private def split(AlphaSystem sys, Scheduler scheduler, PRDG prdg) {
 		val realScheduleMaps = scheduler.maps.maps.reject[
 			prdg.getNode(getInputTupleName) instanceof DummyNode
 		].toList.convertToUnionMap
 		
 		val nTimeDims = countTimeDimensions(sys, realScheduleMaps)
 		
-		prdg.getNodes.filter[isReductionNode]
+		prdg.getNodes
+			.filter[isReductionNode]
+			.filter[hasMultipleDependences(prdg)]
 			.forEach[splitNode(sys, scheduler, prdg, nTimeDims)]
+		null
 	}
 	
-	def private static void splitNode(PRDGNode node, AlphaSystem sys, Scheduler scheduler, PRDG prdg, int nTimeDims) {
+	/**
+	 * Splits a single reduction such that each piece is dominated by one read function.
+	 */
+	private static def void splitNode(PRDGNode node, AlphaSystem sys, Scheduler scheduler, PRDG prdg, int nTimeDims) {
 		val AbstractReduceExpression are = node.getOriginEquation(sys).expr as AbstractReduceExpression
-		val int nullspaceDim = are.getProjection.copy.nullSpace.dimensionality
-		
-		//Projects points onto the kernel of the write function
-		val ISLMultiAff projMaff = are.getProjection.copy.nullSpace.getBasisVectors
-			.map[buildProjectionMaff]
-			.reduce[m1, m2 | m1.add(m2)]
 		
 		//Convert the schedules on the dummy nodes to the domains of the real node
 		//Then take only the time dimensions, and reduce each dim by the gcd
@@ -296,23 +291,17 @@ class OptimallySplitReductions {
 			.map[toList.convertToMultiAff]
 		
 		//Splits reduction body according to the dominant read function
-		val Map<ISLSet, ISLMultiAff> splitPieces = SplitReduction.applyDominanceSplit(are, timeMaffs)
-		
-		//Reference must be re-retrieved
-		val Equation equation = node.getOriginEquation(sys)
-		
-		//Convert each timestamp maff into a translation maff representing its
-		//normal vector
-		val splitDeps = splitPieces.mapValues[
-			getAffs
-				.map[pullback(projMaff.copy)]
-				.map[negate.affToVector.buildTranslationMaff]
-				.reject[isIdentity]
-				.take(nullspaceDim)
-		]
-		
-		//Finally, use these maffs to serialize each piece
-		ReductionSerializer.apply(equation, splitDeps)
+		SplitReduction.applyDominanceSplit(are, timeMaffs)
+	}
+	
+	/**
+	 * Returns whether the given node has multiple dependences.
+	 * If not, it should not be split.
+	 */
+	private static def boolean hasMultipleDependences(PRDGNode node, PRDG prdg) {
+		prdg.getEdges
+			.filter[source == node]
+			.size > 1
 	}
 	
 	/**
