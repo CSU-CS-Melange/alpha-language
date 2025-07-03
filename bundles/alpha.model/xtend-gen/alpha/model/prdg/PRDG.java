@@ -100,8 +100,8 @@ public class PRDG {
 
   /**
    * Collapses all reduction nodes.
-   * Since the schedule for reduction nodes goes unused, there is no reason
-   * not to call this function at the time of writing this comment.
+   * Useful for simplifying schedule generation
+   * when not explicitly scheduling reductions.
    */
   public void inlineReductions() {
     while (IterableExtensions.<PRDGNode>exists(this.nodes, ((Function1<PRDGNode, Boolean>) (PRDGNode it) -> {

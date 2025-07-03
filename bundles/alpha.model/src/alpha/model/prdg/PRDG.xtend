@@ -69,8 +69,8 @@ class PRDG {
 	
 	/**
 	 * Collapses all reduction nodes.
-	 * Since the schedule for reduction nodes goes unused, there is no reason
-	 * not to call this function at the time of writing this comment.
+	 * Useful for simplifying schedule generation 
+	 * when not explicitly scheduling reductions.
 	 */
 	def void inlineReductions() {
 		while(nodes.exists[isReductionNode]) {
