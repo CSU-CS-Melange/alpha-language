@@ -15,6 +15,7 @@ import alpha.model.BinaryExpression;
 import alpha.model.CaseExpression;
 import alpha.model.ConstantExpression;
 import alpha.model.DependenceExpression;
+import alpha.model.ExternalMultiArgExpression;
 import alpha.model.IfExpression;
 import alpha.model.IndexExpression;
 import alpha.model.MultiArgExpression;
@@ -243,6 +244,16 @@ public class ExprConverter {
   }
 
   /**
+   * Multi-arg expressions are converted into a tree of nested binary expressions.
+   */
+  protected Expression _convertExpr(final ExternalMultiArgExpression expr) {
+    final Function1<AlphaExpression, Expression> _function = (AlphaExpression it) -> {
+      return this.convertExpr(it);
+    };
+    return Factory.callExpr(expr.getExternalFunction().getName(), ((Expression[])Conversions.unwrapArray(ListExtensions.<AlphaExpression, Expression>map(expr.getExprs(), _function), Expression.class)));
+  }
+
+  /**
    * Default case to catch unknown expression types.
    */
   protected Expression _convertExpr(final AlphaExpression expr) {
@@ -253,36 +264,38 @@ public class ExprConverter {
     }
   }
 
-  public Expression convertExpr(final AlphaExpression re) {
-    if (re instanceof AutoRestrictExpression) {
-      return _convertExpr((AutoRestrictExpression)re);
-    } else if (re instanceof BinaryExpression) {
-      return _convertExpr((BinaryExpression)re);
-    } else if (re instanceof CaseExpression) {
-      return _convertExpr((CaseExpression)re);
-    } else if (re instanceof ConstantExpression) {
-      return _convertExpr((ConstantExpression)re);
-    } else if (re instanceof DependenceExpression) {
-      return _convertExpr((DependenceExpression)re);
-    } else if (re instanceof IfExpression) {
-      return _convertExpr((IfExpression)re);
-    } else if (re instanceof IndexExpression) {
-      return _convertExpr((IndexExpression)re);
-    } else if (re instanceof MultiArgExpression) {
-      return _convertExpr((MultiArgExpression)re);
-    } else if (re instanceof PolynomialIndexExpression) {
-      return _convertExpr((PolynomialIndexExpression)re);
-    } else if (re instanceof RestrictExpression) {
-      return _convertExpr((RestrictExpression)re);
-    } else if (re instanceof UnaryExpression) {
-      return _convertExpr((UnaryExpression)re);
-    } else if (re instanceof VariableExpression) {
-      return _convertExpr((VariableExpression)re);
-    } else if (re != null) {
-      return _convertExpr(re);
+  public Expression convertExpr(final AlphaExpression expr) {
+    if (expr instanceof ExternalMultiArgExpression) {
+      return _convertExpr((ExternalMultiArgExpression)expr);
+    } else if (expr instanceof AutoRestrictExpression) {
+      return _convertExpr((AutoRestrictExpression)expr);
+    } else if (expr instanceof BinaryExpression) {
+      return _convertExpr((BinaryExpression)expr);
+    } else if (expr instanceof CaseExpression) {
+      return _convertExpr((CaseExpression)expr);
+    } else if (expr instanceof ConstantExpression) {
+      return _convertExpr((ConstantExpression)expr);
+    } else if (expr instanceof DependenceExpression) {
+      return _convertExpr((DependenceExpression)expr);
+    } else if (expr instanceof IfExpression) {
+      return _convertExpr((IfExpression)expr);
+    } else if (expr instanceof IndexExpression) {
+      return _convertExpr((IndexExpression)expr);
+    } else if (expr instanceof MultiArgExpression) {
+      return _convertExpr((MultiArgExpression)expr);
+    } else if (expr instanceof PolynomialIndexExpression) {
+      return _convertExpr((PolynomialIndexExpression)expr);
+    } else if (expr instanceof RestrictExpression) {
+      return _convertExpr((RestrictExpression)expr);
+    } else if (expr instanceof UnaryExpression) {
+      return _convertExpr((UnaryExpression)expr);
+    } else if (expr instanceof VariableExpression) {
+      return _convertExpr((VariableExpression)expr);
+    } else if (expr != null) {
+      return _convertExpr(expr);
     } else {
       throw new IllegalArgumentException("Unhandled parameter types: " +
-        Arrays.<Object>asList(re).toString());
+        Arrays.<Object>asList(expr).toString());
     }
   }
 

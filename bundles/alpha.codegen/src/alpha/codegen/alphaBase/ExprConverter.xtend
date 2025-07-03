@@ -23,6 +23,7 @@ import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISL_FORMAT
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
+import alpha.model.ExternalMultiArgExpression
 
 /**
  * Converts Alpha expressions to simpleC expressions.
@@ -220,6 +221,10 @@ class ExprConverter {
 		return Factory.binaryExprTree(op, children)
 	}
 	
+	/** Multi-arg expressions are converted into a tree of nested binary expressions. */
+	def dispatch Expression convertExpr(ExternalMultiArgExpression expr) {
+		return Factory.callExpr(expr.externalFunction.name, expr.exprs.map[convertExpr])
+	}
 	
 	///////////////////////////////////////////////
 	// Missing Rules

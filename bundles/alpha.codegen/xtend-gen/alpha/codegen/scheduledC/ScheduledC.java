@@ -30,6 +30,7 @@ import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
 import alpha.codegen.postprocessing.OmpPragmaInserter;
+import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.Equation;
 import alpha.model.ReduceExpression;
@@ -484,7 +485,8 @@ public class ScheduledC extends CodeGeneratorBase {
     if (_notEquals) {
       throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.");
     }
-    AlphaSystem alteredSystem = AlphaUtil.<AlphaSystem>copyAE(system);
+    AlphaRoot alteredRoot = AlphaUtil.<AlphaRoot>copyAE(AlphaUtil.getContainerRoot(system));
+    AlphaSystem alteredSystem = alteredRoot.getSystem(system.getName());
     Normalize.apply(alteredSystem);
     EList<Variable> _locals = alteredSystem.getLocals();
     for (final Variable local : _locals) {

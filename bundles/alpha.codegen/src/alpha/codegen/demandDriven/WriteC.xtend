@@ -24,7 +24,7 @@ import alpha.model.transformation.reduction.NormalizeReduction
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
-import static extension alpha.model.util.AlphaUtil.copyAE
+import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toArrayList
 
 /**
@@ -48,7 +48,8 @@ class WriteC extends CodeGeneratorBase {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
 		}
-		val duplicate = system.copyAE
+		val duplicateRoot = system.getContainerRoot.copyAE
+		val duplicate = duplicateRoot.getSystem(system.name)
 		val body = duplicate.systemBodies.get(0)
 		return convert(body, options)
 	}

@@ -106,6 +106,7 @@ public abstract class CodeGeneratorBase {
     this.preprocess();
     this.addDefaultHeaderComment();
     this.addDefaultIncludes();
+    this.addExternalFunctionIncludes();
     this.addDefaultFunctionMacros();
     final AlphaSystem system = this.systemBody.getSystem();
     final List<String> parameters = system.getParameterDomain().getParamNames();
@@ -264,6 +265,17 @@ public abstract class CodeGeneratorBase {
     };
     this.program.addInclude(
       ((Include[])Conversions.unwrapArray(ListExtensions.<String, Include>map(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("float.h", "limits.h", "math.h", "stdbool.h", "stdio.h", "stdlib.h", "string.h")), _function), Include.class)));
+  }
+
+  /**
+   * Adds the '#include "external_functions.h"' directive if external functions are used.
+   */
+  public void addExternalFunctionIncludes() {
+    boolean _isEmpty = AlphaUtil.getContainerRoot(this.systemBody).getExternalFunctions().isEmpty();
+    boolean _not = (!_isEmpty);
+    if (_not) {
+      this.program.addInclude(Factory.include("external_functions.h", true));
+    }
   }
 
   /**

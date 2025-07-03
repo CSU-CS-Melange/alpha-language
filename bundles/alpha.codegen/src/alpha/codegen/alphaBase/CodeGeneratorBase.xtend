@@ -90,6 +90,7 @@ abstract class CodeGeneratorBase {
 		// Add the defaults to the program.
 		addDefaultHeaderComment
 		addDefaultIncludes
+		addExternalFunctionIncludes
 		addDefaultFunctionMacros
 		
 		// Declare global variables for all Alpha parameters and variables.
@@ -205,6 +206,12 @@ abstract class CodeGeneratorBase {
 			"stdlib.h",
 			"string.h"
 		].map[Factory.include(it)])
+	}
+	
+	/** Adds the '#include "external_functions.h"' directive if external functions are used. */
+	def void addExternalFunctionIncludes() {
+		if(!systemBody.getContainerRoot.getExternalFunctions.empty) 
+			program.addInclude(Factory.include("external_functions.h", true))
 	}
 	
 	/** Adds the "#define" function macros to add to the program. */

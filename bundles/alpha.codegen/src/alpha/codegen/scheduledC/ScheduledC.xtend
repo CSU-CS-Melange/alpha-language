@@ -399,8 +399,9 @@ class ScheduledC extends CodeGeneratorBase {
 	def static convert(AlphaSystem system, Scheduler scheduler, CodegenOptions options) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
-		}				
-		var alteredSystem = system.copyAE
+		}
+		var alteredRoot = system.getContainerRoot.copyAE				
+		var alteredSystem = alteredRoot.getSystem(system.name)
 		Normalize.apply(alteredSystem)
 
 		for(Variable local : alteredSystem.locals) {

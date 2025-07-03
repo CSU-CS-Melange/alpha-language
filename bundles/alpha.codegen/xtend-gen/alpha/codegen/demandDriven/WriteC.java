@@ -30,6 +30,7 @@ import alpha.codegen.isl.ASTConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
+import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
 import alpha.model.ReduceExpression;
 import alpha.model.StandardEquation;
@@ -77,7 +78,8 @@ public class WriteC extends CodeGeneratorBase {
     if (_notEquals) {
       throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.");
     }
-    final AlphaSystem duplicate = AlphaUtil.<AlphaSystem>copyAE(system);
+    final AlphaRoot duplicateRoot = AlphaUtil.<AlphaRoot>copyAE(AlphaUtil.getContainerRoot(system));
+    final AlphaSystem duplicate = duplicateRoot.getSystem(system.getName());
     final SystemBody body = duplicate.getSystemBodies().get(0);
     return WriteC.convert(body, options);
   }

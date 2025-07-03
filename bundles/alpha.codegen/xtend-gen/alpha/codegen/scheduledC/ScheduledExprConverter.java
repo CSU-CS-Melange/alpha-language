@@ -28,6 +28,7 @@ import alpha.model.BinaryExpression;
 import alpha.model.CaseExpression;
 import alpha.model.ConstantExpression;
 import alpha.model.DependenceExpression;
+import alpha.model.ExternalMultiArgExpression;
 import alpha.model.IfExpression;
 import alpha.model.IndexExpression;
 import alpha.model.MultiArgExpression;
@@ -329,7 +330,9 @@ public class ScheduledExprConverter extends ExprConverter {
   }
 
   public Expression convertExpr(final AlphaExpression expr) {
-    if (expr instanceof ReduceExpression) {
+    if (expr instanceof ExternalMultiArgExpression) {
+      return _convertExpr((ExternalMultiArgExpression)expr);
+    } else if (expr instanceof ReduceExpression) {
       return _convertExpr((ReduceExpression)expr);
     } else if (expr instanceof AutoRestrictExpression) {
       return _convertExpr((AutoRestrictExpression)expr);
