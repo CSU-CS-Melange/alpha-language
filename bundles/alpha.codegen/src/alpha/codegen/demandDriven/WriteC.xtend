@@ -1,6 +1,5 @@
 package alpha.codegen.demandDriven
 
-import alpha.codegen.BaseDataType
 import alpha.codegen.BinaryOperator
 import alpha.codegen.CodegenOptions
 import alpha.codegen.DataType
@@ -33,13 +32,7 @@ import static extension alpha.model.util.CommonExtensions.toArrayList
  * The intended entry point is the static "convert" method,
  * which handles the entire conversion process.
  */
-class WriteC extends CodeGeneratorBase {
-	/**
-	 * If true, compatibility with the older AlphaZ system will be maintained.
-	 * If false, all memory will be linearized.
-	 */
-	protected val boolean oldAlphaZCompatible
-	
+class WriteC extends CodeGeneratorBase {	
 	/** Converts Alpha expressions to simpleC expressions. */
 	protected val WriteCExprConverter exprConverter
 	
@@ -51,13 +44,13 @@ class WriteC extends CodeGeneratorBase {
 	// Intended Entry Points
 	/////////////////////////////////////////////////////////////
 	
-	def static convert(AlphaSystem system, BaseDataType valueType, boolean oldAlphaZCompatible) {
+	def static convert(AlphaSystem system, CodegenOptions options) {
 		if (system.systemBodies.length != 1) {
 			throw new IllegalArgumentException("Systems must have exactly one body to be converted directly to WriteC code.")
 		}
 		val duplicate = system.copyAE
 		val body = duplicate.systemBodies.get(0)
-		return convert(body, valueType, oldAlphaZCompatible)
+		return convert(body, options)
 	}
 	
 	/**
@@ -67,8 +60,8 @@ class WriteC extends CodeGeneratorBase {
 	 * @param oldAlphaZCompatible If true, compatibility with the older AlphaZ system will be maintained.
 	 *     If false, all memory will be linearized.
 	 */
-	def static convert(SystemBody systemBody, BaseDataType valueType, boolean oldAlphaZCompatible) {
-		return (new WriteC(systemBody, valueType, oldAlphaZCompatible)).convertSystemBody
+	def static convert(SystemBody systemBody, CodegenOptions options) {
+		return (new WriteC(systemBody, options)).convertSystemBody
 	}
 	
 	
@@ -83,8 +76,8 @@ class WriteC extends CodeGeneratorBase {
 	 * @param oldAlphaZCompatible If true, compatibility with the older AlphaZ system will be maintained.
 	 *     If false, all memory will be linearized.
 	 */
-	new(SystemBody systemBody, BaseDataType valueType, boolean oldAlphaZCompatible) {
-		this(systemBody, valueType, oldAlphaZCompatible, new WriteCTypeGenerator(valueType, oldAlphaZCompatible))
+	new(SystemBody systemBody, CodegenOptions options) {
+		this(systemBody, options, new WriteCTypeGenerator(options.valueType, options.oldAlphaZCompatible))
 	}
 	
 	/**
@@ -92,10 +85,9 @@ class WriteC extends CodeGeneratorBase {
 	 * constructor and the expression converter, but Xtend wouldn't allow that type checker to be
 	 * created before "super(...)" is called.
 	 */
-	private new(SystemBody systemBody, BaseDataType valueType, boolean oldAlphaZCompatible, WriteCTypeGenerator typeGenerator) {
-		super(systemBody, new AlphaNameChecker(true), typeGenerator, new CodegenOptions(valueType))
+	private new(SystemBody systemBody, CodegenOptions options, WriteCTypeGenerator typeGenerator) {
+		super(systemBody, new AlphaNameChecker(true), typeGenerator, options)
 		options.setCycleDetection()
-		this.oldAlphaZCompatible = oldAlphaZCompatible
 		this.exprConverter = new WriteCExprConverter(typeGenerator, nameChecker, program)
 	}
 	
@@ -111,7 +103,7 @@ class WriteC extends CodeGeneratorBase {
 		// If we need compatibility with the older AlphaZ, then
 		// inputs and outputs need to be accessed that way.
 		// Otherwise, use linearized memory.
-		if (oldAlphaZCompatible && (variable.isInput || variable.isOutput)) {
+		if (options.oldAlphaZCompatible && (variable.isInput || variable.isOutput)) {
 			declareCompatibleMemoryMacro(name, variable.domain)
 		} else {
 			declareLinearMemoryMacro(name, variable.domain)

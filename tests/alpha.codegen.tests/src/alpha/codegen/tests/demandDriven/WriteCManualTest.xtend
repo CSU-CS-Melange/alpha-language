@@ -6,6 +6,7 @@ import alpha.codegen.demandDriven.WriteC
 import alpha.commands.Utility
 import alpha.loader.AlphaLoader
 import java.io.FileWriter
+import alpha.codegen.CodegenOptions
 
 /**
  * These are some manual tests which convert systems into C programs.
@@ -37,8 +38,11 @@ class WriteCManualTest {
 			val root = AlphaLoader.loadAlpha(alphaFile)
 			val system = Utility.GetSystem(root, program)
 			
+			val options = new CodegenOptions(BaseDataType.FLOAT)
+			options.setOldAlphaZCompatible()
+			
 			// Convert the system using older AlphaZ compatibility.
-			val cAST = WriteC.convert(system, BaseDataType.FLOAT, true)
+			val cAST = WriteC.convert(system, options)
 			val cProgram = ProgramPrinter.print(cAST).toString
 			
 			// Write the C program out.

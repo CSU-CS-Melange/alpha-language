@@ -60,6 +60,11 @@ public class CodegenOptions {
    */
   private boolean polyhedralMemory = false;
 
+  /**
+   * If true, compatibility with the older AlphaZ system will be maintained. If false, all memory will be linearized.
+   */
+  private boolean oldAlphaZCompatible = false;
+
   public CodegenOptions(final BaseDataType valueType) {
     this.valueType = valueType;
     IdentityMemoryMapper _identityMemoryMapper = new IdentityMemoryMapper();
@@ -151,6 +156,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setOldAlphaZCompatible() {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.oldAlphaZCompatible = true;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public CodegenOptions setNormalize(final boolean b) {
     CodegenOptions _xblockexpression = null;
     {
@@ -214,6 +228,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setOldAlphaZCompatible(final boolean b) {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.oldAlphaZCompatible = b;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public BaseDataType getValueType() {
     return this.valueType;
   }
@@ -252,5 +275,9 @@ public class CodegenOptions {
 
   public boolean getPolyhedralMemory() {
     return this.polyhedralMemory;
+  }
+
+  public boolean getOldAlphaZCompatible() {
+    return this.oldAlphaZCompatible;
   }
 }

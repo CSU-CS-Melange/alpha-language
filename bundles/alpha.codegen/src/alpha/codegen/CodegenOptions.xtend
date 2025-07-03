@@ -39,6 +39,9 @@ class CodegenOptions {
 	/* Whether to allocate only the memory needed for variables, as opposed to allocating the bounding box. */
 	boolean polyhedralMemory 	= false 	
 	
+	/* If true, compatibility with the older AlphaZ system will be maintained. If false, all memory will be linearized. */
+	boolean oldAlphaZCompatible = false 	
+	
 	new(BaseDataType valueType) {
 		this.valueType = valueType
 		mapper = new IdentityMemoryMapper()
@@ -59,6 +62,7 @@ class CodegenOptions {
 	def setCycleDetection()			{cycleDetection = true;			this}
 	def setOmpPragmas()				{ompPragmas = true;				this}
 	def setPolyhedralMemory()		{polyhedralMemory = true;       this}
+	def setOldAlphaZCompatible()	{oldAlphaZCompatible = true;    this}
 	
 	def setNormalize(boolean b) 			{normalize = b; 				this}
 	def setInlineFunction(boolean b) 		{inlineFunction = b; 			this}
@@ -67,6 +71,7 @@ class CodegenOptions {
 	def setCycleDetection(boolean b)		{cycleDetection = b;			this}
 	def setOmpPragmas(boolean b)			{ompPragmas = b;				this}
 	def setPolyhedralMemory(boolean b)		{polyhedralMemory = b; 			this}
+	def setOldAlphaZCompatible(boolean b)	{oldAlphaZCompatible = b;		this}
 	
 	
 	def getValueType() 				{valueType}
@@ -79,4 +84,5 @@ class CodegenOptions {
 	def getCycleDetection() 		{cycleDetection}
 	def getOmpPragmas() 			{ompPragmas}
 	def getPolyhedralMemory() 		{polyhedralMemory}
+	def getOldAlphaZCompatible() 	{oldAlphaZCompatible}
 }

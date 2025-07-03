@@ -9,6 +9,7 @@ import org.junit.Test
 import static org.junit.Assert.*
 
 import static extension alpha.commands.UtilityBase.*
+import alpha.codegen.CodegenOptions
 
 class WriteCTest {
 	/** The path to the Alpha file for these unit tests. */
@@ -23,7 +24,7 @@ class WriteCTest {
 	@Test
 	def void convertSystem_noParameters() {
 		val system = getSystem("NoParameters")
-		val program = WriteC.convert(system, BaseDataType.FLOAT, false)
+		val program = WriteC.convert(system, new CodegenOptions(BaseDataType.FLOAT))
 		val code = ProgramPrinter.print(program)
 		assertNotNull(code)
 		assertNotEquals("", code)
@@ -32,7 +33,7 @@ class WriteCTest {
 	@Test
 	def void convertSystem_noParameterConstraints() {
 		val system = getSystem("NoParameterConstraints")
-		val program = WriteC.convert(system, BaseDataType.FLOAT, false)
+		val program = WriteC.convert(system, new CodegenOptions(BaseDataType.FLOAT))
 		val code = ProgramPrinter.print(program)
 		assertNotNull(code)
 		assertNotEquals("", code)

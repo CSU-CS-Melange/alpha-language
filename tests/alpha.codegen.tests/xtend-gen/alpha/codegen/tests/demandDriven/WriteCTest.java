@@ -1,6 +1,7 @@
 package alpha.codegen.tests.demandDriven;
 
 import alpha.codegen.BaseDataType;
+import alpha.codegen.CodegenOptions;
 import alpha.codegen.Program;
 import alpha.codegen.ProgramPrinter;
 import alpha.codegen.demandDriven.WriteC;
@@ -32,7 +33,8 @@ public class WriteCTest {
   @Test
   public void convertSystem_noParameters() {
     final AlphaSystem system = WriteCTest.getSystem("NoParameters");
-    final Program program = WriteC.convert(system, BaseDataType.FLOAT, false);
+    CodegenOptions _codegenOptions = new CodegenOptions(BaseDataType.FLOAT);
+    final Program program = WriteC.convert(system, _codegenOptions);
     final CharSequence code = ProgramPrinter.print(program);
     Assert.assertNotNull(code);
     Assert.assertNotEquals("", code);
@@ -41,7 +43,8 @@ public class WriteCTest {
   @Test
   public void convertSystem_noParameterConstraints() {
     final AlphaSystem system = WriteCTest.getSystem("NoParameterConstraints");
-    final Program program = WriteC.convert(system, BaseDataType.FLOAT, false);
+    CodegenOptions _codegenOptions = new CodegenOptions(BaseDataType.FLOAT);
+    final Program program = WriteC.convert(system, _codegenOptions);
     final CharSequence code = ProgramPrinter.print(program);
     Assert.assertNotNull(code);
     Assert.assertNotEquals("", code);

@@ -2,7 +2,6 @@ package alpha.codegen.demandDriven;
 
 import alpha.codegen.ArrayAccessExpr;
 import alpha.codegen.AssignmentStmt;
-import alpha.codegen.BaseDataType;
 import alpha.codegen.BinaryExpr;
 import alpha.codegen.BinaryOperator;
 import alpha.codegen.CallExpr;
@@ -63,12 +62,6 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
 @SuppressWarnings("all")
 public class WriteC extends CodeGeneratorBase {
   /**
-   * If true, compatibility with the older AlphaZ system will be maintained.
-   * If false, all memory will be linearized.
-   */
-  protected final boolean oldAlphaZCompatible;
-
-  /**
    * Converts Alpha expressions to simpleC expressions.
    */
   protected final WriteCExprConverter exprConverter;
@@ -78,7 +71,7 @@ public class WriteC extends CodeGeneratorBase {
    */
   protected int nextStatementId = 0;
 
-  public static Program convert(final AlphaSystem system, final BaseDataType valueType, final boolean oldAlphaZCompatible) {
+  public static Program convert(final AlphaSystem system, final CodegenOptions options) {
     int _length = ((Object[])Conversions.unwrapArray(system.getSystemBodies(), Object.class)).length;
     boolean _notEquals = (_length != 1);
     if (_notEquals) {
@@ -86,7 +79,7 @@ public class WriteC extends CodeGeneratorBase {
     }
     final AlphaSystem duplicate = AlphaUtil.<AlphaSystem>copyAE(system);
     final SystemBody body = duplicate.getSystemBodies().get(0);
-    return WriteC.convert(body, valueType, oldAlphaZCompatible);
+    return WriteC.convert(body, options);
   }
 
   /**
@@ -96,8 +89,8 @@ public class WriteC extends CodeGeneratorBase {
    * @param oldAlphaZCompatible If true, compatibility with the older AlphaZ system will be maintained.
    *     If false, all memory will be linearized.
    */
-  public static Program convert(final SystemBody systemBody, final BaseDataType valueType, final boolean oldAlphaZCompatible) {
-    return new WriteC(systemBody, valueType, oldAlphaZCompatible).convertSystemBody();
+  public static Program convert(final SystemBody systemBody, final CodegenOptions options) {
+    return new WriteC(systemBody, options).convertSystemBody();
   }
 
   /**
@@ -107,8 +100,8 @@ public class WriteC extends CodeGeneratorBase {
    * @param oldAlphaZCompatible If true, compatibility with the older AlphaZ system will be maintained.
    *     If false, all memory will be linearized.
    */
-  public WriteC(final SystemBody systemBody, final BaseDataType valueType, final boolean oldAlphaZCompatible) {
-    this(systemBody, valueType, oldAlphaZCompatible, new WriteCTypeGenerator(valueType, oldAlphaZCompatible));
+  public WriteC(final SystemBody systemBody, final CodegenOptions options) {
+    this(systemBody, options, new WriteCTypeGenerator(options.getValueType(), options.getOldAlphaZCompatible()));
   }
 
   /**
@@ -116,10 +109,9 @@ public class WriteC extends CodeGeneratorBase {
    * constructor and the expression converter, but Xtend wouldn't allow that type checker to be
    * created before "super(...)" is called.
    */
-  private WriteC(final SystemBody systemBody, final BaseDataType valueType, final boolean oldAlphaZCompatible, final WriteCTypeGenerator typeGenerator) {
-    super(systemBody, new AlphaNameChecker(true), typeGenerator, new CodegenOptions(valueType));
-    this.options.setCycleDetection();
-    this.oldAlphaZCompatible = oldAlphaZCompatible;
+  private WriteC(final SystemBody systemBody, final CodegenOptions options, final WriteCTypeGenerator typeGenerator) {
+    super(systemBody, new AlphaNameChecker(true), typeGenerator, options);
+    options.setCycleDetection();
     WriteCExprConverter _writeCExprConverter = new WriteCExprConverter(typeGenerator, this.nameChecker, this.program);
     this.exprConverter = _writeCExprConverter;
   }
@@ -130,7 +122,7 @@ public class WriteC extends CodeGeneratorBase {
   @Override
   public void declareMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
-    if ((this.oldAlphaZCompatible && ((variable.isInput()).booleanValue() || (variable.isOutput()).booleanValue()))) {
+    if ((this.options.getOldAlphaZCompatible() && ((variable.isInput()).booleanValue() || (variable.isOutput()).booleanValue()))) {
       this.declareCompatibleMemoryMacro(name, variable.getDomain());
     } else {
       this.declareLinearMemoryMacro(name, variable.getDomain());
