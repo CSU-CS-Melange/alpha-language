@@ -25,11 +25,11 @@ class PlutoScheduler implements Scheduler {
 	}
 	
 	override ISLSet getScheduleDomain(String variable) {
-		schedule.domain.sets.findFirst[tupleName == variable].copy
+		schedule.domain.sets.findFirst[tupleName == variable]?.copy
 	}
 
 	override ISLMap getScheduleMap(String variable) {
-		schedule.map.maps.findFirst[inputTupleName == variable].copy
+		schedule.map.maps.findFirst[inputTupleName == variable]?.copy
 	}
 	
 	override ISLUnionMap getMaps() {

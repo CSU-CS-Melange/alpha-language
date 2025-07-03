@@ -37,7 +37,12 @@ public class PlutoScheduler implements Scheduler {
       String _tupleName = it.getTupleName();
       return Boolean.valueOf(Objects.equal(_tupleName, variable));
     };
-    return IterableExtensions.<ISLSet>findFirst(this.schedule.getDomain().getSets(), _function).copy();
+    ISLSet _findFirst = IterableExtensions.<ISLSet>findFirst(this.schedule.getDomain().getSets(), _function);
+    ISLSet _copy = null;
+    if (_findFirst!=null) {
+      _copy=_findFirst.copy();
+    }
+    return _copy;
   }
 
   @Override
@@ -46,7 +51,12 @@ public class PlutoScheduler implements Scheduler {
       String _inputTupleName = it.getInputTupleName();
       return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
     };
-    return IterableExtensions.<ISLMap>findFirst(this.schedule.getMap().getMaps(), _function).copy();
+    ISLMap _findFirst = IterableExtensions.<ISLMap>findFirst(this.schedule.getMap().getMaps(), _function);
+    ISLMap _copy = null;
+    if (_findFirst!=null) {
+      _copy=_findFirst.copy();
+    }
+    return _copy;
   }
 
   @Override

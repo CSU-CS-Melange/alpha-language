@@ -1,51 +1,66 @@
 package alpha.model.scheduler
 
-import alpha.model.Variable
+import alpha.model.AlphaSystem
 import alpha.model.prdg.PRDG
+import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
-import fr.irisa.cairn.jnimap.isl.ISLUnionSet
-import fr.irisa.cairn.jnimap.isl.ISLUnionMap
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 
 import static extension alpha.model.util.ISLUtil.*
 
 class HybridScheduler implements Scheduler {
-	ISLSchedule foutrierSchedule
-	ISLSchedule plutoSchedule
+	ISLUnionMap spacetimeMap
+	ISLUnionSet domains
 	PRDG prdg
-	int timeDims
 	
-	new(PRDG prdg) {
+	new(AlphaSystem system, PRDG prdg) {
 		this.prdg = prdg
-		this.generateSchedule
+		this.generateSchedule(system)
 	}
 	
-	def generateSchedule() {
-		var ISLUnionSet domains = this.prdg.generateDomains
-		var islPRDG = this.prdg.generateISLPRDG
-		this.foutrierSchedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
-		this.plutoSchedule = ISLSchedule.computeSchedule(domains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_ISL)
-		//TODO: calculate timeDims
+	def generateSchedule(AlphaSystem system) {
+		var ISLUnionSet islDomains = this.prdg.generateDomains
+		val islPRDG = this.prdg.generateISLPRDG
+		val foutrierSchedule = ISLSchedule.computeSchedule(islDomains.copy, islPRDG.copy, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_FEAUTRIER)
+		val plutoSchedule = ISLSchedule.computeSchedule(islDomains, islPRDG, JNIISLSchedulingOptions.ISL_SCHEDULE_ALGORITHM_ISL)
+		domains = foutrierSchedule.domain
+		
+		val timeDims = system.countTimeDimensions(foutrierSchedule.map)
+		
+		val varNames = foutrierSchedule.map.maps.map[inputTupleName]
+		spacetimeMap = varNames.map[name |
+			val timeAffs = foutrierSchedule.map.maps.findFirst[inputTupleName == name]
+				.toMultiAff.affs
+				.subList(0, timeDims)
+			val spaceAffs = plutoSchedule.map.maps.findFirst[inputTupleName == name]
+				.toMultiAff.affs
+				
+			return (timeAffs + spaceAffs)
+				.toList.convertToMultiAff
+				.toMap.setInputTupleName(name)
+		].toList.convertToUnionMap
 	}
 	
 	override ISLSet getScheduleDomain(String variable) {
-		this.foutrierSchedule.domain.sets.filter(set | set.tupleName == variable).head.copy
+		domains.sets.findFirst[tupleName == variable]?.copy
 	}
 
 	override ISLMap getScheduleMap(String variable) {
-		this.maps.maps.filter(map | map.inputTupleName == variable).head.copy
-		
+		spacetimeMap.maps.findFirst[inputTupleName == variable]?.copy	
 	}
 	
 	override ISLUnionMap getMaps() {
-		//vTODO: Fuse schedules
-		this.foutrierSchedule.map.copy
+		spacetimeMap.copy
 	}
 	
 	override ISLUnionSet getDomains() {
-		this.foutrierSchedule.domain.copy
+		domains.copy
 	}
-
+	
+	override getAnonymousMap(String variable) {
+ 		getScheduleMap(variable)?.clearInputTupleName
+	}
 }

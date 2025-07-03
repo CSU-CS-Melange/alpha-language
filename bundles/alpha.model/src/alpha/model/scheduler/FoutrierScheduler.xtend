@@ -28,11 +28,11 @@ class FoutrierScheduler implements Scheduler {
 	}
 	
 	override ISLSet getScheduleDomain(String variable) {
-		this.schedule.domain.sets.filter(set | set.tupleName == variable).head.copy
+		schedule.domain.sets.findFirst[tupleName == variable]?.copy
 	}
 
 	override ISLMap getScheduleMap(String variable) {
-		umap.maps.filter(map | map.inputTupleName == variable).head.copy
+		schedule.map.maps.findFirst[inputTupleName == variable]?.copy
 	}
 	
 	override ISLUnionMap getMaps() {
