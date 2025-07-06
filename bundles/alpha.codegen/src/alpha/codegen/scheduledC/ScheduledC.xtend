@@ -41,6 +41,9 @@ import static extension alpha.codegen.alphaBase.AlphaBaseHelpers.getOperator
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.*
+import alpha.model.util.ISLUtil.Dims
+import alpha.codegen.isl.ASTConversionResult
+import alpha.codegen.postprocessing.ForLoopNester
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -355,7 +358,6 @@ class ScheduledC extends CodeGeneratorBase {
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		
 		
-		var ISLUnionMap namedScheduleMaps 
 		if(options.inlineCode) {
 			val maps = scheduleMaps.maps
 			
@@ -369,16 +371,44 @@ class ScheduledC extends CodeGeneratorBase {
 			macros.forEach[entryPoint.addStatement(it)]
 		} 
 
+		var ISLUnionMap namedScheduleMaps 
 		namedScheduleMaps = scheduleMaps.maps
 			.map[simplify]
 			.map[setInputTupleName("eval_" + getInputTupleName)]
 			.toList.convertToUnionMap
-	
+		
+		var ASTConversionResult loopResult
 		
 		//Generate all the loops for variables
-		val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
+		if(tiler !== null) {
+			val nTileDims = tiler.getTiledDims.size
+			val tileMaps = namedScheduleMaps.getRange.sets
+				.map[projectOut(Dims.SET, nTileDims, dim(Dims.SET) - nTileDims)]
+				.map[clearTupleName]
+				.reduce[a, b | a.union(b)]
+				.setTupleName("_")
+				.simpleHull.toSet
+				.toIdentityMap
+				.toUnionMap
+			
+			val tileAST = LoopGenerator.generateLoops(tileMaps.copy.params, tileMaps)
+			loopResult = ASTConverter.convert(tileAST)
+			
+			val iterMaps = namedScheduleMaps.copy.maps
+				.map[moveDims(Dims.PARAM, 0, Dims.OUT, 0, nTileDims)]
+				.convertToUnionMap
 				
-		var loopResult = ASTConverter.convert(islAST)
+			val iterAST = LoopGenerator.generateLoops(iterMaps.copy.params, iterMaps)
+			val iterResult = ASTConverter.convert(iterAST)
+			
+			ForLoopNester.apply(loopResult, iterResult, "_")
+			loopResult.declarations.addAll(iterResult.declarations)
+		} else {
+			val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
+					
+			loopResult = ASTConverter.convert(islAST)
+		}
+	
 			
 		//Add parallel pragmas in the appropriate places, if enabled.
 		if(options.ompPragmas) {

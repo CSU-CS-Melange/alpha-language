@@ -29,6 +29,7 @@ import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
+import alpha.codegen.postprocessing.ForLoopNester;
 import alpha.codegen.postprocessing.OmpPragmaInserter;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
@@ -411,7 +412,6 @@ public class ScheduledC extends CodeGeneratorBase {
         scheduleMaps = scheduleMaps.applyRange(this.tiler.getTileMap().toUnionMap());
       }
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
-      ISLUnionMap namedScheduleMaps = null;
       boolean _inlineCode = this.options.getInlineCode();
       if (_inlineCode) {
         final List<ISLMap> maps = scheduleMaps.getMaps();
@@ -454,6 +454,7 @@ public class ScheduledC extends CodeGeneratorBase {
         };
         macros.forEach(_function_7);
       }
+      ISLUnionMap namedScheduleMaps = null;
       final Function1<ISLMap, ISLMap> _function_8 = (ISLMap it) -> {
         return it.simplify();
       };
@@ -463,17 +464,44 @@ public class ScheduledC extends CodeGeneratorBase {
         return it.<ISLMap>setInputTupleName(_plus_1);
       };
       namedScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(scheduleMaps.getMaps(), _function_8), _function_9)));
-      final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
-      ASTConversionResult loopResult = ASTConverter.convert(islAST);
+      ASTConversionResult loopResult = null;
+      if ((this.tiler != null)) {
+        final int nTileDims = this.tiler.getTiledDims().size();
+        final Function1<ISLSet, ISLSet> _function_10 = (ISLSet it) -> {
+          int _dim = it.dim(ISLUtil.Dims.SET);
+          int _minus = (_dim - nTileDims);
+          return it.projectOut(ISLUtil.Dims.SET, nTileDims, _minus);
+        };
+        final Function1<ISLSet, ISLSet> _function_11 = (ISLSet it) -> {
+          return it.clearTupleName();
+        };
+        final Function2<ISLSet, ISLSet, ISLSet> _function_12 = (ISLSet a, ISLSet b) -> {
+          return a.union(b);
+        };
+        final ISLUnionMap tileMaps = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(namedScheduleMaps.getRange().getSets(), _function_10), _function_11), _function_12).setTupleName("_").simpleHull().toSet().toIdentityMap().toUnionMap();
+        final ISLASTNode tileAST = LoopGenerator.generateLoops(tileMaps.copy().params(), tileMaps);
+        loopResult = ASTConverter.convert(tileAST);
+        final Function1<ISLMap, ISLMap> _function_13 = (ISLMap it) -> {
+          return it.moveDims(ISLUtil.Dims.PARAM, 0, ISLUtil.Dims.OUT, 0, nTileDims);
+        };
+        final ISLUnionMap iterMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(namedScheduleMaps.copy().getMaps(), _function_13));
+        final ISLASTNode iterAST = LoopGenerator.generateLoops(iterMaps.copy().params(), iterMaps);
+        final ASTConversionResult iterResult = ASTConverter.convert(iterAST);
+        ForLoopNester.apply(loopResult, iterResult, "_");
+        loopResult.getDeclarations().addAll(iterResult.getDeclarations());
+      } else {
+        final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
+        loopResult = ASTConverter.convert(islAST);
+      }
       boolean _ompPragmas = this.options.getOmpPragmas();
       if (_ompPragmas) {
         final int timeDims = ISLUtil.countTimeDimensions(AlphaUtil.getContainerSystem(this.systemBody), this.scheduler.getMaps());
         OmpPragmaInserter.apply(loopResult, timeDims);
       }
-      final Function1<String, VariableDecl> _function_10 = (String it) -> {
+      final Function1<String, VariableDecl> _function_14 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_10));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_14));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;
