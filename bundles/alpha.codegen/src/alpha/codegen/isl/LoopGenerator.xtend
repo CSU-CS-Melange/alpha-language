@@ -12,6 +12,7 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension fr.irisa.cairn.jnimap.isl.ISLMultiAff.buildIdentity
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
+import alpha.model.util.ISLUtil.Dims
 
 /** Generates the loop statements that iterate through the points in a given domain. */
 class LoopGenerator {
@@ -61,8 +62,16 @@ class LoopGenerator {
 	 * given domain for the parameters and a union map representing the schedule.
 	 */
 	static def generateLoops(ISLSet parameterDomain, ISLUnionMap schedule) {
+		// Use the index names from the range as the loop variables. 
+		val range = schedule.getRange.sets.get(0)
+		val indexNames = range.indexNames !== null ? range.indexNames 
+			: (0..<range.dim(Dims.SET)).map["c" + it]
+		val ids = indexNames.map[ISLIdentifier.alloc(ISLContext.instance, it)].toArrayList
+		val idList = ids.fold(ISLIdentifierList.build(ISLContext.instance, 0), [list, id | list.add(id)])
+		
 		return ISLASTBuild
 			.buildFromContext(parameterDomain)
+			.setIterators(idList)
 			.generate(schedule)
 	}
 	

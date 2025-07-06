@@ -1,6 +1,7 @@
 package alpha.codegen.isl;
 
 import alpha.model.util.CommonExtensions;
+import alpha.model.util.ISLUtil;
 import fr.irisa.cairn.jnimap.isl.ISLASTBuild;
 import fr.irisa.cairn.jnimap.isl.ISLASTNode;
 import fr.irisa.cairn.jnimap.isl.ISLContext;
@@ -13,6 +14,8 @@ import fr.irisa.cairn.jnimap.isl.ISLSchedule;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import java.util.ArrayList;
+import java.util.List;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
@@ -58,7 +61,29 @@ public class LoopGenerator {
    * given domain for the parameters and a union map representing the schedule.
    */
   public static ISLASTNode generateLoops(final ISLSet parameterDomain, final ISLUnionMap schedule) {
-    return ISLASTBuild.buildFromContext(parameterDomain).generate(schedule);
+    final ISLSet range = schedule.getRange().getSets().get(0);
+    Iterable<String> _xifexpression = null;
+    List<String> _indexNames = range.getIndexNames();
+    boolean _tripleNotEquals = (_indexNames != null);
+    if (_tripleNotEquals) {
+      _xifexpression = range.getIndexNames();
+    } else {
+      int _dim = range.dim(ISLUtil.Dims.SET);
+      final Function1<Integer, String> _function = (Integer it) -> {
+        return ("c" + it);
+      };
+      _xifexpression = IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _dim, true), _function);
+    }
+    final Iterable<String> indexNames = _xifexpression;
+    final Function1<String, ISLIdentifier> _function_1 = (String it) -> {
+      return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+    };
+    final ArrayList<ISLIdentifier> ids = CommonExtensions.<ISLIdentifier>toArrayList(IterableExtensions.<String, ISLIdentifier>map(indexNames, _function_1));
+    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_2 = (ISLIdentifierList list, ISLIdentifier id) -> {
+      return list.add(id);
+    };
+    final ISLIdentifierList idList = IterableExtensions.<ISLIdentifier, ISLIdentifierList>fold(ids, ISLIdentifierList.build(ISLContext.getInstance(), 0), _function_2);
+    return ISLASTBuild.buildFromContext(parameterDomain).setIterators(idList).generate(schedule);
   }
 
   /**
