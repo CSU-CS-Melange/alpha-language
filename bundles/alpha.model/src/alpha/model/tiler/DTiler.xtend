@@ -18,9 +18,9 @@ import static extension alpha.model.util.ISLUtil.*
 
 class DTiler implements Tiler {
 	protected ISLMap tileMap
-	int startDim
-	int endDim
-	List<Integer> tileSizes
+	protected int startDim
+	protected int endDim
+	protected List<Integer> tileSizes
 	
 	/*
 	 * Creates a D-Tiler with rectangular tiles of the given size, 
@@ -68,11 +68,11 @@ class DTiler implements Tiler {
 	}
 	
 	override ISLUnionMap tileSchedule(ISLUnionMap maps) {
-		maps.applyRange(tileMap.copy.toUnionMap)
+		maps.copy.applyRange(tileMap.copy.toUnionMap)
 	}
 	
 	override ISLMap tileSchedule(ISLMap map) {
-		map.applyRange(tileMap.copy)
+		tileSchedule(map.copy.toUnionMap).maps.head
 	}
 	
 	override ISLMap getUntileMap() {
@@ -81,6 +81,12 @@ class DTiler implements Tiler {
 			tiledDims.size,
 			tileMap.dim(ISLDimType.isl_dim_out)-tiledDims.size
 		).reverse
+	}
+	
+	override ISLUnionMap getParameterizedIterators(ISLUnionMap maps) {
+		return tileSchedule(maps).maps
+			.map[moveDims(Dims.PARAM, 0, Dims.OUT, startDim, endDim-startDim+1)]
+			.convertToUnionMap
 	}
 	
 	override Set<Integer> getTiledDims() {
@@ -102,7 +108,9 @@ class DTiler implements Tiler {
 	def ISLSet getOutset(ISLUnionSet domains) {
 		domains.copy.sets
 			.map[clearTupleName]
-			.map[apply(tileMap.copy)]
+			.map[toIdentityMap]
+			.map[tileSchedule]
+			.map[getRange]
 			.map[projectOut(Dims.OUT, endDim+1, tileMap.getNbOutputs-endDim-1)]
 			.map[projectOut(Dims.OUT, 0, startDim)]
 			.reduce[a, b | a.union(b)]

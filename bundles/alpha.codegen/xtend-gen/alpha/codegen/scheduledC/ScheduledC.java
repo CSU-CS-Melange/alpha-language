@@ -408,9 +408,6 @@ public class ScheduledC extends CodeGeneratorBase {
         return this.scheduler.getScheduleMap(it);
       };
       ISLUnionMap scheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<String, ISLMap>map(scheduledVars, _function_2)));
-      if ((this.tiler != null)) {
-        scheduleMaps = this.tiler.tileSchedule(scheduleMaps);
-      }
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
       boolean _inlineCode = this.options.getInlineCode();
       if (_inlineCode) {
@@ -466,14 +463,10 @@ public class ScheduledC extends CodeGeneratorBase {
       namedScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(scheduleMaps.getMaps(), _function_8), _function_9)));
       ASTConversionResult loopResult = null;
       if ((this.tiler != null)) {
-        final int nTileDims = this.tiler.getTiledDims().size();
         final ISLUnionMap tileMaps = this.tiler.getApproximateOutset(this.scheduler.getRanges()).setTupleName("_").toIdentityMap().toUnionMap();
         final ISLASTNode tileAST = LoopGenerator.generateLoops(tileMaps.copy().params(), tileMaps);
         loopResult = ASTConverter.convert(tileAST);
-        final Function1<ISLMap, ISLMap> _function_10 = (ISLMap it) -> {
-          return it.moveDims(ISLUtil.Dims.PARAM, 0, ISLUtil.Dims.OUT, 0, nTileDims);
-        };
-        final ISLUnionMap iterMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(namedScheduleMaps.copy().getMaps(), _function_10));
+        final ISLUnionMap iterMaps = this.tiler.getParameterizedIterators(namedScheduleMaps);
         final ISLASTNode iterAST = LoopGenerator.generateLoops(iterMaps.copy().params(), iterMaps);
         final ASTConversionResult iterResult = ASTConverter.convert(iterAST);
         ForLoopNester.apply(loopResult, iterResult, "_");
@@ -487,10 +480,10 @@ public class ScheduledC extends CodeGeneratorBase {
         final int timeDims = ISLUtil.countTimeDimensions(AlphaUtil.getContainerSystem(this.systemBody), this.scheduler.getMaps());
         OmpPragmaInserter.apply(loopResult, timeDims);
       }
-      final Function1<String, VariableDecl> _function_11 = (String it) -> {
+      final Function1<String, VariableDecl> _function_10 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_11));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_10));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;

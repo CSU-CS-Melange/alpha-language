@@ -13,7 +13,7 @@ import java.util.List
 
 import static extension alpha.model.util.ISLUtil.*
 
-class WavefrontTiler extends DTiler {
+class WavefrontSequencedTiler extends DTiler {
 	ISLMap tileDimsMap
 	ISLMap iteratorMap
 	
@@ -32,24 +32,36 @@ class WavefrontTiler extends DTiler {
 		
 		newAffs += affs.subList(0, nTiles-1)
 				
+		newAffs += affs.subList(nTiles, nTiles*2)
+				.reduce[a, b| a.copy.add(b.copy)]
+		
 		tileDimsMap = newAffs
 			.toList.convertToMultiAff.toMap
 		
-		iteratorMap = affs.subList(nTiles, affs.size)
+		iteratorMap = affs.subList(nTiles, affs.size-1)
 			.toList.convertToMultiAff.toMap
+			
+		this.endDim += 1
 	}
 	
 	override ISLUnionMap tileSchedule(ISLUnionMap umap) {
+		val sequencingMap = (0..<umap.maps.size).map[
+			ISLAff.buildValOnDomain(umap.maps.get(it).getDomain.space.toLocalSpace, it)
+				.toMultiAff.toMap
+		].toList.convertToUnionMap
 		
 		var tiledMaps = umap.maps
-			.map[tileSchedule]
+			.map[tileSchedule(it, sequencingMap)]
 			.convertToUnionMap
 		
 		return tiledMaps
 	}
 	
-	override ISLMap tileSchedule(ISLMap map) {
+	def private ISLMap tileSchedule(ISLMap map, ISLUnionMap sequencingMap) {
+		val sequencedMap = sequencingMap.maps.findFirst[inputTupleName == map.inputTupleName].copy
+		
 		return map.copy.applyRange(tileDimsMap.copy)
+			.rangeProduct(sequencedMap)
 			.rangeProduct(map.copy.applyRange(iteratorMap.copy))
 			.flatten
 			.setDimNames(Dims.OUT, [indexName])

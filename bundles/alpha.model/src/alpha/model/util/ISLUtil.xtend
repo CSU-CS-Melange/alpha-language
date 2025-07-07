@@ -31,6 +31,8 @@ import static extension alpha.model.util.DomainOperations.*
 import fr.irisa.cairn.jnimap.isl.ISLPWAff
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAffPiece
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
+import java.util.function.Function
+import fr.irisa.cairn.jnimap.isl.IISLSingleSpaceMethods
 
 class ISLUtil {
 	
@@ -511,6 +513,15 @@ class ISLUtil {
 		].reduce[a, b | a.addDisjoint(b)]
 	}
 	
+	/** 
+	 * Uses a generator function to set all of an ISL singe space object's dim names
+	 * Works on ISLMap, ISLSet, etc.
+	 */
+	def static <T extends IISLSingleSpaceMethods> T setDimNames(T obj, ISLDimType dType, Function<? super Integer, ? extends String> nameFunc) {
+		return (0..<obj.dim(dType)).fold(obj,
+			[T m, i | m.setDimName(dType, i, nameFunc.apply(i))]
+		)
+	}
 	
 	/*************************************** 
 	 *	      Spacetime Map Methods        * 

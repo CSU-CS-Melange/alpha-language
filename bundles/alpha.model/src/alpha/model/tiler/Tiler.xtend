@@ -18,6 +18,8 @@ interface Tiler {
 	def Set<Integer> getTiledDims()
 	def ISLSet getApproximateOutset(ISLUnionSet domains)
 	
+	def ISLUnionMap getParameterizedIterators(ISLUnionMap maps)
+	
 	//Whether or not the implementation makes use of fixed tile sizes
 	//if so, it should implement getTileSize
 	def boolean fixedTileSizes()

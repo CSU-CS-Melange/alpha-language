@@ -2,6 +2,7 @@ package alpha.model.tiler;
 
 import alpha.model.scheduler.Scheduler;
 import alpha.model.util.ISLUtil;
+import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
@@ -12,18 +13,19 @@ import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
-public class WavefrontTiler extends DTiler {
+public class WavefrontSequencedTiler extends DTiler {
   private ISLMap tileDimsMap;
 
   private ISLMap iteratorMap;
 
-  public WavefrontTiler(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim) {
+  public WavefrontSequencedTiler(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim) {
     super(tileSizes, scheduleSpace, startDim, endDim);
     final int nTiles = ((endDim - startDim) + 1);
     final List<ISLAff> affs = ISLUtil.toMultiAff(this.tileMap).getAffs();
@@ -35,25 +37,44 @@ public class WavefrontTiler extends DTiler {
     newAffs.add(_reduce);
     List<ISLAff> _subList = affs.subList(0, (nTiles - 1));
     Iterables.<ISLAff>addAll(newAffs, _subList);
+    final Function2<ISLAff, ISLAff, ISLAff> _function_1 = (ISLAff a, ISLAff b) -> {
+      return a.copy().add(b.copy());
+    };
+    ISLAff _reduce_1 = IterableExtensions.<ISLAff>reduce(affs.subList(nTiles, (nTiles * 2)), _function_1);
+    newAffs.add(_reduce_1);
     this.tileDimsMap = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(newAffs)).toMap();
-    this.iteratorMap = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(affs.subList(nTiles, affs.size()))).toMap();
+    int _size = affs.size();
+    int _minus = (_size - 1);
+    this.iteratorMap = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(affs.subList(nTiles, _minus))).toMap();
+    int _endDim = this.endDim;
+    this.endDim = (_endDim + 1);
   }
 
   @Override
   public ISLUnionMap tileSchedule(final ISLUnionMap umap) {
-    final Function1<ISLMap, ISLMap> _function = (ISLMap it) -> {
-      return this.tileSchedule(it);
+    int _size = umap.getMaps().size();
+    final Function1<Integer, ISLMap> _function = (Integer it) -> {
+      return ISLAff.buildValOnDomain(umap.getMaps().get((it).intValue()).getDomain().getSpace().toLocalSpace(), (it).intValue()).toMultiAff().toMap();
     };
-    ISLUnionMap tiledMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(umap.getMaps(), _function));
+    final ISLUnionMap sequencingMap = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<Integer, ISLMap>map(new ExclusiveRange(0, _size, true), _function)));
+    final Function1<ISLMap, ISLMap> _function_1 = (ISLMap it) -> {
+      return this.tileSchedule(it, sequencingMap);
+    };
+    ISLUnionMap tiledMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(umap.getMaps(), _function_1));
     return tiledMaps;
   }
 
-  @Override
-  public ISLMap tileSchedule(final ISLMap map) {
-    final Function<Integer, String> _function = (Integer it) -> {
+  private ISLMap tileSchedule(final ISLMap map, final ISLUnionMap sequencingMap) {
+    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
+      String _inputTupleName = it.getInputTupleName();
+      String _inputTupleName_1 = map.getInputTupleName();
+      return Boolean.valueOf(Objects.equal(_inputTupleName, _inputTupleName_1));
+    };
+    final ISLMap sequencedMap = IterableExtensions.<ISLMap>findFirst(sequencingMap.getMaps(), _function).copy();
+    final Function<Integer, String> _function_1 = (Integer it) -> {
       return this.indexName((it).intValue());
     };
-    return ISLUtil.<ISLMap>setDimNames(map.copy().applyRange(this.tileDimsMap.copy()).rangeProduct(map.copy().applyRange(this.iteratorMap.copy())).flatten(), ISLUtil.Dims.OUT, _function);
+    return ISLUtil.<ISLMap>setDimNames(map.copy().applyRange(this.tileDimsMap.copy()).rangeProduct(sequencedMap).rangeProduct(map.copy().applyRange(this.iteratorMap.copy())).flatten(), ISLUtil.Dims.OUT, _function_1);
   }
 
   @Override
@@ -80,7 +101,7 @@ public class WavefrontTiler extends DTiler {
     }
   }
 
-  public WavefrontTiler(final List<Integer> tileSizes, final Scheduler scheduler, final int startDim, final int endDim) {
+  public WavefrontSequencedTiler(final List<Integer> tileSizes, final Scheduler scheduler, final int startDim, final int endDim) {
     this(tileSizes, scheduler.getMaps().getMaps().get(0).getRange().getSpace(), startDim, endDim);
   }
 }

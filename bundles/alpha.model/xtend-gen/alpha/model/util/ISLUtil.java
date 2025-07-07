@@ -6,6 +6,7 @@ import alpha.model.matrix.MatrixOperations;
 import alpha.model.scheduler.ManualScheduler;
 import alpha.model.scheduler.ScheduleVerifier;
 import com.google.common.collect.Iterables;
+import fr.irisa.cairn.jnimap.isl.IISLSingleSpaceMethods;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLAffList;
 import fr.irisa.cairn.jnimap.isl.ISLBasicMap;
@@ -32,6 +33,7 @@ import fr.irisa.cairn.jnimap.isl.ISLVal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -613,6 +615,18 @@ public class ISLUtil {
       return a.addDisjoint(b);
     };
     return IterableExtensions.<ISLPWQPolynomial>reduce(ListExtensions.<ISLPWMultiAffPiece, ISLPWQPolynomial>map(pwAff.copy().toPWMultiAff().getPieces(), _function), _function_1);
+  }
+
+  /**
+   * Uses a generator function to set all of an ISL singe space object's dim names
+   * Works on ISLMap, ISLSet, etc.
+   */
+  public static <T extends IISLSingleSpaceMethods> T setDimNames(final T obj, final ISLDimType dType, final Function<? super Integer, ? extends String> nameFunc) {
+    int _dim = obj.dim(dType);
+    final Function2<T, Integer, T> _function = (T m, Integer i) -> {
+      return m.<T>setDimName(dType, (i).intValue(), nameFunc.apply(i));
+    };
+    return IterableExtensions.<Integer, T>fold(new ExclusiveRange(0, _dim, true), obj, _function);
   }
 
   /**

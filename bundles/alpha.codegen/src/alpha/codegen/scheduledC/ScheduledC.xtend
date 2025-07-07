@@ -10,11 +10,13 @@ import alpha.codegen.Factory
 import alpha.codegen.alphaBase.AlphaBaseHelpers
 import alpha.codegen.alphaBase.AlphaNameChecker
 import alpha.codegen.alphaBase.CodeGeneratorBase
+import alpha.codegen.isl.ASTConversionResult
 import alpha.codegen.isl.ASTConverter
 import alpha.codegen.isl.AffineConverter
 import alpha.codegen.isl.LoopGenerator
 import alpha.codegen.isl.MemoryUtils
 import alpha.codegen.isl.PolynomialConverter
+import alpha.codegen.postprocessing.ForLoopNester
 import alpha.codegen.postprocessing.OmpPragmaInserter
 import alpha.model.AlphaSystem
 import alpha.model.ReduceExpression
@@ -41,9 +43,6 @@ import static extension alpha.codegen.alphaBase.AlphaBaseHelpers.getOperator
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.*
-import alpha.model.util.ISLUtil.Dims
-import alpha.codegen.isl.ASTConversionResult
-import alpha.codegen.postprocessing.ForLoopNester
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -352,8 +351,6 @@ class ScheduledC extends CodeGeneratorBase {
 			.map[scheduler.getScheduleMap(it)]
 			.toList.convertToUnionMap
 		
-		if(tiler !== null) scheduleMaps = tiler.tileSchedule(scheduleMaps)
-		
 		// Then we get the domains for all the variables in the schedule
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		
@@ -381,8 +378,6 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		//Generate all the loops for variables
 		if(tiler !== null) {
-			val nTileDims = tiler.tiledDims.size
-			
 			val tileMaps = tiler.getApproximateOutset(scheduler.ranges)
 				.setTupleName("_")
 				.toIdentityMap
@@ -391,10 +386,8 @@ class ScheduledC extends CodeGeneratorBase {
 			val tileAST = LoopGenerator.generateLoops(tileMaps.copy.params, tileMaps)
 			loopResult = ASTConverter.convert(tileAST)
 			
-			val iterMaps = namedScheduleMaps.copy.maps
-				.map[moveDims(Dims.PARAM, 0, Dims.OUT, 0, nTileDims)]
-				.convertToUnionMap
-				
+			val iterMaps = tiler.getParameterizedIterators(namedScheduleMaps)
+			
 			val iterAST = LoopGenerator.generateLoops(iterMaps.copy.params, iterMaps)
 			val iterResult = ASTConverter.convert(iterAST)
 			

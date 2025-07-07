@@ -22,6 +22,8 @@ public interface Tiler {
 
   ISLSet getApproximateOutset(final ISLUnionSet domains);
 
+  ISLUnionMap getParameterizedIterators(final ISLUnionMap maps);
+
   boolean fixedTileSizes();
 
   int getTileSize(final int dim);
