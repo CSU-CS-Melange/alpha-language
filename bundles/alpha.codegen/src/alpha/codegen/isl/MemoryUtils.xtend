@@ -3,15 +3,13 @@ package alpha.codegen.isl
 import fr.irisa.cairn.jnimap.barvinok.BarvinokBindings
 import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLDimType
+import fr.irisa.cairn.jnimap.isl.ISLMultiPWAff
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.*
-import fr.irisa.cairn.jnimap.isl.ISLMultiPWAff
-import fr.irisa.cairn.jnimap.isl.ISLPWAff
-import fr.irisa.cairn.jnimap.isl.ISLQPolynomial
-import fr.irisa.cairn.jnimap.isl.ISLAff
 
 /** Helper methods intended for memory allocation and accessing using isl objects. */
 class MemoryUtils {
@@ -28,10 +26,16 @@ class MemoryUtils {
 	
 	def static ISLPWQPolynomial boxCard(ISLSet domain) {
 		val ISLMultiPWAff widths = domain.boundingBoxWidths.toMultiPWAff
-		return (0 ..< domain.dim(ISLDimType.isl_dim_set))
+		var polynomial = (0 ..< domain.dim(ISLDimType.isl_dim_set))
 			.map[dim | widths.getAt(dim)]
 			.map[toPWQPolynomial]
 			.reduce[a, b | a.mul(b)]
+		
+		//Remove all redundant constraints
+		if(polynomial.nbPieces == 1)
+			polynomial = polynomial.pieces.head.qp.toPWQPolynomial
+			
+		return polynomial
 	}
 	
 	/**
@@ -123,7 +127,7 @@ class MemoryUtils {
 		val ISLMultiPWAff widths = domain.boundingBoxWidths.toMultiPWAff
 		val ISLMultiPWAff mins = domain.copy.lexMinAsPWMultiAff.toMultiPWAff
 		
-		return (0 ..< domain.dim(ISLDimType.isl_dim_set))
+		var polynomial = (0 ..< domain.dim(ISLDimType.isl_dim_set))
 			.map[dim | 
 				val index = ISLQPolynomial.buildVarOnDomain(domain.space.copy, ISLDimType.isl_dim_set, dim)
 					.toPWQPolynomial
@@ -135,6 +139,14 @@ class MemoryUtils {
 					.map[addDims(ISLDimType.isl_dim_in, domain.dim(ISLDimType.isl_dim_set))]
 					.fold(index, [a, b | a.mul(b)])
 			].reduce[a, b | a.add(b)]
+			.intersectDomain(domain.copy)
+		
+		val pieces = polynomial.pieces.reject[set.isEmpty]
+		//Remove all redundant constraints
+		if(pieces.size == 1)
+			polynomial = pieces.head.qp.toPWQPolynomial
+			
+		return polynomial
 	}
 	
 	/**

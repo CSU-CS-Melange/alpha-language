@@ -11,6 +11,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiPWAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWAff;
 import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLQPolynomial;
+import fr.irisa.cairn.jnimap.isl.ISLQPolynomialPiece;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +50,13 @@ public class MemoryUtils {
     final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_2 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
       return a.mul(b);
     };
-    return IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<ISLPWAff, ISLPWQPolynomial>map(IterableExtensions.<Integer, ISLPWAff>map(new ExclusiveRange(0, _dim, true), _function), _function_1), _function_2);
+    ISLPWQPolynomial polynomial = IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<ISLPWAff, ISLPWQPolynomial>map(IterableExtensions.<Integer, ISLPWAff>map(new ExclusiveRange(0, _dim, true), _function), _function_1), _function_2);
+    int _nbPieces = polynomial.getNbPieces();
+    boolean _equals = (_nbPieces == 1);
+    if (_equals) {
+      polynomial = IterableExtensions.<ISLQPolynomialPiece>head(polynomial.getPieces()).getQp().toPWQPolynomial();
+    }
+    return polynomial;
   }
 
   /**
@@ -140,7 +147,17 @@ public class MemoryUtils {
     final Function2<ISLPWQPolynomial, ISLPWQPolynomial, ISLPWQPolynomial> _function_1 = (ISLPWQPolynomial a, ISLPWQPolynomial b) -> {
       return a.add(b);
     };
-    return IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<Integer, ISLPWQPolynomial>map(new ExclusiveRange(0, _dim, true), _function), _function_1);
+    ISLPWQPolynomial polynomial = IterableExtensions.<ISLPWQPolynomial>reduce(IterableExtensions.<Integer, ISLPWQPolynomial>map(new ExclusiveRange(0, _dim, true), _function), _function_1).intersectDomain(domain.copy());
+    final Function1<ISLQPolynomialPiece, Boolean> _function_2 = (ISLQPolynomialPiece it) -> {
+      return Boolean.valueOf(it.getSet().isEmpty());
+    };
+    final Iterable<ISLQPolynomialPiece> pieces = IterableExtensions.<ISLQPolynomialPiece>reject(polynomial.getPieces(), _function_2);
+    int _size = IterableExtensions.size(pieces);
+    boolean _equals = (_size == 1);
+    if (_equals) {
+      polynomial = IterableExtensions.<ISLQPolynomialPiece>head(pieces).getQp().toPWQPolynomial();
+    }
+    return polynomial;
   }
 
   /**
