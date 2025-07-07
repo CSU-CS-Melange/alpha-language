@@ -12,7 +12,7 @@ import org.eclipse.xtext.xbase.lib.ListExtensions;
 @SuppressWarnings("all")
 public class TileVerifier {
   public static void verify(final AlphaSystem sys, final Scheduler scheduler, final Tiler tiler) {
-    final List<ISLMap> maps = scheduler.getMaps().applyRange(tiler.getTileMap().toUnionMap()).getMaps();
+    final List<ISLMap> maps = tiler.tileSchedule(scheduler.getMaps()).getMaps();
     ScheduleVerifier verifier = new ScheduleVerifier(maps);
     verifier.accept(sys);
   }
@@ -21,7 +21,7 @@ public class TileVerifier {
     final Function1<ISLMap, ISLMap> _function = (ISLMap it) -> {
       return ISLUtil.convertToMultiAff(ISLUtil.toMultiAff(it).getAffs().subList(0, timeDims)).toMap();
     };
-    final List<ISLMap> maps = ListExtensions.<ISLMap, ISLMap>map(scheduler.getMaps().applyRange(tiler.getTileMap().toUnionMap()).getMaps(), _function);
+    final List<ISLMap> maps = ListExtensions.<ISLMap, ISLMap>map(tiler.tileSchedule(scheduler.getMaps()).getMaps(), _function);
     ScheduleVerifier verifier = new ScheduleVerifier(maps);
     verifier.accept(sys);
   }

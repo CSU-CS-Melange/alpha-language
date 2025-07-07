@@ -196,7 +196,7 @@ public class ScheduledExprConverter extends ExprConverter {
     loopDomain = loopDomain.intersect(generatedDomain);
     ISLMap scheduleMap = this.scheduler.getScheduleMap(reduceBodyName);
     if (((scheduleMap != null) && (this.tiler != null))) {
-      scheduleMap = scheduleMap.applyRange(this.tiler.getTileMap());
+      scheduleMap = this.tiler.tileSchedule(scheduleMap);
     }
     ISLMap _elvis_1 = null;
     if (scheduleMap != null) {

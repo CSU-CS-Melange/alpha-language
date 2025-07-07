@@ -31,7 +31,7 @@ class DTilerTest {
 	
 	def assertBijection() {
 		scheduler.getMaps.getMaps.forEach[map | 
-			assertTrue(tiler.getTileMap.isBijective)
+			assertTrue(tiler.tileSchedule(map).isBijective)
 		]
 	}
 	

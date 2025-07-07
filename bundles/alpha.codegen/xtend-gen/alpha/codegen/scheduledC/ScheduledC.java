@@ -409,7 +409,7 @@ public class ScheduledC extends CodeGeneratorBase {
       };
       ISLUnionMap scheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<String, ISLMap>map(scheduledVars, _function_2)));
       if ((this.tiler != null)) {
-        scheduleMaps = scheduleMaps.applyRange(this.tiler.getTileMap().toUnionMap());
+        scheduleMaps = this.tiler.tileSchedule(scheduleMaps);
       }
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
       boolean _inlineCode = this.options.getInlineCode();
@@ -467,24 +467,13 @@ public class ScheduledC extends CodeGeneratorBase {
       ASTConversionResult loopResult = null;
       if ((this.tiler != null)) {
         final int nTileDims = this.tiler.getTiledDims().size();
-        final Function1<ISLSet, ISLSet> _function_10 = (ISLSet it) -> {
-          int _dim = it.dim(ISLUtil.Dims.SET);
-          int _minus = (_dim - nTileDims);
-          return it.projectOut(ISLUtil.Dims.SET, nTileDims, _minus);
-        };
-        final Function1<ISLSet, ISLSet> _function_11 = (ISLSet it) -> {
-          return it.clearTupleName();
-        };
-        final Function2<ISLSet, ISLSet, ISLSet> _function_12 = (ISLSet a, ISLSet b) -> {
-          return a.union(b);
-        };
-        final ISLUnionMap tileMaps = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(namedScheduleMaps.getRange().getSets(), _function_10), _function_11), _function_12).setTupleName("_").simpleHull().toSet().toIdentityMap().toUnionMap();
+        final ISLUnionMap tileMaps = this.tiler.getApproximateOutset(this.scheduler.getRanges()).setTupleName("_").toIdentityMap().toUnionMap();
         final ISLASTNode tileAST = LoopGenerator.generateLoops(tileMaps.copy().params(), tileMaps);
         loopResult = ASTConverter.convert(tileAST);
-        final Function1<ISLMap, ISLMap> _function_13 = (ISLMap it) -> {
+        final Function1<ISLMap, ISLMap> _function_10 = (ISLMap it) -> {
           return it.moveDims(ISLUtil.Dims.PARAM, 0, ISLUtil.Dims.OUT, 0, nTileDims);
         };
-        final ISLUnionMap iterMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(namedScheduleMaps.copy().getMaps(), _function_13));
+        final ISLUnionMap iterMaps = ISLUtil.convertToUnionMap(ListExtensions.<ISLMap, ISLMap>map(namedScheduleMaps.copy().getMaps(), _function_10));
         final ISLASTNode iterAST = LoopGenerator.generateLoops(iterMaps.copy().params(), iterMaps);
         final ASTConversionResult iterResult = ASTConverter.convert(iterAST);
         ForLoopNester.apply(loopResult, iterResult, "_");
@@ -498,10 +487,10 @@ public class ScheduledC extends CodeGeneratorBase {
         final int timeDims = ISLUtil.countTimeDimensions(AlphaUtil.getContainerSystem(this.systemBody), this.scheduler.getMaps());
         OmpPragmaInserter.apply(loopResult, timeDims);
       }
-      final Function1<String, VariableDecl> _function_14 = (String it) -> {
+      final Function1<String, VariableDecl> _function_11 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_14));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_11));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;

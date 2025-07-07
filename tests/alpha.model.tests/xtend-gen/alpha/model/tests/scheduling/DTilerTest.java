@@ -46,7 +46,7 @@ public class DTilerTest {
 
   public void assertBijection() {
     final Consumer<ISLMap> _function = (ISLMap map) -> {
-      Assert.assertTrue(this.tiler.getTileMap().isBijective());
+      Assert.assertTrue(this.tiler.tileSchedule(map).isBijective());
     };
     this.scheduler.getMaps().getMaps().forEach(_function);
   }

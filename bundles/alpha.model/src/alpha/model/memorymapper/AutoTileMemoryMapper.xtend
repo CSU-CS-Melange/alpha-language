@@ -1,22 +1,20 @@
 package alpha.model.memorymapper
 
-import alpha.model.tiler.Tiler
-import alpha.model.scheduler.Scheduler
+import alpha.model.Variable
 import alpha.model.prdg.PRDG
-import java.util.HashMap
 import alpha.model.prdg.PRDGNode
-import fr.irisa.cairn.jnimap.isl.ISLMultiAff
+import alpha.model.scheduler.Scheduler
+import alpha.model.tiler.DTiler
+import alpha.model.tiler.Tiler
+import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
-import static extension alpha.model.util.ISLUtil.*
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLPWMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
-import fr.irisa.cairn.jnimap.isl.ISLDimType
-import fr.irisa.cairn.jnimap.isl.ISLAff
-import fr.irisa.cairn.jnimap.isl.ISLPoint
-import alpha.model.tiler.DTiler
-import fr.irisa.cairn.jnimap.isl.ISLConstraint
 import fr.irisa.cairn.jnimap.isl.ISLVal
-import alpha.model.Variable
+import java.util.HashMap
+
+import static extension alpha.model.util.ISLUtil.*
 
 /**
  * Creates a tiled memory map that minimizes memory usage
@@ -49,10 +47,10 @@ class AutoTileMemoryMapper implements MemoryMapper {
 	
 	def private void generateMemoryMaps() {
 		this.prdg.nodes.forEach[
-			val ISLMap memMap = scheduler.getScheduleMap(name).clearInputTupleName
-			val ISLMap tiledMemMap = memMap.copy.applyRange(tiler.tileMap)
+			val ISLMap memMap = scheduler.getAnonymousMap(name)
+			val ISLMap tiledMemMap = tiler.tileSchedule(memMap)
 			
-			val ISLSet tiledLifespan = maxLifespan.apply(tiler.tileMap)
+			val ISLSet tiledLifespan = tiler.tileSchedule(maxLifespan.buildIdentityMap).getRange
 			val ISLVal lifespanBound = tiledLifespan.getUpperBound(ISLDimType.isl_dim_set, 0)
 			
 			//Apply a modular memory map iff the lifespan bound fits within a constant
@@ -64,8 +62,7 @@ class AutoTileMemoryMapper implements MemoryMapper {
 				val moduloMap = idMaff.setAff(0, idMaff.getAff(0).mod(modulus))
 					.toMap
 				
-				val ISLMap modularMemMap = memMap.applyRange(moduloMap)
-					.applyRange(tiler.tileMap)
+				val ISLMap modularMemMap = tiler.tileSchedule(memMap.applyRange(moduloMap))
 				
 				memoryMaps.put(name, modularMemMap)
 				

@@ -352,7 +352,7 @@ class ScheduledC extends CodeGeneratorBase {
 			.map[scheduler.getScheduleMap(it)]
 			.toList.convertToUnionMap
 		
-		if(tiler !== null) scheduleMaps = scheduleMaps.applyRange(tiler.tileMap.toUnionMap)
+		if(tiler !== null) scheduleMaps = tiler.tileSchedule(scheduleMaps)
 		
 		// Then we get the domains for all the variables in the schedule
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
@@ -381,13 +381,10 @@ class ScheduledC extends CodeGeneratorBase {
 		
 		//Generate all the loops for variables
 		if(tiler !== null) {
-			val nTileDims = tiler.getTiledDims.size
-			val tileMaps = namedScheduleMaps.getRange.sets
-				.map[projectOut(Dims.SET, nTileDims, dim(Dims.SET) - nTileDims)]
-				.map[clearTupleName]
-				.reduce[a, b | a.union(b)]
+			val nTileDims = tiler.tiledDims.size
+			
+			val tileMaps = tiler.getApproximateOutset(scheduler.ranges)
 				.setTupleName("_")
-				.simpleHull.toSet
 				.toIdentityMap
 				.toUnionMap
 			

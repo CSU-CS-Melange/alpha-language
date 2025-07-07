@@ -54,9 +54,9 @@ public class AutoTileMemoryMapper implements MemoryMapper {
 
   private void generateMemoryMaps() {
     final Consumer<PRDGNode> _function = (PRDGNode it) -> {
-      final ISLMap memMap = this.scheduler.getScheduleMap(it.getName()).clearInputTupleName();
-      final ISLMap tiledMemMap = memMap.copy().applyRange(this.tiler.getTileMap());
-      final ISLSet tiledLifespan = this.maxLifespan(it).apply(this.tiler.getTileMap());
+      final ISLMap memMap = this.scheduler.getAnonymousMap(it.getName());
+      final ISLMap tiledMemMap = this.tiler.tileSchedule(memMap);
+      final ISLSet tiledLifespan = this.tiler.tileSchedule(this.maxLifespan(it).buildIdentityMap()).getRange();
       final ISLVal lifespanBound = ISLUtil.getUpperBound(tiledLifespan, ISLDimType.isl_dim_set, 0);
       if (((!lifespanBound.isInfinity()) && this.tiler.getTiledDims().contains(Integer.valueOf(0)))) {
         long _asLong = lifespanBound.asLong();
@@ -65,7 +65,7 @@ public class AutoTileMemoryMapper implements MemoryMapper {
         final long modulus = (_plus * _tileSize);
         final ISLMultiAff idMaff = ISLUtil.toMultiAff(memMap.getRange().identity());
         final ISLMap moduloMap = idMaff.setAff(0, idMaff.getAff(0).mod(modulus)).toMap();
-        final ISLMap modularMemMap = memMap.applyRange(moduloMap).applyRange(this.tiler.getTileMap());
+        final ISLMap modularMemMap = this.tiler.tileSchedule(memMap.applyRange(moduloMap));
         this.memoryMaps.put(it.getName(), modularMemMap);
       } else {
         this.memoryMaps.put(it.getName(), tiledMemMap);

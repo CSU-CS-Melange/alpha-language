@@ -1,19 +1,20 @@
 package alpha.model.tiler
 
 import alpha.model.scheduler.Scheduler
+import alpha.model.util.ISLUtil.Dims
 import fr.irisa.cairn.jnimap.isl.ISLAff
 import fr.irisa.cairn.jnimap.isl.ISLDimType
 import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLSpace
-import java.util.ArrayList
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 import java.util.List
 import java.util.Set
 import java.util.stream.Collectors
 import java.util.stream.IntStream
 
 import static extension alpha.model.util.ISLUtil.*
-import alpha.model.util.ISLUtil.Dims
 
 class DTiler implements Tiler {
 	protected ISLMap tileMap
@@ -66,7 +67,13 @@ class DTiler implements Tiler {
 		this(tileSizes, scheduler.getMaps.getMaps.get(0).getRange.getSpace, startDim, endDim)
 	}
 	
-	override ISLMap getTileMap() {tileMap.copy}
+	override ISLUnionMap tileSchedule(ISLUnionMap maps) {
+		maps.applyRange(tileMap.copy.toUnionMap)
+	}
+	
+	override ISLMap tileSchedule(ISLMap map) {
+		map.applyRange(tileMap.copy)
+	}
 	
 	override ISLMap getUntileMap() {
 		return tileMap.copy.projectOut(
@@ -80,8 +87,8 @@ class DTiler implements Tiler {
 		IntStream.rangeClosed(startDim, endDim).boxed.collect(Collectors.toSet)
 	}
 	
-	override ISLSet getApproximateOutset(ISLSet domain) {
-		getOutset(domain)
+	override ISLSet getApproximateOutset(ISLUnionSet domains) {
+		getOutset(domains)
 	}
 	
 	override boolean fixedTileSizes() {
@@ -92,10 +99,14 @@ class DTiler implements Tiler {
 	 * Uses implicit ISL methods to get the exact output.
 	 * This takes exponential time in the worst case.
 	 */
-	def ISLSet getOutset(ISLSet domain) {
-		domain.copy.apply(getTileMap)
-			.projectOut(ISLDimType.isl_dim_out, endDim+1, tileMap.getNbOutputs-endDim-1)
-			.projectOut(ISLDimType.isl_dim_out, 0, startDim)
+	def ISLSet getOutset(ISLUnionSet domains) {
+		domains.copy.sets
+			.map[clearTupleName]
+			.map[apply(tileMap.copy)]
+			.map[projectOut(Dims.OUT, endDim+1, tileMap.getNbOutputs-endDim-1)]
+			.map[projectOut(Dims.OUT, 0, startDim)]
+			.reduce[a, b | a.union(b)]
+			.simpleHull.toSet
 	}
 	
 	override int getTileSize(int dim) {

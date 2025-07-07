@@ -8,14 +8,18 @@ import fr.irisa.cairn.jnimap.isl.ISLDimType;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
 public class DTiler implements Tiler {
@@ -76,8 +80,13 @@ public class DTiler implements Tiler {
   }
 
   @Override
-  public ISLMap getTileMap() {
-    return this.tileMap.copy();
+  public ISLUnionMap tileSchedule(final ISLUnionMap maps) {
+    return maps.applyRange(this.tileMap.copy().toUnionMap());
+  }
+
+  @Override
+  public ISLMap tileSchedule(final ISLMap map) {
+    return map.applyRange(this.tileMap.copy());
   }
 
   @Override
@@ -97,8 +106,8 @@ public class DTiler implements Tiler {
   }
 
   @Override
-  public ISLSet getApproximateOutset(final ISLSet domain) {
-    return this.getOutset(domain);
+  public ISLSet getApproximateOutset(final ISLUnionSet domains) {
+    return this.getOutset(domains);
   }
 
   @Override
@@ -110,12 +119,26 @@ public class DTiler implements Tiler {
    * Uses implicit ISL methods to get the exact output.
    * This takes exponential time in the worst case.
    */
-  public ISLSet getOutset(final ISLSet domain) {
-    ISLSet _apply = domain.copy().apply(this.getTileMap());
-    int _nbOutputs = this.tileMap.getNbOutputs();
-    int _minus = (_nbOutputs - this.endDim);
-    int _minus_1 = (_minus - 1);
-    return _apply.projectOut(ISLDimType.isl_dim_out, (this.endDim + 1), _minus_1).projectOut(ISLDimType.isl_dim_out, 0, this.startDim);
+  public ISLSet getOutset(final ISLUnionSet domains) {
+    final Function1<ISLSet, ISLSet> _function = (ISLSet it) -> {
+      return it.clearTupleName();
+    };
+    final Function1<ISLSet, ISLSet> _function_1 = (ISLSet it) -> {
+      return it.apply(this.tileMap.copy());
+    };
+    final Function1<ISLSet, ISLSet> _function_2 = (ISLSet it) -> {
+      int _nbOutputs = this.tileMap.getNbOutputs();
+      int _minus = (_nbOutputs - this.endDim);
+      int _minus_1 = (_minus - 1);
+      return it.projectOut(ISLUtil.Dims.OUT, (this.endDim + 1), _minus_1);
+    };
+    final Function1<ISLSet, ISLSet> _function_3 = (ISLSet it) -> {
+      return it.projectOut(ISLUtil.Dims.OUT, 0, this.startDim);
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_4 = (ISLSet a, ISLSet b) -> {
+      return a.union(b);
+    };
+    return IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(domains.copy().getSets(), _function), _function_1), _function_2), _function_3), _function_4).simpleHull().toSet();
   }
 
   @Override

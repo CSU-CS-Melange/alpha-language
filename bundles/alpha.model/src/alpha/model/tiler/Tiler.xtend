@@ -1,11 +1,14 @@
 package alpha.model.tiler
 
 import fr.irisa.cairn.jnimap.isl.ISLMap
-import java.util.Set
 import fr.irisa.cairn.jnimap.isl.ISLSet
+import fr.irisa.cairn.jnimap.isl.ISLUnionMap
+import fr.irisa.cairn.jnimap.isl.ISLUnionSet
+import java.util.Set
 
 interface Tiler {
-	def ISLMap getTileMap()
+	def ISLUnionMap tileSchedule(ISLUnionMap maps)
+	def ISLMap tileSchedule(ISLMap map)
 	
 	/*
 	 * Returns a map that takes in the indices of a tile, and outputs
@@ -13,7 +16,7 @@ interface Tiler {
 	 */
 	def ISLMap getUntileMap()
 	def Set<Integer> getTiledDims()
-	def ISLSet getApproximateOutset(ISLSet domain)
+	def ISLSet getApproximateOutset(ISLUnionSet domains)
 	
 	//Whether or not the implementation makes use of fixed tile sizes
 	//if so, it should implement getTileSize

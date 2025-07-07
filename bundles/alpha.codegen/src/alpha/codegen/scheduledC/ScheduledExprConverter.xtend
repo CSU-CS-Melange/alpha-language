@@ -160,7 +160,7 @@ class ScheduledExprConverter extends ExprConverter {
 		
 		var scheduleMap = scheduler.getScheduleMap(reduceBodyName) 
 		
-		if(scheduleMap !== null && tiler !== null) scheduleMap = scheduleMap.applyRange(tiler.getTileMap)
+		if(scheduleMap !== null && tiler !== null) scheduleMap = tiler.tileSchedule(scheduleMap)
 		scheduleMap = scheduleMap ?: loopDomain.copy.identity
 		
 		val islAST = LoopGenerator.generateLoops(accumulateMacro.name, 
