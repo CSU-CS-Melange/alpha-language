@@ -2,16 +2,14 @@ package alpha.model.scheduler
 
 import alpha.model.AlphaSystem
 import alpha.model.prdg.PRDG
-import fr.irisa.cairn.jnimap.isl.ISLMap
 import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLSchedule.JNIISLSchedulingOptions
-import fr.irisa.cairn.jnimap.isl.ISLSet
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 
 import static extension alpha.model.util.ISLUtil.*
 
-class HybridScheduler implements Scheduler {
+class HybridScheduler extends Scheduler {
 	ISLUnionMap spacetimeMap
 	ISLUnionSet domains
 	PRDG prdg
@@ -44,14 +42,6 @@ class HybridScheduler implements Scheduler {
 		].toList.convertToUnionMap
 	}
 	
-	override ISLSet getScheduleDomain(String variable) {
-		domains.sets.findFirst[tupleName == variable]?.copy
-	}
-
-	override ISLMap getScheduleMap(String variable) {
-		spacetimeMap.maps.findFirst[inputTupleName == variable]?.copy	
-	}
-	
 	override ISLUnionMap getMaps() {
 		spacetimeMap.copy
 	}
@@ -60,7 +50,8 @@ class HybridScheduler implements Scheduler {
 		domains.copy
 	}
 	
-	override getAnonymousMap(String variable) {
- 		getScheduleMap(variable)?.clearInputTupleName
+	override protected getSchedule() {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
 	}
+	
 }

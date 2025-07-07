@@ -8,7 +8,6 @@ import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSchedule;
-import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.List;
@@ -17,7 +16,7 @@ import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
-public class HybridScheduler implements Scheduler {
+public class HybridScheduler extends Scheduler {
   private ISLUnionMap spacetimeMap;
 
   private ISLUnionSet domains;
@@ -61,34 +60,6 @@ public class HybridScheduler implements Scheduler {
   }
 
   @Override
-  public ISLSet getScheduleDomain(final String variable) {
-    final Function1<ISLSet, Boolean> _function = (ISLSet it) -> {
-      String _tupleName = it.getTupleName();
-      return Boolean.valueOf(Objects.equal(_tupleName, variable));
-    };
-    ISLSet _findFirst = IterableExtensions.<ISLSet>findFirst(this.domains.getSets(), _function);
-    ISLSet _copy = null;
-    if (_findFirst!=null) {
-      _copy=_findFirst.copy();
-    }
-    return _copy;
-  }
-
-  @Override
-  public ISLMap getScheduleMap(final String variable) {
-    final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
-      String _inputTupleName = it.getInputTupleName();
-      return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
-    };
-    ISLMap _findFirst = IterableExtensions.<ISLMap>findFirst(this.spacetimeMap.getMaps(), _function);
-    ISLMap _copy = null;
-    if (_findFirst!=null) {
-      _copy=_findFirst.copy();
-    }
-    return _copy;
-  }
-
-  @Override
   public ISLUnionMap getMaps() {
     return this.spacetimeMap.copy();
   }
@@ -99,12 +70,7 @@ public class HybridScheduler implements Scheduler {
   }
 
   @Override
-  public ISLMap getAnonymousMap(final String variable) {
-    ISLMap _scheduleMap = this.getScheduleMap(variable);
-    ISLMap _clearInputTupleName = null;
-    if (_scheduleMap!=null) {
-      _clearInputTupleName=_scheduleMap.clearInputTupleName();
-    }
-    return _clearInputTupleName;
+  protected ISLSchedule getSchedule() {
+    throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 }

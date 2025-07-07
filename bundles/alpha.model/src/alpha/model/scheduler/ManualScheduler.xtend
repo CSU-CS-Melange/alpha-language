@@ -4,7 +4,7 @@ import fr.irisa.cairn.jnimap.isl.ISLSchedule
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet
 
-class ManualScheduler implements Scheduler {
+class ManualScheduler extends Scheduler {
 	ISLUnionMap maps
 	ISLUnionSet domains
 	
@@ -18,24 +18,6 @@ class ManualScheduler implements Scheduler {
 		this.domains = schedule.domain
 	}
 	
-	override getScheduleMap(String variable) {
-		val map = this.maps.maps.filter(map | map.inputTupleName == variable).head ?: null
-		if(map === null) {
-			null
-		} else {
-			map.copy
-		}
-	}
-	
-	override getScheduleDomain(String variable) {
-		val domain = this.domains.sets.filter(set | set.tupleName == variable).head ?: null
-		if(domain === null) {
-			null
-		} else {
-			domain.copy
-		}
-	}
-	
 	override getMaps() {
 		this.maps.copy
 	}
@@ -44,7 +26,8 @@ class ManualScheduler implements Scheduler {
 		this.domains.copy
 	}
 	
-	override getAnonymousMap(String variable) {
- 		return getScheduleMap(variable).clearInputTupleName
+	override protected getSchedule() {
+		throw new UnsupportedOperationException("TODO: auto-generated method stub")
 	}
+	
 }
