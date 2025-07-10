@@ -81,7 +81,12 @@ class ScheduledC extends CodeGeneratorBase {
 	/** Overide the preprocess step to not normalize reductions */
 	override void preprocess() {
 		Normalize.apply(systemBody)
-		StandardizeNames.apply(systemBody)
+		/*
+		 * As in alpha.codegen.demandDrive.WriteC, StandardizeNames produces incorrect
+		 * memory macros with incorrect index names (all indices have duplicate labels).
+		 * See issue #103 for more details. 
+		 */
+//		StandardizeNames.apply(systemBody)
 	}
 	
 		/** Constructs an equality constraint that index i equals the parameter for that index. */

@@ -34,7 +34,6 @@ import alpha.model.scheduler.Scheduler;
 import alpha.model.tiler.Tiler;
 import alpha.model.transformation.ChangeOfBasis;
 import alpha.model.transformation.Normalize;
-import alpha.model.transformation.StandardizeNames;
 import alpha.model.util.AlphaUtil;
 import alpha.model.util.CommonExtensions;
 import alpha.model.util.ISLUtil;
@@ -113,7 +112,6 @@ public class ScheduledC extends CodeGeneratorBase {
    */
   public void preprocess() {
     Normalize.apply(this.systemBody);
-    StandardizeNames.apply(this.systemBody);
   }
 
   /**
