@@ -1,9 +1,0 @@
-affine k_means { N | -1 + N >= 0  }
-	input
-		float k {|};
-		float pts { i |  i >= 0  &&  -1 + N - i >= 0  &&  -1 + N >= 0  };
-	output
-		float S { i,j |  -1 + i >= 0  &&  -1 + j >= 0  &&  N - i >= 0  &&  N - j >= 0  &&  -1 + N >= 0  };
-	let
-		S = (i,j->)@(k);
-.

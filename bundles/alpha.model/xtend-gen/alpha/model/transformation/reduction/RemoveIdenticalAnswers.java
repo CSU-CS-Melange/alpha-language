@@ -112,7 +112,6 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outReduceExpression(final ReduceExpression reduceExpr) {
     final CandidateReuse candidateReuse = new CandidateReuse(reduceExpr);
     boolean _isHasIdenticalAnswers = candidateReuse.isHasIdenticalAnswers();
@@ -145,14 +144,18 @@ public class RemoveIdenticalAnswers extends AbstractAlphaCompleteVisitor {
         RemoveIdenticalAnswers.debug(("decompositionDomain: " + identicalAnswerDomain));
         final ShareSpaceAnalysisResult SSAR = ShareSpaceAnalysis.apply(targetReduceExpr);
         final LinkedList<Pair<ISLMultiAff, ISLMultiAff>> decompositions = SimplifyingReductions.generateDecompositionCandidates(SSAR, targetReduceExpr);
-        final Consumer<Pair<ISLMultiAff, ISLMultiAff>> _function = (Pair<ISLMultiAff, ISLMultiAff> d) -> {
-          String _string = d.toString();
-          String _plus = ("decomposition " + _string);
-          RemoveIdenticalAnswers.debug(_plus);
+        final Consumer<Pair<ISLMultiAff, ISLMultiAff>> _function = new Consumer<Pair<ISLMultiAff, ISLMultiAff>>() {
+          public void accept(final Pair<ISLMultiAff, ISLMultiAff> d) {
+            String _string = d.toString();
+            String _plus = ("decomposition " + _string);
+            RemoveIdenticalAnswers.debug(_plus);
+          }
         };
         decompositions.forEach(_function);
-        final Function1<Pair<ISLMultiAff, ISLMultiAff>, Boolean> _function_1 = (Pair<ISLMultiAff, ISLMultiAff> it) -> {
-          return Boolean.valueOf(ISLUtil.nullSpace(it.getKey()).isEqual(identicalAnswerDomain));
+        final Function1<Pair<ISLMultiAff, ISLMultiAff>, Boolean> _function_1 = new Function1<Pair<ISLMultiAff, ISLMultiAff>, Boolean>() {
+          public Boolean apply(final Pair<ISLMultiAff, ISLMultiAff> it) {
+            return Boolean.valueOf(ISLUtil.nullSpace(it.getKey()).isEqual(identicalAnswerDomain));
+          }
         };
         final Pair<ISLMultiAff, ISLMultiAff> decomposition = IterableExtensions.<Pair<ISLMultiAff, ISLMultiAff>>findFirst(decompositions, _function_1);
         if ((decomposition == null)) {

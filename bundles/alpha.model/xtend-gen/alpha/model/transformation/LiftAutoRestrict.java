@@ -44,7 +44,6 @@ public class LiftAutoRestrict extends AbstractAlphaCompleteVisitor {
     return re;
   }
 
-  @Override
   public void outAutoRestrictExpression(final AutoRestrictExpression are) {
     LiftAutoRestrict.transform(are);
   }

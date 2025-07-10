@@ -1,0 +1,22 @@
+
+external sqrt(1)
+affine ext2 [N]->{: N>0}
+ inputs
+	a 	: {[]:}
+	A 	: {[i,j] : 0<=i,j<N}
+	x 	: {[i]	 : 0<=i<N  }
+ outputs
+	b	: {[]:}
+	c 	: {[i]   : 0<=i<N  }
+	d	: {[]:}
+//   d	: {[]:}
+ 
+   
+ let
+	b = 2*a;
+	c[i] = reduce(+, [k], A[i,k]*x[k]);   
+	d = sqrt(a);
+	
+
+
+.

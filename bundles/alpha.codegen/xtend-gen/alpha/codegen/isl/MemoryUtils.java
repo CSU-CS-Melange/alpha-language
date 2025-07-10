@@ -74,20 +74,28 @@ public class MemoryUtils {
     List<String> _paramNames = domain.getParamNames();
     List<String> _indexNames = domain.getIndexNames();
     final ArrayList<String> existingNames = CommonExtensions.<String>toArrayList(Iterables.<String>concat(Collections.<List<String>>unmodifiableList(CollectionLiterals.<List<String>>newArrayList(_paramNames, _indexNames))));
-    final Function1<Integer, String> _function = (Integer it) -> {
-      return ("i" + it);
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer it) {
+        return ("i" + it);
+      }
     };
-    final Function1<String, Boolean> _function_1 = (String it) -> {
-      return Boolean.valueOf(existingNames.contains(it));
+    final Function1<String, Boolean> _function_1 = new Function1<String, Boolean>() {
+      public Boolean apply(final String it) {
+        return Boolean.valueOf(existingNames.contains(it));
+      }
     };
     final List<String> names = IterableExtensions.<String>toList(IterableExtensions.<String>take(IterableExtensions.<String>reject(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, Integer.MAX_VALUE, true), _function), _function_1), domain.getNbIndices()));
     final ISLSet extendedSet = domain.copy().<IISLSingleSpaceSetMethods>moveIndicesToParameters().<ISLSet>addIndices(names);
     int _nbIndices = domain.getNbIndices();
-    final Function1<Integer, ISLSet> _function_2 = (Integer i) -> {
-      return MemoryUtils.createOrderingForIndex(extendedSet, domain.getNbParams(), (i).intValue());
+    final Function1<Integer, ISLSet> _function_2 = new Function1<Integer, ISLSet>() {
+      public ISLSet apply(final Integer i) {
+        return MemoryUtils.createOrderingForIndex(extendedSet, domain.getNbParams(), (i).intValue());
+      }
     };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_3 = (ISLSet d1, ISLSet d2) -> {
-      return d1.union(d2);
+    final Function2<ISLSet, ISLSet, ISLSet> _function_3 = new Function2<ISLSet, ISLSet, ISLSet>() {
+      public ISLSet apply(final ISLSet d1, final ISLSet d2) {
+        return d1.union(d2);
+      }
     };
     final ISLSet lessThan = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Integer, ISLSet>map(new ExclusiveRange(0, _nbIndices, true), _function_2), ISLSet.buildEmpty(domain.getSpace()), _function_3);
     return MemoryUtils.card(lessThan.intersect(domain.copy()));
@@ -99,8 +107,10 @@ public class MemoryUtils {
    * and all indices j<i are equal to their parameter.
    */
   private static ISLSet createOrderingForIndex(final ISLSet domain, final int originalParamCount, final int index) {
-    final Function2<ISLSet, Integer, ISLSet> _function = (ISLSet d, Integer i) -> {
-      return MemoryUtils.addTotalOrderEquality(d, originalParamCount, (i).intValue());
+    final Function2<ISLSet, Integer, ISLSet> _function = new Function2<ISLSet, Integer, ISLSet>() {
+      public ISLSet apply(final ISLSet d, final Integer i) {
+        return MemoryUtils.addTotalOrderEquality(d, originalParamCount, (i).intValue());
+      }
     };
     return MemoryUtils.addTotalOrderInequality(IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, index, true), domain.copy(), _function), originalParamCount, index);
   }

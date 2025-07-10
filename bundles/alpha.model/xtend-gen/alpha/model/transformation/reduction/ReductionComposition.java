@@ -36,11 +36,15 @@ public class ReductionComposition {
    * @returns number of applications of the transformation
    */
   public static Integer apply(final AlphaSystem system) {
-    final Function1<SystemBody, Integer> _function = (SystemBody b) -> {
-      return ReductionComposition.apply(b);
+    final Function1<SystemBody, Integer> _function = new Function1<SystemBody, Integer>() {
+      public Integer apply(final SystemBody b) {
+        return ReductionComposition.apply(b);
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(ListExtensions.<SystemBody, Integer>map(system.getSystemBodies(), _function), _function_1);
   }
@@ -52,11 +56,15 @@ public class ReductionComposition {
    * @returns number of applications of the transformation
    */
   public static Integer apply(final SystemBody body) {
-    final Function1<AbstractReduceExpression, Integer> _function = (AbstractReduceExpression are) -> {
-      return Integer.valueOf(ReductionComposition.transform(are));
+    final Function1<AbstractReduceExpression, Integer> _function = new Function1<AbstractReduceExpression, Integer>() {
+      public Integer apply(final AbstractReduceExpression are) {
+        return Integer.valueOf(ReductionComposition.transform(are));
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(ListExtensions.<AbstractReduceExpression, Integer>map(EcoreUtil2.<AbstractReduceExpression>getAllContentsOfType(body, AbstractReduceExpression.class), _function), _function_1);
   }

@@ -38,17 +38,14 @@ public class ComplexityCalculator extends AbstractAlphaCompleteVisitor {
     return _xifexpression;
   }
 
-  @Override
   public void outStandardEquation(final StandardEquation eq) {
     this.updateComplexity(ISLUtil.dimensionality(eq.getVariable().getDomain()));
   }
 
-  @Override
   public void outUseEquation(final UseEquation eq) {
     throw new UnsupportedOperationException("Complexity calculation of UseEquations not yet implemented");
   }
 
-  @Override
   public void outReduceExpression(final ReduceExpression re) {
     this.updateComplexity(ISLUtil.dimensionality(re.getBody().getContextDomain()));
   }

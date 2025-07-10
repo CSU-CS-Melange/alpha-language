@@ -41,12 +41,10 @@ public class SameOperatorSimplification {
      * expression or after restrict). Silently ignores all expressions
      * that cannot be verified to be a legal target for HoistOutOfReduction.
      */
-    @Override
     public AlphaExpression defaultCase(final EObject eObject) {
       return null;
     }
 
-    @Override
     public AlphaExpression caseAbstractReduceExpression(final AbstractReduceExpression object) {
       AlphaExpression _xifexpression = null;
       if ((this.reduction == null)) {

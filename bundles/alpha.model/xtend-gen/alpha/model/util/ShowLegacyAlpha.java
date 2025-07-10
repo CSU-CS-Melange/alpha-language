@@ -54,22 +54,18 @@ public class ShowLegacyAlpha {
       this.valueType = valueType;
     }
 
-    @Override
     protected String printDomain(final ISLSet set) {
       return AlphaPrintingUtil.toLegacyAlphaString(set);
     }
 
-    @Override
     protected String printParameterDomain(final JNIDomain dom) {
       return AlphaPrintingUtil.toLegacyAlphaStringParameterDomain(dom.getISLSet());
     }
 
-    @Override
     protected String printVariableDeclarationDomain(final ISLSet set) {
       return AlphaPrintingUtil.toLegacyAlphaString(set);
     }
 
-    @Override
     public CharSequence caseAlphaSystem(final AlphaSystem s) {
       CharSequence _xblockexpression = null;
       {
@@ -95,8 +91,10 @@ public class ShowLegacyAlpha {
             _builder.newLine();
             _builder.append("\t");
             _builder.append("\t");
-            final Function1<Variable, CharSequence> _function = (Variable it) -> {
-              return this.doSwitch(it);
+            final Function1<Variable, CharSequence> _function = new Function1<Variable, CharSequence>() {
+              public CharSequence apply(final Variable it) {
+                return ShowLegacyAlphaForSystem.this.doSwitch(it);
+              }
             };
             String _join = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getInputs(), _function), "\n");
             _builder.append(_join, "\t\t");
@@ -112,8 +110,10 @@ public class ShowLegacyAlpha {
             _builder.newLine();
             _builder.append("\t");
             _builder.append("\t");
-            final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
-              return this.doSwitch(it);
+            final Function1<Variable, CharSequence> _function_1 = new Function1<Variable, CharSequence>() {
+              public CharSequence apply(final Variable it) {
+                return ShowLegacyAlphaForSystem.this.doSwitch(it);
+              }
             };
             String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getOutputs(), _function_1), "\n");
             _builder.append(_join_1, "\t\t");
@@ -129,8 +129,10 @@ public class ShowLegacyAlpha {
             _builder.newLine();
             _builder.append("\t");
             _builder.append("\t");
-            final Function1<Variable, CharSequence> _function_2 = (Variable it) -> {
-              return this.doSwitch(it);
+            final Function1<Variable, CharSequence> _function_2 = new Function1<Variable, CharSequence>() {
+              public CharSequence apply(final Variable it) {
+                return ShowLegacyAlphaForSystem.this.doSwitch(it);
+              }
             };
             String _join_2 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getLocals(), _function_2), "\n");
             _builder.append(_join_2, "\t\t");
@@ -141,8 +143,10 @@ public class ShowLegacyAlpha {
         _builder.append("let");
         _builder.newLine();
         _builder.append("\t\t");
-        final Function1<Equation, CharSequence> _function_3 = (Equation it) -> {
-          return this.doSwitch(it);
+        final Function1<Equation, CharSequence> _function_3 = new Function1<Equation, CharSequence>() {
+          public CharSequence apply(final Equation it) {
+            return ShowLegacyAlphaForSystem.this.doSwitch(it);
+          }
         };
         String _join_3 = IterableExtensions.join(ListExtensions.<Equation, CharSequence>map(this.targetBody.getEquations(), _function_3), "\n\n");
         _builder.append(_join_3, "\t\t");
@@ -154,7 +158,6 @@ public class ShowLegacyAlpha {
       return _xblockexpression;
     }
 
-    @Override
     public CharSequence caseDependenceExpression(final DependenceExpression de) {
       StringConcatenation _builder = new StringConcatenation();
       String _printFunction = this.printFunction(de.getFunction());
@@ -166,7 +169,6 @@ public class ShowLegacyAlpha {
       return _builder;
     }
 
-    @Override
     public CharSequence caseVariable(final Variable v) {
       StringConcatenation _builder = new StringConcatenation();
       _builder.append(this.valueType);
@@ -180,17 +182,14 @@ public class ShowLegacyAlpha {
       return _builder;
     }
 
-    @Override
     public CharSequence caseUseEquation(final UseEquation ue) {
       throw new UnsupportedOperationException("[ShowLegacyAlpha] Use equations are not yet supported.");
     }
 
-    @Override
     public CharSequence caseRestrictExpression(final RestrictExpression re) {
       return this.caseRestrict(re, re.getRestrictDomain(), re.getExpr());
     }
 
-    @Override
     public CharSequence caseAutoRestrictExpression(final AutoRestrictExpression are) {
       return this.caseRestrict(are, are.getInferredDomain(), are.getExpr());
     }
@@ -222,14 +221,15 @@ public class ShowLegacyAlpha {
       return _xblockexpression;
     }
 
-    @Override
     public CharSequence caseCaseExpression(final CaseExpression ce) {
       StringConcatenation _builder = new StringConcatenation();
       _builder.append("case ");
       _builder.newLine();
       _builder.append("\t");
-      final Function1<AlphaExpression, CharSequence> _function = (AlphaExpression e) -> {
-        return this.doSwitch(e);
+      final Function1<AlphaExpression, CharSequence> _function = new Function1<AlphaExpression, CharSequence>() {
+        public CharSequence apply(final AlphaExpression e) {
+          return ShowLegacyAlphaForSystem.this.doSwitch(e);
+        }
       };
       String _join = IterableExtensions.<AlphaExpression>join(ce.getExprs(), "", ";\n", ";", _function);
       _builder.append(_join, "\t");
@@ -238,17 +238,14 @@ public class ShowLegacyAlpha {
       return _builder;
     }
 
-    @Override
     public CharSequence casePolynomialIndexExpression(final PolynomialIndexExpression pie) {
       throw new IllegalArgumentException("[ShowLegacyAlpha] PolynomialIndexExpression is not allowed.");
     }
 
-    @Override
     public CharSequence caseSelectExpression(final SelectExpression se) {
       throw new IllegalArgumentException("[ShowLegacyAlpha] SelectExpression is not allowed.");
     }
 
-    @Override
     public CharSequence caseConvolutionExpression(final ConvolutionExpression ce) {
       throw new IllegalArgumentException("[ShowLegacyAlpha] ConvolutionExpression is not allowed.");
     }
@@ -261,8 +258,10 @@ public class ShowLegacyAlpha {
   }
 
   public static String print(final AlphaRoot root, final String valueType) {
-    final Function1<AlphaSystem, CharSequence> _function = (AlphaSystem s) -> {
-      return ShowLegacyAlpha.print(s, valueType);
+    final Function1<AlphaSystem, CharSequence> _function = new Function1<AlphaSystem, CharSequence>() {
+      public CharSequence apply(final AlphaSystem s) {
+        return ShowLegacyAlpha.print(s, valueType);
+      }
     };
     return IterableExtensions.<AlphaSystem>join(root.getSystems(), "\n", _function);
   }

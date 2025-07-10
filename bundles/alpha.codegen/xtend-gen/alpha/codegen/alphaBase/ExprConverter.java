@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -68,9 +69,12 @@ public class ExprConverter {
    * If this is reached, then the variable is implicitly being accessed by the identity function.
    */
   protected Expression _convertExpr(final VariableExpression expr) {
+    InputOutput.<String>println("convertExpr (Variable)");
     final String name = this.nameChecker.getVariableReadName(expr.getVariable());
-    final Function1<String, CustomExpr> _function = (String it) -> {
-      return Factory.customExpr(it);
+    final Function1<String, CustomExpr> _function = new Function1<String, CustomExpr>() {
+      public CustomExpr apply(final String it) {
+        return Factory.customExpr(it);
+      }
     };
     final List<CustomExpr> indexExprs = ListExtensions.<String, CustomExpr>map(expr.getContextDomain().getIndexNames(), _function);
     return Factory.callExpr(name, ((Expression[])Conversions.unwrapArray(indexExprs, Expression.class)));
@@ -80,7 +84,12 @@ public class ExprConverter {
    * Converts dependence expressions into simpleC expressions.
    */
   protected Expression _convertExpr(final DependenceExpression expr) {
-    return this.convertDependence(expr, expr.getExpr());
+    Expression _xblockexpression = null;
+    {
+      InputOutput.<String>println("convertExpr (Dependence)");
+      _xblockexpression = this.convertDependence(expr, expr.getExpr());
+    }
+    return _xblockexpression;
   }
 
   /**
@@ -127,13 +136,19 @@ public class ExprConverter {
    * the conditional checking should be handled by the conversion of the "case" or "reduce.
    */
   protected Expression _convertExpr(final AutoRestrictExpression re) {
-    return this.convertExpr(re.getExpr());
+    Expression _xblockexpression = null;
+    {
+      InputOutput.<String>println("convertExpr (AutoRestrict)");
+      _xblockexpression = this.convertExpr(re.getExpr());
+    }
+    return _xblockexpression;
   }
 
   /**
    * Converts an Alpha "case" expression into a C ternary expression.
    */
   protected Expression _convertExpr(final CaseExpression ce) {
+    InputOutput.<String>println("convertExpr (Case)");
     int _size = ce.getExprs().size();
     boolean _lessEqualsThan = (_size <= 0);
     if (_lessEqualsThan) {
@@ -159,14 +174,18 @@ public class ExprConverter {
       _xifexpression = IterableExtensions.<AlphaExpression>last(ce.getExprs());
     }
     final AlphaExpression lastCase = _xifexpression;
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression it) -> {
-      return Boolean.valueOf((it == lastCase));
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression it) {
+        return Boolean.valueOf((it == lastCase));
+      }
     };
     final Iterable<AlphaExpression> remainingCases = IterableExtensions.<AlphaExpression>reject(ce.getExprs(), _function);
     final AlphaExpression firstCase = IterableExtensions.<AlphaExpression>head(remainingCases);
     final TernaryExprBuilder builder = TernaryExprBuilder.start(this.createConditional(firstCase), this.convertExpr(firstCase));
-    final Consumer<AlphaExpression> _function_1 = (AlphaExpression it) -> {
-      builder.addCase(this.createConditional(it), this.convertExpr(it));
+    final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression it) {
+        builder.addCase(ExprConverter.this.createConditional(it), ExprConverter.this.convertExpr(it));
+      }
     };
     IterableExtensions.<AlphaExpression>tail(remainingCases).forEach(_function_1);
     return builder.elseCase(this.convertExpr(lastCase));
@@ -188,6 +207,7 @@ public class ExprConverter {
   }
 
   protected Expression _convertExpr(final IfExpression expr) {
+    InputOutput.<String>println("convertExpr (If)");
     final Expression conditional = this.convertExpr(expr.getCondExpr());
     final Expression thenExpr = this.convertExpr(expr.getThenExpr());
     final Expression elseExpr = this.convertExpr(expr.getElseExpr());
@@ -199,11 +219,13 @@ public class ExprConverter {
    * Thus, we just need to output the expression itself.
    */
   protected Expression _convertExpr(final IndexExpression ie) {
+    InputOutput.<String>println("convertExpr (Index)");
     final String exprLiteral = ISLAff._toString(ie.getFunction().getAff(0), ISL_FORMAT.C.ordinal());
     return Factory.customExpr(exprLiteral);
   }
 
   protected Expression _convertExpr(final PolynomialIndexExpression expr) {
+    InputOutput.<String>println("convertExpr (PolyIndex)");
     return PolynomialConverter.convert(expr.getPolynomial());
   }
 
@@ -211,6 +233,7 @@ public class ExprConverter {
    * Constants in Alpha simply map to the same constant in C.
    */
   protected Expression _convertExpr(final ConstantExpression ce) {
+    InputOutput.<String>println("convertExpr (Constant)");
     return Factory.customExpr(ce.valueString());
   }
 
@@ -218,12 +241,14 @@ public class ExprConverter {
    * There is a 1-to-1 matching between Alpha and C unary expressions.
    */
   protected Expression _convertExpr(final UnaryExpression ue) {
+    InputOutput.<String>println("convertExpr (Unary)");
     final UnaryOperator op = AlphaBaseHelpers.getOperator(ue.getOperator());
     final Expression expr = this.convertExpr(ue.getExpr());
     return Factory.unaryExpr(op, expr);
   }
 
   protected Expression _convertExpr(final BinaryExpression be) {
+    InputOutput.<String>println("convertExpr (Binary)");
     final Expression left = this.convertExpr(be.getLeft());
     final Expression right = this.convertExpr(be.getRight());
     final BinaryOperator op = AlphaBaseHelpers.getOperator(be.getOperator());
@@ -234,9 +259,13 @@ public class ExprConverter {
    * Multi-arg expressions are converted into a tree of nested binary expressions.
    */
   protected Expression _convertExpr(final MultiArgExpression expr) {
+    InputOutput.<String>println("convertExpr (MultiArg)");
+    InputOutput.<String>println(("expression: " + expr));
     final BinaryOperator op = AlphaBaseHelpers.getOperator(expr.getOperator());
-    final Function1<AlphaExpression, Expression> _function = (AlphaExpression it) -> {
-      return this.convertExpr(it);
+    final Function1<AlphaExpression, Expression> _function = new Function1<AlphaExpression, Expression>() {
+      public Expression apply(final AlphaExpression it) {
+        return ExprConverter.this.convertExpr(it);
+      }
     };
     final List<Expression> children = ListExtensions.<AlphaExpression, Expression>map(expr.getExprs(), _function);
     return Factory.binaryExprTree(op, ((Expression[])Conversions.unwrapArray(children, Expression.class)));
@@ -247,6 +276,7 @@ public class ExprConverter {
    */
   protected Expression _convertExpr(final AlphaExpression expr) {
     try {
+      InputOutput.<String>println("convertExpr (Alpha)");
       throw new Exception("Not implemented yet!");
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);

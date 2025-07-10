@@ -53,21 +53,23 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     this.sources = _stack_2;
   }
 
-  @Override
   public void inAlphaSystem(final AlphaSystem system) {
     EList<Variable> variables = system.getVariables();
-    final Function1<Variable, Boolean> _function = (Variable v) -> {
-      return Boolean.valueOf(((!(v.isInput()).booleanValue()) || this.includeInputs));
+    final Function1<Variable, Boolean> _function = new Function1<Variable, Boolean>() {
+      public Boolean apply(final Variable v) {
+        return Boolean.valueOf(((!(v.isInput()).booleanValue()) || PRDGGenerator.this.includeInputs));
+      }
     };
-    final Function1<Variable, PRDGNode> _function_1 = (Variable v) -> {
-      String _name = v.getName();
-      ISLSet _copy = v.getDomain().copy();
-      return new PRDGNode(_name, _copy);
+    final Function1<Variable, PRDGNode> _function_1 = new Function1<Variable, PRDGNode>() {
+      public PRDGNode apply(final Variable v) {
+        String _name = v.getName();
+        ISLSet _copy = v.getDomain().copy();
+        return new PRDGNode(_name, _copy);
+      }
     };
     this.prdg.setNodes(IterableExtensions.<PRDGNode>toSet(IterableExtensions.<Variable, PRDGNode>map(IterableExtensions.<Variable>filter(variables, _function), _function_1)));
   }
 
-  @Override
   public void inStandardEquation(final StandardEquation standardEquation) {
     this.functions.push(ISLMultiAff.buildIdentity(standardEquation.getVariable().getDomain().copy().identity().getSpace()));
     String _name = standardEquation.getVariable().getName();
@@ -77,26 +79,22 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     this.numberReductions = 0;
   }
 
-  @Override
   public void outStandardEquation(final StandardEquation se) {
     this.sources.pop();
     this.functions.pop();
     this.numberReductions = 0;
   }
 
-  @Override
   public void inDependenceExpression(final DependenceExpression dependenceExpression) {
     this.functions.push(dependenceExpression.getFunction().copy().pullback(this.functions.peek().copy()));
     this.domains.push(dependenceExpression.getContextDomain().copy());
   }
 
-  @Override
   public void outDependenceExpression(final DependenceExpression dependenceExpression) {
     this.functions.pop();
     this.domains.pop();
   }
 
-  @Override
   public void visitVariableExpression(final VariableExpression ve) {
     String _name = ve.getVariable().getName();
     ISLSet _domain = ve.getVariable().getDomain();
@@ -117,7 +115,6 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     this.prdg.addEdge(edge);
   }
 
-  @Override
   public void inReduceExpression(final ReduceExpression reduceExpression) {
     String _name = this.sources.peek().getName();
     String _plus = (_name + "_reduce");
@@ -160,7 +157,6 @@ public class PRDGGenerator extends AbstractAlphaCompleteVisitor {
     this.functions.push(ISLMultiAff.buildIdentity(reduceExpression.getBody().getContextDomain().copy().identity().getSpace()));
   }
 
-  @Override
   public void outReduceExpression(final ReduceExpression reduceExpression) {
     this.sources.pop();
     this.functions.pop();

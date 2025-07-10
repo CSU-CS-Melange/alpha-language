@@ -49,11 +49,15 @@ public class SplitUnionIntoCase {
    * @returns number of applications of the transformation
    */
   public static Integer apply(final AlphaSystem system) {
-    final Function1<SystemBody, Integer> _function = (SystemBody b) -> {
-      return SplitUnionIntoCase.apply(b);
+    final Function1<SystemBody, Integer> _function = new Function1<SystemBody, Integer>() {
+      public Integer apply(final SystemBody b) {
+        return SplitUnionIntoCase.apply(b);
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(ListExtensions.<SystemBody, Integer>map(system.getSystemBodies(), _function), _function_1);
   }
@@ -67,11 +71,15 @@ public class SplitUnionIntoCase {
   public static Integer apply(final SystemBody body) {
     List<RestrictExpression> _allContentsOfType = EcoreUtil2.<RestrictExpression>getAllContentsOfType(body, RestrictExpression.class);
     List<AutoRestrictExpression> _allContentsOfType_1 = EcoreUtil2.<AutoRestrictExpression>getAllContentsOfType(body, AutoRestrictExpression.class);
-    final Function1<AlphaExpression, Integer> _function = (AlphaExpression are) -> {
-      return Integer.valueOf(SplitUnionIntoCase.transform(are));
+    final Function1<AlphaExpression, Integer> _function = new Function1<AlphaExpression, Integer>() {
+      public Integer apply(final AlphaExpression are) {
+        return Integer.valueOf(SplitUnionIntoCase.transform(are));
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(IterableExtensions.<AlphaExpression, Integer>map(Iterables.<AlphaExpression>concat(_allContentsOfType, _allContentsOfType_1), _function), _function_1);
   }
@@ -128,9 +136,11 @@ public class SplitUnionIntoCase {
     if (_equals) {
       return 0;
     }
-    final Consumer<ISLBasicSet> _function = (ISLBasicSet bs) -> {
-      final RestrictExpression re = AlphaUserFactory.createRestrictExpression(bs.toSet(), EcoreUtil.<AlphaExpression>copy(child));
-      caseExpr.getExprs().add(re);
+    final Consumer<ISLBasicSet> _function = new Consumer<ISLBasicSet>() {
+      public void accept(final ISLBasicSet bs) {
+        final RestrictExpression re = AlphaUserFactory.createRestrictExpression(bs.toSet(), EcoreUtil.<AlphaExpression>copy(child));
+        caseExpr.getExprs().add(re);
+      }
     };
     disjointDomains.getBasicSets().forEach(_function);
     EcoreUtil.replace(parent, caseExpr);

@@ -69,12 +69,14 @@ public class AlphaUtil {
    * the specified String is appended until there is no conlict.
    */
   public static Function3<AlphaSystem, String, String, String> duplicateNameResolver() {
-    final Function3<AlphaSystem, String, String, String> _function = (AlphaSystem s, String nameCandidate, String postfix) -> {
-      String currentName = nameCandidate;
-      while ((s.getVariable(currentName) != null)) {
-        currentName = (currentName + postfix);
+    final Function3<AlphaSystem, String, String, String> _function = new Function3<AlphaSystem, String, String, String>() {
+      public String apply(final AlphaSystem s, final String nameCandidate, final String postfix) {
+        String currentName = nameCandidate;
+        while ((s.getVariable(currentName) != null)) {
+          currentName = (currentName + postfix);
+        }
+        return currentName;
       }
-      return currentName;
     };
     return _function;
   }
@@ -86,16 +88,18 @@ public class AlphaUtil {
    * until there is no conflict.
    */
   public static Function2<AlphaSystem, String, String> duplicateNameResolverWithCounter() {
-    final Function2<AlphaSystem, String, String> _function = (AlphaSystem s, String nameCandidate) -> {
-      String currentName = nameCandidate;
-      int count = 2;
-      while ((s.getVariable(currentName) != null)) {
-        {
-          currentName = (nameCandidate + Integer.valueOf(count));
-          count++;
+    final Function2<AlphaSystem, String, String> _function = new Function2<AlphaSystem, String, String>() {
+      public String apply(final AlphaSystem s, final String nameCandidate) {
+        String currentName = nameCandidate;
+        int count = 2;
+        while ((s.getVariable(currentName) != null)) {
+          {
+            currentName = (nameCandidate + Integer.valueOf(count));
+            count++;
+          }
         }
+        return currentName;
       }
-      return currentName;
     };
     return _function;
   }
@@ -157,11 +161,15 @@ public class AlphaUtil {
     boolean _contains = systemName.contains(".");
     if (_contains) {
       final IQualifiedNameProvider provider = new DefaultDeclarativeQualifiedNameProvider();
-      final Function1<AlphaRoot, TreeIterator<EObject>> _function = (AlphaRoot r) -> {
-        return r.eAllContents();
+      final Function1<AlphaRoot, TreeIterator<EObject>> _function = new Function1<AlphaRoot, TreeIterator<EObject>>() {
+        public TreeIterator<EObject> apply(final AlphaRoot r) {
+          return r.eAllContents();
+        }
       };
-      final Function1<AlphaSystem, Boolean> _function_1 = (AlphaSystem s) -> {
-        return Boolean.valueOf(provider.getFullyQualifiedName(s).toString().contentEquals(systemName));
+      final Function1<AlphaSystem, Boolean> _function_1 = new Function1<AlphaSystem, Boolean>() {
+        public Boolean apply(final AlphaSystem s) {
+          return Boolean.valueOf(provider.getFullyQualifiedName(s).toString().contentEquals(systemName));
+        }
       };
       final List<AlphaSystem> matching = IterableExtensions.<AlphaSystem>toList(IterableExtensions.<AlphaSystem>filter(Iterables.<AlphaSystem>filter(ListExtensions.<AlphaRoot, TreeIterator<EObject>>map(roots, _function), AlphaSystem.class), _function_1));
       int _length = ((Object[])Conversions.unwrapArray(matching, Object.class)).length;
@@ -170,11 +178,15 @@ public class AlphaUtil {
         return AlphaUtil.getContainerRoot(IterableExtensions.<AlphaSystem>head(matching));
       }
     } else {
-      final Function1<AlphaRoot, Iterator<AlphaSystem>> _function_2 = (AlphaRoot it) -> {
-        final Function1<AlphaSystem, Boolean> _function_3 = (AlphaSystem s) -> {
-          return Boolean.valueOf(s.getName().contentEquals(systemName));
-        };
-        return IteratorExtensions.<AlphaSystem>filter(Iterators.<AlphaSystem>filter(it.eAllContents(), AlphaSystem.class), _function_3);
+      final Function1<AlphaRoot, Iterator<AlphaSystem>> _function_2 = new Function1<AlphaRoot, Iterator<AlphaSystem>>() {
+        public Iterator<AlphaSystem> apply(final AlphaRoot it) {
+          final Function1<AlphaSystem, Boolean> _function = new Function1<AlphaSystem, Boolean>() {
+            public Boolean apply(final AlphaSystem s) {
+              return Boolean.valueOf(s.getName().contentEquals(systemName));
+            }
+          };
+          return IteratorExtensions.<AlphaSystem>filter(Iterators.<AlphaSystem>filter(it.eAllContents(), AlphaSystem.class), _function);
+        }
       };
       final List<AlphaSystem> matching_1 = IteratorExtensions.<AlphaSystem>toList(IteratorExtensions.<AlphaRoot, AlphaSystem>flatMap(roots.iterator(), _function_2));
       int _size = matching_1.size();
@@ -420,8 +432,10 @@ public class AlphaUtil {
    */
   public static ISLMultiAff renameFirstIndices(final ISLMultiAff maff, final List<String> names) {
     final int maxIndex = Integer.min(maff.getNbInputs(), names.size());
-    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
-      return _maff.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = new Function2<ISLMultiAff, Integer, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff _maff, final Integer dim) {
+        return _maff.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+      }
     };
     return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, maxIndex, true), maff, _function);
   }
@@ -472,8 +486,10 @@ public class AlphaUtil {
       InputOutput.println();
       throw new RuntimeException("Need n or more index names to rename n-d space.");
     }
-    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
-      return _maff.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = new Function2<ISLMultiAff, Integer, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff _maff, final Integer dim) {
+        return _maff.setDimName(ISLDimType.isl_dim_in, (dim).intValue(), names.get((dim).intValue()));
+      }
     };
     return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, nbDims, true), maff, _function);
   }
@@ -486,8 +502,10 @@ public class AlphaUtil {
       InputOutput.println();
       throw new RuntimeException("Need n or more index names to rename n-d space.");
     }
-    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
-      return _maff.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = new Function2<ISLMultiAff, Integer, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff _maff, final Integer dim) {
+        return _maff.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+      }
     };
     return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, nbDims, true), maff, _function);
   }
@@ -498,8 +516,10 @@ public class AlphaUtil {
    */
   public static ISLMultiAff renameFirstOutputs(final ISLMultiAff maff, final List<String> names) {
     final int maxIndex = Integer.min(maff.getNbOutputs(), names.size());
-    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff _maff, Integer dim) -> {
-      return _maff.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = new Function2<ISLMultiAff, Integer, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff _maff, final Integer dim) {
+        return _maff.setDimName(ISLDimType.isl_dim_out, (dim).intValue(), names.get((dim).intValue()));
+      }
     };
     return IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, maxIndex, true), maff, _function);
   }
@@ -515,8 +535,10 @@ public class AlphaUtil {
     if (_greaterThan) {
       throw new RuntimeException("Need n or more names to rename n-d space.");
     }
-    final Function2<ISLAff, Integer, ISLAff> _function = (ISLAff a, Integer i) -> {
-      return a.setDimName(dimType, (i).intValue(), names[(i).intValue()]);
+    final Function2<ISLAff, Integer, ISLAff> _function = new Function2<ISLAff, Integer, ISLAff>() {
+      public ISLAff apply(final ISLAff a, final Integer i) {
+        return a.setDimName(dimType, (i).intValue(), names[(i).intValue()]);
+      }
     };
     return IterableExtensions.<Integer, ISLAff>fold(new ExclusiveRange(0, n, true), aff.copy(), _function);
   }
@@ -526,8 +548,10 @@ public class AlphaUtil {
   }
 
   public static List<String> defaultDimNames(final int offset, final int n) {
-    final Function1<Integer, String> _function = (Integer i) -> {
-      return ("i" + i);
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer i) {
+        return ("i" + i);
+      }
     };
     return IterableExtensions.<String>toList(IterableExtensions.<Integer, String>map(new ExclusiveRange(offset, (offset + n), true), _function));
   }
@@ -537,8 +561,10 @@ public class AlphaUtil {
   }
 
   public static List<String> defaultInputNames(final ISLMultiAff maff) {
-    final Function1<String, String> _function = (String s) -> {
-      return ("_" + s);
+    final Function1<String, String> _function = new Function1<String, String>() {
+      public String apply(final String s) {
+        return ("_" + s);
+      }
     };
     return ListExtensions.<String, String>map(AlphaUtil.defaultDimNames(maff.getNbInputs()), _function);
   }
@@ -551,13 +577,17 @@ public class AlphaUtil {
     int[] _xifexpression = null;
     boolean _contains = intVecStr.contains(",");
     if (_contains) {
-      final ToIntFunction<String> _function = (String e) -> {
-        return Integer.parseInt(e.trim());
+      final ToIntFunction<String> _function = new ToIntFunction<String>() {
+        public int applyAsInt(final String e) {
+          return Integer.parseInt(e.trim());
+        }
       };
       _xifexpression = ((List<String>)Conversions.doWrapArray(intVecStr.replace("[", "").replace("]", "").trim().split("\\s*,\\s*"))).stream().mapToInt(_function).toArray();
     } else {
-      final ToIntFunction<String> _function_1 = (String e) -> {
-        return Integer.parseInt(e.trim());
+      final ToIntFunction<String> _function_1 = new ToIntFunction<String>() {
+        public int applyAsInt(final String e) {
+          return Integer.parseInt(e.trim());
+        }
       };
       _xifexpression = ((List<String>)Conversions.doWrapArray(intVecStr.replace("[", "").replace("]", "").trim().split("\\s+"))).stream().mapToInt(_function_1).toArray();
     }

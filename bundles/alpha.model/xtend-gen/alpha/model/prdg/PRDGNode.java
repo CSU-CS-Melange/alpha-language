@@ -26,7 +26,6 @@ public class PRDGNode {
     return this.name;
   }
 
-  @Override
   public String toString() {
     String _string = this.domain.toString();
     return ((this.name + ", ") + _string);
@@ -40,7 +39,6 @@ public class PRDGNode {
     return this.reductionNode;
   }
 
-  @Override
   public boolean equals(final Object other) {
     boolean _xifexpression = false;
     if ((other instanceof PRDGNode)) {
@@ -51,7 +49,6 @@ public class PRDGNode {
     return _xifexpression;
   }
 
-  @Override
   public int hashCode() {
     return this.name.hashCode();
   }

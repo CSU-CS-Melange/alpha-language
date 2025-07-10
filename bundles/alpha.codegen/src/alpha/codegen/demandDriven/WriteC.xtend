@@ -156,6 +156,7 @@ class WriteC extends CodeGeneratorBase {
 	
 	/** Throws an exception, as UseEquations are not supported. */
 	override declareEvaluation(UseEquation equation) {
+
 		throw new UnsupportedOperationException("Use equations are not currently supported.")
 	}
 	
@@ -186,11 +187,15 @@ class WriteC extends CodeGeneratorBase {
 	 * evaluates the variable if needed, or reports a self-dependence if detected.
 	 */
 	def protected getFlagCheckingBlock(StandardEquation equation) {
+		println('getFlagCheckBlock')
 		// For readability of this code, here is the statement that actually assigns
 		// the variable being computed.
+		println(' in: exprConverter')
 		val computeValue = exprConverter.convertExpr(equation.expr)
+		println('out: exprConverter: ' + computeValue)
+		println(' in: assignmentStatement')
 		val computeAndStore = Factory.assignmentStmt(equation.identityAccess(false), computeValue)
-		
+		println('out: assignmentStatement: ' + computeAndStore)
 		// If the flags indicate the value hasn't been evaluated yet:
 		//     Set the flag to "in progress"
 		//     Evaluate the variable and save its value

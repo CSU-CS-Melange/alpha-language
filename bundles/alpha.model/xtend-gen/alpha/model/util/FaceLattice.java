@@ -64,16 +64,20 @@ public class FaceLattice {
   protected FaceLattice(final ISLBasicSet root) {
     final Face rootFace = new Face(root, this);
     final int dimensionality = rootFace.getDimensionality();
-    final Function1<Integer, ArrayList<Face>> _function = (Integer it) -> {
-      return null;
+    final Function1<Integer, ArrayList<Face>> _function = new Function1<Integer, ArrayList<Face>>() {
+      public ArrayList<Face> apply(final Integer it) {
+        return null;
+      }
     };
     this.lattice = CommonExtensions.<ArrayList<Face>>toArrayList(IterableExtensions.<Integer, ArrayList<Face>>map(new IntegerRange(0, dimensionality), _function));
     this.lattice.set(dimensionality, CommonExtensions.<Face>toArrayList(Collections.<Face>unmodifiableList(CollectionLiterals.<Face>newArrayList(rootFace))));
     ExclusiveRange _greaterThanDoubleDot = new ExclusiveRange(dimensionality, 0, false);
     for (final Integer dim : _greaterThanDoubleDot) {
       {
-        final Function1<Face, ArrayList<Face>> _function_1 = (Face parent) -> {
-          return parent.generateChildren();
+        final Function1<Face, ArrayList<Face>> _function_1 = new Function1<Face, ArrayList<Face>>() {
+          public ArrayList<Face> apply(final Face parent) {
+            return parent.generateChildren();
+          }
         };
         final ArrayList<Face> current = Face.removeDuplicates(((Face[])Conversions.unwrapArray(IterableExtensions.<Face, Face>flatMap(this.lattice.get(((dim).intValue() + 1)), _function_1), Face.class)));
         this.lattice.set((dim).intValue(), current);

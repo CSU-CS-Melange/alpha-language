@@ -54,8 +54,10 @@ public class DTiler implements Tiler {
   }
 
   public void argumentCheck(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim, final int scheduleDim, final int bandDim) {
-    final Function1<Integer, Boolean> _function = (Integer size) -> {
-      return Boolean.valueOf(((size).intValue() <= 0));
+    final Function1<Integer, Boolean> _function = new Function1<Integer, Boolean>() {
+      public Boolean apply(final Integer size) {
+        return Boolean.valueOf(((size).intValue() <= 0));
+      }
     };
     boolean _exists = IterableExtensions.<Integer>exists(tileSizes, _function);
     if (_exists) {
@@ -78,17 +80,14 @@ public class DTiler implements Tiler {
     this(tileSizes, scheduler.getMaps().getMaps().get(0).getRange().getSpace(), startDim, endDim);
   }
 
-  @Override
   public ISLMap getTileMap() {
     return this.tileMap.copy();
   }
 
-  @Override
   public Set<Integer> getTiledDims() {
     return IntStream.rangeClosed(this.startDim, this.endDim).boxed().collect(Collectors.<Integer>toSet());
   }
 
-  @Override
   public ISLSet getApproximateOutset(final ISLSet domain) {
     return this.getOutset(domain);
   }

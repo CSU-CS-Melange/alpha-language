@@ -111,7 +111,6 @@ public class ScheduledC extends CodeGeneratorBase {
   /**
    * Overide the preprocess step to not normalize reductions
    */
-  @Override
   public void preprocess() {
     Normalize.apply(this.systemBody);
     StandardizeNames.apply(this.systemBody);
@@ -134,8 +133,10 @@ public class ScheduledC extends CodeGeneratorBase {
   }
 
   public static ISLSet createOrderingForIndex(final ISLSet domain, final ISLMap map, final int originalParamCount, final int index, final String name) {
-    final Function2<ISLSet, Integer, ISLSet> _function = (ISLSet d, Integer i) -> {
-      return ScheduledC.addTotalOrderEquality(d, originalParamCount, (i).intValue());
+    final Function2<ISLSet, Integer, ISLSet> _function = new Function2<ISLSet, Integer, ISLSet>() {
+      public ISLSet apply(final ISLSet d, final Integer i) {
+        return ScheduledC.addTotalOrderEquality(d, originalParamCount, (i).intValue());
+      }
     };
     return ScheduledC.addTotalOrderInequality(IterableExtensions.<Integer, ISLSet>fold(new ExclusiveRange(0, index, true), domain.copy(), _function), originalParamCount, index);
   }
@@ -144,7 +145,6 @@ public class ScheduledC extends CodeGeneratorBase {
     return BarvinokBindings.card(domain.copy());
   }
 
-  @Override
   public void declareMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
     final String memoryName = ("mem_" + name);
@@ -172,19 +172,19 @@ public class ScheduledC extends CodeGeneratorBase {
     this.program.addMemoryMacro(mappedMacroStatement);
   }
 
-  @Override
   public void declareFlagMemoryMacro(final Variable variable) {
     throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 
-  @Override
   public void declareEvaluation(final StandardEquation equation) {
     final DataType returnType = Factory.dataType(BaseDataType.VOID);
     final String evalName = this.nameChecker.getVariableReadName(equation.getVariable());
     final FunctionBuilder evalBuilder = this.program.startFunction(true, this.inlineFunction, returnType, ("eval_" + evalName));
     final List<String> indexNames = equation.getExpr().getContextDomain().getIndexNames();
-    final Consumer<String> _function = (String it) -> {
-      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
+    final Consumer<String> _function = new Consumer<String>() {
+      public void accept(final String it) {
+        evalBuilder.addParameter(ScheduledC.this.typeGenerator.getIndexType(), it);
+      }
     };
     indexNames.forEach(_function);
     this.exprConverter.setTarget(equation.getName());
@@ -206,12 +206,10 @@ public class ScheduledC extends CodeGeneratorBase {
     return Factory.callExpr(equation.getVariable().getName(), ((String[])Conversions.unwrapArray(equation.getExpr().getContextDomain().getIndexNames(), String.class)));
   }
 
-  @Override
   public void declareEvaluation(final UseEquation equation) {
     throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 
-  @Override
   public void allocateVariable(final Variable variable) {
     String _elvis = null;
     String _destination = this.mapper.getDestination(variable);
@@ -242,12 +240,10 @@ public class ScheduledC extends CodeGeneratorBase {
     return PolynomialConverter.convert(cardinalityPolynomial);
   }
 
-  @Override
   public void allocateFlagsVariable(final Variable variable) {
     throw new UnsupportedOperationException("TODO: auto-generated method stub");
   }
 
-  @Override
   public void performEvaluations() {
     this.entryPoint.addComment("Evaluate all the outputs.");
     EList<Variable> variables = this.systemBody.getSystem().getLocals();
@@ -299,9 +295,11 @@ public class ScheduledC extends CodeGeneratorBase {
                 this.nextStatementId = (_nextStatementId + 1);
               }
             } while(this.nameChecker.isGlobalOrKeyword(macroName));
-            final Function1<Variable, Boolean> _function = (Variable x) -> {
-              String _name = x.getName();
-              return Boolean.valueOf(Objects.equal(_name, name));
+            final Function1<Variable, Boolean> _function = new Function1<Variable, Boolean>() {
+              public Boolean apply(final Variable x) {
+                String _name = x.getName();
+                return Boolean.valueOf(Objects.equal(_name, name));
+              }
             };
             final Variable variable_1 = IterableExtensions.<Variable>head(IterableExtensions.<Variable>filter(variables, _function));
             final MacroStmt macro = Factory.macroStmt(macroName, ((String[])Conversions.unwrapArray(variable_1.getDomain().getIndexNames(), String.class)), this.variableStatements.get(name));
@@ -319,8 +317,10 @@ public class ScheduledC extends CodeGeneratorBase {
       }
       final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
       final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function = (String it) -> {
-        return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
+      final Function1<String, VariableDecl> _function = new Function1<String, VariableDecl>() {
+        public VariableDecl apply(final String it) {
+          return Factory.variableDecl(ScheduledC.this.typeGenerator.getIndexType(), it);
+        }
       };
       final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));

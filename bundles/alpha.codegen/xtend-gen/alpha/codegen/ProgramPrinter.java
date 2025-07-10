@@ -190,8 +190,10 @@ public class ProgramPrinter {
 
   public static String print(final DataType type) {
     int _indirectionLevel = type.getIndirectionLevel();
-    final Function1<Integer, String> _function = (Integer it) -> {
-      return "*";
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer it) {
+        return "*";
+      }
     };
     final String stars = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _indirectionLevel, true), _function));
     StringConcatenation _builder = new StringConcatenation();
@@ -310,8 +312,10 @@ public class ProgramPrinter {
   }
 
   public static String printParameters(final Function function) {
-    final Function1<Parameter, CharSequence> _function = (Parameter it) -> {
-      return ProgramPrinter.print(it);
+    final Function1<Parameter, CharSequence> _function = new Function1<Parameter, CharSequence>() {
+      public CharSequence apply(final Parameter it) {
+        return ProgramPrinter.print(it);
+      }
     };
     return IterableExtensions.join(ListExtensions.<Parameter, CharSequence>map(function.getParameters(), _function), ", ");
   }
@@ -628,8 +632,10 @@ public class ProgramPrinter {
     String _functionName = expr.getFunctionName();
     _builder.append(_functionName);
     _builder.append("(");
-    final Function1<Expression, CharSequence> _function = (Expression it) -> {
-      return ProgramPrinter.printExpr(it);
+    final Function1<Expression, CharSequence> _function = new Function1<Expression, CharSequence>() {
+      public CharSequence apply(final Expression it) {
+        return ProgramPrinter.printExpr(it);
+      }
     };
     String _join = IterableExtensions.join(ListExtensions.<Expression, CharSequence>map(expr.getArguments(), _function), ",");
     _builder.append(_join);

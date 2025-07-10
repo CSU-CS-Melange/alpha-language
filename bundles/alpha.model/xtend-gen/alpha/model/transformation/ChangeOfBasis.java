@@ -33,7 +33,6 @@ public class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
     system.accept(CoB);
   }
 
-  @Override
   public void inVariable(final Variable variable) {
     boolean _equals = Objects.equal(variable, this.target);
     if (_equals) {
@@ -42,7 +41,6 @@ public class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void inStandardEquation(final StandardEquation se) {
     Variable _variable = se.getVariable();
     boolean _equals = Objects.equal(_variable, this.target);
@@ -52,7 +50,6 @@ public class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outVariableExpression(final VariableExpression ve) {
     Variable _variable = ve.getVariable();
     boolean _equals = Objects.equal(_variable, this.target);
@@ -63,7 +60,6 @@ public class ChangeOfBasis extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void inUseEquation(final UseEquation ue) {
     super.inUseEquation(ue);
   }

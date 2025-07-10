@@ -149,15 +149,19 @@ public class Show extends ModelSwitch<CharSequence> {
    */
   public CharSequence caseAlphaRoot(final AlphaRoot root) {
     StringConcatenation _builder = new StringConcatenation();
-    final Function1<Imports, CharSequence> _function = (Imports it) -> {
-      return this.doSwitch(it);
+    final Function1<Imports, CharSequence> _function = new Function1<Imports, CharSequence>() {
+      public CharSequence apply(final Imports it) {
+        return Show.this.doSwitch(it);
+      }
     };
     String _join = IterableExtensions.join(ListExtensions.<Imports, CharSequence>map(root.getImports(), _function), "\n");
     _builder.append(_join);
     _builder.newLineIfNotEmpty();
     _builder.newLine();
-    final Function1<AlphaElement, CharSequence> _function_1 = (AlphaElement it) -> {
-      return this.doSwitch(it);
+    final Function1<AlphaElement, CharSequence> _function_1 = new Function1<AlphaElement, CharSequence>() {
+      public CharSequence apply(final AlphaElement it) {
+        return Show.this.doSwitch(it);
+      }
     };
     String _join_1 = IterableExtensions.join(ListExtensions.<AlphaElement, CharSequence>map(root.getElements(), _function_1), "\n");
     _builder.append(_join_1);
@@ -216,8 +220,10 @@ public class Show extends ModelSwitch<CharSequence> {
     _builder.append(" {");
     _builder.newLineIfNotEmpty();
     _builder.append("\t");
-    final Function1<AlphaElement, CharSequence> _function = (AlphaElement it) -> {
-      return this.doSwitch(it);
+    final Function1<AlphaElement, CharSequence> _function = new Function1<AlphaElement, CharSequence>() {
+      public CharSequence apply(final AlphaElement it) {
+        return Show.this.doSwitch(it);
+      }
     };
     String _join = IterableExtensions.join(ListExtensions.<AlphaElement, CharSequence>map(ap.getElements(), _function), "\n");
     _builder.append(_join, "\t");
@@ -252,8 +258,10 @@ public class Show extends ModelSwitch<CharSequence> {
           _builder.newLine();
           _builder.append("\t");
           _builder.append("\t");
-          final Function1<Variable, CharSequence> _function = (Variable it) -> {
-            return this.doSwitch(it);
+          final Function1<Variable, CharSequence> _function = new Function1<Variable, CharSequence>() {
+            public CharSequence apply(final Variable it) {
+              return Show.this.doSwitch(it);
+            }
           };
           String _join = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getInputs(), _function), "\n");
           _builder.append(_join, "\t\t");
@@ -269,8 +277,10 @@ public class Show extends ModelSwitch<CharSequence> {
           _builder.newLine();
           _builder.append("\t");
           _builder.append("\t");
-          final Function1<Variable, CharSequence> _function_1 = (Variable it) -> {
-            return this.doSwitch(it);
+          final Function1<Variable, CharSequence> _function_1 = new Function1<Variable, CharSequence>() {
+            public CharSequence apply(final Variable it) {
+              return Show.this.doSwitch(it);
+            }
           };
           String _join_1 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getOutputs(), _function_1), "\n");
           _builder.append(_join_1, "\t\t");
@@ -286,8 +296,10 @@ public class Show extends ModelSwitch<CharSequence> {
           _builder.newLine();
           _builder.append("\t");
           _builder.append("\t");
-          final Function1<Variable, CharSequence> _function_2 = (Variable it) -> {
-            return this.doSwitch(it);
+          final Function1<Variable, CharSequence> _function_2 = new Function1<Variable, CharSequence>() {
+            public CharSequence apply(final Variable it) {
+              return Show.this.doSwitch(it);
+            }
           };
           String _join_2 = IterableExtensions.join(ListExtensions.<Variable, CharSequence>map(s.getLocals(), _function_2), "\n");
           _builder.append(_join_2, "\t\t");
@@ -310,8 +322,10 @@ public class Show extends ModelSwitch<CharSequence> {
         }
       }
       _builder.append("\t");
-      final Function1<SystemBody, CharSequence> _function_3 = (SystemBody it) -> {
-        return this.doSwitch(it);
+      final Function1<SystemBody, CharSequence> _function_3 = new Function1<SystemBody, CharSequence>() {
+        public CharSequence apply(final SystemBody it) {
+          return Show.this.doSwitch(it);
+        }
       };
       String _join_3 = IterableExtensions.join(ListExtensions.<SystemBody, CharSequence>map(s.getSystemBodies(), _function_3), "\n");
       _builder.append(_join_3, "\t");
@@ -345,8 +359,10 @@ public class Show extends ModelSwitch<CharSequence> {
         _builder.append("let");
         _builder.newLineIfNotEmpty();
         _builder.append("\t");
-        final Function1<Equation, CharSequence> _function = (Equation it) -> {
-          return this.doSwitch(it);
+        final Function1<Equation, CharSequence> _function = new Function1<Equation, CharSequence>() {
+          public CharSequence apply(final Equation it) {
+            return Show.this.doSwitch(it);
+          }
         };
         String _join = IterableExtensions.join(ListExtensions.<Equation, CharSequence>map(sysBody.getEquations(), _function), "\n\n");
         _builder.append(_join, "\t");
@@ -406,8 +422,10 @@ public class Show extends ModelSwitch<CharSequence> {
       StringConcatenation _builder_2 = new StringConcatenation();
       _builder_2.append(idom);
       _builder_2.append("(");
-      final Function1<AlphaExpression, CharSequence> _function = (AlphaExpression it) -> {
-        return this.doSwitch(it);
+      final Function1<AlphaExpression, CharSequence> _function = new Function1<AlphaExpression, CharSequence>() {
+        public CharSequence apply(final AlphaExpression it) {
+          return Show.this.doSwitch(it);
+        }
       };
       String _join = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(ue.getOutputExprs(), _function), ", ");
       _builder_2.append(_join);
@@ -416,8 +434,10 @@ public class Show extends ModelSwitch<CharSequence> {
       _builder_2.append(_name);
       _builder_2.append(callParam);
       _builder_2.append("(");
-      final Function1<AlphaExpression, CharSequence> _function_1 = (AlphaExpression it) -> {
-        return this.doSwitch(it);
+      final Function1<AlphaExpression, CharSequence> _function_1 = new Function1<AlphaExpression, CharSequence>() {
+        public CharSequence apply(final AlphaExpression it) {
+          return Show.this.doSwitch(it);
+        }
       };
       String _join_1 = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(ue.getInputExprs(), _function_1), ", ");
       _builder_2.append(_join_1);
@@ -524,8 +544,10 @@ public class Show extends ModelSwitch<CharSequence> {
     _builder.append(" {");
     _builder.newLineIfNotEmpty();
     _builder.append("\t");
-    final Function1<AlphaExpression, CharSequence> _function = (AlphaExpression e) -> {
-      return this.doSwitch(e);
+    final Function1<AlphaExpression, CharSequence> _function = new Function1<AlphaExpression, CharSequence>() {
+      public CharSequence apply(final AlphaExpression e) {
+        return Show.this.doSwitch(e);
+      }
     };
     String _join = IterableExtensions.<AlphaExpression>join(ce.getExprs(), "", ";\n", ";", _function);
     _builder.append(_join, "\t");
@@ -753,8 +775,10 @@ public class Show extends ModelSwitch<CharSequence> {
     REDUCTION_OP _operator = mae.getOperator();
     _builder.append(_operator);
     _builder.append("(");
-    final Function1<AlphaExpression, CharSequence> _function = (AlphaExpression it) -> {
-      return this.doSwitch(it);
+    final Function1<AlphaExpression, CharSequence> _function = new Function1<AlphaExpression, CharSequence>() {
+      public CharSequence apply(final AlphaExpression it) {
+        return Show.this.doSwitch(it);
+      }
     };
     String _join = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(mae.getExprs(), _function), ", ");
     _builder.append(_join);
@@ -770,8 +794,10 @@ public class Show extends ModelSwitch<CharSequence> {
     String _name = emae.getExternalFunction().getName();
     _builder.append(_name);
     _builder.append("(");
-    final Function1<AlphaExpression, CharSequence> _function = (AlphaExpression it) -> {
-      return this.doSwitch(it);
+    final Function1<AlphaExpression, CharSequence> _function = new Function1<AlphaExpression, CharSequence>() {
+      public CharSequence apply(final AlphaExpression it) {
+        return Show.this.doSwitch(it);
+      }
     };
     String _join = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(emae.getExprs(), _function), ", ");
     _builder.append(_join);

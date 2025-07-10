@@ -101,14 +101,18 @@ public class InsertChecksums {
     final Map<Integer, List<OptimalSimplifyingReductions.State>> opts = OptimalSimplifyingReductions.apply(system, limit, targetComplexity, trySplit, debug).optimizations;
     final List<OptimalSimplifyingReductions.State> states = opts.get(Integer.valueOf(targetComplexity));
     InputOutput.<String>println("\n\n\nSimplifications:\n");
-    final Function1<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>> _function = (OptimalSimplifyingReductions.State s) -> {
-      int _indexOf = states.indexOf(s);
-      return Pair.<Integer, OptimalSimplifyingReductions.State>of(Integer.valueOf(_indexOf), s);
+    final Function1<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>> _function = new Function1<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>>() {
+      public Pair<Integer, OptimalSimplifyingReductions.State> apply(final OptimalSimplifyingReductions.State s) {
+        int _indexOf = states.indexOf(s);
+        return Pair.<Integer, OptimalSimplifyingReductions.State>of(Integer.valueOf(_indexOf), s);
+      }
     };
-    final Consumer<Pair<Integer, OptimalSimplifyingReductions.State>> _function_1 = (Pair<Integer, OptimalSimplifyingReductions.State> pair) -> {
-      final OptimalSimplifyingReductions.State state = pair.getValue();
-      InputOutput.println();
-      InputOutput.<CharSequence>println(state.show());
+    final Consumer<Pair<Integer, OptimalSimplifyingReductions.State>> _function_1 = new Consumer<Pair<Integer, OptimalSimplifyingReductions.State>>() {
+      public void accept(final Pair<Integer, OptimalSimplifyingReductions.State> pair) {
+        final OptimalSimplifyingReductions.State state = pair.getValue();
+        InputOutput.println();
+        InputOutput.<CharSequence>println(state.show());
+      }
     };
     ListExtensions.<OptimalSimplifyingReductions.State, Pair<Integer, OptimalSimplifyingReductions.State>>map(states, _function).forEach(_function_1);
   }
@@ -141,9 +145,11 @@ public class InsertChecksums {
   }
 
   public static Variable getOutputVariable(final AlphaSystem system, final String name, final int index) throws IndexOutOfBoundsException {
-    final Function1<Variable, Boolean> _function = (Variable v) -> {
-      String _name = v.getName();
-      return Boolean.valueOf(Objects.equal(_name, name));
+    final Function1<Variable, Boolean> _function = new Function1<Variable, Boolean>() {
+      public Boolean apply(final Variable v) {
+        String _name = v.getName();
+        return Boolean.valueOf(Objects.equal(_name, name));
+      }
     };
     Variable vbl = IterableExtensions.<Variable>findFirst(system.getOutputs(), _function);
     if ((vbl == null)) {
@@ -356,31 +362,37 @@ public class InsertChecksums {
       final AlphaRoot root = AlphaLoader.loadAlpha("resources/algo/cbd.alpha");
       final AlphaSystem system = root.getSystems().get(0);
       InputOutput.<String>println(system.getName());
-      final Consumer<Variable> _function = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("input: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("input: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getInputs().forEach(_function);
-      final Consumer<Variable> _function_1 = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("output: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function_1 = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("output: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getOutputs().forEach(_function_1);
-      final Consumer<Variable> _function_2 = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("local: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function_2 = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("local: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getLocals().forEach(_function_2);
       InputOutput.<String>println("-------------------\nBase system:\n");
@@ -424,31 +436,37 @@ public class InsertChecksums {
       final AlphaRoot root = AlphaLoader.loadAlpha(in_file);
       final AlphaSystem system = root.getSystems().get(0);
       InputOutput.<String>println(system.getName());
-      final Consumer<Variable> _function = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("input: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("input: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getInputs().forEach(_function);
-      final Consumer<Variable> _function_1 = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("output: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function_1 = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("output: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getOutputs().forEach(_function_1);
-      final Consumer<Variable> _function_2 = (Variable v) -> {
-        String _name = v.getName();
-        String _plus = ("local: " + _name);
-        String _plus_1 = (_plus + " : ");
-        ISLSet _domain = v.getDomain();
-        String _plus_2 = (_plus_1 + _domain);
-        InputOutput.<String>println(_plus_2);
+      final Consumer<Variable> _function_2 = new Consumer<Variable>() {
+        public void accept(final Variable v) {
+          String _name = v.getName();
+          String _plus = ("local: " + _name);
+          String _plus_1 = (_plus + " : ");
+          ISLSet _domain = v.getDomain();
+          String _plus_2 = (_plus_1 + _domain);
+          InputOutput.<String>println(_plus_2);
+        }
       };
       system.getLocals().forEach(_function_2);
       boolean _contains = mm_names.contains(system.getName());

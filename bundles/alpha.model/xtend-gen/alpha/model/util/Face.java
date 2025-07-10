@@ -99,8 +99,10 @@ public class Face {
    */
   public Face(final ISLBasicSet basicSet, final FaceLattice lattice) {
     final ISLBasicSet cleanBasicSet = basicSet.copy().removeRedundancies();
-    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint c) -> {
-      return Boolean.valueOf(Face.isConsideredSaturated(c, cleanBasicSet));
+    final Function1<ISLConstraint, Boolean> _function = new Function1<ISLConstraint, Boolean>() {
+      public Boolean apply(final ISLConstraint c) {
+        return Boolean.valueOf(Face.isConsideredSaturated(c, cleanBasicSet));
+      }
     };
     final Pair<ArrayList<ISLConstraint>, ArrayList<ISLConstraint>> separatedConstraints = CommonExtensions.<ISLConstraint>splitBy(cleanBasicSet.getConstraints(), _function);
     this.saturatedConstraints = separatedConstraints.getKey();
@@ -144,8 +146,10 @@ public class Face {
       _xifexpression = Collections.<Face.Label>unmodifiableList(CollectionLiterals.<Face.Label>newArrayList(Face.Label.POS, Face.Label.ZERO));
     }
     final List<Face.Label> labels = _xifexpression;
-    final Function1<ArrayList<Face.Label>, Boolean> _function = (ArrayList<Face.Label> it) -> {
-      return Boolean.valueOf(Face.isValid(((Face.Label[])Conversions.unwrapArray(it, Face.Label.class))));
+    final Function1<ArrayList<Face.Label>, Boolean> _function = new Function1<ArrayList<Face.Label>, Boolean>() {
+      public Boolean apply(final ArrayList<Face.Label> it) {
+        return Boolean.valueOf(Face.isValid(((Face.Label[])Conversions.unwrapArray(it, Face.Label.class))));
+      }
     };
     return IterableExtensions.<ArrayList<Face.Label>>filter(CommonExtensions.<Face.Label>permutations(labels, nbFacets), _function);
   }
@@ -154,11 +158,15 @@ public class Face {
    * Returns True if labeling contains at least one POS and NEG label, or false otherwise
    */
   public static boolean isValid(final Face.Label... labeling) {
-    return (IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
-      return Boolean.valueOf(Objects.equal(it, Face.Label.POS));
-    })) && IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), ((Function1<Face.Label, Boolean>) (Face.Label it) -> {
-      return Boolean.valueOf(Objects.equal(it, Face.Label.NEG));
-    })));
+    return (IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), new Function1<Face.Label, Boolean>() {
+      public Boolean apply(final Face.Label it) {
+        return Boolean.valueOf(Objects.equal(it, Face.Label.POS));
+      }
+    }) && IterableExtensions.<Face.Label>exists(((Iterable<Face.Label>)Conversions.doWrapArray(labeling)), new Function1<Face.Label, Boolean>() {
+      public Boolean apply(final Face.Label it) {
+        return Boolean.valueOf(Objects.equal(it, Face.Label.NEG));
+      }
+    }));
   }
 
   /**
@@ -167,12 +175,16 @@ public class Face {
    */
   public ArrayList<Face> generateChildren() {
     final int currentDimension = this.getDimensionality();
-    final Function1<Integer, Face> _function = (Integer it) -> {
-      return this.saturateConstraint((it).intValue());
+    final Function1<Integer, Face> _function = new Function1<Integer, Face>() {
+      public Face apply(final Integer it) {
+        return Face.this.saturateConstraint((it).intValue());
+      }
     };
-    final Function1<Face, Boolean> _function_1 = (Face face) -> {
-      int _dimensionality = face.getDimensionality();
-      return Boolean.valueOf((_dimensionality == (currentDimension - 1)));
+    final Function1<Face, Boolean> _function_1 = new Function1<Face, Boolean>() {
+      public Boolean apply(final Face face) {
+        int _dimensionality = face.getDimensionality();
+        return Boolean.valueOf((_dimensionality == (currentDimension - 1)));
+      }
     };
     return Face.removeDuplicates(((Face[])Conversions.unwrapArray(IterableExtensions.<Face>filter(IterableExtensions.<Integer, Face>map(this.unsaturatedConstraints.keySet(), _function), _function_1), Face.class)));
   }
@@ -212,14 +224,20 @@ public class Face {
     if (_notEquals) {
       throw new IllegalArgumentException("Must specify a label for every facet to get a labeling domain.");
     }
-    final Function1<Face, ISLAff> _function = (Face child) -> {
-      return child.getNormalVector(this);
+    final Function1<Face, ISLAff> _function = new Function1<Face, ISLAff>() {
+      public ISLAff apply(final Face child) {
+        return child.getNormalVector(Face.this);
+      }
     };
-    final Function1<Pair<ISLAff, Face.Label>, ISLConstraint> _function_1 = (Pair<ISLAff, Face.Label> pair) -> {
-      return this.toLabelInducingConstraint(pair.getKey(), pair.getValue());
+    final Function1<Pair<ISLAff, Face.Label>, ISLConstraint> _function_1 = new Function1<Pair<ISLAff, Face.Label>, ISLConstraint>() {
+      public ISLConstraint apply(final Pair<ISLAff, Face.Label> pair) {
+        return Face.this.toLabelInducingConstraint(pair.getKey(), pair.getValue());
+      }
     };
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
-      return s.addConstraint(c);
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = new Function2<ISLBasicSet, ISLConstraint, ISLBasicSet>() {
+      public ISLBasicSet apply(final ISLBasicSet s, final ISLConstraint c) {
+        return s.addConstraint(c);
+      }
     };
     final ISLBasicSet domain = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<Pair<ISLAff, Face.Label>, ISLConstraint>map(CommonExtensions.<ISLAff, Face.Label>zipWith(ListExtensions.<Face, ISLAff>map(facets, _function), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function_1), this.toLinearSpace(), _function_2).dropConstraintsInvolvingDims(ISLDimType.isl_dim_param, 0, this.space.getNbParams()).removeRedundancies();
     return Pair.<Face.Label[], ISLBasicSet>of(labeling, domain);
@@ -261,8 +279,10 @@ public class Face {
    * of the inequality characterizing this face in the context of its parent.
    */
   public ISLAff getNormalVector(final Face parent) {
-    final Function1<Integer, Boolean> _function = (Integer idx) -> {
-      return Boolean.valueOf(this.unsaturatedConstraints.containsKey(idx));
+    final Function1<Integer, Boolean> _function = new Function1<Integer, Boolean>() {
+      public Boolean apply(final Integer idx) {
+        return Boolean.valueOf(Face.this.unsaturatedConstraints.containsKey(idx));
+      }
     };
     final Integer characteristicInequalityIndex = IterableExtensions.<Integer>head(IterableExtensions.<Integer>reject(parent.unsaturatedConstraints.keySet(), _function));
     final ISLConstraint characteristicInequality = parent.unsaturatedConstraints.get(characteristicInequalityIndex);
@@ -281,12 +301,16 @@ public class Face {
     final Face other = new Face(this);
     other.moveConstraintToSaturated(idx);
     final ISLBasicSet basicSet = other.toBasicSet();
-    final Function2<Integer, ISLConstraint, Boolean> _function = (Integer i, ISLConstraint c) -> {
-      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, basicSet));
+    final Function2<Integer, ISLConstraint, Boolean> _function = new Function2<Integer, ISLConstraint, Boolean>() {
+      public Boolean apply(final Integer i, final ISLConstraint c) {
+        return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, basicSet));
+      }
     };
     final ArrayList<Integer> alsoSaturated = CommonExtensions.<Integer>toArrayList(MapExtensions.<Integer, ISLConstraint>filter(other.unsaturatedConstraints, _function).keySet());
-    final Consumer<Integer> _function_1 = (Integer i) -> {
-      other.moveConstraintToSaturated((i).intValue());
+    final Consumer<Integer> _function_1 = new Consumer<Integer>() {
+      public void accept(final Integer i) {
+        other.moveConstraintToSaturated((i).intValue());
+      }
     };
     alsoSaturated.forEach(_function_1);
     return other;
@@ -298,11 +322,15 @@ public class Face {
   public ISLBasicSet toBasicSet() {
     final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space.copy());
     Collection<ISLConstraint> _values = this.unsaturatedConstraints.values();
-    final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint c) -> {
-      return c.copy();
+    final Function1<ISLConstraint, ISLConstraint> _function = new Function1<ISLConstraint, ISLConstraint>() {
+      public ISLConstraint apply(final ISLConstraint c) {
+        return c.copy();
+      }
     };
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = (ISLBasicSet s, ISLConstraint c) -> {
-      return s.addConstraint(c);
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = new Function2<ISLBasicSet, ISLConstraint, ISLBasicSet>() {
+      public ISLBasicSet apply(final ISLBasicSet s, final ISLConstraint c) {
+        return s.addConstraint(c);
+      }
     };
     return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(IterableExtensions.<ISLConstraint, ISLConstraint>map(Iterables.<ISLConstraint>concat(Collections.<Collection<ISLConstraint>>unmodifiableList(CollectionLiterals.<Collection<ISLConstraint>>newArrayList(_values, this.saturatedConstraints))), _function), universe, _function_1).removeRedundancies();
   }
@@ -314,17 +342,25 @@ public class Face {
   public ISLBasicSet toLinearSpace() {
     final ISLBasicSet universe = ISLBasicSet.buildUniverse(this.space.copy());
     final int nbParams = this.space.dim(ISLDimType.isl_dim_param);
-    final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint c) -> {
-      return c.copy().setConstant(0);
+    final Function1<ISLConstraint, ISLConstraint> _function = new Function1<ISLConstraint, ISLConstraint>() {
+      public ISLConstraint apply(final ISLConstraint c) {
+        return c.copy().setConstant(0);
+      }
     };
-    final Function1<ISLConstraint, Iterable<ISLConstraint>> _function_1 = (ISLConstraint c) -> {
-      final Function1<Integer, ISLConstraint> _function_2 = (Integer i) -> {
-        return c.copy().setCoefficient(ISLDimType.isl_dim_param, (i).intValue(), 0);
-      };
-      return IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, nbParams, true), _function_2);
+    final Function1<ISLConstraint, Iterable<ISLConstraint>> _function_1 = new Function1<ISLConstraint, Iterable<ISLConstraint>>() {
+      public Iterable<ISLConstraint> apply(final ISLConstraint c) {
+        final Function1<Integer, ISLConstraint> _function = new Function1<Integer, ISLConstraint>() {
+          public ISLConstraint apply(final Integer i) {
+            return c.copy().setCoefficient(ISLDimType.isl_dim_param, (i).intValue(), 0);
+          }
+        };
+        return IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, nbParams, true), _function);
+      }
     };
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = (ISLBasicSet s, ISLConstraint c) -> {
-      return s.addConstraint(c);
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_2 = new Function2<ISLBasicSet, ISLConstraint, ISLBasicSet>() {
+      public ISLBasicSet apply(final ISLBasicSet s, final ISLConstraint c) {
+        return s.addConstraint(c);
+      }
     };
     return IterableExtensions.<ISLConstraint, ISLBasicSet>fold(Iterables.<ISLConstraint>concat(ListExtensions.<ISLConstraint, Iterable<ISLConstraint>>map(ListExtensions.<ISLConstraint, ISLConstraint>map(this.saturatedConstraints, _function), _function_1)), universe, _function_2);
   }
@@ -350,10 +386,11 @@ public class Face {
   /**
    * Returns a string indicating which constraints were saturated to form this face.
    */
-  @Override
   public String toString() {
-    final Function1<Integer, Boolean> _function = (Integer idx) -> {
-      return Boolean.valueOf(this.unsaturatedConstraints.containsKey(idx));
+    final Function1<Integer, Boolean> _function = new Function1<Integer, Boolean>() {
+      public Boolean apply(final Integer idx) {
+        return Boolean.valueOf(Face.this.unsaturatedConstraints.containsKey(idx));
+      }
     };
     final String saturatedIndexes = IterableExtensions.join(IterableExtensions.<Integer>reject(new ExclusiveRange(0, this.originalConstraintCount, true), _function), ",");
     return (("{" + saturatedIndexes) + "}");
@@ -382,8 +419,10 @@ public class Face {
    * Removes duplicate faces from a list of faces.
    */
   protected static ArrayList<Face> removeDuplicates(final Face... faces) {
-    final Function1<Face, String> _function = (Face face) -> {
-      return face.toString();
+    final Function1<Face, String> _function = new Function1<Face, String>() {
+      public String apply(final Face face) {
+        return face.toString();
+      }
     };
     return CommonExtensions.<Face>toArrayList(IterableExtensions.<String, Face>toMap(((Iterable<? extends Face>)Conversions.doWrapArray(faces)), _function).values());
   }

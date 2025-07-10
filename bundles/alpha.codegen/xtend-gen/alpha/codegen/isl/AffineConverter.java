@@ -24,8 +24,10 @@ public class AffineConverter {
    * one for each output dimension.
    */
   public static ArrayList<CustomExpr> convertMultiAff(final ISLMultiAff multiAff) {
-    final Function1<ISLAff, CustomExpr> _function = (ISLAff it) -> {
-      return AffineConverter.convertAff(it);
+    final Function1<ISLAff, CustomExpr> _function = new Function1<ISLAff, CustomExpr>() {
+      public CustomExpr apply(final ISLAff it) {
+        return AffineConverter.convertAff(it);
+      }
     };
     return CommonExtensions.<CustomExpr>toArrayList(ListExtensions.<ISLAff, CustomExpr>map(multiAff.getAffs(), _function));
   }
@@ -34,8 +36,10 @@ public class AffineConverter {
    * Converts a single affine expression to a single C expression.
    */
   public static CustomExpr convertAff(final ISLAff aff) {
-    final Function2<String, String, String> _function = (String ret, String index) -> {
-      return ret.replace(index, (("(" + index) + ")"));
+    final Function2<String, String, String> _function = new Function2<String, String, String>() {
+      public String apply(final String ret, final String index) {
+        return ret.replace(index, (("(" + index) + ")"));
+      }
     };
     final String literal = IterableExtensions.<String, String>fold(aff.getInputNames(), 
       aff.toString(ISL_FORMAT.C), _function);

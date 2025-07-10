@@ -43,16 +43,20 @@ public class ReductionUtil {
    * Assumes that input is normalized, and Fc satisfies the requirement.
    */
   public static void projectReductionBody(final AbstractReduceExpression are, final ISLMultiAff Fc) {
-    final Consumer<DependenceExpression> _function = (DependenceExpression de) -> {
-      final ISLMultiAff projectedDep = AffineFunctionOperations.projectFunctionDomain(de.getFunction(), Fc.copy());
-      final DependenceExpression newDepExpr = AlphaUserFactory.createDependenceExpression(projectedDep, de.getExpr());
-      EcoreUtil2.replace(de, newDepExpr);
+    final Consumer<DependenceExpression> _function = new Consumer<DependenceExpression>() {
+      public void accept(final DependenceExpression de) {
+        final ISLMultiAff projectedDep = AffineFunctionOperations.projectFunctionDomain(de.getFunction(), Fc.copy());
+        final DependenceExpression newDepExpr = AlphaUserFactory.createDependenceExpression(projectedDep, de.getExpr());
+        EcoreUtil2.replace(de, newDepExpr);
+      }
     };
     EcoreUtil2.<DependenceExpression>getAllContentsOfType(are, DependenceExpression.class).forEach(_function);
-    final Consumer<RestrictExpression> _function_1 = (RestrictExpression re) -> {
-      final ISLSet projectedDom = re.getRestrictDomain().apply(Fc.copy().toMap());
-      final RestrictExpression newRestrictExpr = AlphaUserFactory.createRestrictExpression(projectedDom, re.getExpr());
-      EcoreUtil2.replace(re, newRestrictExpr);
+    final Consumer<RestrictExpression> _function_1 = new Consumer<RestrictExpression>() {
+      public void accept(final RestrictExpression re) {
+        final ISLSet projectedDom = re.getRestrictDomain().apply(Fc.copy().toMap());
+        final RestrictExpression newRestrictExpr = AlphaUserFactory.createRestrictExpression(projectedDom, re.getExpr());
+        EcoreUtil2.replace(re, newRestrictExpr);
+      }
     };
     EcoreUtil2.<RestrictExpression>getAllContentsOfType(are, RestrictExpression.class).forEach(_function_1);
   }

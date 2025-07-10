@@ -92,25 +92,29 @@ public class SimplifyingReductions {
    */
   public static boolean DISABLE_POST_PROCESSING = false;
 
-  public static Function<SimplifyingReductions, String> defineXaddEquationName = ((Function<SimplifyingReductions, String>) (SimplifyingReductions sr) -> {
-    String _xblockexpression = null;
-    {
-      final String origName = sr.reductionEquation.getVariable().getName();
-      String XaddName = (origName + "_pos");
-      _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
+  public static Function<SimplifyingReductions, String> defineXaddEquationName = new Function<SimplifyingReductions, String>() {
+    public String apply(final SimplifyingReductions sr) {
+      String _xblockexpression = null;
+      {
+        final String origName = sr.reductionEquation.getVariable().getName();
+        String XaddName = (origName + "_pos");
+        _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
+      }
+      return _xblockexpression;
     }
-    return _xblockexpression;
-  });
+  };
 
-  public static Function<SimplifyingReductions, String> defineXsubEquationName = ((Function<SimplifyingReductions, String>) (SimplifyingReductions sr) -> {
-    String _xblockexpression = null;
-    {
-      final String origName = sr.reductionEquation.getVariable().getName();
-      String XaddName = (origName + "_neg");
-      _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
+  public static Function<SimplifyingReductions, String> defineXsubEquationName = new Function<SimplifyingReductions, String>() {
+    public String apply(final SimplifyingReductions sr) {
+      String _xblockexpression = null;
+      {
+        final String origName = sr.reductionEquation.getVariable().getName();
+        String XaddName = (origName + "_neg");
+        _xblockexpression = AlphaUtil.duplicateNameResolver().apply(sr.containerSystem, XaddName, "_");
+      }
+      return _xblockexpression;
     }
-    return _xblockexpression;
-  });
+  };
 
   private static void debug(final String msg) {
     if (SimplifyingReductions.DEBUG) {
@@ -143,8 +147,10 @@ public class SimplifyingReductions {
   }
 
   public static void apply(final ReduceExpression reduce, final int[] reuseDepNoParams) {
-    final Function1<Integer, Long> _function = (Integer v) -> {
-      return Long.valueOf(((long) (v).intValue()));
+    final Function1<Integer, Long> _function = new Function1<Integer, Long>() {
+      public Long apply(final Integer v) {
+        return Long.valueOf(((long) (v).intValue()));
+      }
     };
     SimplifyingReductions.apply(reduce, ((long[])Conversions.unwrapArray(ListExtensions.<Integer, Long>map(((List<Integer>)Conversions.doWrapArray(reuseDepNoParams)), _function), long.class)));
   }
@@ -154,8 +160,10 @@ public class SimplifyingReductions {
   }
 
   public static long[] asLongVector(final ISLMultiAff reuseDep) {
-    final Function1<ISLAff, Long> _function = (ISLAff aff) -> {
-      return Long.valueOf(aff.getConstant());
+    final Function1<ISLAff, Long> _function = new Function1<ISLAff, Long>() {
+      public Long apply(final ISLAff aff) {
+        return Long.valueOf(aff.getConstant());
+      }
     };
     return ((long[])Conversions.unwrapArray(ListExtensions.<ISLAff, Long>map(reuseDep.getAffs(), _function), long.class));
   }
@@ -316,8 +324,10 @@ public class SimplifyingReductions {
   }
 
   public static boolean testLegality(final AbstractReduceExpression reduce, final int[] reuseDepNoParams) {
-    final Function1<Integer, Long> _function = (Integer v) -> {
-      return Long.valueOf(((long) (v).intValue()));
+    final Function1<Integer, Long> _function = new Function1<Integer, Long>() {
+      public Long apply(final Integer v) {
+        return Long.valueOf(((long) (v).intValue()));
+      }
     };
     return SimplifyingReductions.testLegality(reduce, ((long[])Conversions.unwrapArray(ListExtensions.<Integer, Long>map(((List<Integer>)Conversions.doWrapArray(reuseDepNoParams)), _function), long.class)));
   }
@@ -406,17 +416,18 @@ public class SimplifyingReductions {
     final List<Map.Entry<AlphaExpression, long[][]>> exprREs = SSAR.getExpressionsWithReuse();
     final long[][] kerF = MatrixOperations.transpose(AffineFunctionOperations.computeKernel(targetRE.getProjection()));
     final TreeSet<long[][]> kerFps = new TreeSet<long[][]>(new Comparator<long[][]>() {
-      @Override
       public int compare(final long[][] o1, final long[][] o2) {
         final String str1 = MatrixOperations.toString(o1);
         final String str2 = MatrixOperations.toString(o2);
         return str1.compareTo(str2);
       }
     });
-    final Function1<Map.Entry<AlphaExpression, long[][]>, Boolean> _function = (Map.Entry<AlphaExpression, long[][]> exprRE) -> {
-      int _nbIndices = exprRE.getKey().getContextDomain().getNbIndices();
-      int _nbIndices_1 = targetRE.getBody().getContextDomain().getNbIndices();
-      return Boolean.valueOf((_nbIndices == _nbIndices_1));
+    final Function1<Map.Entry<AlphaExpression, long[][]>, Boolean> _function = new Function1<Map.Entry<AlphaExpression, long[][]>, Boolean>() {
+      public Boolean apply(final Map.Entry<AlphaExpression, long[][]> exprRE) {
+        int _nbIndices = exprRE.getKey().getContextDomain().getNbIndices();
+        int _nbIndices_1 = targetRE.getBody().getContextDomain().getNbIndices();
+        return Boolean.valueOf((_nbIndices == _nbIndices_1));
+      }
     };
     Iterable<Map.Entry<AlphaExpression, long[][]>> _filter = IterableExtensions.<Map.Entry<AlphaExpression, long[][]>>filter(exprREs, _function);
     for (final Map.Entry<AlphaExpression, long[][]> exprRE : _filter) {

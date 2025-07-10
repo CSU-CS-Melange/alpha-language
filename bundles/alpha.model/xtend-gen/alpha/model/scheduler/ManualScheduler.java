@@ -27,21 +27,24 @@ public class ManualScheduler implements Scheduler {
     final ISLSchedule schedule = ISLUtil.toISLSchedule(scheduleString);
     InputOutput.<String>println(("BLAH: " + schedule));
     this.maps = schedule.getMap();
-    final Consumer<ISLMap> _function = (ISLMap x) -> {
-      InputOutput.<String>println(("Sched: " + x));
+    final Consumer<ISLMap> _function = new Consumer<ISLMap>() {
+      public void accept(final ISLMap x) {
+        InputOutput.<String>println(("Sched: " + x));
+      }
     };
     this.maps.getMaps().forEach(_function);
     this.domains = schedule.getDomain();
   }
 
-  @Override
   public ISLMap getScheduleMap(final String variable) {
     ISLMap _xblockexpression = null;
     {
       ISLMap _elvis = null;
-      final Function1<ISLMap, Boolean> _function = (ISLMap map) -> {
-        String _inputTupleName = map.getInputTupleName();
-        return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
+      final Function1<ISLMap, Boolean> _function = new Function1<ISLMap, Boolean>() {
+        public Boolean apply(final ISLMap map) {
+          String _inputTupleName = map.getInputTupleName();
+          return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
+        }
       };
       ISLMap _head = IterableExtensions.<ISLMap>head(IterableExtensions.<ISLMap>filter(this.maps.getMaps(), _function));
       if (_head != null) {
@@ -61,14 +64,15 @@ public class ManualScheduler implements Scheduler {
     return _xblockexpression;
   }
 
-  @Override
   public ISLSet getScheduleDomain(final String variable) {
     ISLSet _xblockexpression = null;
     {
       ISLSet _elvis = null;
-      final Function1<ISLSet, Boolean> _function = (ISLSet set) -> {
-        String _tupleName = set.getTupleName();
-        return Boolean.valueOf(Objects.equal(_tupleName, variable));
+      final Function1<ISLSet, Boolean> _function = new Function1<ISLSet, Boolean>() {
+        public Boolean apply(final ISLSet set) {
+          String _tupleName = set.getTupleName();
+          return Boolean.valueOf(Objects.equal(_tupleName, variable));
+        }
       };
       ISLSet _head = IterableExtensions.<ISLSet>head(IterableExtensions.<ISLSet>filter(this.domains.getSets(), _function));
       if (_head != null) {
@@ -88,12 +92,10 @@ public class ManualScheduler implements Scheduler {
     return _xblockexpression;
   }
 
-  @Override
   public ISLUnionMap getMaps() {
     return this.maps.copy();
   }
 
-  @Override
   public ISLUnionSet getDomains() {
     return this.domains.copy();
   }

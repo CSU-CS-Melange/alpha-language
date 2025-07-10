@@ -96,18 +96,17 @@ abstract class CodeGeneratorBase {
 		parameters.forEach[declareParameter]
 		system.variables.forEach[declareGlobalVariable]
 		system.variables.forEach[declareMemoryMacro]
-		
+
 		// If cycle detection is being performed, generate the flag variables
 		// and memory macros for the Alpha variables being computed.
 		// That is, outputs and locals.
 		if (cycleDetection) {
 			system.outputs.forEach[declareFlagVariable]
 			system.outputs.forEach[declareFlagMemoryMacro]
-			
+
 			system.locals.forEach[declareFlagVariable]
 			system.locals.forEach[declareFlagMemoryMacro]
 		}
-		
 		// Declare how to evaluate each equation.
 		systemBody.standardEquations.forEach[declareEvaluation]
 		systemBody.useEquations.forEach[declareEvaluation]

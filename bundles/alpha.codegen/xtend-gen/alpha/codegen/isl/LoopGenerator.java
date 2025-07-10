@@ -41,12 +41,16 @@ public class LoopGenerator {
   public static ISLASTNode generateLoops(final String macroName, final ISLSet domain, final ISLMap timestamps) {
     final ISLSet context = domain.copy().params();
     final ISLUnionMap schedule = timestamps.copy().intersectDomain(domain.copy()).setTupleName(ISLDimType.isl_dim_in, macroName).toUnionMap();
-    final Function1<String, ISLIdentifier> _function = (String it) -> {
-      return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+    final Function1<String, ISLIdentifier> _function = new Function1<String, ISLIdentifier>() {
+      public ISLIdentifier apply(final String it) {
+        return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+      }
     };
     final ArrayList<ISLIdentifier> ids = CommonExtensions.<ISLIdentifier>toArrayList(ListExtensions.<String, ISLIdentifier>map(domain.getIndexNames(), _function));
-    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_1 = (ISLIdentifierList list, ISLIdentifier id) -> {
-      return list.add(id);
+    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_1 = new Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList>() {
+      public ISLIdentifierList apply(final ISLIdentifierList list, final ISLIdentifier id) {
+        return list.add(id);
+      }
     };
     final ISLIdentifierList idList = IterableExtensions.<ISLIdentifier, ISLIdentifierList>fold(ids, ISLIdentifierList.build(ISLContext.getInstance(), 0), _function_1);
     return ISLASTBuild.buildFromContext(context).setIterators(idList).generate(schedule);
@@ -67,12 +71,16 @@ public class LoopGenerator {
    * given domain for the parameters and a union map representing the schedule.
    */
   public static ISLASTNode generateLoops(final ISLSet domain, final ISLSchedule schedule) {
-    final Function1<String, ISLIdentifier> _function = (String it) -> {
-      return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+    final Function1<String, ISLIdentifier> _function = new Function1<String, ISLIdentifier>() {
+      public ISLIdentifier apply(final String it) {
+        return ISLIdentifier.alloc(ISLContext.getInstance(), it);
+      }
     };
     final ArrayList<ISLIdentifier> ids = CommonExtensions.<ISLIdentifier>toArrayList(ListExtensions.<String, ISLIdentifier>map(domain.getIndexNames(), _function));
-    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_1 = (ISLIdentifierList list, ISLIdentifier id) -> {
-      return list.add(id);
+    final Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList> _function_1 = new Function2<ISLIdentifierList, ISLIdentifier, ISLIdentifierList>() {
+      public ISLIdentifierList apply(final ISLIdentifierList list, final ISLIdentifier id) {
+        return list.add(id);
+      }
     };
     final ISLIdentifierList idList = IterableExtensions.<ISLIdentifier, ISLIdentifierList>fold(ids, ISLIdentifierList.build(ISLContext.getInstance(), 0), _function_1);
     return ISLASTBuild.buildFromContext(domain.copy().params()).setIterators(idList).generate(schedule);

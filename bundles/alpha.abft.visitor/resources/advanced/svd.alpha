@@ -1,16 +1,24 @@
 
 affine svd [N]->{: N>0}
  inputs
-   M	: {[i,j] : 0<=i,j<N}
+ 	M		: {[i,j]	: 0<=i,j<N}
  
  outputs
-   U	: {[i,j] : 0<=i,j<N}
-   S	: {[i,j] : 0<=i,j<N}
-   V_T	: {[i,j] : 0<=i,j<N}
+ 	U		: {[i,j]	: 0<=i,j<N}
+ 	S		: {[i,j]	: 0<=i,j<N}
+ 	V_T		: {[i,j]	: 0<=i,j<N}
+ 	MM_T		: {[i,j]	: 0<=i,j<N}
+  locals
+  	M_T		: {[i,j]	: 0<=i,j<N}
+  	
    
  let
-   U 	= M;
-   S 	= M;
-   V_T	= M;
+ 	U 			= M;
+ 	S 			= M;
+ 	V_T			= M;
+ 	
+ 	M_T[i,j]		= M[j,i];
+ 	
+ 	MM_T[i,j]	= reduce(+, [k], M[i,k]*M_T[k,j]);
  	
 .

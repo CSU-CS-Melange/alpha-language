@@ -136,7 +136,7 @@ class ScheduledExprConverter extends ExprConverter {
 		// This ensures the reduction function/code only iterates through the reduction indices
 		generatedDomain = generatedDomain.setTupleName(reduceBodyName)		
 		var loopDomain = scheduler.getScheduleDomain(reduceBodyName) ?: generatedDomain.copy
-		loopDomain = loopDomain.setTupleName(reduceBodyName)		
+		loopDomain = loopDomain.setTupleName(reduceBodyName)
 		loopDomain = loopDomain.intersect(generatedDomain)
 		
 		// We also take the map from the scheduler as well

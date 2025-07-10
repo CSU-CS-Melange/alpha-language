@@ -55,7 +55,6 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
     this.issues.add(issue);
   }
 
-  @Override
   public void inAutoRestrictExpression(final AutoRestrictExpression are) {
     EObject _eContainer = are.eContainer();
     boolean _tripleEquals = (_eContainer == null);
@@ -86,8 +85,10 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
     if (_not_1) {
       return;
     }
-    final Consumer<AlphaIssue> _function = (AlphaIssue i) -> {
-      this.registerIssue(i);
+    final Consumer<AlphaIssue> _function = new Consumer<AlphaIssue>() {
+      public void accept(final AlphaIssue i) {
+        ContextDomainCalculator.this.registerIssue(i);
+      }
     };
     final ISLSet parentContext = AlphaExpressionUtil.parentContext(are, parentCase, _function);
     if ((parentContext == null)) {
@@ -99,14 +100,20 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
     if (_equals) {
       inferredDomain = parentContext.intersect(are.getExpressionDomain());
     } else {
-      final Function1<AlphaExpression, Boolean> _function_1 = (AlphaExpression e) -> {
-        return Boolean.valueOf((!(e instanceof AutoRestrictExpression)));
+      final Function1<AlphaExpression, Boolean> _function_1 = new Function1<AlphaExpression, Boolean>() {
+        public Boolean apply(final AlphaExpression e) {
+          return Boolean.valueOf((!(e instanceof AutoRestrictExpression)));
+        }
       };
-      final Function1<AlphaExpression, ISLSet> _function_2 = (AlphaExpression it) -> {
-        return it.getExpressionDomain();
+      final Function1<AlphaExpression, ISLSet> _function_2 = new Function1<AlphaExpression, ISLSet>() {
+        public ISLSet apply(final AlphaExpression it) {
+          return it.getExpressionDomain();
+        }
       };
-      final Function2<ISLSet, ISLSet, ISLSet> _function_3 = (ISLSet p1, ISLSet p2) -> {
-        return p1.union(p2);
+      final Function2<ISLSet, ISLSet, ISLSet> _function_3 = new Function2<ISLSet, ISLSet, ISLSet>() {
+        public ISLSet apply(final ISLSet p1, final ISLSet p2) {
+          return p1.union(p2);
+        }
       };
       final ISLSet otherExprDomain = IterableExtensions.<ISLSet>reduce(IterableExtensions.<AlphaExpression, ISLSet>map(IterableExtensions.<AlphaExpression>filter(parentCase.getExprs(), _function_1), _function_2), _function_3);
       inferredDomain = parentContext.subtract(otherExprDomain).intersect(are.getExpressionDomain());
@@ -119,7 +126,6 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
     are.setContextDomain(inferredDomain.copy().computeDivs());
   }
 
-  @Override
   public void inAlphaExpression(final AlphaExpression ae) {
     EObject _eContainer = ae.eContainer();
     boolean _tripleEquals = (_eContainer == null);
@@ -132,8 +138,10 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
       return;
     }
     EObject _eContainer_1 = ae.eContainer();
-    final Consumer<AlphaIssue> _function = (AlphaIssue i) -> {
-      this.registerIssue(i);
+    final Consumer<AlphaIssue> _function = new Consumer<AlphaIssue>() {
+      public void accept(final AlphaIssue i) {
+        ContextDomainCalculator.this.registerIssue(i);
+      }
     };
     final ISLSet parentContext = AlphaExpressionUtil.parentContext(ae, ((AlphaCompleteVisitable) _eContainer_1), _function);
     if ((parentContext == null)) {
@@ -149,44 +157,56 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
       this.issues.add(AlphaIssueFactory.incompatibleContextAndExpressionDomain(ae));
       return;
     }
-    final Supplier<ISLSet> _function_1 = () -> {
-      return processedContext.intersect(ae.getExpressionDomain());
+    final Supplier<ISLSet> _function_1 = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return processedContext.intersect(ae.getExpressionDomain());
+      }
     };
     final ISLSet context = this.<ISLSet>runISLoperations(ae, _function_1);
     ae.setContextDomain(context.computeDivs());
   }
 
   private ISLSet _processContext(final DependenceExpression expr, final ISLSet context) {
-    final Supplier<ISLSet> _function = () -> {
-      return context.apply(expr.getFunction().toMap());
+    final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return context.apply(expr.getFunction().toMap());
+      }
     };
     return this.<ISLSet>runISLoperations(expr, _function);
   }
 
   private ISLSet _processContext(final SelectExpression expr, final ISLSet context) {
-    final Supplier<ISLSet> _function = () -> {
-      return context.apply(expr.getSelectRelation());
+    final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return context.apply(expr.getSelectRelation());
+      }
     };
     return this.<ISLSet>runISLoperations(expr, _function);
   }
 
   private ISLSet _processContext(final ReduceExpression expr, final ISLSet context) {
-    final Supplier<ISLSet> _function = () -> {
-      return context.preimage(expr.getProjection());
+    final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return context.preimage(expr.getProjection());
+      }
     };
     return this.<ISLSet>runISLoperations(expr, _function);
   }
 
   private ISLSet _processContext(final ArgReduceExpression expr, final ISLSet context) {
-    final Supplier<ISLSet> _function = () -> {
-      return context.preimage(expr.getProjection());
+    final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return context.preimage(expr.getProjection());
+      }
     };
     return this.<ISLSet>runISLoperations(expr, _function);
   }
 
   private ISLSet _processContext(final ConvolutionExpression expr, final ISLSet context) {
-    final Supplier<ISLSet> _function = () -> {
-      return context.flatProduct(expr.getKernelDomain());
+    final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+      public ISLSet get() {
+        return context.flatProduct(expr.getKernelDomain());
+      }
     };
     return this.<ISLSet>runISLoperations(expr, _function);
   }
@@ -202,8 +222,10 @@ public class ContextDomainCalculator extends AbstractAlphaExpressionVisitor {
   private <T extends Object> T runISLoperations(final AlphaExpression expr, final Supplier<T> r) {
     boolean _testNonNullExpressionDomain = AlphaExpressionUtil.testNonNullExpressionDomain(AlphaExpressionUtil.<AlphaExpression>getChildrenOfType(expr, AlphaExpression.class));
     if (_testNonNullExpressionDomain) {
-      final Consumer<String> _function = (String err) -> {
-        this.registerIssue(err, expr);
+      final Consumer<String> _function = new Consumer<String>() {
+        public void accept(final String err) {
+          ContextDomainCalculator.this.registerIssue(err, expr);
+        }
       };
       return AlphaUtil.<T>callISLwithErrorHandling(r, _function);
     }

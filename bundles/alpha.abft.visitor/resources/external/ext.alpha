@@ -1,18 +1,19 @@
 
-// external sqrt(1)
+external sqrt(1)
 affine ext [N]->{: N>0}
  inputs
    a 	: {[]:}
  outputs
    b	: {[]:}
    c	: {[]:}
+//   d	: {[]:}
  
    
  let
    b = 2*a;
    
-//   c = sqrt(a)
-   c = a-1; 
+   c = sqrt(a);
+//   d = reduce(+, ); 
 
 
 .

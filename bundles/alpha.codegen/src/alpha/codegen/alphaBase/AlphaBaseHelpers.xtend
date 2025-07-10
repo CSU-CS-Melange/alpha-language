@@ -53,6 +53,8 @@ class AlphaBaseHelpers {
 	
 	/** Translates an Alpha reduction operator to the equivalent C binary operator. */
 	static def getOperator(REDUCTION_OP op) {
+		println('getOperator')
+		println('operator: ' + op)
 		return switch op {
 			case MIN: BinaryOperator.MIN
 			case MAX: BinaryOperator.MAX

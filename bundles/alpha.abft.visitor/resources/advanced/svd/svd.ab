@@ -1,0 +1,21 @@
+affine svd { N | -1 + N >= 0  }
+	input
+		float M { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float U { i,j |  i >= 0  &&  j >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float S { i,j |  i >= 0  &&  j >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float V_T { i,j |  i >= 0  &&  j >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+		float MM_T { i,j |  i >= 0  &&  j >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+	local
+		float M_T { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	let
+		U = M;
+		
+		S = M;
+		
+		V_T = M;
+		
+		M_T = (i,j->j,i)@(M);
+		
+		MM_T = reduce(+, (i,j,k->i,j), ((i,j,k->i,k)@(M) * (i,j,k->k,j)@(M_T)));
+.

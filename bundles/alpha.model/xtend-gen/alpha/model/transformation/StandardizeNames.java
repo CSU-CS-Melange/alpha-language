@@ -122,8 +122,10 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
    */
   protected static ISLMultiAff renameOutputs(final ISLMultiAff multiAff) {
     int _nbOutputs = multiAff.getNbOutputs();
-    final Function1<Integer, String> _function = (Integer it) -> {
-      return StandardizeNames.getOutputName(multiAff, (it).intValue());
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer it) {
+        return StandardizeNames.getOutputName(multiAff, (it).intValue());
+      }
     };
     final ArrayList<String> outputNames = CommonExtensions.<String>toArrayList(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _nbOutputs, true), _function));
     return AlphaUtil.renameFirstOutputs(multiAff, outputNames);
@@ -141,19 +143,25 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
       return defaultName;
     }
     int _nbInputs = aff.getNbInputs();
-    final Function1<Integer, ISLVal> _function = (Integer it) -> {
-      return aff.getCoefficientVal(ISLDimType.isl_dim_in, (it).intValue());
+    final Function1<Integer, ISLVal> _function = new Function1<Integer, ISLVal>() {
+      public ISLVal apply(final Integer it) {
+        return aff.getCoefficientVal(ISLDimType.isl_dim_in, (it).intValue());
+      }
     };
     final ArrayList<ISLVal> coefficients = CommonExtensions.<ISLVal>toArrayList(IterableExtensions.<Integer, ISLVal>map(new ExclusiveRange(0, _nbInputs, true), _function));
-    final Function1<ISLVal, Boolean> _function_1 = (ISLVal it) -> {
-      return Boolean.valueOf(((!Objects.equal(it, Integer.valueOf(0))) || (!Objects.equal(it, Integer.valueOf(1)))));
+    final Function1<ISLVal, Boolean> _function_1 = new Function1<ISLVal, Boolean>() {
+      public Boolean apply(final ISLVal it) {
+        return Boolean.valueOf(((!Objects.equal(it, Integer.valueOf(0))) || (!Objects.equal(it, Integer.valueOf(1)))));
+      }
     };
     boolean _exists = IterableExtensions.<ISLVal>exists(coefficients, _function_1);
     if (_exists) {
       return defaultName;
     }
-    final Function1<ISLVal, Boolean> _function_2 = (ISLVal it) -> {
-      return Boolean.valueOf(Objects.equal(it, Integer.valueOf(1)));
+    final Function1<ISLVal, Boolean> _function_2 = new Function1<ISLVal, Boolean>() {
+      public Boolean apply(final ISLVal it) {
+        return Boolean.valueOf(Objects.equal(it, Integer.valueOf(1)));
+      }
     };
     int _size = IterableExtensions.size(IterableExtensions.<ISLVal>filter(coefficients, _function_2));
     boolean _notEquals_1 = (_size != 1);
@@ -166,7 +174,6 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
   /**
    * Renames the indices of the context domain and expression domain of the expression.
    */
-  @Override
   public void inAlphaExpression(final AlphaExpression expr) {
     final List<String> indexNames = StandardizeNames.getIndexNames(expr.eContainer());
     expr.setContextDomain(expr.getContextDomain().<ISLSet>renameIndices(indexNames));
@@ -177,7 +184,6 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
    * Renames the indices of the context domain, expression domain, and restrict domain
    * for the restrict expression.
    */
-  @Override
   public void inRestrictExpression(final RestrictExpression expr) {
     final List<String> indexNames = StandardizeNames.getIndexNames(expr.eContainer());
     expr.setContextDomain(expr.getContextDomain().<ISLSet>renameIndices(indexNames));
@@ -189,7 +195,6 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
    * Renames the indices of the context domain and expression domain of the expression.
    * Also renames the inputs and outputs of the dependence function.
    */
-  @Override
   public void inDependenceExpression(final DependenceExpression expr) {
     final List<String> indexNames = StandardizeNames.getIndexNames(expr.eContainer());
     expr.setContextDomain(expr.getContextDomain().<ISLSet>renameIndices(indexNames));
@@ -201,7 +206,6 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
    * Renames the indices of the context domain and expression domain of the expression.
    * Also renames the inputs and outputs of the index function.
    */
-  @Override
   public void inIndexExpression(final IndexExpression expr) {
     final List<String> indexNames = StandardizeNames.getIndexNames(expr.eContainer());
     expr.setContextDomain(expr.getContextDomain().<ISLSet>renameIndices(indexNames));
@@ -213,7 +217,6 @@ public class StandardizeNames extends AbstractAlphaCompleteVisitor {
    * Renames the indices of the context domain and expression domain of the expression.
    * Also renames the inputs and outputs of the projection function.
    */
-  @Override
   public void inReduceExpression(final ReduceExpression expr) {
     final List<String> indexNames = StandardizeNames.getIndexNames(expr.eContainer());
     expr.setContextDomain(expr.getContextDomain().<ISLSet>renameIndices(indexNames));

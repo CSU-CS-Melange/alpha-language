@@ -30,8 +30,10 @@ public class AlphaPrintingUtil {
       return null;
     }
     final String lhs = IterableExtensions.join(maff.getDomainSpace().getIndexNames(), ",");
-    final Function1<ISLAff, CharSequence> _function = (ISLAff a) -> {
-      return AlphaPrintingUtil.toAlphaString(a);
+    final Function1<ISLAff, CharSequence> _function = new Function1<ISLAff, CharSequence>() {
+      public CharSequence apply(final ISLAff a) {
+        return AlphaPrintingUtil.toAlphaString(a);
+      }
     };
     final String rhs = IterableExtensions.<ISLAff>join(maff.getAffs(), ",", _function);
     String _xifexpression = null;
@@ -56,8 +58,10 @@ public class AlphaPrintingUtil {
     if ((maff == null)) {
       return null;
     }
-    final Function1<ISLAff, CharSequence> _function = (ISLAff a) -> {
-      return AlphaPrintingUtil.toAlphaString(a);
+    final Function1<ISLAff, CharSequence> _function = new Function1<ISLAff, CharSequence>() {
+      public CharSequence apply(final ISLAff a) {
+        return AlphaPrintingUtil.toAlphaString(a);
+      }
     };
     final String rhs = IterableExtensions.<ISLAff>join(maff.getAffs(), ",", _function);
     StringConcatenation _builder = new StringConcatenation();
@@ -328,22 +332,28 @@ public class AlphaPrintingUtil {
   }
 
   public static List<String> collectBasicSets(final ISLSet set) {
-    final Function1<ISLBasicSet, String> _function = (ISLBasicSet c) -> {
-      return AlphaPrintingUtil.extractConstraints(c.toString());
+    final Function1<ISLBasicSet, String> _function = new Function1<ISLBasicSet, String>() {
+      public String apply(final ISLBasicSet c) {
+        return AlphaPrintingUtil.extractConstraints(c.toString());
+      }
     };
     return ListExtensions.<ISLBasicSet, String>map(set.getBasicSets(), _function);
   }
 
   public static List<List<String>> collectConstraints(final ISLSet set) {
-    final Function1<ISLBasicSet, List<String>> _function = (ISLBasicSet it) -> {
-      return AlphaPrintingUtil.collectConstraints(it);
+    final Function1<ISLBasicSet, List<String>> _function = new Function1<ISLBasicSet, List<String>>() {
+      public List<String> apply(final ISLBasicSet it) {
+        return AlphaPrintingUtil.collectConstraints(it);
+      }
     };
     return ListExtensions.<ISLBasicSet, List<String>>map(set.getBasicSets(), _function);
   }
 
   public static List<String> collectConstraints(final ISLBasicSet bset) {
-    final Function1<ISLConstraint, String> _function = (ISLConstraint c) -> {
-      return AlphaPrintingUtil.extractConstraints(c.toString());
+    final Function1<ISLConstraint, String> _function = new Function1<ISLConstraint, String>() {
+      public String apply(final ISLConstraint c) {
+        return AlphaPrintingUtil.extractConstraints(c.toString());
+      }
     };
     return ListExtensions.<ISLConstraint, String>map(bset.getConstraints(), _function);
   }
@@ -366,8 +376,10 @@ public class AlphaPrintingUtil {
   }
 
   public static List<String> collectBasicMaps(final ISLMap map) {
-    final Function1<ISLBasicMap, String> _function = (ISLBasicMap c) -> {
-      return c.toString().replaceFirst("\\[.*\\]\\s->\\s*\\{", "").replaceFirst("\\}", "");
+    final Function1<ISLBasicMap, String> _function = new Function1<ISLBasicMap, String>() {
+      public String apply(final ISLBasicMap c) {
+        return c.toString().replaceFirst("\\[.*\\]\\s->\\s*\\{", "").replaceFirst("\\}", "");
+      }
     };
     return ListExtensions.<ISLBasicMap, String>map(map.getBasicMaps(), _function);
   }
@@ -435,8 +447,10 @@ public class AlphaPrintingUtil {
         _xifexpression_1 = setRenamed;
       }
       final ISLSet setGisted = _xifexpression_1;
-      final Function1<ISLBasicSet, CharSequence> _function = (ISLBasicSet bs) -> {
-        return AlphaPrintingUtil.toLegacyAlphaString(bs);
+      final Function1<ISLBasicSet, CharSequence> _function = new Function1<ISLBasicSet, CharSequence>() {
+        public CharSequence apply(final ISLBasicSet bs) {
+          return AlphaPrintingUtil.toLegacyAlphaString(bs);
+        }
       };
       _xblockexpression = IterableExtensions.<ISLBasicSet>join(setGisted.getBasicSets(), "||", _function);
     }
@@ -449,8 +463,10 @@ public class AlphaPrintingUtil {
     String _join = IterableExtensions.join(bset.getIndexNames(), ",");
     _builder.append(_join);
     _builder.append(" | ");
-    final Function1<String, String> _function = (String s) -> {
-      return s.replace(" = ", " == ");
+    final Function1<String, String> _function = new Function1<String, String>() {
+      public String apply(final String s) {
+        return s.replace(" = ", " == ");
+      }
     };
     String _join_1 = IterableExtensions.join(ListExtensions.<String, String>map(AlphaPrintingUtil.collectConstraints(bset), _function), " && ");
     _builder.append(_join_1);
@@ -471,8 +487,10 @@ public class AlphaPrintingUtil {
       _builder.append("{ ");
       _builder.append(paramNames);
       _builder.append(" | ");
-      final Function1<String, String> _function = (String s) -> {
-        return s.replace(" = ", " == ");
+      final Function1<String, String> _function = new Function1<String, String>() {
+        public String apply(final String s) {
+          return s.replace(" = ", " == ");
+        }
       };
       String _join = IterableExtensions.join(ListExtensions.<String, String>map(AlphaPrintingUtil.collectConstraints(set.getBasicSets().get(0)), _function), " && ");
       _builder.append(_join);

@@ -182,11 +182,15 @@ public class DomainOperations {
     }
     final List<String> params = space.getParamNames();
     final List<String> indices = space.getIndexNames();
-    final Function1<ISLAff, ISLConstraint> _function = (ISLAff aff) -> {
-      return aff.toEqualityConstraint();
+    final Function1<ISLAff, ISLConstraint> _function = new Function1<ISLAff, ISLConstraint>() {
+      public ISLConstraint apply(final ISLAff aff) {
+        return aff.toEqualityConstraint();
+      }
     };
-    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = (ISLBasicSet set, ISLConstraint constraint) -> {
-      return set.addConstraint(constraint);
+    final Function2<ISLBasicSet, ISLConstraint, ISLBasicSet> _function_1 = new Function2<ISLBasicSet, ISLConstraint, ISLBasicSet>() {
+      public ISLBasicSet apply(final ISLBasicSet set, final ISLConstraint constraint) {
+        return set.addConstraint(constraint);
+      }
     };
     final ISLBasicSet set = IterableExtensions.<ISLConstraint, ISLBasicSet>fold(ListExtensions.<ISLAff, ISLConstraint>map(AffineFunctionOperations.constructAffineFunctionWithSpecifiedKernel(params, indices, kernel).getAffs(), _function), ISLBasicSet.buildUniverse(space.copy()), _function_1);
     return set;

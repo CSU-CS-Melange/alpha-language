@@ -50,6 +50,7 @@ import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -124,7 +125,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Allocates memory for the given variable.
    */
-  @Override
   public void declareMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
     if ((this.oldAlphaZCompatible && ((variable.isInput()).booleanValue() || (variable.isOutput()).booleanValue()))) {
@@ -137,7 +137,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Allocates memory for the flags variable associated with the given variable.
    */
-  @Override
   public void declareFlagMemoryMacro(final Variable variable) {
     final String name = this.nameChecker.getFlagName(variable);
     this.declareLinearMemoryMacro(name, variable.getDomain());
@@ -179,7 +178,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Throws an exception, as UseEquations are not supported.
    */
-  @Override
   public void declareEvaluation(final UseEquation equation) {
     throw new UnsupportedOperationException("Use equations are not currently supported.");
   }
@@ -187,14 +185,15 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Declares the "eval" function used to evaluate each variable per the given equation.
    */
-  @Override
   public void declareEvaluation(final StandardEquation equation) {
     final DataType returnType = this.typeGenerator.getAlphaValueType(equation.getVariable());
     final String evalName = this.nameChecker.getVariableReadName(equation.getVariable());
     final FunctionBuilder evalBuilder = this.program.startFunction(true, false, returnType, evalName);
     final List<String> indexNames = equation.getExpr().getContextDomain().getIndexNames();
-    final Consumer<String> _function = (String it) -> {
-      evalBuilder.addParameter(this.typeGenerator.getIndexType(), it);
+    final Consumer<String> _function = new Consumer<String>() {
+      public void accept(final String it) {
+        evalBuilder.addParameter(WriteC.this.typeGenerator.getIndexType(), it);
+      }
     };
     indexNames.forEach(_function);
     final IfStmt flagCheckingBlock = this.getFlagCheckingBlock(equation);
@@ -207,8 +206,13 @@ public class WriteC extends CodeGeneratorBase {
    * evaluates the variable if needed, or reports a self-dependence if detected.
    */
   protected IfStmt getFlagCheckingBlock(final StandardEquation equation) {
+    InputOutput.<String>println("getFlagCheckBlock");
+    InputOutput.<String>println(" in: exprConverter");
     final Expression computeValue = this.exprConverter.convertExpr(equation.getExpr());
+    InputOutput.<String>println(("out: exprConverter: " + computeValue));
+    InputOutput.<String>println(" in: assignmentStatement");
     final AssignmentStmt computeAndStore = Factory.assignmentStmt(this.identityAccess(equation, false), computeValue);
+    InputOutput.<String>println(("out: assignmentStatement: " + computeAndStore));
     return IfStmtBuilder.start(this.ifFlagEquals(equation, FlagStatus.NOT_EVALUATED)).addStatement(
       this.setFlagTo(equation, FlagStatus.IN_PROGRESS), computeAndStore, 
       this.setFlagTo(equation, FlagStatus.EVALUATED)).startElseIf(this.ifFlagEquals(equation, FlagStatus.IN_PROGRESS)).addStatement(
@@ -249,8 +253,10 @@ public class WriteC extends CodeGeneratorBase {
    */
   protected static ExpressionStmt getSelfDependencePrintfStmt(final StandardEquation equation) {
     int _nbIndices = equation.getExpr().getContextDomain().getNbIndices();
-    final Function1<Integer, String> _function = (Integer it) -> {
-      return "%ld";
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer it) {
+        return "%ld";
+      }
     };
     final String locationFormat = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _nbIndices, true), _function), ",");
     StringConcatenation _builder = new StringConcatenation();
@@ -267,7 +273,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Allocates memory for the given variable.
    */
-  @Override
   public void allocateVariable(final Variable variable) {
     final String name = this.nameChecker.getVariableStorageName(variable);
     final DataType dataType = this.typeGenerator.getAlphaVariableType(variable);
@@ -277,7 +282,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Allocates memory for the flags variable associated with the given variable.
    */
-  @Override
   public void allocateFlagsVariable(final Variable variable) {
     final String name = this.nameChecker.getFlagName(variable);
     final DataType dataType = this.typeGenerator.getFlagVariableType(variable);
@@ -318,11 +322,12 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Generates the loops of the entry point that evaluate all points of each output.
    */
-  @Override
   public void performEvaluations() {
     this.entryPoint.addComment("Evaluate all the outputs.");
-    final Consumer<Variable> _function = (Variable it) -> {
-      this.evaluateAllPoints(it);
+    final Consumer<Variable> _function = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        WriteC.this.evaluateAllPoints(it);
+      }
     };
     this.systemBody.getSystem().getOutputs().forEach(_function);
     this.entryPoint.addEmptyLine();
@@ -348,8 +353,10 @@ public class WriteC extends CodeGeneratorBase {
       this.entryPoint.addStatement(macro);
       final ISLASTNode islAST = LoopGenerator.generateLoops(macroName, variable.getDomain());
       final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-      final Function1<String, VariableDecl> _function = (String it) -> {
-        return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
+      final Function1<String, VariableDecl> _function = new Function1<String, VariableDecl>() {
+        public VariableDecl apply(final String it) {
+          return Factory.variableDecl(WriteC.this.typeGenerator.getIndexType(), it);
+        }
       };
       final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function));
       this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
@@ -361,7 +368,6 @@ public class WriteC extends CodeGeneratorBase {
   /**
    * Normalizes the system body and standardizes all names prior to conversion.
    */
-  @Override
   public void preprocess() {
     Normalize.apply(this.systemBody);
     NormalizeReduction.apply(this.systemBody);

@@ -39,20 +39,26 @@ public class PropagateSimpleEquations {
   }
 
   public static void apply(final AlphaSystem system) {
-    final Consumer<SystemBody> _function = (SystemBody body) -> {
-      PropagateSimpleEquations.apply(body);
+    final Consumer<SystemBody> _function = new Consumer<SystemBody>() {
+      public void accept(final SystemBody body) {
+        PropagateSimpleEquations.apply(body);
+      }
     };
     system.getSystemBodies().forEach(_function);
   }
 
   public static void apply(final SystemBody body) {
-    final Function1<StandardEquation, Boolean> _function = (StandardEquation eq) -> {
-      return Boolean.valueOf(PropagateSimpleEquations.isSimple(eq.getExpr()));
+    final Function1<StandardEquation, Boolean> _function = new Function1<StandardEquation, Boolean>() {
+      public Boolean apply(final StandardEquation eq) {
+        return Boolean.valueOf(PropagateSimpleEquations.isSimple(eq.getExpr()));
+      }
     };
     final Iterable<StandardEquation> simpleEquations = IterableExtensions.<StandardEquation>filter(body.getStandardEquations(), _function);
     if ((simpleEquations != null)) {
-      final Consumer<StandardEquation> _function_1 = (StandardEquation seq) -> {
-        SubstituteByDef.apply(body, seq.getVariable());
+      final Consumer<StandardEquation> _function_1 = new Consumer<StandardEquation>() {
+        public void accept(final StandardEquation seq) {
+          SubstituteByDef.apply(body, seq.getVariable());
+        }
       };
       simpleEquations.forEach(_function_1);
       RemoveUnusedEquations.apply(body.getSystem());

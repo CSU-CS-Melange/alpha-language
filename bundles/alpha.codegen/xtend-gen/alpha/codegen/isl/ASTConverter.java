@@ -43,16 +43,22 @@ public class ASTConverter {
   protected static ASTConversionResult _convert(final ISLASTBlockNode node) {
     final ISLASTNodeList childrenList = node.getChildren();
     int _nbNodes = childrenList.getNbNodes();
-    final Function1<Integer, ASTConversionResult> _function = (Integer it) -> {
-      return ASTConverter.convert(childrenList.get((it).intValue()));
+    final Function1<Integer, ASTConversionResult> _function = new Function1<Integer, ASTConversionResult>() {
+      public ASTConversionResult apply(final Integer it) {
+        return ASTConverter.convert(childrenList.get((it).intValue()));
+      }
     };
     final Iterable<ASTConversionResult> results = IterableExtensions.<Integer, ASTConversionResult>map(new ExclusiveRange(0, _nbNodes, true), _function);
-    final Function1<ASTConversionResult, ArrayList<String>> _function_1 = (ASTConversionResult it) -> {
-      return it.getDeclarations();
+    final Function1<ASTConversionResult, ArrayList<String>> _function_1 = new Function1<ASTConversionResult, ArrayList<String>>() {
+      public ArrayList<String> apply(final ASTConversionResult it) {
+        return it.getDeclarations();
+      }
     };
     final Iterable<String> declarations = IterableExtensions.<ASTConversionResult, String>flatMap(results, _function_1);
-    final Function1<ASTConversionResult, ArrayList<Statement>> _function_2 = (ASTConversionResult it) -> {
-      return it.getStatements();
+    final Function1<ASTConversionResult, ArrayList<Statement>> _function_2 = new Function1<ASTConversionResult, ArrayList<Statement>>() {
+      public ArrayList<Statement> apply(final ASTConversionResult it) {
+        return it.getStatements();
+      }
     };
     final Iterable<Statement> statements = IterableExtensions.<ASTConversionResult, Statement>flatMap(results, _function_2);
     return new ASTConversionResult(declarations, ((Statement[])Conversions.unwrapArray(statements, Statement.class)));

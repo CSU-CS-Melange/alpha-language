@@ -159,12 +159,16 @@ public class ISLUtil {
     {
       final ISLAff zero = ISLAff.buildZero(set.getSpace().copy().toLocalSpace());
       int _nbIndices = set.getSpace().getNbIndices();
-      final Function1<Integer, ISLConstraint> _function = (Integer i) -> {
-        return zero.copy().setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint();
+      final Function1<Integer, ISLConstraint> _function = new Function1<Integer, ISLConstraint>() {
+        public ISLConstraint apply(final Integer i) {
+          return zero.copy().setCoefficient(ISLDimType.isl_dim_in, (i).intValue(), 1).toEqualityConstraint();
+        }
       };
       final Iterable<ISLConstraint> constraints = IterableExtensions.<Integer, ISLConstraint>map(new ExclusiveRange(0, _nbIndices, true), _function);
-      final Function2<ISLSet, ISLConstraint, ISLSet> _function_1 = (ISLSet s, ISLConstraint c) -> {
-        return s.addConstraint(c);
+      final Function2<ISLSet, ISLConstraint, ISLSet> _function_1 = new Function2<ISLSet, ISLConstraint, ISLSet>() {
+        public ISLSet apply(final ISLSet s, final ISLConstraint c) {
+          return s.addConstraint(c);
+        }
       };
       final ISLSet origin = IterableExtensions.<ISLConstraint, ISLSet>fold(constraints, ISLSet.buildUniverse(set.getSpace().copy()), _function_1);
       _xblockexpression = set.copy().subtract(origin).isEmpty();
@@ -185,20 +189,26 @@ public class ISLUtil {
     if (_isEquality) {
       return true;
     }
-    final Function1<ISLConstraint, Long> _function = (ISLConstraint it) -> {
-      return Long.valueOf(it.getConstant());
-    };
-    final Function1<Long, Long> _function_1 = (Long v) -> {
-      Long _xifexpression = null;
-      if (((v).longValue() < 0)) {
-        _xifexpression = Long.valueOf(((-1) * (v).longValue()));
-      } else {
-        _xifexpression = v;
+    final Function1<ISLConstraint, Long> _function = new Function1<ISLConstraint, Long>() {
+      public Long apply(final ISLConstraint it) {
+        return Long.valueOf(it.getConstant());
       }
-      return _xifexpression;
     };
-    final Function2<Long, Long, Long> _function_2 = (Long v1, Long v2) -> {
-      return Long.valueOf(((v1).longValue() + (v2).longValue()));
+    final Function1<Long, Long> _function_1 = new Function1<Long, Long>() {
+      public Long apply(final Long v) {
+        Long _xifexpression = null;
+        if (((v).longValue() < 0)) {
+          _xifexpression = Long.valueOf(((-1) * (v).longValue()));
+        } else {
+          _xifexpression = v;
+        }
+        return _xifexpression;
+      }
+    };
+    final Function2<Long, Long, Long> _function_2 = new Function2<Long, Long, Long>() {
+      public Long apply(final Long v1, final Long v2) {
+        return Long.valueOf(((v1).longValue() + (v2).longValue()));
+      }
     };
     final int tau = IterableExtensions.<Long>reduce(ListExtensions.<Long, Long>map(ListExtensions.<ISLConstraint, Long>map(P.getConstraints(), _function), _function_1), _function_2).intValue();
     ISLAff _negate = c.getAff().negate();
@@ -240,8 +250,10 @@ public class ISLUtil {
     int _nbInputs = aff.getNbInputs();
     final int constantCol = (_nbParams + _nbInputs);
     final long[] vec = DomainOperations.toISLEqualityMatrix(aff.toEqualityConstraint().toBasicSet()).dropCols(constantCol, 1).toLongMatrix()[0];
-    final Function1<Long, Boolean> _function = (Long v) -> {
-      return Boolean.valueOf(((v).longValue() == 0));
+    final Function1<Long, Boolean> _function = new Function1<Long, Boolean>() {
+      public Boolean apply(final Long v) {
+        return Boolean.valueOf(((v).longValue() == 0));
+      }
     };
     final Iterable<Long> nonZeros = IterableExtensions.<Long>reject(((Iterable<Long>)Conversions.doWrapArray(vec)), _function);
     if (((IterableExtensions.size(nonZeros) > 0) && ((IterableExtensions.<Long>toList(nonZeros).get(0)).longValue() < 0))) {
@@ -256,8 +268,10 @@ public class ISLUtil {
    * this will indicate that the set is 2D.
    */
   public static int dimensionality(final ISLSet set) {
-    final Function1<ISLBasicSet, Integer> _function = (ISLBasicSet it) -> {
-      return Integer.valueOf(ISLUtil.dimensionality(it));
+    final Function1<ISLBasicSet, Integer> _function = new Function1<ISLBasicSet, Integer>() {
+      public Integer apply(final ISLBasicSet it) {
+        return Integer.valueOf(ISLUtil.dimensionality(it));
+      }
     };
     return (int) IterableExtensions.<Integer>max(ListExtensions.<ISLBasicSet, Integer>map(set.copy().computeDivs().getBasicSets(), _function));
   }
@@ -267,14 +281,20 @@ public class ISLUtil {
     if (_isEmpty) {
       return 0;
     }
-    final Function1<ISLConstraint, Boolean> _function = (ISLConstraint c) -> {
-      return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, 0, set.getSpace().getNbOutputs()));
+    final Function1<ISLConstraint, Boolean> _function = new Function1<ISLConstraint, Boolean>() {
+      public Boolean apply(final ISLConstraint c) {
+        return Boolean.valueOf(c.involvesDims(ISLDimType.isl_dim_out, 0, set.getSpace().getNbOutputs()));
+      }
     };
-    final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint c) -> {
-      return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, set));
+    final Function1<ISLConstraint, Boolean> _function_1 = new Function1<ISLConstraint, Boolean>() {
+      public Boolean apply(final ISLConstraint c) {
+        return Boolean.valueOf(ISLUtil.isEffectivelySaturated(c, set));
+      }
     };
-    final Function1<ISLConstraint, String> _function_2 = (ISLConstraint it) -> {
-      return ((List<Long>)Conversions.doWrapArray(ISLUtil.toLinearUnitVector(it.getAff()))).toString();
+    final Function1<ISLConstraint, String> _function_2 = new Function1<ISLConstraint, String>() {
+      public String apply(final ISLConstraint it) {
+        return ((List<Long>)Conversions.doWrapArray(ISLUtil.toLinearUnitVector(it.getAff()))).toString();
+      }
     };
     final int effectivelySaturatedCount = IterableExtensions.<String>toSet(IterableExtensions.<ISLConstraint, String>map(IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(set.getConstraints(), _function), _function_1), _function_2)).size();
     int _nbIndices = set.getNbIndices();
@@ -285,8 +305,10 @@ public class ISLUtil {
    * Returns the ISLBasicSet characterizing the null space of the multiAff
    */
   public static ISLSet nullSpace(final ISLMultiAff maff) {
-    final Function2<ISLBasicSet, ISLAff, ISLBasicSet> _function = (ISLBasicSet ret, ISLAff c) -> {
-      return ret.addConstraint(c.toEqualityConstraint());
+    final Function2<ISLBasicSet, ISLAff, ISLBasicSet> _function = new Function2<ISLBasicSet, ISLAff, ISLBasicSet>() {
+      public ISLBasicSet apply(final ISLBasicSet ret, final ISLAff c) {
+        return ret.addConstraint(c.toEqualityConstraint());
+      }
     };
     return IterableExtensions.<ISLAff, ISLBasicSet>fold(maff.getAffs(), 
       ISLBasicSet.buildUniverse(maff.getSpace().domain().copy()), _function).toSet();

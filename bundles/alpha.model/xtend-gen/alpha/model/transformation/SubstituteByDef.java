@@ -39,15 +39,19 @@ public class SubstituteByDef extends AbstractAlphaCompleteVisitor {
   }
 
   public static void apply(final AlphaSystem system, final Variable substituteVar) {
-    final Consumer<SystemBody> _function = (SystemBody body) -> {
-      SubstituteByDef.apply(body, substituteVar);
+    final Consumer<SystemBody> _function = new Consumer<SystemBody>() {
+      public void accept(final SystemBody body) {
+        SubstituteByDef.apply(body, substituteVar);
+      }
     };
     system.getSystemBodies().forEach(_function);
   }
 
   public static void apply(final AlphaSystem system, final StandardEquation targetEq, final Variable substituteVar) {
-    final Consumer<SystemBody> _function = (SystemBody body) -> {
-      SubstituteByDef.apply(targetEq, substituteVar);
+    final Consumer<SystemBody> _function = new Consumer<SystemBody>() {
+      public void accept(final SystemBody body) {
+        SubstituteByDef.apply(targetEq, substituteVar);
+      }
     };
     system.getSystemBodies().forEach(_function);
   }
@@ -72,12 +76,10 @@ public class SubstituteByDef extends AbstractAlphaCompleteVisitor {
     visitor.accept(targetExpr);
   }
 
-  @Override
   public void visitUseEquation(final UseEquation ue) {
     return;
   }
 
-  @Override
   public void outVariableExpression(final VariableExpression ve) {
     Variable _variable = ve.getVariable();
     Variable _variable_1 = this.substituteEquation.getVariable();

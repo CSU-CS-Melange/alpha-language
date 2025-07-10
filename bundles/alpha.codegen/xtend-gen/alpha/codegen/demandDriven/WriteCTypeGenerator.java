@@ -47,7 +47,6 @@ public class WriteCTypeGenerator extends TypeGeneratorBase {
   /**
    * Gets the data type stored inside Alpha variables.
    */
-  @Override
   public DataType getAlphaValueType(final Variable variable) {
     return this.getAlphaValueType();
   }
@@ -62,7 +61,6 @@ public class WriteCTypeGenerator extends TypeGeneratorBase {
   /**
    * Gets the data type of the Alpha variable itself.
    */
-  @Override
   public DataType getAlphaVariableType(final Variable variable) {
     return Factory.dataType(this.valueType, this.getIndirectionLevel(variable));
   }
@@ -84,7 +82,6 @@ public class WriteCTypeGenerator extends TypeGeneratorBase {
   /**
    * Gets the data type of the Flag variable itself.
    */
-  @Override
   public DataType getFlagVariableType(final Variable variable) {
     return Factory.dataType(BaseDataType.CHAR, 1);
   }

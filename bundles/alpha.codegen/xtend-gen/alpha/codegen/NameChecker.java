@@ -69,8 +69,10 @@ public class NameChecker {
    * or are a reserved keyword. Otherwise, returns false.
    */
   public boolean isGlobalOrKeyword(final String... names) {
-    final Function1<String, Boolean> _function = (String it) -> {
-      return Boolean.valueOf((this.globalNames.contains(it) || this.reservedKeywords.contains(it)));
+    final Function1<String, Boolean> _function = new Function1<String, Boolean>() {
+      public Boolean apply(final String it) {
+        return Boolean.valueOf((NameChecker.this.globalNames.contains(it) || NameChecker.this.reservedKeywords.contains(it)));
+      }
     };
     return IterableExtensions.<String>exists(((Iterable<String>)Conversions.doWrapArray(names)), _function);
   }
@@ -121,8 +123,10 @@ public class NameChecker {
         String _name_1 = variable.getName();
         throw new NameConflictException(_name_1);
       }
-      final Function1<VariableDecl, Boolean> _function = (VariableDecl it) -> {
-        return Boolean.valueOf(NameChecker.hasSameNameAs(it, variable));
+      final Function1<VariableDecl, Boolean> _function = new Function1<VariableDecl, Boolean>() {
+        public Boolean apply(final VariableDecl it) {
+          return Boolean.valueOf(NameChecker.hasSameNameAs(it, variable));
+        }
       };
       final ArrayList<VariableDecl> sameName = CommonExtensions.<VariableDecl>toArrayList(IterableExtensions.<VariableDecl>filter(existingLocals, _function));
       boolean _isNullOrEmpty = IterableExtensions.isNullOrEmpty(sameName);
@@ -130,8 +134,10 @@ public class NameChecker {
         existingLocals.add(variable);
         return true;
       }
-      final Function1<VariableDecl, Boolean> _function_1 = (VariableDecl it) -> {
-        return Boolean.valueOf(NameChecker.hasDifferentTypeThan(it, variable));
+      final Function1<VariableDecl, Boolean> _function_1 = new Function1<VariableDecl, Boolean>() {
+        public Boolean apply(final VariableDecl it) {
+          return Boolean.valueOf(NameChecker.hasDifferentTypeThan(it, variable));
+        }
       };
       boolean _exists = IterableExtensions.<VariableDecl>exists(sameName, _function_1);
       if (_exists) {

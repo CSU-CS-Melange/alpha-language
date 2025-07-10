@@ -195,13 +195,17 @@ public class ScheduledExprConverter extends ExprConverter {
     final ISLASTNode islAST = LoopGenerator.generateLoops(accumulateMacro.getName(), 
       loopDomain.copy(), 
       scheduleMap.copy().intersectDomain(loopDomain.copy()).copy());
-    final Function1<String, Parameter> _function = (String it) -> {
-      return this.toParameter(it);
+    final Function1<String, Parameter> _function = new Function1<String, Parameter>() {
+      public Parameter apply(final String it) {
+        return ScheduledExprConverter.this.toParameter(it);
+      }
     };
     function.addParameter(((Parameter[])Conversions.unwrapArray(ListExtensions.<String, Parameter>map(loopDomain.copy().getParamNames(), _function), Parameter.class)));
     final ASTConversionResult loopResult = ASTConverter.convert(islAST);
-    final Consumer<String> _function_1 = (String it) -> {
-      function.addVariable(this.typeGenerator.getIndexType(), it);
+    final Consumer<String> _function_1 = new Consumer<String>() {
+      public void accept(final String it) {
+        function.addVariable(ScheduledExprConverter.this.typeGenerator.getIndexType(), it);
+      }
     };
     loopResult.getDeclarations().forEach(_function_1);
     function.addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
@@ -290,8 +294,10 @@ public class ScheduledExprConverter extends ExprConverter {
    * Constructs the macro used to accumulate points of the reduction body into the reduce variable.
    */
   protected MacroStmt createAccumulationMacro(final String macroName, final ReduceExpression expr, final MacroStmt reducePointMacro) {
-    final Function1<String, ParenthesizedExpr> _function = (String it) -> {
-      return Factory.parenthesizedExpr(it);
+    final Function1<String, ParenthesizedExpr> _function = new Function1<String, ParenthesizedExpr>() {
+      public ParenthesizedExpr apply(final String it) {
+        return Factory.parenthesizedExpr(it);
+      }
     };
     final List<ParenthesizedExpr> reducePointArguments = ListExtensions.<String, ParenthesizedExpr>map(expr.getBody().getContextDomain().getIndexNames(), _function);
     final CallExpr reducePointCall = Factory.callExpr(reducePointMacro.getName(), ((Expression[])Conversions.unwrapArray(reducePointArguments, Expression.class)));

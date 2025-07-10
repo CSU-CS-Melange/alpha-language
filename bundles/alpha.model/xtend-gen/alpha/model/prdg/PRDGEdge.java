@@ -40,7 +40,6 @@ public class PRDGEdge {
     return (this.dest.isReductionNode() && this.source.isReductionNode());
   }
 
-  @Override
   public String toString() {
     String _name = this.source.getName();
     String _plus = (_name + " -> ");
@@ -54,7 +53,6 @@ public class PRDGEdge {
     return (_plus_4 + _string_1);
   }
 
-  @Override
   public boolean equals(final Object other) {
     boolean _xifexpression = false;
     if ((other instanceof PRDGEdge)) {
@@ -65,7 +63,6 @@ public class PRDGEdge {
     return _xifexpression;
   }
 
-  @Override
   public int hashCode() {
     String _name = this.source.getName();
     String _name_1 = this.dest.getName();

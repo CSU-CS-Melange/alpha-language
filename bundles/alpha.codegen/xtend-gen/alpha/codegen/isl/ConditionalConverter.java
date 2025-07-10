@@ -29,8 +29,10 @@ public class ConditionalConverter {
    * Generates a conditional expression to determine if a point is within this set.
    */
   public static Expression convert(final ISLSet set) {
-    final Function1<ISLBasicSet, Expression> _function = (ISLBasicSet it) -> {
-      return ConditionalConverter.convert(it);
+    final Function1<ISLBasicSet, Expression> _function = new Function1<ISLBasicSet, Expression>() {
+      public Expression apply(final ISLBasicSet it) {
+        return ConditionalConverter.convert(it);
+      }
     };
     return Factory.binaryExprTree(BinaryOperator.OR, ((Expression[])Conversions.unwrapArray(ListExtensions.<ISLBasicSet, Expression>map(set.getBasicSets(), _function), Expression.class)));
   }
@@ -39,8 +41,10 @@ public class ConditionalConverter {
    * Generates a conditional expression to determine if a point is within this basic set.
    */
   public static Expression convert(final ISLBasicSet basicSet) {
-    final Function1<ISLConstraint, BinaryExpr> _function = (ISLConstraint it) -> {
-      return ConditionalConverter.convert(it);
+    final Function1<ISLConstraint, BinaryExpr> _function = new Function1<ISLConstraint, BinaryExpr>() {
+      public BinaryExpr apply(final ISLConstraint it) {
+        return ConditionalConverter.convert(it);
+      }
     };
     return Factory.binaryExprTree(BinaryOperator.AND, ((Expression[])Conversions.unwrapArray(ListExtensions.<ISLConstraint, BinaryExpr>map(basicSet.getConstraints(), _function), Expression.class)));
   }

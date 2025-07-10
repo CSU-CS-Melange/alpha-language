@@ -1,0 +1,9 @@
+affine matmult { N | -1 + N >= 0  }
+	input
+		float A { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+		float B { i,j |  i >= 0  &&  -1 + N - i >= 0  &&  j >= 0  &&  -1 + N - j >= 0  };
+	output
+		float C { i,j |  i >= 0  &&  j >= 0  &&  -1 + N - i >= 0  &&  -1 + N - j >= 0  &&  -1 + N >= 0  };
+	let
+		C = reduce(+, (i,j,k->i,j), ((i,j,k->i,k)@(A) * (i,j,k->k,j)@(B)));
+.

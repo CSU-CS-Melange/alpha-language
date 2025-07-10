@@ -100,9 +100,8 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     return this.issues.add(_calculatorExpressionIssue);
   }
 
-  @Override
   public void visitUnaryCalculatorExpression(final UnaryCalculatorExpression expr) {
-    DefaultCalculatorExpressionVisitor.super.visitUnaryCalculatorExpression(expr);
+    DefaultCalculatorExpressionVisitor.visitUnaryCalculatorExpression(expr);
     JNIObject _iSLObject = expr.getExpr().getISLObject();
     boolean _tripleEquals = (_iSLObject == null);
     if (_tripleEquals) {
@@ -110,16 +109,20 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     }
     final JNIObject obj = expr.getExpr().getISLObject();
     try {
-      final Supplier<JNIObject> _function = () -> {
-        return this.evaluateUnaryOperation(expr.getOperator(), obj);
+      final Supplier<JNIObject> _function = new Supplier<JNIObject>() {
+        public JNIObject get() {
+          return CalculatorExpressionEvaluator.this.evaluateUnaryOperation(expr.getOperator(), obj);
+        }
       };
-      final Consumer<String> _function_1 = (String err) -> {
-        CALCULATOR_UNARY_OP _operator = expr.getOperator();
-        String _plus = ("Unary operation \'" + _operator);
-        String _plus_1 = (_plus + "\' is undefined for ");
-        POLY_OBJECT_TYPE _type = expr.getExpr().getType();
-        String _plus_2 = (_plus_1 + _type);
-        this.registerIssue(_plus_2, expr);
+      final Consumer<String> _function_1 = new Consumer<String>() {
+        public void accept(final String err) {
+          CALCULATOR_UNARY_OP _operator = expr.getOperator();
+          String _plus = ("Unary operation \'" + _operator);
+          String _plus_1 = (_plus + "\' is undefined for ");
+          POLY_OBJECT_TYPE _type = expr.getExpr().getType();
+          String _plus_2 = (_plus_1 + _type);
+          CalculatorExpressionEvaluator.this.registerIssue(_plus_2, expr);
+        }
       };
       final JNIObject res = AlphaUtil.<JNIObject>callISLwithErrorHandling(_function, _function_1);
       expr.setZ__internal_cache_islObject(res);
@@ -180,9 +183,8 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     throw new UnsupportedOperationException();
   }
 
-  @Override
   public void visitBinaryCalculatorExpression(final BinaryCalculatorExpression expr) {
-    DefaultCalculatorExpressionVisitor.super.visitBinaryCalculatorExpression(expr);
+    DefaultCalculatorExpressionVisitor.visitBinaryCalculatorExpression(expr);
     if (((((expr.getLeft() == null) || (expr.getRight() == null)) || (expr.getLeft().getISLObject() == null)) || 
       (expr.getRight().getISLObject() == null))) {
       return;
@@ -190,15 +192,19 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     final JNIObject left = expr.getLeft().getISLObject();
     final JNIObject right = expr.getRight().getISLObject();
     try {
-      final Supplier<JNIObject> _function = () -> {
-        return this.evaluateBinaryOperation(expr.getOperator(), left, right);
+      final Supplier<JNIObject> _function = new Supplier<JNIObject>() {
+        public JNIObject get() {
+          return CalculatorExpressionEvaluator.this.evaluateBinaryOperation(expr.getOperator(), left, right);
+        }
       };
-      final Consumer<String> _function_1 = (String err) -> {
-        CALCULATOR_BINARY_OP _operator = expr.getOperator();
-        String _plus = ("Operation " + _operator);
-        String _plus_1 = (_plus + "failed: ");
-        String _plus_2 = (_plus_1 + err);
-        this.registerIssue(_plus_2, expr);
+      final Consumer<String> _function_1 = new Consumer<String>() {
+        public void accept(final String err) {
+          CALCULATOR_BINARY_OP _operator = expr.getOperator();
+          String _plus = ("Operation " + _operator);
+          String _plus_1 = (_plus + "failed: ");
+          String _plus_2 = (_plus_1 + err);
+          CalculatorExpressionEvaluator.this.registerIssue(_plus_2, expr);
+        }
       };
       final JNIObject res = AlphaUtil.<JNIObject>callISLwithErrorHandling(_function, _function_1);
       expr.setZ__internal_cache_islObject(res);
@@ -321,7 +327,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
    * ArrayNotation requires the index names to be inferred from the context. Once the constraints excluding parameters
    * are computed (or it is what should be specified for AShow notation) the set is parsed with ISL.
    */
-  @Override
   public void visitJNIDomain(final JNIDomain jniDomain) {
     try {
       ISLSet jniset = CalculatorExpressionEvaluator.parseDomain(this.getReferredSystem(jniDomain), this.parseJNIDomain(jniDomain));
@@ -386,7 +391,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
    * 
    * There is no ArrayNotation for relations, and thus that only preprocessing is to add parameter names.
    */
-  @Override
   public void visitJNIRelation(final JNIRelation jniRelation) {
     try {
       ISLMap jnimap = CalculatorExpressionEvaluator.parseRelation(this.getReferredSystem(jniRelation), jniRelation.getIslString());
@@ -428,7 +432,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
    * 
    * Furthermore, ArrayNotation is used for projection functions in reductions, but with a different semantics.
    */
-  @Override
   public void visitJNIFunction(final JNIFunction jniFunction) {
     this.parseJNIFunction(jniFunction);
   }
@@ -449,8 +452,10 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
         _xifexpression = "";
       }
       final String indexNames = _xifexpression;
-      final Function1<AlphaFunctionExpression, CharSequence> _function = (AlphaFunctionExpression e) -> {
-        return e.getISLString();
+      final Function1<AlphaFunctionExpression, CharSequence> _function = new Function1<AlphaFunctionExpression, CharSequence>() {
+        public CharSequence apply(final AlphaFunctionExpression e) {
+          return e.getISLString();
+        }
       };
       final String expr = IterableExtensions.<AlphaFunctionExpression>join(jniFunction.getAlphaFunction().getExprs(), ",", _function);
       final ISLMultiAff jnimaff = CalculatorExpressionEvaluator.parseAffineFunction(this.getReferredSystem(jniFunction), indexNames, expr);
@@ -623,7 +628,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     return this.parseJNIFunctionAsFunction(jniFunction);
   }
 
-  @Override
   public void visitJNIPolynomial(final JNIPolynomial jniPolynomial) {
     try {
       ISLPWQPolynomial jniPWQP = CalculatorExpressionEvaluator.parsePolynomial(this.getReferredSystem(jniPolynomial), this.parseJNIPolynomial(jniPolynomial));
@@ -673,15 +677,16 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     }
     final String contextString = String.format("[%s]->", IterableExtensions.join(this.indexNameContext, ","));
     final StringBuffer pwqpStr = new StringBuffer("{ ");
-    final Function1<String, String> _function = (String s) -> {
-      return (contextString + s);
+    final Function1<String, String> _function = new Function1<String, String>() {
+      public String apply(final String s) {
+        return (contextString + s);
+      }
     };
     pwqpStr.append(IterableExtensions.join(ListExtensions.<String, String>map(jniPolynomial.getArrayNotation(), _function), "; "));
     pwqpStr.append(" }");
     return pwqpStr.toString();
   }
 
-  @Override
   public void visitVariableDomain(final VariableDomain vdom) {
     Variable _variable = vdom.getVariable();
     boolean _tripleNotEquals = (_variable != null);
@@ -690,7 +695,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     }
   }
 
-  @Override
   public void visitRectangularDomain(final RectangularDomain rdom) {
     final int dim = rdom.getUpperBounds().size();
     final ArrayList<String> dimNames = new ArrayList<String>(dim);
@@ -754,7 +758,6 @@ public class CalculatorExpressionEvaluator extends EObjectImpl implements Defaul
     }
   }
 
-  @Override
   public void visitDefinedObject(final DefinedObject dobj) {
     if ((dobj != null)) {
       dobj.getISLObject();

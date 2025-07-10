@@ -54,6 +54,7 @@ class ExprConverter {
 	 * If this is reached, then the variable is implicitly being accessed by the identity function.
 	 */
 	def dispatch Expression convertExpr(VariableExpression expr) {
+		println('convertExpr (Variable)')
 		// Emit a call to this variable's indexing function/macro
 		// using the indices themselves as the arguments (i.e., the identity function).
 		val name = nameChecker.getVariableReadName(expr.variable)
@@ -63,6 +64,7 @@ class ExprConverter {
 	
 	/** Converts dependence expressions into simpleC expressions. */
 	def dispatch Expression convertExpr(DependenceExpression expr) {
+		println('convertExpr (Dependence)')
 		convertDependence(expr, expr.expr)
 	}
 	
@@ -107,11 +109,13 @@ class ExprConverter {
 	 * the conditional checking should be handled by the conversion of the "case" or "reduce.  
 	 */
 	def dispatch Expression convertExpr(AutoRestrictExpression re) {
+		println('convertExpr (AutoRestrict)')
 		re.expr.convertExpr
 	}
 	
 	/** Converts an Alpha "case" expression into a C ternary expression. */
 	def dispatch Expression convertExpr(CaseExpression ce) {
+		println('convertExpr (Case)')
 		// Case expressions with no cases, or with multiple auto-restricts, are invalid.
 		if (ce.exprs.size <= 0) {
 			throw new IllegalArgumentException("Alpha case expression found with no cases.")
@@ -163,6 +167,7 @@ class ExprConverter {
 	}
 	
 	def dispatch Expression convertExpr(IfExpression expr) {
+		println('convertExpr (If)')
 		val conditional = convertExpr(expr.condExpr)
 		val thenExpr = expr.thenExpr.convertExpr
 		val elseExpr = expr.elseExpr.convertExpr
@@ -179,6 +184,7 @@ class ExprConverter {
 	 * Thus, we just need to output the expression itself.
 	 */
 	def dispatch Expression convertExpr(IndexExpression ie) {
+		println('convertExpr (Index)')
 		// The ISLMultiAff for an index expression should only contain a single ISLAff
 		// since there is only one output dimension
 		val exprLiteral = ISLAff._toString(ie.function.getAff(0), ISL_FORMAT.C.ordinal())
@@ -186,11 +192,13 @@ class ExprConverter {
 	}
 	
 	def dispatch Expression convertExpr(PolynomialIndexExpression expr) {
+		println('convertExpr (PolyIndex)')
 		return PolynomialConverter.convert(expr.polynomial)
 	}
 	
 	/** Constants in Alpha simply map to the same constant in C. */
 	def dispatch Expression convertExpr(ConstantExpression ce) {
+		println('convertExpr (Constant)')
 		return Factory.customExpr(ce.valueString)
 	}
 	
@@ -201,12 +209,14 @@ class ExprConverter {
 	
 	/** There is a 1-to-1 matching between Alpha and C unary expressions. */
 	def dispatch Expression convertExpr(UnaryExpression ue) {
+		println('convertExpr (Unary)')
 		val op = AlphaBaseHelpers.getOperator(ue.operator)
 		val expr = convertExpr(ue.expr)
 		return Factory.unaryExpr(op, expr)
 	}
 	
 	def dispatch Expression convertExpr(BinaryExpression be) {
+		println('convertExpr (Binary)')
 		val left = convertExpr(be.left)
 		val right = convertExpr(be.right)
 		val op = AlphaBaseHelpers.getOperator(be.operator)
@@ -215,6 +225,8 @@ class ExprConverter {
 	
 	/** Multi-arg expressions are converted into a tree of nested binary expressions. */
 	def dispatch Expression convertExpr(MultiArgExpression expr) {
+		println('convertExpr (MultiArg)')
+		println('expression: ' + expr)
 		val op = AlphaBaseHelpers.getOperator(expr.operator)
 		val children = expr.exprs.map[convertExpr]
 		return Factory.binaryExprTree(op, children)
@@ -227,6 +239,7 @@ class ExprConverter {
 	
 	/** Default case to catch unknown expression types. */
 	def dispatch Expression convertExpr(AlphaExpression expr) {
+		println('convertExpr (Alpha)')
 		throw new Exception("Not implemented yet!")
 	}
 }

@@ -112,8 +112,10 @@ public class FunctionBuilder {
    * Performs name checking to prevent conflicts.
    */
   public FunctionBuilder addVariable(final VariableDecl... variables) {
-    final Consumer<VariableDecl> _function = (VariableDecl it) -> {
-      this.nameChecker.checkAddLocal(it, this.instance.getDeclarations());
+    final Consumer<VariableDecl> _function = new Consumer<VariableDecl>() {
+      public void accept(final VariableDecl it) {
+        FunctionBuilder.this.nameChecker.checkAddLocal(it, FunctionBuilder.this.instance.getDeclarations());
+      }
     };
     ((List<VariableDecl>)Conversions.doWrapArray(variables)).forEach(_function);
     return this;
@@ -146,8 +148,10 @@ public class FunctionBuilder {
    * Adds undefine statements for the given macros.
    */
   public FunctionBuilder addUndefine(final MacroStmt... macros) {
-    final Function1<MacroStmt, UndefStmt> _function = (MacroStmt it) -> {
-      return Factory.undefStmt(it.getName());
+    final Function1<MacroStmt, UndefStmt> _function = new Function1<MacroStmt, UndefStmt>() {
+      public UndefStmt apply(final MacroStmt it) {
+        return Factory.undefStmt(it.getName());
+      }
     };
     return this.addStatement(((Statement[])Conversions.unwrapArray(ListExtensions.<MacroStmt, UndefStmt>map(((List<MacroStmt>)Conversions.doWrapArray(macros)), _function), Statement.class)));
   }

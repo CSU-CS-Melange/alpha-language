@@ -14,16 +14,17 @@ public class ManualMemoryMapper implements MemoryMapper {
   public ManualMemoryMapper(final Map<String, String> maps, final Map<String, String> destinations) {
     HashMap<String, MemoryMap> _hashMap = new HashMap<String, MemoryMap>();
     this.maps = _hashMap;
-    final BiConsumer<String, String> _function = (String name, String map) -> {
-      String _get = destinations.get(name);
-      ISLMap _iSLMap = ISLUtil.toISLMap(map);
-      MemoryMap _memoryMap = new MemoryMap(_get, _iSLMap);
-      this.maps.put(name, _memoryMap);
+    final BiConsumer<String, String> _function = new BiConsumer<String, String>() {
+      public void accept(final String name, final String map) {
+        String _get = destinations.get(name);
+        ISLMap _iSLMap = ISLUtil.toISLMap(map);
+        MemoryMap _memoryMap = new MemoryMap(_get, _iSLMap);
+        ManualMemoryMapper.this.maps.put(name, _memoryMap);
+      }
     };
     maps.forEach(_function);
   }
 
-  @Override
   public ISLMap getMemoryMap(final Variable variable) {
     ISLMap _xifexpression = null;
     MemoryMap _get = this.maps.get(variable.getName());
@@ -36,7 +37,6 @@ public class ManualMemoryMapper implements MemoryMapper {
     return _xifexpression;
   }
 
-  @Override
   public String getDestination(final Variable variable) {
     String _xifexpression = null;
     MemoryMap _get = this.maps.get(variable.getName());

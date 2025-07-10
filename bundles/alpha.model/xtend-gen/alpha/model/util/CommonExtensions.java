@@ -62,8 +62,10 @@ public class CommonExtensions {
    */
   public static <T extends Object> Pair<ArrayList<T>, ArrayList<T>> splitBy(final List<T> items, final Function1<? super T, ? extends Boolean> predicate) {
     final ArrayList<T> isTrue = CommonExtensions.<T>toArrayList(IterableExtensions.<T>filter(items, ((Function1<? super T, Boolean>)predicate)));
-    final Function1<T, Boolean> _function = (T item) -> {
-      return Boolean.valueOf(isTrue.contains(item));
+    final Function1<T, Boolean> _function = new Function1<T, Boolean>() {
+      public Boolean apply(final T item) {
+        return Boolean.valueOf(isTrue.contains(item));
+      }
     };
     final ArrayList<T> isFalse = CommonExtensions.<T>toArrayList(IterableExtensions.<T>reject(items, _function));
     return Pair.<ArrayList<T>, ArrayList<T>>of(isTrue, isFalse);
@@ -78,10 +80,12 @@ public class CommonExtensions {
    */
   public static <T1 extends Object, T2 extends Object> ArrayList<Pair<T1, T2>> zipWith(final Iterable<T1> first, final Iterable<T2> second) {
     final int elementCount = Math.min(IterableExtensions.size(first), IterableExtensions.size(second));
-    final Function1<Integer, Pair<T1, T2>> _function = (Integer idx) -> {
-      T1 _get = ((T1[])Conversions.unwrapArray(first, Object.class))[(idx).intValue()];
-      T2 _get_1 = ((T2[])Conversions.unwrapArray(second, Object.class))[(idx).intValue()];
-      return Pair.<T1, T2>of(_get, _get_1);
+    final Function1<Integer, Pair<T1, T2>> _function = new Function1<Integer, Pair<T1, T2>>() {
+      public Pair<T1, T2> apply(final Integer idx) {
+        T1 _get = ((T1[])Conversions.unwrapArray(first, Object.class))[(idx).intValue()];
+        T2 _get_1 = ((T2[])Conversions.unwrapArray(second, Object.class))[(idx).intValue()];
+        return Pair.<T1, T2>of(_get, _get_1);
+      }
     };
     return CommonExtensions.<Pair<T1, T2>>toArrayList(IterableExtensions.<Integer, Pair<T1, T2>>map(new ExclusiveRange(0, elementCount, true), _function));
   }
@@ -93,25 +97,35 @@ public class CommonExtensions {
   public static <T extends Object> Iterable<ArrayList<T>> permutations(final Iterable<T> elements, final int count) {
     final int nbElements = IterableExtensions.size(elements);
     final int combinations = Double.valueOf(Math.pow(nbElements, count)).intValue();
-    final Function1<Integer, ArrayList<T>> _function = (Integer value) -> {
-      return CommonExtensions.<T>permutationToElements(elements, count, (value).intValue());
+    final Function1<Integer, ArrayList<T>> _function = new Function1<Integer, ArrayList<T>>() {
+      public ArrayList<T> apply(final Integer value) {
+        return CommonExtensions.<T>permutationToElements(elements, count, (value).intValue());
+      }
     };
     return IterableExtensions.<Integer, ArrayList<T>>map(new ExclusiveRange(0, combinations, true), _function);
   }
 
   private static <T extends Object> ArrayList<T> permutationToElements(final Iterable<T> elements, final int count, final int value) {
     final int nbElements = IterableExtensions.size(elements);
-    final Function1<Integer, Integer> _function = (Integer listIdx) -> {
-      return Integer.valueOf(Double.valueOf(Math.pow(nbElements, (listIdx).intValue())).intValue());
+    final Function1<Integer, Integer> _function = new Function1<Integer, Integer>() {
+      public Integer apply(final Integer listIdx) {
+        return Integer.valueOf(Double.valueOf(Math.pow(nbElements, (listIdx).intValue())).intValue());
+      }
     };
-    final Function1<Integer, Integer> _function_1 = (Integer divisor) -> {
-      return Integer.valueOf(Integer.divideUnsigned(value, (divisor).intValue()));
+    final Function1<Integer, Integer> _function_1 = new Function1<Integer, Integer>() {
+      public Integer apply(final Integer divisor) {
+        return Integer.valueOf(Integer.divideUnsigned(value, (divisor).intValue()));
+      }
     };
-    final Function1<Integer, Integer> _function_2 = (Integer dividend) -> {
-      return Integer.valueOf(Integer.remainderUnsigned((dividend).intValue(), nbElements));
+    final Function1<Integer, Integer> _function_2 = new Function1<Integer, Integer>() {
+      public Integer apply(final Integer dividend) {
+        return Integer.valueOf(Integer.remainderUnsigned((dividend).intValue(), nbElements));
+      }
     };
-    final Function1<Integer, T> _function_3 = (Integer remainder) -> {
-      return ((T[])Conversions.unwrapArray(elements, Object.class))[remainder.intValue()];
+    final Function1<Integer, T> _function_3 = new Function1<Integer, T>() {
+      public T apply(final Integer remainder) {
+        return ((T[])Conversions.unwrapArray(elements, Object.class))[remainder.intValue()];
+      }
     };
     return CommonExtensions.<T>toArrayList(IterableExtensions.<Integer, T>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(IterableExtensions.<Integer, Integer>map(new ExclusiveRange(0, count, true), _function), _function_1), _function_2), _function_3));
   }

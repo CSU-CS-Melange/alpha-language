@@ -31,30 +31,30 @@ public class FoutrierScheduler implements Scheduler {
     return _xblockexpression;
   }
 
-  @Override
   public ISLSet getScheduleDomain(final String variable) {
-    final Function1<ISLSet, Boolean> _function = (ISLSet set) -> {
-      String _tupleName = set.getTupleName();
-      return Boolean.valueOf(Objects.equal(_tupleName, variable));
+    final Function1<ISLSet, Boolean> _function = new Function1<ISLSet, Boolean>() {
+      public Boolean apply(final ISLSet set) {
+        String _tupleName = set.getTupleName();
+        return Boolean.valueOf(Objects.equal(_tupleName, variable));
+      }
     };
     return IterableExtensions.<ISLSet>head(IterableExtensions.<ISLSet>filter(this.schedule.getDomain().getSets(), _function)).copy();
   }
 
-  @Override
   public ISLMap getScheduleMap(final String variable) {
-    final Function1<ISLMap, Boolean> _function = (ISLMap map) -> {
-      String _inputTupleName = map.getInputTupleName();
-      return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
+    final Function1<ISLMap, Boolean> _function = new Function1<ISLMap, Boolean>() {
+      public Boolean apply(final ISLMap map) {
+        String _inputTupleName = map.getInputTupleName();
+        return Boolean.valueOf(Objects.equal(_inputTupleName, variable));
+      }
     };
     return IterableExtensions.<ISLMap>head(IterableExtensions.<ISLMap>filter(this.schedule.getMap().getMaps(), _function)).copy();
   }
 
-  @Override
   public ISLUnionMap getMaps() {
     return this.schedule.getMap().copy();
   }
 
-  @Override
   public ISLUnionSet getDomains() {
     return this.schedule.getDomain().copy();
   }

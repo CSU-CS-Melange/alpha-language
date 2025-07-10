@@ -152,7 +152,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * To:    f @ X
    * Where: X is a constant, and f is a map from the context domain to a zero-dimensional range.
    */
-  @Override
   public void outConstantExpression(final ConstantExpression ce) {
     EObject _eContainer = ce.eContainer();
     if ((_eContainer instanceof DependenceExpression)) {
@@ -172,7 +171,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * To:    f @ X
    * Where: f is the identity function
    */
-  @Override
   public void outVariableExpression(final VariableExpression ve) {
     EObject _eContainer = ve.eContainer();
     if ((_eContainer instanceof DependenceExpression)) {
@@ -192,7 +190,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * From: val(f)
    * To:   f @ (val(i->i))
    */
-  @Override
   public void outIndexExpression(final IndexExpression ie) {
     final IndexExpression identityIndex = AlphaUserFactory.createIndexExpression(ISLMultiAff.buildIdentity(ISLSpace.idMapDimFromSetDim(ie.getFunction().getSpace().range())));
     final DependenceExpression wrappingDependence = AlphaUserFactory.createDependenceExpression(ie.getFunction(), identityIndex);
@@ -203,7 +200,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   /**
    * Applies the binary expression rules.
    */
-  @Override
   public void outDependenceExpression(final DependenceExpression de) {
     this.dependenceExpressionRule(de, de.getExpr());
   }
@@ -238,7 +234,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   /**
    * Applies the restrict expression rules.
    */
-  @Override
   public void outRestrictExpression(final RestrictExpression re) {
     this.restrictExpressionRule(re, re.getExpr());
   }
@@ -257,11 +252,15 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
       if ((_eContainer instanceof ReduceExpression)) {
         return CollectionLiterals.<AlphaIssue>newArrayList();
       }
-      final Function1<ISLBasicSet, List<ISLConstraint>> _function = (ISLBasicSet it) -> {
-        return it.getConstraints();
+      final Function1<ISLBasicSet, List<ISLConstraint>> _function = new Function1<ISLBasicSet, List<ISLConstraint>>() {
+        public List<ISLConstraint> apply(final ISLBasicSet it) {
+          return it.getConstraints();
+        }
       };
-      final Function1<ISLConstraint, ISLMultiAff> _function_1 = (ISLConstraint it) -> {
-        return it.getAff().toMultiAff();
+      final Function1<ISLConstraint, ISLMultiAff> _function_1 = new Function1<ISLConstraint, ISLMultiAff>() {
+        public ISLMultiAff apply(final ISLConstraint it) {
+          return it.getAff().toMultiAff();
+        }
       };
       final ArrayList<ISLMultiAff> toFactorize = CommonExtensions.<ISLMultiAff>toArrayList(IterableExtensions.<ISLConstraint, ISLMultiAff>map(IterableExtensions.<ISLBasicSet, ISLConstraint>flatMap(re.getRestrictDomain().getBasicSets(), _function), _function_1));
       final ISLMultiAff dependenceFunction = de.getFunction();
@@ -290,7 +289,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   /**
    * Applies the unary expression rules.
    */
-  @Override
   public void outUnaryExpression(final UnaryExpression ue) {
     this.unaryExpressionRule(ue, ue.getExpr());
   }
@@ -322,7 +320,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   /**
    * Applies the binary expression rules.
    */
-  @Override
   public void outBinaryExpression(final BinaryExpression be) {
     this.binaryExpressionRule(be, be.getLeft(), be.getRight());
   }
@@ -352,16 +349,19 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * To:    (f')@ op(f1'@E1, f2'@E2, ...)
    * Where: fn = f' @ fn'
    */
-  @Override
   public void outMultiArgExpression(final MultiArgExpression me) {
     final EList<AlphaExpression> children = me.getExprs();
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression child) -> {
-      return Boolean.valueOf((child instanceof DependenceExpression));
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression child) {
+        return Boolean.valueOf((child instanceof DependenceExpression));
+      }
     };
     boolean _forall = IterableExtensions.<AlphaExpression>forall(children, _function);
     if (_forall) {
-      final Function1<AlphaExpression, DependenceExpression> _function_1 = (AlphaExpression child) -> {
-        return ((DependenceExpression) child);
+      final Function1<AlphaExpression, DependenceExpression> _function_1 = new Function1<AlphaExpression, DependenceExpression>() {
+        public DependenceExpression apply(final AlphaExpression child) {
+          return ((DependenceExpression) child);
+        }
       };
       RaiseDependence.factorizeChildDependences(me, ((DependenceExpression[])Conversions.unwrapArray(ListExtensions.<AlphaExpression, DependenceExpression>map(children, _function_1), DependenceExpression.class)));
     }
@@ -372,10 +372,11 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * This is done when going into a case statement so that the Auto-Restrict Expressions
    * are removed prior to visiting the children.
    */
-  @Override
   public void inCaseExpression(final CaseExpression ce) {
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression child) -> {
-      return Boolean.valueOf((child instanceof AutoRestrictExpression));
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression child) {
+        return Boolean.valueOf((child instanceof AutoRestrictExpression));
+      }
     };
     final boolean hasAutoRestrict = IterableExtensions.<AlphaExpression>exists(ce.getExprs(), _function);
     if (hasAutoRestrict) {
@@ -390,16 +391,19 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * To:    (f')@ case{f1'@E1, f2'@E2, ...}
    * Where: fn = f' @ fn'
    */
-  @Override
   public void outCaseExpression(final CaseExpression ce) {
     final EList<AlphaExpression> children = ce.getExprs();
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression child) -> {
-      return Boolean.valueOf((child instanceof DependenceExpression));
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression child) {
+        return Boolean.valueOf((child instanceof DependenceExpression));
+      }
     };
     boolean _forall = IterableExtensions.<AlphaExpression>forall(children, _function);
     if (_forall) {
-      final Function1<AlphaExpression, DependenceExpression> _function_1 = (AlphaExpression child) -> {
-        return ((DependenceExpression) child);
+      final Function1<AlphaExpression, DependenceExpression> _function_1 = new Function1<AlphaExpression, DependenceExpression>() {
+        public DependenceExpression apply(final AlphaExpression child) {
+          return ((DependenceExpression) child);
+        }
       };
       RaiseDependence.factorizeChildDependences(ce, ((DependenceExpression[])Conversions.unwrapArray(ListExtensions.<AlphaExpression, DependenceExpression>map(children, _function_1), DependenceExpression.class)));
     }
@@ -415,24 +419,34 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
   protected static List<AlphaIssue> factorizeChildDependences(final AlphaExpression parent, final DependenceExpression... children) {
     List<AlphaIssue> _xblockexpression = null;
     {
-      final Function1<DependenceExpression, JNIFunction> _function = (DependenceExpression child) -> {
-        return child.getFunctionExpr();
+      final Function1<DependenceExpression, JNIFunction> _function = new Function1<DependenceExpression, JNIFunction>() {
+        public JNIFunction apply(final DependenceExpression child) {
+          return child.getFunctionExpr();
+        }
       };
-      final Function1<JNIFunction, ISLMultiAff> _function_1 = (JNIFunction expr) -> {
-        return expr.getISLMultiAff();
+      final Function1<JNIFunction, ISLMultiAff> _function_1 = new Function1<JNIFunction, ISLMultiAff>() {
+        public ISLMultiAff apply(final JNIFunction expr) {
+          return expr.getISLMultiAff();
+        }
       };
       final HashMap<JNIFunction, ISLMultiAff> dependenceExpressionToFunction = CommonExtensions.<JNIFunction, ISLMultiAff>toHashMap(IterableExtensions.<JNIFunction, ISLMultiAff>toInvertedMap(ListExtensions.<DependenceExpression, JNIFunction>map(((List<DependenceExpression>)Conversions.doWrapArray(children)), _function), _function_1));
       final Pair<ISLMultiAff, HashMap<ISLMultiAff, ISLMultiAff>> factorizationResult = AffineFactorizer.factorizeExpressions(((ISLMultiAff[])Conversions.unwrapArray(dependenceExpressionToFunction.values(), ISLMultiAff.class)));
       final ISLMultiAff commonFactor = factorizationResult.getKey();
-      final Function1<ISLMultiAff, JNIFunction> _function_2 = (ISLMultiAff multiAff) -> {
-        return AlphaUserFactory.createJNIFunction(multiAff);
+      final Function1<ISLMultiAff, JNIFunction> _function_2 = new Function1<ISLMultiAff, JNIFunction>() {
+        public JNIFunction apply(final ISLMultiAff multiAff) {
+          return AlphaUserFactory.createJNIFunction(multiAff);
+        }
       };
       final Map<ISLMultiAff, JNIFunction> remainingTermsMap = MapExtensions.<ISLMultiAff, ISLMultiAff, JNIFunction>mapValues(factorizationResult.getValue(), _function_2);
-      final Function1<ISLMultiAff, JNIFunction> _function_3 = (ISLMultiAff originalTerm) -> {
-        return remainingTermsMap.get(originalTerm);
+      final Function1<ISLMultiAff, JNIFunction> _function_3 = new Function1<ISLMultiAff, JNIFunction>() {
+        public JNIFunction apply(final ISLMultiAff originalTerm) {
+          return remainingTermsMap.get(originalTerm);
+        }
       };
-      final BiConsumer<JNIFunction, JNIFunction> _function_4 = (JNIFunction original, JNIFunction replacement) -> {
-        EcoreUtil.replace(original, replacement);
+      final BiConsumer<JNIFunction, JNIFunction> _function_4 = new BiConsumer<JNIFunction, JNIFunction>() {
+        public void accept(final JNIFunction original, final JNIFunction replacement) {
+          EcoreUtil.replace(original, replacement);
+        }
       };
       MapExtensions.<JNIFunction, ISLMultiAff, JNIFunction>mapValues(dependenceExpressionToFunction, _function_3).forEach(_function_4);
       final DependenceExpression wrappingDependence = AlphaUserFactory.createDependenceExpression(commonFactor);
@@ -447,7 +461,6 @@ public class RaiseDependence extends AbstractAlphaCompleteVisitor {
    * Separate the child of a top level dependence expression in the reduction body if hoisting
    * is specified.
    */
-  @Override
   public void outReduceExpression(final ReduceExpression re) {
     if (this.hoistFromReduce) {
       this.reduceExpressionRules(re, re.getBody());

@@ -53,11 +53,15 @@ public class PermutationCaseReduce {
    * @returns number of applications of the transformation
    */
   public static Integer apply(final AlphaSystem system) {
-    final Function1<SystemBody, Integer> _function = (SystemBody b) -> {
-      return PermutationCaseReduce.apply(b);
+    final Function1<SystemBody, Integer> _function = new Function1<SystemBody, Integer>() {
+      public Integer apply(final SystemBody b) {
+        return PermutationCaseReduce.apply(b);
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(ListExtensions.<SystemBody, Integer>map(system.getSystemBodies(), _function), _function_1);
   }
@@ -69,11 +73,15 @@ public class PermutationCaseReduce {
    * @returns number of applications of the transformation
    */
   public static Integer apply(final SystemBody body) {
-    final Function1<AbstractReduceExpression, Integer> _function = (AbstractReduceExpression are) -> {
-      return Integer.valueOf(PermutationCaseReduce.transform(are));
+    final Function1<AbstractReduceExpression, Integer> _function = new Function1<AbstractReduceExpression, Integer>() {
+      public Integer apply(final AbstractReduceExpression are) {
+        return Integer.valueOf(PermutationCaseReduce.transform(are));
+      }
     };
-    final Function2<Integer, Integer, Integer> _function_1 = (Integer p1, Integer p2) -> {
-      return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+    final Function2<Integer, Integer, Integer> _function_1 = new Function2<Integer, Integer, Integer>() {
+      public Integer apply(final Integer p1, final Integer p2) {
+        return Integer.valueOf(((p1).intValue() + (p2).intValue()));
+      }
     };
     return IterableExtensions.<Integer>reduce(ListExtensions.<AbstractReduceExpression, Integer>map(EcoreUtil2.<AbstractReduceExpression>getAllContentsOfType(body, AbstractReduceExpression.class), _function), _function_1);
   }
@@ -114,16 +122,22 @@ public class PermutationCaseReduce {
       CaseExpression _xblockexpression = null;
       {
         final CaseExpression E = AlphaUserFactory.createCaseExpression();
-        final Function1<AlphaExpression, ISLSet> _function = (AlphaExpression e) -> {
-          return e.getExpressionDomain();
+        final Function1<AlphaExpression, ISLSet> _function = new Function1<AlphaExpression, ISLSet>() {
+          public ISLSet apply(final AlphaExpression e) {
+            return e.getExpressionDomain();
+          }
         };
-        final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet d1, ISLSet d2) -> {
-          return d1.union(d2);
+        final Function2<ISLSet, ISLSet, ISLSet> _function_1 = new Function2<ISLSet, ISLSet, ISLSet>() {
+          public ISLSet apply(final ISLSet d1, final ISLSet d2) {
+            return d1.union(d2);
+          }
         };
         final ISLSet domUnion = IterableExtensions.<ISLSet>reduce(ListExtensions.<AlphaExpression, ISLSet>map(E2list, _function), _function_1);
         E.setExpressionDomain(domUnion);
-        final Function1<AlphaExpression, AlphaExpression> _function_2 = (AlphaExpression e) -> {
-          return AlphaExpressionUtil.filterAutoRestrict.apply(e);
+        final Function1<AlphaExpression, AlphaExpression> _function_2 = new Function1<AlphaExpression, AlphaExpression>() {
+          public AlphaExpression apply(final AlphaExpression e) {
+            return AlphaExpressionUtil.filterAutoRestrict.apply(e);
+          }
         };
         E.getExprs().addAll(ListExtensions.<AlphaExpression, AlphaExpression>map(E2list, _function_2));
         _xblockexpression = E;

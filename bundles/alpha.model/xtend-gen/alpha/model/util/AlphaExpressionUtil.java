@@ -40,32 +40,42 @@ import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 @SuppressWarnings("all")
 public class AlphaExpressionUtil {
   public static <T extends Object> Stream<T> getChildrenOfType(final AlphaNode expr, final Class<T> c) {
-    final Predicate<EObject> _function = (EObject e) -> {
-      return c.isInstance(e);
+    final Predicate<EObject> _function = new Predicate<EObject>() {
+      public boolean test(final EObject e) {
+        return c.isInstance(e);
+      }
     };
-    final Function<EObject, T> _function_1 = (EObject e) -> {
-      return c.cast(e);
+    final Function<EObject, T> _function_1 = new Function<EObject, T>() {
+      public T apply(final EObject e) {
+        return c.cast(e);
+      }
     };
     return expr.eContents().stream().filter(_function).<T>map(_function_1);
   }
 
   public static boolean testNonNullContextDomain(final Stream<AlphaExpression> exprs) {
-    final Predicate<AlphaExpression> _function = (AlphaExpression e) -> {
-      return ((e != null) && (e.getContextDomain() != null));
+    final Predicate<AlphaExpression> _function = new Predicate<AlphaExpression>() {
+      public boolean test(final AlphaExpression e) {
+        return ((e != null) && (e.getContextDomain() != null));
+      }
     };
     return exprs.allMatch(_function);
   }
 
   public static boolean testNonNullExpressionDomain(final Stream<AlphaExpression> exprs) {
-    final Predicate<AlphaExpression> _function = (AlphaExpression e) -> {
-      return ((e != null) && (e.getExpressionDomain() != null));
+    final Predicate<AlphaExpression> _function = new Predicate<AlphaExpression>() {
+      public boolean test(final AlphaExpression e) {
+        return ((e != null) && (e.getExpressionDomain() != null));
+      }
     };
     return exprs.allMatch(_function);
   }
 
   public static boolean testNonNullCalcExpression(final Stream<CalculatorExpression> exprs) {
-    final Predicate<CalculatorExpression> _function = (CalculatorExpression e) -> {
-      return ((e != null) && (e.getISLObject() != null));
+    final Predicate<CalculatorExpression> _function = new Predicate<CalculatorExpression>() {
+      public boolean test(final CalculatorExpression e) {
+        return ((e != null) && (e.getISLObject() != null));
+      }
     };
     return exprs.allMatch(_function);
   }
@@ -116,11 +126,15 @@ public class AlphaExpressionUtil {
       final ISLSet instantiationDomain = parent.getInstantiationDomain().intersectParams(parent.getSystemBody().getParameterDomain());
       boolean _testNonNullExpressionDomain = AlphaExpressionUtil.testNonNullExpressionDomain(AlphaExpressionUtil.<AlphaExpression>getChildrenOfType(child, AlphaExpression.class));
       if (_testNonNullExpressionDomain) {
-        final Supplier<ISLSet> _function = () -> {
-          return AlphaExpressionUtil.extendCalleeDomainByInstantiationDomain(instantiationDomain, parent.getCallParams(), calleeVar.getDomain());
+        final Supplier<ISLSet> _function = new Supplier<ISLSet>() {
+          public ISLSet get() {
+            return AlphaExpressionUtil.extendCalleeDomainByInstantiationDomain(instantiationDomain, parent.getCallParams(), calleeVar.getDomain());
+          }
         };
-        final Consumer<String> _function_1 = (String err) -> {
-          new UnexpectedISLErrorIssue(err, child, null);
+        final Consumer<String> _function_1 = new Consumer<String>() {
+          public void accept(final String err) {
+            new UnexpectedISLErrorIssue(err, child, null);
+          }
         };
         final ISLSet exDom = AlphaUtil.<ISLSet>callISLwithErrorHandling(_function, _function_1);
         return AlphaUtil.renameIndices(exDom, child.getExpressionDomain().getIndexNames());
@@ -301,23 +315,25 @@ public class AlphaExpressionUtil {
     return ISLMultiAff.buildFromAffList(exSpace, affList);
   }
 
-  public static final Function<AlphaExpression, AlphaExpression> filterAutoRestrict = ((Function<AlphaExpression, AlphaExpression>) (AlphaExpression expr) -> {
-    AlphaExpression _xifexpression = null;
-    if ((expr instanceof AutoRestrictExpression)) {
-      RestrictExpression _xblockexpression = null;
-      {
-        final AutoRestrictExpression are = ((AutoRestrictExpression) expr);
-        final RestrictExpression re = AlphaUserFactory.createRestrictExpression(are.getInferredDomain(), are.getExpr());
-        re.setExpressionDomain(are.getExpressionDomain());
-        re.setContextDomain(are.getContextDomain());
-        _xblockexpression = re;
+  public static final Function<AlphaExpression, AlphaExpression> filterAutoRestrict = new Function<AlphaExpression, AlphaExpression>() {
+    public AlphaExpression apply(final AlphaExpression expr) {
+      AlphaExpression _xifexpression = null;
+      if ((expr instanceof AutoRestrictExpression)) {
+        RestrictExpression _xblockexpression = null;
+        {
+          final AutoRestrictExpression are = ((AutoRestrictExpression) expr);
+          final RestrictExpression re = AlphaUserFactory.createRestrictExpression(are.getInferredDomain(), are.getExpr());
+          re.setExpressionDomain(are.getExpressionDomain());
+          re.setContextDomain(are.getContextDomain());
+          _xblockexpression = re;
+        }
+        _xifexpression = _xblockexpression;
+      } else {
+        _xifexpression = expr;
       }
-      _xifexpression = _xblockexpression;
-    } else {
-      _xifexpression = expr;
+      return _xifexpression;
     }
-    return _xifexpression;
-  });
+  };
 
   public static ISLSet parentContext(final AlphaExpression child, final EObject parent, final Consumer<AlphaIssue> f) {
     if (parent instanceof StandardEquation) {

@@ -103,42 +103,60 @@ public abstract class CodeGeneratorBase {
     this.addDefaultFunctionMacros();
     final AlphaSystem system = this.systemBody.getSystem();
     final List<String> parameters = system.getParameterDomain().getParamNames();
-    final Consumer<String> _function = (String it) -> {
-      this.declareParameter(it);
+    final Consumer<String> _function = new Consumer<String>() {
+      public void accept(final String it) {
+        CodeGeneratorBase.this.declareParameter(it);
+      }
     };
     parameters.forEach(_function);
-    final Consumer<Variable> _function_1 = (Variable it) -> {
-      this.declareGlobalVariable(it);
+    final Consumer<Variable> _function_1 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.declareGlobalVariable(it);
+      }
     };
     system.getVariables().forEach(_function_1);
-    final Consumer<Variable> _function_2 = (Variable it) -> {
-      this.declareMemoryMacro(it);
+    final Consumer<Variable> _function_2 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.declareMemoryMacro(it);
+      }
     };
     system.getVariables().forEach(_function_2);
     if (this.cycleDetection) {
-      final Consumer<Variable> _function_3 = (Variable it) -> {
-        this.declareFlagVariable(it);
+      final Consumer<Variable> _function_3 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.declareFlagVariable(it);
+        }
       };
       system.getOutputs().forEach(_function_3);
-      final Consumer<Variable> _function_4 = (Variable it) -> {
-        this.declareFlagMemoryMacro(it);
+      final Consumer<Variable> _function_4 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.declareFlagMemoryMacro(it);
+        }
       };
       system.getOutputs().forEach(_function_4);
-      final Consumer<Variable> _function_5 = (Variable it) -> {
-        this.declareFlagVariable(it);
+      final Consumer<Variable> _function_5 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.declareFlagVariable(it);
+        }
       };
       system.getLocals().forEach(_function_5);
-      final Consumer<Variable> _function_6 = (Variable it) -> {
-        this.declareFlagMemoryMacro(it);
+      final Consumer<Variable> _function_6 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.declareFlagMemoryMacro(it);
+        }
       };
       system.getLocals().forEach(_function_6);
     }
-    final Consumer<StandardEquation> _function_7 = (StandardEquation it) -> {
-      this.declareEvaluation(it);
+    final Consumer<StandardEquation> _function_7 = new Consumer<StandardEquation>() {
+      public void accept(final StandardEquation it) {
+        CodeGeneratorBase.this.declareEvaluation(it);
+      }
     };
     this.systemBody.getStandardEquations().forEach(_function_7);
-    final Consumer<UseEquation> _function_8 = (UseEquation it) -> {
-      this.declareEvaluation(it);
+    final Consumer<UseEquation> _function_8 = new Consumer<UseEquation>() {
+      public void accept(final UseEquation it) {
+        CodeGeneratorBase.this.declareEvaluation(it);
+      }
     };
     this.systemBody.getUseEquations().forEach(_function_8);
     this.addEntryPoint();
@@ -151,47 +169,65 @@ public abstract class CodeGeneratorBase {
   public void addEntryPoint() {
     final AlphaSystem system = this.systemBody.getSystem();
     final List<String> parameters = system.getParameterDomain().getParamNames();
-    final Consumer<String> _function = (String it) -> {
-      this.declareSystemParameterArgument(it);
+    final Consumer<String> _function = new Consumer<String>() {
+      public void accept(final String it) {
+        CodeGeneratorBase.this.declareSystemParameterArgument(it);
+      }
     };
     parameters.forEach(_function);
-    final Consumer<Variable> _function_1 = (Variable it) -> {
-      this.declareSystemVariableArgument(it);
+    final Consumer<Variable> _function_1 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.declareSystemVariableArgument(it);
+      }
     };
     system.getInputs().forEach(_function_1);
-    final Consumer<Variable> _function_2 = (Variable it) -> {
-      this.declareSystemVariableArgument(it);
+    final Consumer<Variable> _function_2 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.declareSystemVariableArgument(it);
+      }
     };
     system.getOutputs().forEach(_function_2);
     this.entryPoint.addComment("Copy arguments to the global variables.");
-    final Consumer<String> _function_3 = (String it) -> {
-      this.copySystemParameter(it);
+    final Consumer<String> _function_3 = new Consumer<String>() {
+      public void accept(final String it) {
+        CodeGeneratorBase.this.copySystemParameter(it);
+      }
     };
     parameters.forEach(_function_3);
-    final Consumer<Variable> _function_4 = (Variable it) -> {
-      this.copySystemVariable(it);
+    final Consumer<Variable> _function_4 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.copySystemVariable(it);
+      }
     };
     system.getInputs().forEach(_function_4);
-    final Consumer<Variable> _function_5 = (Variable it) -> {
-      this.copySystemVariable(it);
+    final Consumer<Variable> _function_5 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.copySystemVariable(it);
+      }
     };
     system.getOutputs().forEach(_function_5);
     this.entryPoint.addEmptyLine();
     this.checkParameters();
     this.entryPoint.addComment("Allocate memory for local storage.");
-    final Consumer<Variable> _function_6 = (Variable it) -> {
-      this.allocateVariable(it);
+    final Consumer<Variable> _function_6 = new Consumer<Variable>() {
+      public void accept(final Variable it) {
+        CodeGeneratorBase.this.allocateVariable(it);
+      }
     };
     system.getLocals().forEach(_function_6);
     this.entryPoint.addEmptyLine();
     this.entryPoint.addComment("Allocate and initialize flag variables.");
     if (this.cycleDetection) {
-      final Consumer<Variable> _function_7 = (Variable it) -> {
-        this.allocateFlagsVariable(it);
+      final Consumer<Variable> _function_7 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.allocateFlagsVariable(it);
+        }
       };
       system.getOutputs().forEach(_function_7);
-      final Consumer<Variable> _function_8 = (Variable it) -> {
-        this.allocateFlagsVariable(it);
+      final Consumer<Variable> _function_8 = new Consumer<Variable>() {
+        public void accept(final Variable it) {
+          CodeGeneratorBase.this.allocateFlagsVariable(it);
+        }
       };
       system.getLocals().forEach(_function_8);
     }
@@ -217,8 +253,10 @@ public abstract class CodeGeneratorBase {
    * Adds the "#include" directives to add to the program.
    */
   public void addDefaultIncludes() {
-    final Function1<String, Include> _function = (String it) -> {
-      return Factory.include(it);
+    final Function1<String, Include> _function = new Function1<String, Include>() {
+      public Include apply(final String it) {
+        return Factory.include(it);
+      }
     };
     this.program.addInclude(
       ((Include[])Conversions.unwrapArray(ListExtensions.<String, Include>map(Collections.<String>unmodifiableList(CollectionLiterals.<String>newArrayList("float.h", "limits.h", "math.h", "stdbool.h", "stdio.h", "stdlib.h", "string.h")), _function), Include.class)));
@@ -331,9 +369,11 @@ public abstract class CodeGeneratorBase {
    * are valid for this system body.
    */
   public void checkParameters() {
-    final Function1<ISLBasicSet, Boolean> _function = (ISLBasicSet it) -> {
-      int _nbConstraints = it.getNbConstraints();
-      return Boolean.valueOf((_nbConstraints == 0));
+    final Function1<ISLBasicSet, Boolean> _function = new Function1<ISLBasicSet, Boolean>() {
+      public Boolean apply(final ISLBasicSet it) {
+        int _nbConstraints = it.getNbConstraints();
+        return Boolean.valueOf((_nbConstraints == 0));
+      }
     };
     boolean _forall = IterableExtensions.<ISLBasicSet>forall(this.systemBody.getParameterDomain().getBasicSets(), _function);
     if (_forall) {
@@ -369,8 +409,10 @@ public abstract class CodeGeneratorBase {
    */
   public void freeAllocatedVariables() {
     this.entryPoint.addComment("Free all allocated memory.");
-    final Function1<String, ExpressionStmt> _function = (String it) -> {
-      return Factory.callStmt("free", it);
+    final Function1<String, ExpressionStmt> _function = new Function1<String, ExpressionStmt>() {
+      public ExpressionStmt apply(final String it) {
+        return Factory.callStmt("free", it);
+      }
     };
     final List<ExpressionStmt> freeStmts = ListExtensions.<String, ExpressionStmt>map(this.allocatedVariables, _function);
     this.entryPoint.addStatement(((Statement[])Conversions.unwrapArray(freeStmts, Statement.class)));

@@ -52,14 +52,18 @@ public class AffineFactorizer {
    */
   public static Pair<ISLMultiAff, HashMap<ISLMultiAff, ISLMultiAff>> factorizeExpressions(final ISLMultiAff... expressions) {
     final HashMap<ISLMultiAff, ISLMultiAff> named = AffineFactorizer.nameExpressionOutputs(expressions);
-    final Function1<ISLMultiAff, ISLMultiAff> _function = (ISLMultiAff it) -> {
-      return it.copy();
+    final Function1<ISLMultiAff, ISLMultiAff> _function = new Function1<ISLMultiAff, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff it) {
+        return it.copy();
+      }
     };
     final Pair<ISLMultiAff, ISLMultiAff> decomposed = AffineFactorizer.hermiteExpressionDecomposition(AffineFunctionOperations.mergeExpressions(IterableExtensions.<ISLMultiAff>toList(IterableExtensions.<ISLMultiAff, ISLMultiAff>map(named.values(), _function))));
     final ISLMultiAff hExpression = decomposed.getKey();
     final ISLMultiAff qExpression = decomposed.getValue();
-    final Function1<ISLMultiAff, ISLMultiAff> _function_1 = (ISLMultiAff expr) -> {
-      return AffineFactorizer.getDecompositionProjection(named.get(expr), qExpression);
+    final Function1<ISLMultiAff, ISLMultiAff> _function_1 = new Function1<ISLMultiAff, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff expr) {
+        return AffineFactorizer.getDecompositionProjection(named.get(expr), qExpression);
+      }
     };
     final HashMap<ISLMultiAff, ISLMultiAff> projectionMap = CommonExtensions.<ISLMultiAff, ISLMultiAff>toHashMap(IterableExtensions.<ISLMultiAff, ISLMultiAff>toInvertedMap(((Iterable<? extends ISLMultiAff>)Conversions.doWrapArray(expressions)), _function_1));
     return Pair.<ISLMultiAff, HashMap<ISLMultiAff, ISLMultiAff>>of(hExpression, projectionMap);
@@ -71,8 +75,10 @@ public class AffineFactorizer {
    */
   public static HashMap<ISLMultiAff, ISLMultiAff> nameExpressionOutputs(final ISLMultiAff... expressions) {
     final Iterator<String> names = AffineFactorizer.getNameGenerator("orig_out");
-    final Function1<ISLMultiAff, ISLMultiAff> _function = (ISLMultiAff it) -> {
-      return AffineFactorizer.nameSingleExpressionOutputs(it, names);
+    final Function1<ISLMultiAff, ISLMultiAff> _function = new Function1<ISLMultiAff, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff it) {
+        return AffineFactorizer.nameSingleExpressionOutputs(it, names);
+      }
     };
     return CommonExtensions.<ISLMultiAff, ISLMultiAff>toHashMap(IterableExtensions.<ISLMultiAff, ISLMultiAff>toInvertedMap(((Iterable<? extends ISLMultiAff>)Conversions.doWrapArray(expressions)), _function));
   }
@@ -81,9 +87,11 @@ public class AffineFactorizer {
    * Generates names containing the given prefix and an incrementing value, separated by an underscore.
    */
   private static Iterator<String> getNameGenerator(final String prefix) {
-    final Function1<Integer, String> _function = (Integer it) -> {
-      String _string = it.toString();
-      return ((prefix + "_") + _string);
+    final Function1<Integer, String> _function = new Function1<Integer, String>() {
+      public String apply(final Integer it) {
+        String _string = it.toString();
+        return ((prefix + "_") + _string);
+      }
     };
     return IterableExtensions.<Integer, String>map(new IntegerRange(0, Integer.MAX_VALUE), _function).iterator();
   }
@@ -93,8 +101,10 @@ public class AffineFactorizer {
    */
   private static ISLMultiAff nameSingleExpressionOutputs(final ISLMultiAff expression, final Iterator<String> names) {
     final int outCount = expression.getNbOutputs();
-    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = (ISLMultiAff expr, Integer idx) -> {
-      return AffineFunctionOperations.nameOutput(expr, (idx).intValue(), names.next());
+    final Function2<ISLMultiAff, Integer, ISLMultiAff> _function = new Function2<ISLMultiAff, Integer, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLMultiAff expr, final Integer idx) {
+        return AffineFunctionOperations.nameOutput(expr, (idx).intValue(), names.next());
+      }
     };
     final ISLMultiAff merged = IterableExtensions.<Integer, ISLMultiAff>fold(new ExclusiveRange(0, outCount, true), expression.copy(), _function);
     return merged;
@@ -156,8 +166,10 @@ public class AffineFactorizer {
    */
   private static int countEmptyCols(final ISLMatrix matrix) {
     final int cols = matrix.getNbCols();
-    final Function1<Integer, Boolean> _function = (Integer col) -> {
-      return Boolean.valueOf(AffineFactorizer.isColEmpty(matrix, (col).intValue()));
+    final Function1<Integer, Boolean> _function = new Function1<Integer, Boolean>() {
+      public Boolean apply(final Integer col) {
+        return Boolean.valueOf(AffineFactorizer.isColEmpty(matrix, (col).intValue()));
+      }
     };
     final int emptyColCount = IterableExtensions.size(IterableExtensions.<Integer>takeWhile(new ExclusiveRange(cols, 0, false), _function));
     return emptyColCount;
@@ -168,9 +180,11 @@ public class AffineFactorizer {
    */
   private static boolean isColEmpty(final ISLMatrix matrix, final int col) {
     final int rows = matrix.getNbRows();
-    final Function1<Integer, Boolean> _function = (Integer row) -> {
-      long _element = matrix.getElement((row).intValue(), col);
-      return Boolean.valueOf((_element != 0));
+    final Function1<Integer, Boolean> _function = new Function1<Integer, Boolean>() {
+      public Boolean apply(final Integer row) {
+        long _element = matrix.getElement((row).intValue(), col);
+        return Boolean.valueOf((_element != 0));
+      }
     };
     boolean _exists = IterableExtensions.<Integer>exists(new ExclusiveRange(0, rows, true), _function);
     return (!_exists);
@@ -315,16 +329,22 @@ public class AffineFactorizer {
       return mapToZero.dropDims(ISLDimType.isl_dim_out, 0, outs);
     }
     final ISLSpace domain = q.getSpace().range();
-    final Function1<String, Integer> _function = (String name) -> {
-      return Integer.valueOf(domain.findDimByName(ISLDimType.isl_dim_out, name));
+    final Function1<String, Integer> _function = new Function1<String, Integer>() {
+      public Integer apply(final String name) {
+        return Integer.valueOf(domain.findDimByName(ISLDimType.isl_dim_out, name));
+      }
     };
     final List<Integer> wantedIndexes = ListExtensions.<String, Integer>map(original.getSpace().getOutputNames(), _function);
     final ISLLocalSpace localDomain = domain.copy().toLocalSpace();
-    final Function1<Integer, ISLAff> _function_1 = (Integer i) -> {
-      return ISLAff.buildVarOnDomain(localDomain.copy(), ISLDimType.isl_dim_out, (i).intValue());
+    final Function1<Integer, ISLAff> _function_1 = new Function1<Integer, ISLAff>() {
+      public ISLAff apply(final Integer i) {
+        return ISLAff.buildVarOnDomain(localDomain.copy(), ISLDimType.isl_dim_out, (i).intValue());
+      }
     };
-    final Function1<ISLAff, ISLMultiAff> _function_2 = (ISLAff expr) -> {
-      return expr.toMultiAff();
+    final Function1<ISLAff, ISLMultiAff> _function_2 = new Function1<ISLAff, ISLMultiAff>() {
+      public ISLMultiAff apply(final ISLAff expr) {
+        return expr.toMultiAff();
+      }
     };
     final ISLMultiAff projection = AffineFunctionOperations.mergeExpressions(ListExtensions.<ISLAff, ISLMultiAff>map(ListExtensions.<Integer, ISLAff>map(wantedIndexes, _function_1), _function_2)).pullback(q.copy());
     return projection;

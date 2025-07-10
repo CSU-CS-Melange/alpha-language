@@ -87,8 +87,10 @@ public class ProgramBuilder {
     boolean _isEmpty = IterableExtensions.isEmpty(filtered);
     boolean _not = (!_isEmpty);
     if (_not) {
-      final Consumer<MacroStmt> _function = (MacroStmt it) -> {
-        this.nameChecker.checkAddGlobal(it.getName());
+      final Consumer<MacroStmt> _function = new Consumer<MacroStmt>() {
+        public void accept(final MacroStmt it) {
+          ProgramBuilder.this.nameChecker.checkAddGlobal(it.getName());
+        }
       };
       filtered.forEach(_function);
       Iterables.<MacroStmt>addAll(this.instance.getFunctionMacros(), filtered);
@@ -119,8 +121,10 @@ public class ProgramBuilder {
     boolean _isEmpty = IterableExtensions.isEmpty(filtered);
     boolean _not = (!_isEmpty);
     if (_not) {
-      final Consumer<VariableDecl> _function = (VariableDecl it) -> {
-        this.nameChecker.checkAddGlobal(it.getName());
+      final Consumer<VariableDecl> _function = new Consumer<VariableDecl>() {
+        public void accept(final VariableDecl it) {
+          ProgramBuilder.this.nameChecker.checkAddGlobal(it.getName());
+        }
       };
       filtered.forEach(_function);
       Iterables.<VariableDecl>addAll(this.instance.getGlobalVariables(), filtered);
@@ -149,8 +153,10 @@ public class ProgramBuilder {
     boolean _isEmpty = IterableExtensions.isEmpty(filtered);
     boolean _not = (!_isEmpty);
     if (_not) {
-      final Consumer<Function> _function = (Function it) -> {
-        this.nameChecker.checkAddGlobal(it.getName());
+      final Consumer<Function> _function = new Consumer<Function>() {
+        public void accept(final Function it) {
+          ProgramBuilder.this.nameChecker.checkAddGlobal(it.getName());
+        }
       };
       filtered.forEach(_function);
       Iterables.<Function>addAll(this.instance.getFunctions(), filtered);

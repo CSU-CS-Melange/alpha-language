@@ -41,13 +41,14 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
    * Visits standard equations (Outputs) in the AlphaZ system.
    * @param se - An AlphaZ StandardEquation
    */
-  @Override
   public void inStandardEquation(final StandardEquation se) {
     final Variable v = se.getVariable();
     final List<String> indices = v.getDomain().getIndexNames();
     AABFT.checkDim(v, Boolean.valueOf(false));
-    final Consumer<String> _function = (String index) -> {
-      AABFT.makeChecksum(v, this.sys, index, indices.toString());
+    final Consumer<String> _function = new Consumer<String>() {
+      public void accept(final String index) {
+        AABFT.makeChecksum(v, AABFT.this.sys, index, indices.toString());
+      }
     };
     indices.forEach(_function);
   }
@@ -56,7 +57,6 @@ public class AABFT extends AbstractAlphaCompleteVisitor {
    * Visits variable expressions (Inputs) in the AlphaZ system.
    * @param ve - An AlphaZ VariableExpression
    */
-  @Override
   public void inVariableExpression(final VariableExpression ve) {
   }
 

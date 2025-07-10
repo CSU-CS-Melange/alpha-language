@@ -159,17 +159,23 @@ public class SplitReduction {
     final Face bodyFace = are.getFacet();
     final ISLBasicSet bodyDomain = bodyFace.toBasicSet();
     final int bodyDim = bodyFace.getDimensionality();
-    final Function1<Face, ISLBasicSet> _function = (Face it) -> {
-      return it.toBasicSet();
+    final Function1<Face, ISLBasicSet> _function = new Function1<Face, ISLBasicSet>() {
+      public ISLBasicSet apply(final Face it) {
+        return it.toBasicSet();
+      }
     };
     final List<ISLBasicSet> faces = ListExtensions.<Face, ISLBasicSet>map(bodyFace.getLattice().getFaces((bodyDim - 2)), _function);
     final ISLMultiAff accVec = SplitReduction.construct1DBasis(are.getProjection());
     if ((accVec != null)) {
-      final Function1<ISLBasicSet, ISLConstraint> _function_1 = (ISLBasicSet it) -> {
-        return SplitReduction.constructSplit(it.copy(), accVec);
+      final Function1<ISLBasicSet, ISLConstraint> _function_1 = new Function1<ISLBasicSet, ISLConstraint>() {
+        public ISLConstraint apply(final ISLBasicSet it) {
+          return SplitReduction.constructSplit(it.copy(), accVec);
+        }
       };
-      final Function1<ISLConstraint, Boolean> _function_2 = (ISLConstraint s) -> {
-        return Boolean.valueOf((s == null));
+      final Function1<ISLConstraint, Boolean> _function_2 = new Function1<ISLConstraint, Boolean>() {
+        public Boolean apply(final ISLConstraint s) {
+          return Boolean.valueOf((s == null));
+        }
       };
       Iterables.<ISLConstraint>addAll(splits, IterableExtensions.<ISLConstraint>reject(ListExtensions.<ISLBasicSet, ISLConstraint>map(faces, _function_1), _function_2));
     }
@@ -182,22 +188,30 @@ public class SplitReduction {
     }
     final ISLMultiAff reuseVec = _xifexpression_2;
     if ((reuseVec != null)) {
-      final Function1<ISLBasicSet, ISLConstraint> _function_3 = (ISLBasicSet it) -> {
-        return SplitReduction.constructSplit(it.copy(), reuseVec);
+      final Function1<ISLBasicSet, ISLConstraint> _function_3 = new Function1<ISLBasicSet, ISLConstraint>() {
+        public ISLConstraint apply(final ISLBasicSet it) {
+          return SplitReduction.constructSplit(it.copy(), reuseVec);
+        }
       };
-      final Function1<ISLConstraint, Boolean> _function_4 = (ISLConstraint s) -> {
-        return Boolean.valueOf((s == null));
+      final Function1<ISLConstraint, Boolean> _function_4 = new Function1<ISLConstraint, Boolean>() {
+        public Boolean apply(final ISLConstraint s) {
+          return Boolean.valueOf((s == null));
+        }
       };
       Iterables.<ISLConstraint>addAll(splits, IterableExtensions.<ISLConstraint>reject(ListExtensions.<ISLBasicSet, ISLConstraint>map(faces, _function_3), _function_4));
     }
-    final Function1<ISLConstraint, Boolean> _function_5 = (ISLConstraint s) -> {
-      return Boolean.valueOf(SplitReduction.isUseful(s, bodyDomain));
+    final Function1<ISLConstraint, Boolean> _function_5 = new Function1<ISLConstraint, Boolean>() {
+      public Boolean apply(final ISLConstraint s) {
+        return Boolean.valueOf(SplitReduction.isUseful(s, bodyDomain));
+      }
     };
     final Iterable<ISLConstraint> usefulSplits = IterableExtensions.<ISLConstraint>filter(splits, _function_5);
-    final Consumer<ISLConstraint> _function_6 = (ISLConstraint s) -> {
-      String _string = s.toString();
-      String _plus_1 = ("(enumerateCandidateSplits) " + _string);
-      SplitReduction.debug(_plus_1);
+    final Consumer<ISLConstraint> _function_6 = new Consumer<ISLConstraint>() {
+      public void accept(final ISLConstraint s) {
+        String _string = s.toString();
+        String _plus = ("(enumerateCandidateSplits) " + _string);
+        SplitReduction.debug(_plus);
+      }
     };
     usefulSplits.forEach(_function_6);
     return ((ISLConstraint[])Conversions.unwrapArray(usefulSplits, ISLConstraint.class));
@@ -234,11 +248,15 @@ public class SplitReduction {
           throw new Exception("transitive closure should have a single basic map");
         }
         final ISLBasicSet hyperplane = AlphaUtil.renameIndices(setNoParams.copy().apply(map.getBasicMapAt(0)), setNoParams.getIndexNames());
-        final Function1<ISLConstraint, Boolean> _function = (ISLConstraint it) -> {
-          return Boolean.valueOf(it.isEquality());
+        final Function1<ISLConstraint, Boolean> _function = new Function1<ISLConstraint, Boolean>() {
+          public Boolean apply(final ISLConstraint it) {
+            return Boolean.valueOf(it.isEquality());
+          }
         };
-        final Function1<ISLConstraint, Boolean> _function_1 = (ISLConstraint it) -> {
-          return Boolean.valueOf(it.involvesDims(ISLDimType.isl_dim_out, 0, nbOut));
+        final Function1<ISLConstraint, Boolean> _function_1 = new Function1<ISLConstraint, Boolean>() {
+          public Boolean apply(final ISLConstraint it) {
+            return Boolean.valueOf(it.involvesDims(ISLDimType.isl_dim_out, 0, nbOut));
+          }
         };
         final Iterable<ISLConstraint> eqConstraints = IterableExtensions.<ISLConstraint>filter(IterableExtensions.<ISLConstraint>filter(hyperplane.getConstraints(), _function), _function_1);
         int _size = IterableExtensions.size(eqConstraints);

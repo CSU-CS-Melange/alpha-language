@@ -77,7 +77,6 @@ public class AShow extends Show {
     return _xblockexpression;
   }
 
-  @Override
   public CharSequence doSwitch(final EObject obj) {
     CharSequence _xifexpression = null;
     if (((this.haltTarget != null) && (this.haltTarget == obj))) {
@@ -100,17 +99,14 @@ public class AShow extends Show {
     return _xifexpression;
   }
 
-  @Override
   protected String printDomain(final ISLSet set) {
     return AlphaPrintingUtil.toAShowString(set, this.parameterContext, this.indexNameContext);
   }
 
-  @Override
   public String printFunction(final ISLMultiAff f) {
     return AlphaPrintingUtil.toAShowString(f, this.indexNameContext);
   }
 
-  @Override
   protected String printPolynomial(final ISLPWQPolynomial p) {
     return AlphaPrintingUtil.toAShowString(p, this.indexNameContext);
   }
@@ -122,7 +118,6 @@ public class AShow extends Show {
   /**
    * CalculatorExpressions are printed differently depending on the context.
    */
-  @Override
   public CharSequence caseStandardEquation(final StandardEquation se) {
     CharSequence _xblockexpression = null;
     {
@@ -154,17 +149,20 @@ public class AShow extends Show {
     return _xblockexpression;
   }
 
-  @Override
   public CharSequence caseUseEquation(final UseEquation ue) {
     CharSequence _xblockexpression = null;
     {
       EList<AlphaExpression> _inputExprs = ue.getInputExprs();
       EList<AlphaExpression> _outputExprs = ue.getOutputExprs();
-      final Function1<AlphaExpression, List<String>> _function = (AlphaExpression e) -> {
-        return e.getContextDomain().getIndexNames();
+      final Function1<AlphaExpression, List<String>> _function = new Function1<AlphaExpression, List<String>>() {
+        public List<String> apply(final AlphaExpression e) {
+          return e.getContextDomain().getIndexNames();
+        }
       };
-      final Function1<List<String>, Integer> _function_1 = (List<String> n) -> {
-        return Integer.valueOf(((Object[])Conversions.unwrapArray(n, Object.class)).length);
+      final Function1<List<String>, Integer> _function_1 = new Function1<List<String>, Integer>() {
+        public Integer apply(final List<String> n) {
+          return Integer.valueOf(((Object[])Conversions.unwrapArray(n, Object.class)).length);
+        }
       };
       final List<String> names = IterableExtensions.<List<String>, Integer>maxBy(IterableExtensions.<AlphaExpression, List<String>>map(Iterables.<AlphaExpression>concat(_inputExprs, _outputExprs), _function), _function_1);
       final boolean idomDeclared = ((ue.getInstantiationDomainExpr() != null) && (ue.getInstantiationDomain().getNbIndices() > 0));
@@ -195,8 +193,10 @@ public class AShow extends Show {
       String _join = IterableExtensions.join(withNames, ",");
       _builder_2.append(_join);
       _builder_2.append("] : (");
-      final Function1<AlphaExpression, CharSequence> _function_2 = (AlphaExpression it) -> {
-        return this.doSwitch(it);
+      final Function1<AlphaExpression, CharSequence> _function_2 = new Function1<AlphaExpression, CharSequence>() {
+        public CharSequence apply(final AlphaExpression it) {
+          return AShow.this.doSwitch(it);
+        }
       };
       String _join_1 = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(ue.getOutputExprs(), _function_2), ", ");
       _builder_2.append(_join_1);
@@ -205,8 +205,10 @@ public class AShow extends Show {
       _builder_2.append(_name);
       _builder_2.append(callParam);
       _builder_2.append("(");
-      final Function1<AlphaExpression, CharSequence> _function_3 = (AlphaExpression it) -> {
-        return this.doSwitch(it);
+      final Function1<AlphaExpression, CharSequence> _function_3 = new Function1<AlphaExpression, CharSequence>() {
+        public CharSequence apply(final AlphaExpression it) {
+          return AShow.this.doSwitch(it);
+        }
       };
       String _join_2 = IterableExtensions.join(ListExtensions.<AlphaExpression, CharSequence>map(ue.getInputExprs(), _function_3), ", ");
       _builder_2.append(_join_2);
@@ -219,7 +221,6 @@ public class AShow extends Show {
   /**
    * AlphaExpression
    */
-  @Override
   public CharSequence caseDependenceExpression(final DependenceExpression de) {
     CharSequence _xifexpression = null;
     if (((de.getExpr() instanceof ConstantExpression) || (de.getExpr() instanceof VariableExpression))) {
@@ -235,7 +236,6 @@ public class AShow extends Show {
     return _xifexpression;
   }
 
-  @Override
   protected String printProjectionFunction(final ISLMultiAff maff) {
     String _xblockexpression = null;
     {
@@ -248,21 +248,23 @@ public class AShow extends Show {
     return _xblockexpression;
   }
 
-  @Override
   protected String printAbstractReduceExpression(final AbstractReduceExpression are) {
     final String res = super.printAbstractReduceExpression(are);
     this.indexNameContext = this.contextHistory.pop();
     return res;
   }
 
-  @Override
   public CharSequence caseConvolutionExpression(final ConvolutionExpression ce) {
     final List<String> kernelDomainNames = ce.getKernelDomain().getIndexNames();
-    final BiFunction<String, String, Boolean> _function = (String e1, String e2) -> {
-      return Boolean.valueOf(e1.contentEquals(e2));
+    final BiFunction<String, String, Boolean> _function = new BiFunction<String, String, Boolean>() {
+      public Boolean apply(final String e1, final String e2) {
+        return Boolean.valueOf(e1.contentEquals(e2));
+      }
     };
-    final BinaryOperator<Boolean> _function_1 = (Boolean b1, Boolean b2) -> {
-      return Boolean.valueOf(((b1).booleanValue() || (b2).booleanValue()));
+    final BinaryOperator<Boolean> _function_1 = new BinaryOperator<Boolean>() {
+      public Boolean apply(final Boolean b1, final Boolean b2) {
+        return Boolean.valueOf(((b1).booleanValue() || (b2).booleanValue()));
+      }
     };
     final Optional<Boolean> conflict = Streams.<String, String, Boolean>zip(this.indexNameContext.stream(), kernelDomainNames.stream(), _function).reduce(_function_1);
     List<String> printCtx = null;
@@ -292,7 +294,6 @@ public class AShow extends Show {
     return res;
   }
 
-  @Override
   public CharSequence caseSelectExpression(final SelectExpression se) {
     this.contextHistory.push(this.indexNameContext);
     this.indexNameContext = se.getSelectRelation().getRange().getIndexNames();

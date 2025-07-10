@@ -204,8 +204,10 @@ public class Factory {
    * Indexes an array using custom expressions for the indices.
    */
   public static ArrayAccessExpr arrayAccessExpr(final String variableName, final String... indexExpressions) {
-    final Function1<String, CustomExpr> _function = (String it) -> {
-      return Factory.customExpr(it);
+    final Function1<String, CustomExpr> _function = new Function1<String, CustomExpr>() {
+      public CustomExpr apply(final String it) {
+        return Factory.customExpr(it);
+      }
     };
     return Factory.arrayAccessExpr(variableName, ((Expression[])Conversions.unwrapArray(ListExtensions.<String, CustomExpr>map(((List<String>)Conversions.doWrapArray(indexExpressions)), _function), Expression.class)));
   }
@@ -218,8 +220,10 @@ public class Factory {
   }
 
   public static CallExpr callExpr(final String functionName, final String... arguments) {
-    final Function1<String, CustomExpr> _function = (String it) -> {
-      return Factory.customExpr(it);
+    final Function1<String, CustomExpr> _function = new Function1<String, CustomExpr>() {
+      public CustomExpr apply(final String it) {
+        return Factory.customExpr(it);
+      }
     };
     return Factory.callExpr(functionName, ((Expression[])Conversions.unwrapArray(ListExtensions.<String, CustomExpr>map(((List<String>)Conversions.doWrapArray(arguments)), _function), Expression.class)));
   }
@@ -258,8 +262,10 @@ public class Factory {
    * Creates a tree of binary expressions which use the same operator.
    */
   public static Expression binaryExprTree(final BinaryOperator operator, final Expression... exprs) {
-    final Function2<Expression, Expression, Expression> _function = (Expression left, Expression right) -> {
-      return Factory.binaryExpr(operator, left, right);
+    final Function2<Expression, Expression, Expression> _function = new Function2<Expression, Expression, Expression>() {
+      public Expression apply(final Expression left, final Expression right) {
+        return Factory.binaryExpr(operator, left, right);
+      }
     };
     return IterableExtensions.<Expression, Expression>fold(IterableExtensions.<Expression>tail(((Iterable<Expression>)Conversions.doWrapArray(exprs))), IterableExtensions.<Expression>head(((Iterable<Expression>)Conversions.doWrapArray(exprs))), _function);
   }

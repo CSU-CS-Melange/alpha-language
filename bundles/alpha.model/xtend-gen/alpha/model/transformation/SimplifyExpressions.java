@@ -88,7 +88,6 @@ public class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
     aev.accept(visitor);
   }
 
-  @Override
   public void outBinaryExpression(final BinaryExpression be) {
     if (((AlphaOperatorUtil.isIdentity(be.getOperator(), be.getLeft()) && (!Objects.equal(be.getOperator(), BINARY_OP.DIV))) && (!Objects.equal(be.getOperator(), BINARY_OP.MOD)))) {
       EcoreUtil.replace(be, be.getRight());
@@ -100,7 +99,6 @@ public class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outIndexExpression(final IndexExpression ie) {
     if (((ie.getFunction().getNbOutputs() == 1) && ie.getFunction().getAff(0).isConstant())) {
       final ISLVal v = ie.getFunction().getAff(0).eval(ie.getExpressionDomain().copy().samplePoint());
@@ -109,7 +107,6 @@ public class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outReduceExpression(final ReduceExpression re) {
     ISLMap map = re.getProjection().toMap();
     map = map.intersectDomain(re.getBody().getContextDomain());

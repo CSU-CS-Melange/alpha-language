@@ -9,6 +9,7 @@ import alpha.model.BINARY_OP;
 import alpha.model.REDUCTION_OP;
 import alpha.model.UNARY_OP;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 
 /**
  * Various helper methods for the alpha.codegen.alphaBase package.
@@ -137,6 +138,8 @@ public class AlphaBaseHelpers {
    */
   public static BinaryOperator getOperator(final REDUCTION_OP op) {
     try {
+      InputOutput.<String>println("getOperator");
+      InputOutput.<String>println(("operator: " + op));
       BinaryOperator _switchResult = null;
       if (op != null) {
         switch (op) {

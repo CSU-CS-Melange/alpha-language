@@ -87,8 +87,10 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     StringBuffer _xblockexpression = null;
     {
       this._output.append(this.indent);
-      final Consumer<Object> _function = (Object o) -> {
-        this._output.append(o);
+      final Consumer<Object> _function = new Consumer<Object>() {
+        public void accept(final Object o) {
+          PrintAST.this._output.append(o);
+        }
       };
       ((List<Object>)Conversions.doWrapArray(objs)).forEach(_function);
       _xblockexpression = this._output.append("\n");
@@ -116,12 +118,10 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     return _xblockexpression;
   }
 
-  @Override
   public void defaultIn(final AlphaVisitable av) {
     this.defaultInImpl(av);
   }
 
-  @Override
   public void defaultIn(final AlphaExpressionVisitable aev) {
     this.defaultInImpl(aev);
   }
@@ -150,12 +150,10 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     return _xblockexpression;
   }
 
-  @Override
   public void defaultOut(final AlphaVisitable av) {
     this._defaultOut(av);
   }
 
-  @Override
   public void defaultOut(final AlphaExpressionVisitable aev) {
     this._defaultOut(aev);
   }
@@ -167,18 +165,15 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     return this.indent = this.indent.substring(0, _minus);
   }
 
-  @Override
   public void inAlphaSystem(final AlphaSystem system) {
     this.defaultIn(system);
     this.printStr("_", system.getName());
   }
 
-  @Override
   public void outAlphaSystem(final AlphaSystem system) {
     this.defaultOut(system);
   }
 
-  @Override
   public void inSystemBody(final SystemBody sysBody) {
     this.defaultIn(sysBody);
     JNIDomain _parameterDomainExpr = sysBody.getParameterDomainExpr();
@@ -190,12 +185,10 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outSystemBody(final SystemBody sysBody) {
     this.defaultOut(sysBody);
   }
 
-  @Override
   public void inExternalFunction(final ExternalFunction ef) {
     this.defaultIn(ef);
     String _name = ef.getName();
@@ -204,7 +197,6 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.printStr("+--", _name, "(", _plus);
   }
 
-  @Override
   public void visitAlphaConstant(final AlphaConstant ac) {
     this.defaultIn(ac);
     String _name = ac.getName();
@@ -213,7 +205,6 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.printStr("+--", _name, "=", _plus);
   }
 
-  @Override
   public void outVariable(final Variable v) {
     this.defaultIn(v);
     this.printStr("+-- ", v.getName());
@@ -221,7 +212,6 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.defaultOut(v);
   }
 
-  @Override
   public void outFuzzyVariable(final FuzzyVariable v) {
     this.defaultIn(v);
     this.printStr("+-- ", v.getName());
@@ -230,7 +220,6 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.defaultOut(v);
   }
 
-  @Override
   public void visitPolyhedralObject(final PolyhedralObject pobj) {
     this.defaultIn(pobj);
     this.printStr("+-- ", pobj.getName());
@@ -239,13 +228,11 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.defaultOut(pobj);
   }
 
-  @Override
   public void inStandardEquation(final StandardEquation se) {
     this.defaultIn(se);
     this.printStr("+-- ", se.getVariable().getName());
   }
 
-  @Override
   public void inUseEquation(final UseEquation ue) {
     this.defaultIn(ue);
     this.printStr("+-- ", ue.getSystem().getName());
@@ -256,25 +243,21 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void inAlphaExpression(final AlphaExpression ae) {
     this.defaultIn(ae);
     this.printStr("+-- ", "expDomain: ", ae.getExpressionDomain());
     this.printStr("+-- ", "ctxDomain: ", ae.getContextDomain());
   }
 
-  @Override
   public void outAlphaExpression(final AlphaExpression ae) {
     this.defaultOut(ae);
   }
 
-  @Override
   public void inRestrictExpression(final RestrictExpression re) {
     this.inAlphaExpression(re);
     this.printStr("+-- ", re.getDomainExpr().getISLObject());
   }
 
-  @Override
   public void inAutoRestrictExpression(final AutoRestrictExpression are) {
     this.inAlphaExpression(are);
     ISLSet _inferredDomain = are.getInferredDomain();
@@ -284,7 +267,6 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void inDependenceExpression(final DependenceExpression de) {
     this.inAlphaExpression(de);
     ISLMultiAff _function = de.getFunction();
@@ -294,102 +276,86 @@ public class PrintAST extends AbstractAlphaCompleteVisitor {
     this.printStr("+-- ", _plus_1);
   }
 
-  @Override
   public void inFuzzyDependenceExpression(final FuzzyDependenceExpression fde) {
     this.inAlphaExpression(fde);
     this.printStr("+-- ", fde.getDependenceRelation());
     this.printStr("+-- ", fde.getDependenceRelation().getDomain());
   }
 
-  @Override
   public void inVariableExpression(final VariableExpression ve) {
     this.inAlphaExpression(ve);
     this.printStr("+-- ", ve.getVariable().getName());
   }
 
-  @Override
   public void inIndexExpression(final IndexExpression ie) {
     this.inAlphaExpression(ie);
     this.printStr("+-- ", ie.getFunction());
   }
 
-  @Override
   public void inPolynomialIndexExpression(final PolynomialIndexExpression pie) {
     this.inAlphaExpression(pie);
     this.printStr("+-- ", pie.getPolynomial());
   }
 
-  @Override
   public void inFuzzyIndexExpression(final FuzzyIndexExpression fie) {
     this.inAlphaExpression(fie);
     this.printStr("+-- ", fie.getDependenceRelation());
   }
 
-  @Override
   public void inConstantExpression(final ConstantExpression ce) {
     this.inAlphaExpression(ce);
     this.printStr("+-- ", ce.valueString());
   }
 
-  @Override
   public void inUnaryExpression(final UnaryExpression ue) {
     this.inAlphaExpression(ue);
     this.printStr("+-- ", ue.getOperator());
   }
 
-  @Override
   public void inBinaryExpression(final BinaryExpression be) {
     this.inAlphaExpression(be);
     this.printStr("+-- ", be.getOperator());
   }
 
-  @Override
   public void inReduceExpression(final ReduceExpression re) {
     this.inAlphaExpression(re);
     this.printStr("+-- ", re.getOperator());
     this.printStr("+-- ", re.getProjection());
   }
 
-  @Override
   public void inExternalReduceExpression(final ExternalReduceExpression ere) {
     this.inAlphaExpression(ere);
     this.printStr("+-- ", ere.getExternalFunction().getName());
     this.printStr("+-- ", ere.getProjection());
   }
 
-  @Override
   public void inArgReduceExpression(final ArgReduceExpression are) {
     this.inAlphaExpression(are);
     this.printStr("+-- ", are.getOperator());
     this.printStr("+-- ", are.getProjection());
   }
 
-  @Override
   public void inExternalArgReduceExpression(final ExternalArgReduceExpression eare) {
     this.inAlphaExpression(eare);
     this.printStr("+-- ", eare.getOperator());
     this.printStr("+-- ", eare.getProjection());
   }
 
-  @Override
   public void inConvolutionExpression(final ConvolutionExpression ce) {
     this.inAlphaExpression(ce);
     this.printStr("+-- ", ce.getKernelDomain());
   }
 
-  @Override
   public void inMultiArgExpression(final MultiArgExpression mae) {
     this.inAlphaExpression(mae);
     this.printStr("+-- ", mae.getOperator());
   }
 
-  @Override
   public void inExternalMultiArgExpression(final ExternalMultiArgExpression emae) {
     this.inAlphaExpression(emae);
     this.printStr("+-- ", emae.getExternalFunction().getName());
   }
 
-  @Override
   public void inSelectExpression(final SelectExpression se) {
     this.inAlphaExpression(se);
     this.printStr("+-- ", se.getSelectRelation());

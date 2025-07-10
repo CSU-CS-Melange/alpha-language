@@ -29,15 +29,17 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 public class NormalizeReduction extends AbstractAlphaCompleteVisitor {
   private List<AbstractReduceExpression> targetREs = new LinkedList<AbstractReduceExpression>();
 
-  public static Function<StandardEquation, String> defineNormalizeReductionEquationName = ((Function<StandardEquation, String>) (StandardEquation se) -> {
-    String _xblockexpression = null;
-    {
-      final String origName = se.getVariable().getName();
-      String NRname = (origName + "_NR");
-      _xblockexpression = AlphaUtil.duplicateNameResolverWithCounter().apply(se.getSystemBody().getSystem(), NRname);
+  public static Function<StandardEquation, String> defineNormalizeReductionEquationName = new Function<StandardEquation, String>() {
+    public String apply(final StandardEquation se) {
+      String _xblockexpression = null;
+      {
+        final String origName = se.getVariable().getName();
+        String NRname = (origName + "_NR");
+        _xblockexpression = AlphaUtil.duplicateNameResolverWithCounter().apply(se.getSystemBody().getSystem(), NRname);
+      }
+      return _xblockexpression;
     }
-    return _xblockexpression;
-  });
+  };
 
   /**
    * Applies the transformation to the specified expression.
@@ -65,8 +67,10 @@ public class NormalizeReduction extends AbstractAlphaCompleteVisitor {
   public static int apply(final AlphaVisitable av) {
     final NormalizeReduction visitor = new NormalizeReduction();
     visitor.accept(av);
-    final Consumer<AbstractReduceExpression> _function = (AbstractReduceExpression are) -> {
-      NormalizeReduction.transform(are);
+    final Consumer<AbstractReduceExpression> _function = new Consumer<AbstractReduceExpression>() {
+      public void accept(final AbstractReduceExpression are) {
+        NormalizeReduction.transform(are);
+      }
     };
     visitor.targetREs.forEach(_function);
     return visitor.targetREs.size();
@@ -92,12 +96,10 @@ public class NormalizeReduction extends AbstractAlphaCompleteVisitor {
   /**
    * Skip UseEquations. It is not expected to have reductions in UseEquation inputs.
    */
-  @Override
   public void visitUseEquation(final UseEquation ue) {
     return;
   }
 
-  @Override
   public void visitAbstractReduceExpression(final AbstractReduceExpression are) {
     EObject _eContainer = are.eContainer();
     boolean _not = (!(_eContainer instanceof Equation));

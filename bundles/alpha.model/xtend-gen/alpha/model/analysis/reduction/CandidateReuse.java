@@ -78,8 +78,10 @@ public class CandidateReuse {
     }
     final ISLSpace space = this.are.getBody().getContextDomain().copy().toIdentityMap().getSpace();
     final int nbParams = space.dim(ISLDimType.isl_dim_param);
-    final Function1<Integer, Long> _function = (Integer it) -> {
-      return Long.valueOf(0L);
+    final Function1<Integer, Long> _function = new Function1<Integer, Long>() {
+      public Long apply(final Integer it) {
+        return Long.valueOf(0L);
+      }
     };
     final Iterable<Long> zeros = IterableExtensions.<Integer, Long>map(new ExclusiveRange(0, nbParams, true), _function);
     Iterable<Long> _plus = Iterables.<Long>concat(zeros, ((Iterable<? extends Long>)Conversions.doWrapArray(this.reuseVectorWithIdenticalAnswers)));
@@ -108,29 +110,41 @@ public class CandidateReuse {
       return;
     }
     final List<ArrayList<Face.Label>> labelings = IterableExtensions.<ArrayList<Face.Label>>toList(Face.enumerateAllPossibleLabelings(facets.size(), true));
-    final Function1<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>> _function = (ArrayList<Face.Label> l) -> {
-      return face.getLabelingDomain(((Face.Label[])Conversions.unwrapArray(l, Face.Label.class)));
+    final Function1<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>> _function = new Function1<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>>() {
+      public Pair<Face.Label[], ISLBasicSet> apply(final ArrayList<Face.Label> l) {
+        return face.getLabelingDomain(((Face.Label[])Conversions.unwrapArray(l, Face.Label.class)));
+      }
     };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_1 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
+    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_1 = new Function1<Pair<Face.Label[], ISLBasicSet>, Boolean>() {
+      public Boolean apply(final Pair<Face.Label[], ISLBasicSet> ld) {
+        return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
+      }
     };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>> _function_2 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      Face.Label[] _key = ld.getKey();
-      ISLBasicSet _intersect = ld.getValue().intersect(reuseSpace.copy());
-      return Pair.<Face.Label[], ISLBasicSet>of(_key, _intersect);
+    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>> _function_2 = new Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>>() {
+      public Pair<Face.Label[], ISLBasicSet> apply(final Pair<Face.Label[], ISLBasicSet> ld) {
+        Face.Label[] _key = ld.getKey();
+        ISLBasicSet _intersect = ld.getValue().intersect(reuseSpace.copy());
+        return Pair.<Face.Label[], ISLBasicSet>of(_key, _intersect);
+      }
     };
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_3 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
+    final Function1<Pair<Face.Label[], ISLBasicSet>, Boolean> _function_3 = new Function1<Pair<Face.Label[], ISLBasicSet>, Boolean>() {
+      public Boolean apply(final Pair<Face.Label[], ISLBasicSet> ld) {
+        return Boolean.valueOf(ISLUtil.isTrivial(ld.getValue()));
+      }
     };
     final List<Pair<Face.Label[], ISLBasicSet>> labelingInducingDomains = IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>toList(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], ISLBasicSet>>map(IterableExtensions.<Pair<Face.Label[], ISLBasicSet>>reject(ListExtensions.<ArrayList<Face.Label>, Pair<Face.Label[], ISLBasicSet>>map(labelings, _function), _function_1), _function_2), _function_3));
-    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>> _function_4 = (Pair<Face.Label[], ISLBasicSet> ld) -> {
-      Face.Label[] _key = ld.getKey();
-      long[] _integerPointClosestToOrigin = ISLUtil.integerPointClosestToOrigin(ld.getValue());
-      return Pair.<Face.Label[], long[]>of(_key, _integerPointClosestToOrigin);
+    final Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>> _function_4 = new Function1<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>>() {
+      public Pair<Face.Label[], long[]> apply(final Pair<Face.Label[], ISLBasicSet> ld) {
+        Face.Label[] _key = ld.getKey();
+        long[] _integerPointClosestToOrigin = ISLUtil.integerPointClosestToOrigin(ld.getValue());
+        return Pair.<Face.Label[], long[]>of(_key, _integerPointClosestToOrigin);
+      }
     };
     final List<Pair<Face.Label[], long[]>> candidateReuseVectors = ListExtensions.<Pair<Face.Label[], ISLBasicSet>, Pair<Face.Label[], long[]>>map(labelingInducingDomains, _function_4);
-    final Function1<Pair<Face.Label[], long[]>, Boolean> _function_5 = (Pair<Face.Label[], long[]> lv) -> {
-      return Boolean.valueOf(SimplifyingReductions.testLegality(this.are, lv.getValue()));
+    final Function1<Pair<Face.Label[], long[]>, Boolean> _function_5 = new Function1<Pair<Face.Label[], long[]>, Boolean>() {
+      public Boolean apply(final Pair<Face.Label[], long[]> lv) {
+        return Boolean.valueOf(SimplifyingReductions.testLegality(CandidateReuse.this.are, lv.getValue()));
+      }
     };
     final Iterable<Pair<Face.Label[], long[]>> validReuseVectors = IterableExtensions.<Pair<Face.Label[], long[]>>filter(candidateReuseVectors, _function_5);
     if (CandidateReuse.DEBUG) {
@@ -181,17 +195,23 @@ public class CandidateReuse {
     CandidateReuse.debug("---");
     CandidateReuse.debug(("accumulation " + accumulationSpace));
     CandidateReuse.debug("---");
-    final Function1<Pair<Face, Face.Label>, Boolean> _function = (Pair<Face, Face.Label> faceLabel) -> {
-      Face.Label _value = faceLabel.getValue();
-      return Boolean.valueOf(Objects.equal(_value, Face.Label.ZERO));
+    final Function1<Pair<Face, Face.Label>, Boolean> _function = new Function1<Pair<Face, Face.Label>, Boolean>() {
+      public Boolean apply(final Pair<Face, Face.Label> faceLabel) {
+        Face.Label _value = faceLabel.getValue();
+        return Boolean.valueOf(Objects.equal(_value, Face.Label.ZERO));
+      }
     };
-    final Function1<Pair<Face, Face.Label>, Face> _function_1 = (Pair<Face, Face.Label> faceLabel) -> {
-      return faceLabel.getKey();
+    final Function1<Pair<Face, Face.Label>, Face> _function_1 = new Function1<Pair<Face, Face.Label>, Face>() {
+      public Face apply(final Pair<Face, Face.Label> faceLabel) {
+        return faceLabel.getKey();
+      }
     };
     final Iterable<Face> nonZeroFacets = IterableExtensions.<Pair<Face, Face.Label>, Face>map(IterableExtensions.<Pair<Face, Face.Label>>reject(CommonExtensions.<Face, Face.Label>zipWith(((Iterable<Face>)Conversions.doWrapArray(facets)), ((Iterable<Face.Label>)Conversions.doWrapArray(labeling))), _function), _function_1);
-    final Function1<Face, Boolean> _function_2 = (Face it) -> {
-      Face.Boundary _boundaryLabel = it.boundaryLabel(accumulationSpace);
-      return Boolean.valueOf(Objects.equal(_boundaryLabel, Face.Boundary.NON));
+    final Function1<Face, Boolean> _function_2 = new Function1<Face, Boolean>() {
+      public Boolean apply(final Face it) {
+        Face.Boundary _boundaryLabel = it.boundaryLabel(accumulationSpace);
+        return Boolean.valueOf(Objects.equal(_boundaryLabel, Face.Boundary.NON));
+      }
     };
     final Iterable<Face> nonZeroNonBoundaryFacets = IterableExtensions.<Face>filter(nonZeroFacets, _function_2);
     boolean _isEmpty = IterableExtensions.isEmpty(nonZeroNonBoundaryFacets);
@@ -199,16 +219,22 @@ public class CandidateReuse {
     if (_not) {
       return emptyDomain;
     }
-    final Consumer<Face> _function_3 = (Face f) -> {
-      CandidateReuse.debug(("relevant facet-" + f));
+    final Consumer<Face> _function_3 = new Consumer<Face>() {
+      public void accept(final Face f) {
+        CandidateReuse.debug(("relevant facet-" + f));
+      }
     };
     nonZeroFacets.forEach(_function_3);
     final ISLSet universe = ISLSet.buildUniverse(accumulationSpace.getSpace());
-    final Function1<Face, ISLSet> _function_4 = (Face it) -> {
-      return it.toLinearSpace().toSet();
+    final Function1<Face, ISLSet> _function_4 = new Function1<Face, ISLSet>() {
+      public ISLSet apply(final Face it) {
+        return it.toLinearSpace().toSet();
+      }
     };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_5 = (ISLSet ret, ISLSet lp) -> {
-      return ret.intersect(lp);
+    final Function2<ISLSet, ISLSet, ISLSet> _function_5 = new Function2<ISLSet, ISLSet, ISLSet>() {
+      public ISLSet apply(final ISLSet ret, final ISLSet lp) {
+        return ret.intersect(lp);
+      }
     };
     final ISLSet commonWeakSpace = IterableExtensions.<ISLSet, ISLSet>fold(IterableExtensions.<Face, ISLSet>map(nonZeroFacets, _function_4), universe.copy(), _function_5);
     final ISLSet domain = commonWeakSpace.copy().intersect(accumulationSpace.copy());

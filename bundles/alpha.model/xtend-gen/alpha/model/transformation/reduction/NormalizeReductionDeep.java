@@ -46,8 +46,10 @@ public class NormalizeReductionDeep extends AbstractAlphaCompleteVisitor {
    * Calling this after walking the AST prevents concurrent modification exceptions.
    */
   protected void normalizeTargets() {
-    final Consumer<ReduceExpression> _function = (ReduceExpression re) -> {
-      NormalizeReduction.apply(re);
+    final Consumer<ReduceExpression> _function = new Consumer<ReduceExpression>() {
+      public void accept(final ReduceExpression re) {
+        NormalizeReduction.apply(re);
+      }
     };
     this.targetREs.forEach(_function);
   }
@@ -56,7 +58,6 @@ public class NormalizeReductionDeep extends AbstractAlphaCompleteVisitor {
    * If the reduce expression isn't already the top-level expression
    * of an equation, add it to the list of reductions to normalize.
    */
-  @Override
   public void outReduceExpression(final ReduceExpression re) {
     EObject _eContainer = re.eContainer();
     if ((_eContainer instanceof Equation)) {

@@ -220,7 +220,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return (_eContainer == null);
   }
 
-  @Override
   public void outDependenceExpression(final DependenceExpression de) {
     boolean _invalidState = this.invalidState(de);
     if (_invalidState) {
@@ -362,7 +361,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return (_eContainer instanceof RestrictExpression);
   }
 
-  @Override
   public void outRestrictExpression(final RestrictExpression re) {
     boolean _invalidState = this.invalidState(re);
     if (_invalidState) {
@@ -430,7 +428,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
-  @Override
   public void outBinaryExpression(final BinaryExpression be) {
     boolean _invalidState = this.invalidState(be);
     if (_invalidState) {
@@ -442,59 +439,77 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
   protected void _binaryExpressionRules(final BinaryExpression be, final CaseExpression ceLeft, final CaseExpression ceRight) {
     EObject _eContainer = be.eContainer();
     final AlphaCompleteVisitable origContainer = ((AlphaCompleteVisitable) _eContainer);
-    final Function1<AlphaExpression, ISLSet> _function = (AlphaExpression it) -> {
-      return it.getContextDomain();
-    };
-    final Function1<ISLSet, List<ISLSet>> _function_1 = (ISLSet l) -> {
-      final Function1<AlphaExpression, ISLSet> _function_2 = (AlphaExpression it) -> {
+    final Function1<AlphaExpression, ISLSet> _function = new Function1<AlphaExpression, ISLSet>() {
+      public ISLSet apply(final AlphaExpression it) {
         return it.getContextDomain();
-      };
-      final Function1<ISLSet, ISLSet> _function_3 = (ISLSet r) -> {
-        return l.copy().intersect(r);
-      };
-      return ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<AlphaExpression, ISLSet>map(ceRight.getExprs(), _function_2), _function_3);
+      }
     };
-    final Function1<ISLSet, Boolean> _function_2 = (ISLSet it) -> {
-      return Boolean.valueOf(it.isEmpty());
+    final Function1<ISLSet, List<ISLSet>> _function_1 = new Function1<ISLSet, List<ISLSet>>() {
+      public List<ISLSet> apply(final ISLSet l) {
+        final Function1<AlphaExpression, ISLSet> _function = new Function1<AlphaExpression, ISLSet>() {
+          public ISLSet apply(final AlphaExpression it) {
+            return it.getContextDomain();
+          }
+        };
+        final Function1<ISLSet, ISLSet> _function_1 = new Function1<ISLSet, ISLSet>() {
+          public ISLSet apply(final ISLSet r) {
+            return l.copy().intersect(r);
+          }
+        };
+        return ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<AlphaExpression, ISLSet>map(ceRight.getExprs(), _function), _function_1);
+      }
+    };
+    final Function1<ISLSet, Boolean> _function_2 = new Function1<ISLSet, Boolean>() {
+      public Boolean apply(final ISLSet it) {
+        return Boolean.valueOf(it.isEmpty());
+      }
     };
     final Iterable<ISLSet> newBranchDomains = IterableExtensions.<ISLSet>reject(Iterables.<ISLSet>concat(ListExtensions.<ISLSet, List<ISLSet>>map(ListExtensions.<AlphaExpression, ISLSet>map(ceLeft.getExprs(), _function), _function_1)), _function_2);
-    final Function1<ISLSet, RestrictExpression> _function_3 = (ISLSet domain) -> {
-      return AlphaUserFactory.createRestrictExpression(domain);
+    final Function1<ISLSet, RestrictExpression> _function_3 = new Function1<ISLSet, RestrictExpression>() {
+      public RestrictExpression apply(final ISLSet domain) {
+        return AlphaUserFactory.createRestrictExpression(domain);
+      }
     };
     final Iterable<RestrictExpression> emptyRestrictExprs = IterableExtensions.<ISLSet, RestrictExpression>map(newBranchDomains, _function_3);
     final CaseExpression newCE = AlphaUserFactory.createCaseExpression();
     EList<AlphaExpression> _exprs = newCE.getExprs();
-    final Function1<RestrictExpression, RestrictExpression> _function_4 = (RestrictExpression re) -> {
-      RestrictExpression _xblockexpression = null;
-      {
-        final Function1<AlphaExpression, Boolean> _function_5 = (AlphaExpression e) -> {
-          return Boolean.valueOf(re.getRestrictDomain().isSubset(e.getExpressionDomain()));
-        };
-        AlphaExpression left = EcoreUtil.<AlphaExpression>copy(IterableExtensions.<AlphaExpression>findFirst(ceLeft.getExprs(), _function_5));
-        final Function1<AlphaExpression, Boolean> _function_6 = (AlphaExpression e) -> {
-          return Boolean.valueOf(re.getRestrictDomain().isSubset(e.getExpressionDomain()));
-        };
-        AlphaExpression right = EcoreUtil.<AlphaExpression>copy(IterableExtensions.<AlphaExpression>findFirst(ceRight.getExprs(), _function_6));
-        if ((left instanceof RestrictExpression)) {
-          left = ((RestrictExpression)left).getExpr();
-        }
-        if ((right instanceof RestrictExpression)) {
-          right = ((RestrictExpression)right).getExpr();
-        }
-        if (((left != null) && (right != null))) {
-          re.setExpr(AlphaUserFactory.createBinaryExpression(be.getOperator(), left, right));
-        } else {
-          AlphaExpression _xifexpression = null;
-          if ((left != null)) {
-            _xifexpression = left;
-          } else {
-            _xifexpression = right;
+    final Function1<RestrictExpression, RestrictExpression> _function_4 = new Function1<RestrictExpression, RestrictExpression>() {
+      public RestrictExpression apply(final RestrictExpression re) {
+        RestrictExpression _xblockexpression = null;
+        {
+          final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+            public Boolean apply(final AlphaExpression e) {
+              return Boolean.valueOf(re.getRestrictDomain().isSubset(e.getExpressionDomain()));
+            }
+          };
+          AlphaExpression left = EcoreUtil.<AlphaExpression>copy(IterableExtensions.<AlphaExpression>findFirst(ceLeft.getExprs(), _function));
+          final Function1<AlphaExpression, Boolean> _function_1 = new Function1<AlphaExpression, Boolean>() {
+            public Boolean apply(final AlphaExpression e) {
+              return Boolean.valueOf(re.getRestrictDomain().isSubset(e.getExpressionDomain()));
+            }
+          };
+          AlphaExpression right = EcoreUtil.<AlphaExpression>copy(IterableExtensions.<AlphaExpression>findFirst(ceRight.getExprs(), _function_1));
+          if ((left instanceof RestrictExpression)) {
+            left = ((RestrictExpression)left).getExpr();
           }
-          re.setExpr(_xifexpression);
+          if ((right instanceof RestrictExpression)) {
+            right = ((RestrictExpression)right).getExpr();
+          }
+          if (((left != null) && (right != null))) {
+            re.setExpr(AlphaUserFactory.createBinaryExpression(be.getOperator(), left, right));
+          } else {
+            AlphaExpression _xifexpression = null;
+            if ((left != null)) {
+              _xifexpression = left;
+            } else {
+              _xifexpression = right;
+            }
+            re.setExpr(_xifexpression);
+          }
+          _xblockexpression = re;
         }
-        _xblockexpression = re;
+        return _xblockexpression;
       }
-      return _xblockexpression;
     };
     Iterable<RestrictExpression> _map = IterableExtensions.<RestrictExpression, RestrictExpression>map(emptyRestrictExprs, _function_4);
     Iterables.<AlphaExpression>addAll(_exprs, _map);
@@ -552,18 +567,24 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
       EcoreUtil.replace(be, newCE);
       int _size = ce.getExprs().size();
       final ArrayList<AlphaExpression> children = new ArrayList<AlphaExpression>(_size);
-      final Consumer<AlphaExpression> _function = (AlphaExpression e) -> {
-        children.add(e);
+      final Consumer<AlphaExpression> _function = new Consumer<AlphaExpression>() {
+        public void accept(final AlphaExpression e) {
+          children.add(e);
+        }
       };
       ce.getExprs().forEach(_function);
       if (isLeft) {
-        final Consumer<AlphaExpression> _function_1 = (AlphaExpression e) -> {
-          newCE.getExprs().add(AlphaUserFactory.createBinaryExpression(be.getOperator(), e, EcoreUtil.<AlphaExpression>copy(be.getRight())));
+        final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+          public void accept(final AlphaExpression e) {
+            newCE.getExprs().add(AlphaUserFactory.createBinaryExpression(be.getOperator(), e, EcoreUtil.<AlphaExpression>copy(be.getRight())));
+          }
         };
         children.forEach(_function_1);
       } else {
-        final Consumer<AlphaExpression> _function_2 = (AlphaExpression e) -> {
-          newCE.getExprs().add(AlphaUserFactory.createBinaryExpression(be.getOperator(), EcoreUtil.<AlphaExpression>copy(be.getLeft()), e));
+        final Consumer<AlphaExpression> _function_2 = new Consumer<AlphaExpression>() {
+          public void accept(final AlphaExpression e) {
+            newCE.getExprs().add(AlphaUserFactory.createBinaryExpression(be.getOperator(), EcoreUtil.<AlphaExpression>copy(be.getLeft()), e));
+          }
         };
         children.forEach(_function_2);
       }
@@ -577,7 +598,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
-  @Override
   public void outUnaryExpression(final UnaryExpression ue) {
     boolean _invalidState = this.invalidState(ue);
     if (_invalidState) {
@@ -612,7 +632,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
-  @Override
   public void outMultiArgExpression(final MultiArgExpression mae) {
     boolean _invalidState = this.invalidState(mae);
     if (_invalidState) {
@@ -627,24 +646,32 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
         }
       }
     }
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression e) -> {
-      return Boolean.valueOf((e instanceof RestrictExpression));
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression e) {
+        return Boolean.valueOf((e instanceof RestrictExpression));
+      }
     };
     boolean _exists = IterableExtensions.<AlphaExpression>exists(mae.getExprs(), _function);
     if (_exists) {
       this.debug("pull-restrict MAExpr", "f(op, D1 : E1, D2 : E2) -> (D1 and D2 ...) : f(op, E1, E2, ...)");
-      final Function1<RestrictExpression, ISLSet> _function_1 = (RestrictExpression e) -> {
-        return e.getRestrictDomain();
+      final Function1<RestrictExpression, ISLSet> _function_1 = new Function1<RestrictExpression, ISLSet>() {
+        public ISLSet apply(final RestrictExpression e) {
+          return e.getRestrictDomain();
+        }
       };
-      final Function2<ISLSet, ISLSet, ISLSet> _function_2 = (ISLSet d1, ISLSet d2) -> {
-        return d1.intersect(d2);
+      final Function2<ISLSet, ISLSet, ISLSet> _function_2 = new Function2<ISLSet, ISLSet, ISLSet>() {
+        public ISLSet apply(final ISLSet d1, final ISLSet d2) {
+          return d1.intersect(d2);
+        }
       };
       ISLSet intersection = IterableExtensions.<ISLSet>reduce(IterableExtensions.<RestrictExpression, ISLSet>map(Iterables.<RestrictExpression>filter(mae.getExprs(), RestrictExpression.class), _function_1), _function_2);
       final RestrictExpression hoistedRE = AlphaUserFactory.createRestrictExpression(intersection);
       EcoreUtil.replace(mae, hoistedRE);
       hoistedRE.setExpr(mae);
-      final Consumer<RestrictExpression> _function_3 = (RestrictExpression e) -> {
-        EcoreUtil.replace(e, e.getExpr());
+      final Consumer<RestrictExpression> _function_3 = new Consumer<RestrictExpression>() {
+        public void accept(final RestrictExpression e) {
+          EcoreUtil.replace(e, e.getExpr());
+        }
       };
       Iterables.<RestrictExpression>filter(mae.getExprs(), RestrictExpression.class).forEach(_function_3);
       this.debug(hoistedRE);
@@ -662,15 +689,19 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     this.debug("pull-case MAExpr", "f(op, case { E1; E2; ... }) -> case { f(op, E1); f(op, E2); ...}");
     int _size = ce.getExprs().size();
     final ArrayList<AlphaExpression> children = new ArrayList<AlphaExpression>(_size);
-    final Consumer<AlphaExpression> _function = (AlphaExpression e) -> {
-      children.add(e);
+    final Consumer<AlphaExpression> _function = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        children.add(e);
+      }
     };
     ce.getExprs().forEach(_function);
     ce.getExprs().clear();
-    final Consumer<AlphaExpression> _function_1 = (AlphaExpression e) -> {
-      final MultiArgExpression newMAE = EcoreUtil.<MultiArgExpression>copy(mae);
-      EcoreUtil.replace(newMAE.getExprs().get(index), e);
-      ce.getExprs().add(newMAE);
+    final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        final MultiArgExpression newMAE = EcoreUtil.<MultiArgExpression>copy(mae);
+        EcoreUtil.replace(newMAE.getExprs().get(index), e);
+        ce.getExprs().add(newMAE);
+      }
     };
     children.forEach(_function_1);
     EcoreUtil.replace(mae, ce);
@@ -683,14 +714,15 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
-  @Override
   public void outCaseExpression(final CaseExpression ce) {
     boolean _invalidState = this.invalidState(ce);
     if (_invalidState) {
       return;
     }
-    final Predicate<AlphaExpression> _function = (AlphaExpression e) -> {
-      return ((e instanceof CaseExpression) && (this.DEEP || (!(((CaseExpression) e).isNamed()).booleanValue())));
+    final Predicate<AlphaExpression> _function = new Predicate<AlphaExpression>() {
+      public boolean test(final AlphaExpression e) {
+        return ((e instanceof CaseExpression) && (Normalize.this.DEEP || (!(((CaseExpression) e).isNamed()).booleanValue())));
+      }
     };
     final Predicate<AlphaExpression> canFlatten = _function;
     boolean _exists = IterableExtensions.<AlphaExpression>exists(ce.getExprs(), new Function1<AlphaExpression, Boolean>() {
@@ -701,22 +733,24 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     if (_exists) {
       this.debug("flatten-case", "case { E1; case { E2; E3; ...}; E4 ...} -> case{ E1; E2; E3; ...; E4; ... }");
       final LinkedList<AlphaExpression> children = new LinkedList<AlphaExpression>();
-      final Consumer<AlphaExpression> _function_1 = (AlphaExpression e) -> {
-        boolean _test = canFlatten.test(e);
-        if (_test) {
-          EList<AlphaExpression> _exprs = ((CaseExpression) e).getExprs();
-          for (final AlphaExpression expr : _exprs) {
-            AlphaExpression _xifexpression = null;
-            if ((expr instanceof AutoRestrictExpression)) {
-              _xifexpression = LiftAutoRestrict.apply(((AutoRestrictExpression)expr));
-            } else {
-              _xifexpression = expr;
+      final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+        public void accept(final AlphaExpression e) {
+          boolean _test = canFlatten.test(e);
+          if (_test) {
+            EList<AlphaExpression> _exprs = ((CaseExpression) e).getExprs();
+            for (final AlphaExpression expr : _exprs) {
+              AlphaExpression _xifexpression = null;
+              if ((expr instanceof AutoRestrictExpression)) {
+                _xifexpression = LiftAutoRestrict.apply(((AutoRestrictExpression)expr));
+              } else {
+                _xifexpression = expr;
+              }
+              children.add(_xifexpression);
             }
-            children.add(_xifexpression);
+            children.addAll(((CaseExpression) e).getExprs());
+          } else {
+            children.add(e);
           }
-          children.addAll(((CaseExpression) e).getExprs());
-        } else {
-          children.add(e);
         }
       };
       ce.getExprs().forEach(_function_1);
@@ -725,10 +759,12 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
       this.debug(ce);
     }
     final LinkedList<AlphaExpression> emptyExprs = new LinkedList<AlphaExpression>();
-    final Consumer<AlphaExpression> _function_2 = (AlphaExpression e) -> {
-      boolean _isEmpty = e.getContextDomain().isEmpty();
-      if (_isEmpty) {
-        emptyExprs.add(e);
+    final Consumer<AlphaExpression> _function_2 = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        boolean _isEmpty = e.getContextDomain().isEmpty();
+        if (_isEmpty) {
+          emptyExprs.add(e);
+        }
       }
     };
     ce.getExprs().forEach(_function_2);
@@ -740,19 +776,20 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     }
   }
 
-  @Override
   public void outIfExpression(final IfExpression ie) {
     boolean _invalidState = this.invalidState(ie);
     if (_invalidState) {
       return;
     }
-    final Function1<AlphaExpression, Boolean> _function = (AlphaExpression e) -> {
-      final AlphaExpression nextExpr = this.ifExpressionRules(ie, e);
-      if ((nextExpr != null)) {
-        this.reapply(nextExpr);
-        return true;
+    final Function1<AlphaExpression, Boolean> _function = new Function1<AlphaExpression, Boolean>() {
+      public Boolean apply(final AlphaExpression e) {
+        final AlphaExpression nextExpr = Normalize.this.ifExpressionRules(ie, e);
+        if ((nextExpr != null)) {
+          Normalize.this.reapply(nextExpr);
+          return true;
+        }
+        return false;
       }
-      return false;
     };
     final Function1<AlphaExpression, Boolean> rule = _function;
     Boolean _apply = rule.apply(ie.getCondExpr());
@@ -821,25 +858,33 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     EcoreUtil.replace(ie, newCE);
     int _size = ce.getExprs().size();
     final ArrayList<AlphaExpression> children = new ArrayList<AlphaExpression>(_size);
-    final Consumer<AlphaExpression> _function = (AlphaExpression e) -> {
-      children.add(e);
+    final Consumer<AlphaExpression> _function = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        children.add(e);
+      }
     };
     ce.getExprs().forEach(_function);
     if (isCond) {
-      final Consumer<AlphaExpression> _function_1 = (AlphaExpression e) -> {
-        newCE.getExprs().add(AlphaUserFactory.createIfExpression(e, EcoreUtil.<AlphaExpression>copy(ie.getThenExpr()), EcoreUtil.<AlphaExpression>copy(ie.getElseExpr())));
+      final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+        public void accept(final AlphaExpression e) {
+          newCE.getExprs().add(AlphaUserFactory.createIfExpression(e, EcoreUtil.<AlphaExpression>copy(ie.getThenExpr()), EcoreUtil.<AlphaExpression>copy(ie.getElseExpr())));
+        }
       };
       children.forEach(_function_1);
     } else {
       if (isThen) {
-        final Consumer<AlphaExpression> _function_2 = (AlphaExpression e) -> {
-          newCE.getExprs().add(AlphaUserFactory.createIfExpression(EcoreUtil.<AlphaExpression>copy(ie.getCondExpr()), e, EcoreUtil.<AlphaExpression>copy(ie.getElseExpr())));
+        final Consumer<AlphaExpression> _function_2 = new Consumer<AlphaExpression>() {
+          public void accept(final AlphaExpression e) {
+            newCE.getExprs().add(AlphaUserFactory.createIfExpression(EcoreUtil.<AlphaExpression>copy(ie.getCondExpr()), e, EcoreUtil.<AlphaExpression>copy(ie.getElseExpr())));
+          }
         };
         children.forEach(_function_2);
       } else {
         if (isElse) {
-          final Consumer<AlphaExpression> _function_3 = (AlphaExpression e) -> {
-            newCE.getExprs().add(AlphaUserFactory.createIfExpression(EcoreUtil.<AlphaExpression>copy(ie.getCondExpr()), EcoreUtil.<AlphaExpression>copy(ie.getThenExpr()), e));
+          final Consumer<AlphaExpression> _function_3 = new Consumer<AlphaExpression>() {
+            public void accept(final AlphaExpression e) {
+              newCE.getExprs().add(AlphaUserFactory.createIfExpression(EcoreUtil.<AlphaExpression>copy(ie.getCondExpr()), EcoreUtil.<AlphaExpression>copy(ie.getThenExpr()), e));
+            }
           };
           children.forEach(_function_3);
         }
@@ -854,7 +899,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return null;
   }
 
-  @Override
   public void outAutoRestrictExpression(final AutoRestrictExpression are) {
     AlphaExpression _expr = are.getExpr();
     if ((_expr instanceof RestrictExpression)) {
@@ -881,13 +925,17 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     final EList<AlphaExpression> exprsEList = this.getChildrenEList(inner);
     int _size = exprsEList.size();
     final ArrayList<AlphaExpression> children = new ArrayList<AlphaExpression>(_size);
-    final Consumer<AlphaExpression> _function = (AlphaExpression e) -> {
-      children.add(e);
+    final Consumer<AlphaExpression> _function = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        children.add(e);
+      }
     };
     exprsEList.forEach(_function);
     exprsEList.clear();
-    final Consumer<AlphaExpression> _function_1 = (AlphaExpression e) -> {
-      exprsEList.add(this.wrapExpression(outer, e));
+    final Consumer<AlphaExpression> _function_1 = new Consumer<AlphaExpression>() {
+      public void accept(final AlphaExpression e) {
+        exprsEList.add(Normalize.this.wrapExpression(outer, e));
+      }
     };
     children.forEach(_function_1);
   }
@@ -912,7 +960,6 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return AlphaUserFactory.createUnaryExpression(wrapper.getOperator(), expr);
   }
 
-  @Override
   public void outVariableExpression(final VariableExpression ve) {
     EObject _eContainer = ve.eContainer();
     boolean _not = (!(_eContainer instanceof DependenceExpression));

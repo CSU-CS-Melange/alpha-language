@@ -32,8 +32,10 @@ public class PRDG {
   }
 
   public PRDGNode getNode(final String name) {
-    final Function1<PRDGNode, Boolean> _function = (PRDGNode node) -> {
-      return Boolean.valueOf(node.getName().equals(name));
+    final Function1<PRDGNode, Boolean> _function = new Function1<PRDGNode, Boolean>() {
+      public Boolean apply(final PRDGNode node) {
+        return Boolean.valueOf(node.getName().equals(name));
+      }
     };
     return ((PRDGNode[])Conversions.unwrapArray(IterableExtensions.<PRDGNode>filter(this.nodes, _function), PRDGNode.class))[0];
   }
@@ -50,13 +52,17 @@ public class PRDG {
     Iterable<String> _xblockexpression = null;
     {
       InputOutput.<String>println("Nodes: ");
-      final Function1<PRDGNode, String> _function = (PRDGNode node) -> {
-        return node.toString();
+      final Function1<PRDGNode, String> _function = new Function1<PRDGNode, String>() {
+        public String apply(final PRDGNode node) {
+          return node.toString();
+        }
       };
       InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGNode, String>map(this.nodes, _function));
       InputOutput.<String>println("Edges: ");
-      final Function1<PRDGEdge, String> _function_1 = (PRDGEdge edge) -> {
-        return edge.toString();
+      final Function1<PRDGEdge, String> _function_1 = new Function1<PRDGEdge, String>() {
+        public String apply(final PRDGEdge edge) {
+          return edge.toString();
+        }
       };
       _xblockexpression = InputOutput.<Iterable<String>>println(IterableExtensions.<PRDGEdge, String>map(this.edges, _function_1));
     }
@@ -150,7 +156,6 @@ public class PRDG {
     return _xblockexpression;
   }
 
-  @Override
   public boolean equals(final Object other) {
     boolean _xifexpression = false;
     if ((other instanceof PRDG)) {
@@ -161,7 +166,6 @@ public class PRDG {
     return _xifexpression;
   }
 
-  @Override
   public int hashCode() {
     int _hashCode = this.nodes.hashCode();
     int _hashCode_1 = this.edges.hashCode();

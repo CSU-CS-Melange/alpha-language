@@ -103,7 +103,6 @@ public class OptimalSimplifyingReductions {
       super(targetRE);
     }
 
-    @Override
     public String description() {
       return String.format("Optimize equation %s", this.toEqStr());
     }
@@ -117,7 +116,6 @@ public class OptimalSimplifyingReductions {
       this.reuseDepNoParams = reuseDepNoParams;
     }
 
-    @Override
     public String description() {
       return String.format("Apply SimplifyingReduction%s with: %s", this.toEqStr(), MatrixOperations.toString(this.reuseDepNoParams));
     }
@@ -132,7 +130,6 @@ public class OptimalSimplifyingReductions {
       super(targetRE);
     }
 
-    @Override
     public String description() {
       return String.format("Apply Idempotence");
     }
@@ -143,7 +140,6 @@ public class OptimalSimplifyingReductions {
       super(targetRE);
     }
 
-    @Override
     public String description() {
       return String.format("Apply HigherOrderOperator");
     }
@@ -160,7 +156,6 @@ public class OptimalSimplifyingReductions {
       this.outerProjection = outerF;
     }
 
-    @Override
     public String description() {
       return String.format("Apply ReductionDecomposition%s with %s o %s", this.toEqStr(), this.outerProjection, this.innerProjection);
     }
@@ -174,7 +169,6 @@ public class OptimalSimplifyingReductions {
       this.split = split;
     }
 
-    @Override
     public String description() {
       return String.format("Apply SplitReduction%s with %s", this.toEqStr(), this.split);
     }
@@ -191,7 +185,6 @@ public class OptimalSimplifyingReductions {
       this.identicalAnswerDomain = identicalAnswerDomain;
     }
 
-    @Override
     public String description() {
       return String.format("Apply RemoveIdenticalAnswers %s with %s", this.toEqStr(), this.identicalAnswerBasis);
     }
@@ -230,19 +223,23 @@ public class OptimalSimplifyingReductions {
 
     public String showSteps() {
       int _size = this.steps.size();
-      final Function1<Integer, String> _function = (Integer i) -> {
-        String _xblockexpression = null;
-        {
-          final Function1<Integer, String> _function_1 = (Integer it) -> {
-            return "+--";
-          };
-          String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, (i).intValue(), true), _function_1));
-          String _plus = ("// " + _join);
-          final String indent = (_plus + "+-- ");
-          String _description = this.steps.get((i).intValue()).description();
-          _xblockexpression = (indent + _description);
+      final Function1<Integer, String> _function = new Function1<Integer, String>() {
+        public String apply(final Integer i) {
+          String _xblockexpression = null;
+          {
+            final Function1<Integer, String> _function = new Function1<Integer, String>() {
+              public String apply(final Integer it) {
+                return "+--";
+              }
+            };
+            String _join = IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, (i).intValue(), true), _function));
+            String _plus = ("// " + _join);
+            final String indent = (_plus + "+-- ");
+            String _description = State.this.steps.get((i).intValue()).description();
+            _xblockexpression = (indent + _description);
+          }
+          return _xblockexpression;
         }
-        return _xblockexpression;
       };
       return IterableExtensions.join(IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function), "\n");
     }
@@ -357,8 +354,10 @@ public class OptimalSimplifyingReductions {
     LinkedList<OptimalSimplifyingReductions.DynamicProgrammingStep> _newLinkedList = CollectionLiterals.<OptimalSimplifyingReductions.DynamicProgrammingStep>newLinkedList();
     final OptimalSimplifyingReductions.State state = new OptimalSimplifyingReductions.State(this.systemBody, _newLinkedList);
     int _complexity = state.complexity();
-    final Consumer<Integer> _function = (Integer i) -> {
-      this.optimizations.put(i, CollectionLiterals.<OptimalSimplifyingReductions.State>newLinkedList());
+    final Consumer<Integer> _function = new Consumer<Integer>() {
+      public void accept(final Integer i) {
+        OptimalSimplifyingReductions.this.optimizations.put(i, CollectionLiterals.<OptimalSimplifyingReductions.State>newLinkedList());
+      }
     };
     new ExclusiveRange(0, _complexity, true).forEach(_function);
     return state;
@@ -448,10 +447,12 @@ public class OptimalSimplifyingReductions {
     }
     AlphaExpression _expr = targetEq.getExpr();
     final List<? extends OptimalSimplifyingReductions.DynamicProgrammingStep> candidates = this.enumerateCandidates(((ReduceExpression) _expr));
-    final Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep> _function = (OptimalSimplifyingReductions.DynamicProgrammingStep c) -> {
-      String _description = c.description();
-      String _plus = ("candidate: " + _description);
-      this.debug(_plus);
+    final Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep> _function = new Consumer<OptimalSimplifyingReductions.DynamicProgrammingStep>() {
+      public void accept(final OptimalSimplifyingReductions.DynamicProgrammingStep c) {
+        String _description = c.description();
+        String _plus = ("candidate: " + _description);
+        OptimalSimplifyingReductions.this.debug(_plus);
+      }
     };
     candidates.forEach(_function);
     for (final OptimalSimplifyingReductions.DynamicProgrammingStep step : candidates) {
@@ -542,8 +543,10 @@ public class OptimalSimplifyingReductions {
         OptimalSimplifyingReductions.StepRemoveIndenticalAnswers _stepRemoveIndenticalAnswers = new OptimalSimplifyingReductions.StepRemoveIndenticalAnswers(targetRE, _identicalAnswerBasis, _identicalAnswerDomain);
         return Collections.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>unmodifiableList(CollectionLiterals.<OptimalSimplifyingReductions.StepRemoveIndenticalAnswers>newArrayList(_stepRemoveIndenticalAnswers));
       } else {
-        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = (long[] vec) -> {
-          return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
+        final Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction> _function = new Function1<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>() {
+          public OptimalSimplifyingReductions.StepSimplifyingReduction apply(final long[] vec) {
+            return new OptimalSimplifyingReductions.StepSimplifyingReduction(targetRE, vec, nbParams);
+          }
         };
         candidates.addAll(ListExtensions.<long[], OptimalSimplifyingReductions.StepSimplifyingReduction>map(candidateReuse.getVectors(), _function));
       }
@@ -551,8 +554,10 @@ public class OptimalSimplifyingReductions {
     boolean _shouldSplit = this.shouldSplit(targetRE, shouldSimplify);
     if (_shouldSplit) {
       final ISLConstraint[] splits = SplitReduction.enumerateCandidateSplits(targetRE);
-      final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_1 = (ISLConstraint split) -> {
-        return new OptimalSimplifyingReductions.StepSplitReduction(targetRE, split);
+      final Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction> _function_1 = new Function1<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>() {
+        public OptimalSimplifyingReductions.StepSplitReduction apply(final ISLConstraint split) {
+          return new OptimalSimplifyingReductions.StepSplitReduction(targetRE, split);
+        }
       };
       candidates.addAll(ListExtensions.<ISLConstraint, OptimalSimplifyingReductions.StepSplitReduction>map(((List<ISLConstraint>)Conversions.doWrapArray(splits)), _function_1));
     }
@@ -621,15 +626,21 @@ public class OptimalSimplifyingReductions {
     try {
       StandardEquation _xblockexpression = null;
       {
-        final Function1<Equation, Boolean> _function = (Equation eq) -> {
-          return Boolean.valueOf((eq instanceof StandardEquation));
+        final Function1<Equation, Boolean> _function = new Function1<Equation, Boolean>() {
+          public Boolean apply(final Equation eq) {
+            return Boolean.valueOf((eq instanceof StandardEquation));
+          }
         };
-        final Function1<Equation, StandardEquation> _function_1 = (Equation eq) -> {
-          return ((StandardEquation) eq);
+        final Function1<Equation, StandardEquation> _function_1 = new Function1<Equation, StandardEquation>() {
+          public StandardEquation apply(final Equation eq) {
+            return ((StandardEquation) eq);
+          }
         };
-        final Function1<StandardEquation, Boolean> _function_2 = (StandardEquation eq) -> {
-          String _name = eq.getName();
-          return Boolean.valueOf(Objects.equal(_name, name));
+        final Function1<StandardEquation, Boolean> _function_2 = new Function1<StandardEquation, Boolean>() {
+          public Boolean apply(final StandardEquation eq) {
+            String _name = eq.getName();
+            return Boolean.valueOf(Objects.equal(_name, name));
+          }
         };
         final Iterable<StandardEquation> eqs = IterableExtensions.<StandardEquation>filter(IterableExtensions.<Equation, StandardEquation>map(IterableExtensions.<Equation>filter(root.getSystem(this.originalSystemName).getSystemBodies().get(this.systemBodyID).getEquations(), _function), _function_1), _function_2);
         int _size = IterableExtensions.size(eqs);
@@ -697,8 +708,10 @@ public class OptimalSimplifyingReductions {
    * Returns true if the system body has at least one unexplored equation
    */
   private boolean hasUnexploredEquations(final SystemBody body) {
-    final Function1<StandardEquation, Boolean> _function = (StandardEquation it) -> {
-      return it.getExplored();
+    final Function1<StandardEquation, Boolean> _function = new Function1<StandardEquation, Boolean>() {
+      public Boolean apply(final StandardEquation it) {
+        return it.getExplored();
+      }
     };
     int _size = IterableExtensions.size(IterableExtensions.<StandardEquation>reject(body.getStandardEquations(), _function));
     return (_size > 0);
@@ -708,9 +721,11 @@ public class OptimalSimplifyingReductions {
    * Returns the first equation in the system body marked as unexplored
    */
   private StandardEquation nextUnexploredEquation(final SystemBody body) {
-    final Function1<StandardEquation, Boolean> _function = (StandardEquation eq) -> {
-      Boolean _explored = eq.getExplored();
-      return Boolean.valueOf((!(_explored).booleanValue()));
+    final Function1<StandardEquation, Boolean> _function = new Function1<StandardEquation, Boolean>() {
+      public Boolean apply(final StandardEquation eq) {
+        Boolean _explored = eq.getExplored();
+        return Boolean.valueOf((!(_explored).booleanValue()));
+      }
     };
     return IterableExtensions.<StandardEquation>findFirst(body.getStandardEquations(), _function);
   }

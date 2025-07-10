@@ -33,8 +33,10 @@ public class ReductionDecomposition {
     {
       Boolean _xtrycatchfinallyexpression = null;
       try {
-        final Supplier<Boolean> _function = () -> {
-          return Boolean.valueOf(f2.copy().pullback(f1.copy()).isPlainEqual(are.getProjection()));
+        final Supplier<Boolean> _function = new Supplier<Boolean>() {
+          public Boolean get() {
+            return Boolean.valueOf(f2.copy().pullback(f1.copy()).isPlainEqual(are.getProjection()));
+          }
         };
         _xtrycatchfinallyexpression = JNIISLTools.<Boolean>recordError(_function);
       } catch (final Throwable _t) {
