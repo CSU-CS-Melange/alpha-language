@@ -159,6 +159,19 @@ class PolyLibUtil {
     	PolyLibPolyhedron.buildFromConstraints(constraints, 10)
     }
     
+    static def List<List<Long>> toArray(PolyLibMatrix mat) {
+    	var output = newArrayList
+    	var row = newArrayList
+    	for(var i = 0; i < mat.nbRows; i++) {
+    		for(var j = 0; j < mat.nbColumns; j++) {
+    			row.add(mat.getAt(i, j))
+    		}
+    		output.add(row)
+    		row = newArrayList
+    	}
+    	output
+    }
+    
     static def print(PolyLibMatrix mat) {
     	for(var i = 0; i < mat.nbRows; i++) {
     		for(var j = 0; j < mat.nbColumns; j++) {
