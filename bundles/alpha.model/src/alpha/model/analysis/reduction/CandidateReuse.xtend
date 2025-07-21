@@ -114,19 +114,15 @@ class CandidateReuse {
 		if (cone !== null) {
 			initReuseSpace = cone.intersectReuseSpace(tempSpace.copy, parentName).toSet
 			if(initReuseSpace.empty) {
-				initReuseSpace = generateRays(tempSpace.copy)
-				println("Empty Space: " + initReuseSpace.copy)
-				initReuseSpace.basicSets.map[x | x.integerPointClosestToOrigin].forEach[x | println(x.toString)]
-				initReuseSpace = tempSpace.copy.toSet
+				initReuseSpace = generateRays(tempSpace.copy, parentName)
+				debug("Non Intersection Space: " + initReuseSpace.copy.toString)
 			} else {
-				println("Non-empty Space: " + initReuseSpace.copy)
+				debug("Intersection Space: " + initReuseSpace.copy.toString)
 			}
 		} else {
 			initReuseSpace = tempSpace.copy.toSet
 		}
 
-		println("Space: " + initReuseSpace.copy)
-		println("Num Steps: " + initReuseSpace.nbBasicSets)
 		val reuseSpace = initReuseSpace.copy
 
 		// construct face lattice
@@ -176,7 +172,7 @@ class CandidateReuse {
 		}
 	}
 	
-	def private synchronized ISLSet generateRays(ISLBasicSet re) {
+	def private synchronized ISLSet generateRays(ISLBasicSet re, String variable) {
 		val reuseSpace = re.projectOut(ISLDimType.isl_dim_param, 0, re.nbParams)
 		var poly = PolyLibUtil.fromISLBasicSet(reuseSpace.copy)
 		var rays = poly.copy.builRaysVertices
@@ -194,7 +190,10 @@ class CandidateReuse {
 					point = point.copy.setCoordinate(ISLDimType.isl_dim_out, j - 1,
 						ISLVal.buildFromLong(reuseSpace.copy.context, rays.getAt(i, j)))
 				}
-				output = output.union(point.toSet)
+				if(!cone.inNegativeCone(point.copy.toBasicSet, variable)) {
+					println("HERE")
+					output = output.union(point.toSet)
+				}
 				if (rays.getAt(i, rays.nbColumns - 1) == 0) {
 					point = ISLPoint.buildZero(output.space)
 					
@@ -202,12 +201,13 @@ class CandidateReuse {
 						point = point.copy.setCoordinate(ISLDimType.isl_dim_out, j - 1,
 							ISLVal.buildFromLong(reuseSpace.copy.context, -rays.getAt(i, j)))
 					}
-					output = output.union(point.toSet)
+					if(!cone.inNegativeCone(point.copy.toBasicSet, variable)) {
+						println("HERE")
+						output = output.union(point.toSet)
+					}	
 				}
 			}
 		}
-		rays.free
-		poly.free
 		output = output.addParams(newArrayList("N"))
 		return output
 	}
@@ -232,6 +232,7 @@ class CandidateReuse {
 				
 				val finalPoint = point.copy	
 				if(finalPoint.copy.toBasicSet.isSubset(set.copy)) {
+					println("HERE")
 					return finalPoint.toBasicSet
 				}
 				if (rays.getAt(i, rays.nbColumns - 1) == 0) {
