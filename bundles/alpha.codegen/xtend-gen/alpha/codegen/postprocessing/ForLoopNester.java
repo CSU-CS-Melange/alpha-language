@@ -13,9 +13,11 @@ import com.google.common.collect.Iterables;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
 public class ForLoopNester extends CExpressionVisitor {
@@ -79,7 +81,10 @@ public class ForLoopNester extends CExpressionVisitor {
         final String functionName = s.substring(0, s.indexOf("("));
         boolean _equals = Objects.equal(functionName, this.toReplace);
         if (_equals) {
-          return this.innerNest.getStatements();
+          final Function1<Statement, Statement> _function = (Statement it) -> {
+            return EcoreUtil.<Statement>copy(it);
+          };
+          return ListExtensions.<Statement, Statement>map(this.innerNest.getStatements(), _function);
         }
       }
     }

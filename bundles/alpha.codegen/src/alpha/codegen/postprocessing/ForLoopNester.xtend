@@ -63,7 +63,7 @@ class ForLoopNester extends CExpressionVisitor {
 				val s = (stmt.expression as CustomExpr).expression
 				val functionName = s.substring(0, s.indexOf("("))
 				if(functionName == toReplace) {
-					return innerNest.statements
+					return innerNest.statements.map[copy]
 				}
 			}
 		}
