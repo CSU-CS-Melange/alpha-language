@@ -43,6 +43,9 @@ import static extension alpha.codegen.alphaBase.AlphaBaseHelpers.getOperator
 import static extension alpha.model.util.AlphaUtil.*
 import static extension alpha.model.util.CommonExtensions.toArrayList
 import static extension alpha.model.util.ISLUtil.*
+import alpha.model.util.ISLUtil
+import alpha.codegen.MacroStmt
+import alpha.codegen.FunctionBuilder
 
 class ScheduledC extends CodeGeneratorBase {
 	
@@ -355,44 +358,62 @@ class ScheduledC extends CodeGeneratorBase {
 		scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.domains)
 		
 		
-		if(options.inlineCode) {
-			val maps = scheduleMaps.maps
-			
-			var macros = maps
-				.filter[variables.exists[v | v.name == inputTupleName]]
-				.map[Factory.macroStmt("eval_" + inputTupleName, variables.findFirst[v | v.name == inputTupleName].domain.indexNames, variableStatements.get(inputTupleName))]
-			+ maps
-				.reject[variables.exists[v | v.name == inputTupleName]]
-				.map[Factory.macroStmt("eval_" + inputTupleName, systemBody.getReductionByName(inputTupleName).body.contextDomain.indexNames, variableStatements.get(inputTupleName))]
-				
-			macros.forEach[entryPoint.addStatement(it)]
+		if(options.inlineCode && tiler === null) {
+			scheduleMaps.maps
+				.flatMap[buildEvalMacros(variables)]
+				.forEach[entryPoint.addStatement(it)]
 		} 
 
 		var ISLUnionMap namedScheduleMaps 
 		namedScheduleMaps = scheduleMaps.maps
 			.map[simplify]
-			.map[setInputTupleName("eval_" + getInputTupleName)]
+			.map[setInputTupleName("sEval_" + getInputTupleName)]
 			.toList.convertToUnionMap
 		
 		var ASTConversionResult loopResult
 		
 		//Generate all the loops for variables
 		if(tiler !== null) {
+			//generate the tile loops
 			val tileMaps = tiler.getApproximateOutset(scheduler.ranges)
-				.setTupleName("_")
+				.setTupleName("iteratorLoop")
 				.toIdentityMap
 				.toUnionMap
-			
+				
 			val tileAST = LoopGenerator.generateLoops(tileMaps.copy.params, tileMaps)
 			loopResult = ASTConverter.convert(tileAST)
 			
-			val iterMaps = tiler.getParameterizedIterators(namedScheduleMaps)
+			//generate the iterator loops and put them in a separate function
+			val iterMaps = tiler.getParameterizedIterators(namedScheduleMaps.copy.intersectRange(scheduler.ranges))
 			
-			val iterAST = LoopGenerator.generateLoops(iterMaps.copy.params, iterMaps)
+			val iterContext = iterMaps.copy.params
+				.dropConstraintsInvolvingDims(ISLUtil.Dims.PARAM, 0, tiler.tiledDims.size)
+			
+			val iterAST = LoopGenerator.generateLoops(iterContext, iterMaps)
 			val iterResult = ASTConverter.convert(iterAST)
 			
-			ForLoopNester.apply(loopResult, iterResult, "_")
-			loopResult.declarations.addAll(iterResult.declarations)
+			val iterFunction = FunctionBuilder.start(BaseDataType.VOID, "iteratorLoop", nameChecker);
+			
+			val tileParameters = loopResult.declarations
+				.toSet
+				.map[Factory.parameter(typeGenerator.indexType, it)]
+				.toArrayList
+			val iterVariables = iterResult.declarations
+				.map[Factory.variableDecl(typeGenerator.indexType, it)]
+				.toArrayList
+
+			scheduleMaps.maps
+				.flatMap[buildEvalMacros(variables)]
+				.forEach[iterFunction.addStatement(it)]
+				
+			iterFunction.addParameter(tileParameters)
+				.addVariable(iterVariables)
+				.addStatement(iterResult.statements)
+			
+			program.addFunction(iterFunction.instance)
+			
+			/*ForLoopNester.apply(loopResult, iterResult, "_")
+			loopResult.declarations.addAll(iterResult.declarations)*/
 		} else {
 			val islAST = LoopGenerator.generateLoops(scheduler.domains.params, namedScheduleMaps)
 					
@@ -414,6 +435,24 @@ class ScheduledC extends CodeGeneratorBase {
 					
 		entryPoint.addVariable(loopVariables)
 			.addStatement(loopResult.statements)
+	}
+	
+	def protected Iterable<MacroStmt> buildEvalMacros(ISLMap map, Iterable<Variable> variables) {
+		val variable = variables.findFirst[v | v.name == map.inputTupleName]
+		val evalName = "eval_" + map.inputTupleName
+		val shieldedEvalName = "sEval_" + map.inputTupleName
+		
+		val indexNames = variable !== null ? variable.domain.indexNames
+			: systemBody.getReductionByName(map.inputTupleName).body.contextDomain.indexNames
+		val parenthesizedIndices = indexNames.map[Factory.parenthesizedExpr(it)]
+		
+		val evalExpr = variableStatements.get(map.inputTupleName)
+		val shieldedExpr = Factory.callExpr(evalName, parenthesizedIndices)
+		
+		val eval = Factory.macroStmt(evalName, indexNames, evalExpr)
+		val shieldedEval = Factory.macroStmt(shieldedEvalName, indexNames, shieldedExpr)
+		
+		return #[eval, shieldedEval]
 	}
 	
 	def static convert(AlphaSystem system, Scheduler scheduler, CodegenOptions options) {

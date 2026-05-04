@@ -16,6 +16,7 @@ import alpha.codegen.Factory;
 import alpha.codegen.FunctionBuilder;
 import alpha.codegen.LoopStmt;
 import alpha.codegen.MacroStmt;
+import alpha.codegen.Parameter;
 import alpha.codegen.ParenthesizedExpr;
 import alpha.codegen.Program;
 import alpha.codegen.Statement;
@@ -29,7 +30,6 @@ import alpha.codegen.isl.AffineConverter;
 import alpha.codegen.isl.LoopGenerator;
 import alpha.codegen.isl.MemoryUtils;
 import alpha.codegen.isl.PolynomialConverter;
-import alpha.codegen.postprocessing.ForLoopNester;
 import alpha.codegen.postprocessing.OmpPragmaInserter;
 import alpha.model.AlphaRoot;
 import alpha.model.AlphaSystem;
@@ -59,12 +59,14 @@ import fr.irisa.cairn.jnimap.isl.ISLPWQPolynomial;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
@@ -409,68 +411,52 @@ public class ScheduledC extends CodeGeneratorBase {
       };
       ISLUnionMap scheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<String, ISLMap>map(scheduledVars, _function_2)));
       scheduleMaps = scheduleMaps.intersectDomain(this.scheduler.getDomains());
-      boolean _inlineCode = this.options.getInlineCode();
-      if (_inlineCode) {
-        final List<ISLMap> maps = scheduleMaps.getMaps();
-        final Function1<ISLMap, Boolean> _function_3 = (ISLMap it) -> {
-          final Function1<Variable, Boolean> _function_4 = (Variable v) -> {
-            String _name = v.getName();
-            String _inputTupleName = it.getInputTupleName();
-            return Boolean.valueOf(Objects.equal(_name, _inputTupleName));
-          };
-          return Boolean.valueOf(IterableExtensions.<Variable>exists(variables, _function_4));
+      if ((this.options.getInlineCode() && (this.tiler == null))) {
+        final Function1<ISLMap, Iterable<MacroStmt>> _function_3 = (ISLMap it) -> {
+          return this.buildEvalMacros(it, variables);
         };
-        final Function1<ISLMap, MacroStmt> _function_4 = (ISLMap it) -> {
-          String _inputTupleName = it.getInputTupleName();
-          String _plus_1 = ("eval_" + _inputTupleName);
-          final Function1<Variable, Boolean> _function_5 = (Variable v) -> {
-            String _name = v.getName();
-            String _inputTupleName_1 = it.getInputTupleName();
-            return Boolean.valueOf(Objects.equal(_name, _inputTupleName_1));
-          };
-          return Factory.macroStmt(_plus_1, ((String[])Conversions.unwrapArray(IterableExtensions.<Variable>findFirst(variables, _function_5).getDomain().getIndexNames(), String.class)), this.variableStatements.get(it.getInputTupleName()));
-        };
-        Iterable<MacroStmt> _map = IterableExtensions.<ISLMap, MacroStmt>map(IterableExtensions.<ISLMap>filter(maps, _function_3), _function_4);
-        final Function1<ISLMap, Boolean> _function_5 = (ISLMap it) -> {
-          final Function1<Variable, Boolean> _function_6 = (Variable v) -> {
-            String _name = v.getName();
-            String _inputTupleName = it.getInputTupleName();
-            return Boolean.valueOf(Objects.equal(_name, _inputTupleName));
-          };
-          return Boolean.valueOf(IterableExtensions.<Variable>exists(variables, _function_6));
-        };
-        final Function1<ISLMap, MacroStmt> _function_6 = (ISLMap it) -> {
-          String _inputTupleName = it.getInputTupleName();
-          String _plus_1 = ("eval_" + _inputTupleName);
-          return Factory.macroStmt(_plus_1, ((String[])Conversions.unwrapArray(AlphaUtil.getReductionByName(this.systemBody, it.getInputTupleName()).getBody().getContextDomain().getIndexNames(), String.class)), this.variableStatements.get(it.getInputTupleName()));
-        };
-        Iterable<MacroStmt> _map_1 = IterableExtensions.<ISLMap, MacroStmt>map(IterableExtensions.<ISLMap>reject(maps, _function_5), _function_6);
-        Iterable<MacroStmt> macros = Iterables.<MacroStmt>concat(_map, _map_1);
-        final Consumer<MacroStmt> _function_7 = (MacroStmt it) -> {
+        final Consumer<MacroStmt> _function_4 = (MacroStmt it) -> {
           this.entryPoint.addStatement(it);
         };
-        macros.forEach(_function_7);
+        IterableExtensions.<ISLMap, MacroStmt>flatMap(scheduleMaps.getMaps(), _function_3).forEach(_function_4);
       }
       ISLUnionMap namedScheduleMaps = null;
-      final Function1<ISLMap, ISLMap> _function_8 = (ISLMap it) -> {
+      final Function1<ISLMap, ISLMap> _function_5 = (ISLMap it) -> {
         return it.simplify();
       };
-      final Function1<ISLMap, ISLMap> _function_9 = (ISLMap it) -> {
+      final Function1<ISLMap, ISLMap> _function_6 = (ISLMap it) -> {
         String _inputTupleName = it.getInputTupleName();
-        String _plus_1 = ("eval_" + _inputTupleName);
+        String _plus_1 = ("sEval_" + _inputTupleName);
         return it.<ISLMap>setInputTupleName(_plus_1);
       };
-      namedScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(scheduleMaps.getMaps(), _function_8), _function_9)));
+      namedScheduleMaps = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(scheduleMaps.getMaps(), _function_5), _function_6)));
       ASTConversionResult loopResult = null;
       if ((this.tiler != null)) {
-        final ISLUnionMap tileMaps = this.tiler.getApproximateOutset(this.scheduler.getRanges()).setTupleName("_").toIdentityMap().toUnionMap();
+        final ISLUnionMap tileMaps = this.tiler.getApproximateOutset(this.scheduler.getRanges()).setTupleName("iteratorLoop").toIdentityMap().toUnionMap();
         final ISLASTNode tileAST = LoopGenerator.generateLoops(tileMaps.copy().params(), tileMaps);
         loopResult = ASTConverter.convert(tileAST);
-        final ISLUnionMap iterMaps = this.tiler.getParameterizedIterators(namedScheduleMaps);
-        final ISLASTNode iterAST = LoopGenerator.generateLoops(iterMaps.copy().params(), iterMaps);
+        final ISLUnionMap iterMaps = this.tiler.getParameterizedIterators(namedScheduleMaps.copy().intersectRange(this.scheduler.getRanges()));
+        final ISLSet iterContext = iterMaps.copy().params().dropConstraintsInvolvingDims(ISLUtil.Dims.PARAM, 0, this.tiler.getTiledDims().size());
+        final ISLASTNode iterAST = LoopGenerator.generateLoops(iterContext, iterMaps);
         final ASTConversionResult iterResult = ASTConverter.convert(iterAST);
-        ForLoopNester.apply(loopResult, iterResult, "_");
-        loopResult.getDeclarations().addAll(iterResult.getDeclarations());
+        final FunctionBuilder iterFunction = FunctionBuilder.start(BaseDataType.VOID, "iteratorLoop", this.nameChecker);
+        final Function1<String, Parameter> _function_7 = (String it) -> {
+          return Factory.parameter(this.typeGenerator.getIndexType(), it);
+        };
+        final ArrayList<Parameter> tileParameters = CommonExtensions.<Parameter>toArrayList(IterableExtensions.<String, Parameter>map(IterableExtensions.<String>toSet(loopResult.getDeclarations()), _function_7));
+        final Function1<String, VariableDecl> _function_8 = (String it) -> {
+          return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
+        };
+        final ArrayList<VariableDecl> iterVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(iterResult.getDeclarations(), _function_8));
+        final Function1<ISLMap, Iterable<MacroStmt>> _function_9 = (ISLMap it) -> {
+          return this.buildEvalMacros(it, variables);
+        };
+        final Consumer<MacroStmt> _function_10 = (MacroStmt it) -> {
+          iterFunction.addStatement(it);
+        };
+        IterableExtensions.<ISLMap, MacroStmt>flatMap(scheduleMaps.getMaps(), _function_9).forEach(_function_10);
+        iterFunction.addParameter(((Parameter[])Conversions.unwrapArray(tileParameters, Parameter.class))).addVariable(((VariableDecl[])Conversions.unwrapArray(iterVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(iterResult.getStatements(), Statement.class)));
+        this.program.addFunction(iterFunction.getInstance());
       } else {
         final ISLASTNode islAST = LoopGenerator.generateLoops(this.scheduler.getDomains().params(), namedScheduleMaps);
         loopResult = ASTConverter.convert(islAST);
@@ -480,13 +466,42 @@ public class ScheduledC extends CodeGeneratorBase {
         final int timeDims = ISLUtil.countTimeDimensions(AlphaUtil.getContainerSystem(this.systemBody), this.scheduler.getMaps());
         OmpPragmaInserter.apply(loopResult, timeDims);
       }
-      final Function1<String, VariableDecl> _function_10 = (String it) -> {
+      final Function1<String, VariableDecl> _function_11 = (String it) -> {
         return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
       };
-      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_10));
+      final ArrayList<VariableDecl> loopVariables = CommonExtensions.<VariableDecl>toArrayList(ListExtensions.<String, VariableDecl>map(loopResult.getDeclarations(), _function_11));
       _xblockexpression = this.entryPoint.addVariable(((VariableDecl[])Conversions.unwrapArray(loopVariables, VariableDecl.class))).addStatement(((Statement[])Conversions.unwrapArray(loopResult.getStatements(), Statement.class)));
     }
     return _xblockexpression;
+  }
+
+  protected Iterable<MacroStmt> buildEvalMacros(final ISLMap map, final Iterable<Variable> variables) {
+    final Function1<Variable, Boolean> _function = (Variable v) -> {
+      String _name = v.getName();
+      String _inputTupleName = map.getInputTupleName();
+      return Boolean.valueOf(Objects.equal(_name, _inputTupleName));
+    };
+    final Variable variable = IterableExtensions.<Variable>findFirst(variables, _function);
+    String _inputTupleName = map.getInputTupleName();
+    final String evalName = ("eval_" + _inputTupleName);
+    String _inputTupleName_1 = map.getInputTupleName();
+    final String shieldedEvalName = ("sEval_" + _inputTupleName_1);
+    List<String> _xifexpression = null;
+    if ((variable != null)) {
+      _xifexpression = variable.getDomain().getIndexNames();
+    } else {
+      _xifexpression = AlphaUtil.getReductionByName(this.systemBody, map.getInputTupleName()).getBody().getContextDomain().getIndexNames();
+    }
+    final List<String> indexNames = _xifexpression;
+    final Function1<String, ParenthesizedExpr> _function_1 = (String it) -> {
+      return Factory.parenthesizedExpr(it);
+    };
+    final List<ParenthesizedExpr> parenthesizedIndices = ListExtensions.<String, ParenthesizedExpr>map(indexNames, _function_1);
+    final AssignmentStmt evalExpr = this.variableStatements.get(map.getInputTupleName());
+    final CallExpr shieldedExpr = Factory.callExpr(evalName, ((Expression[])Conversions.unwrapArray(parenthesizedIndices, Expression.class)));
+    final MacroStmt eval = Factory.macroStmt(evalName, ((String[])Conversions.unwrapArray(indexNames, String.class)), evalExpr);
+    final MacroStmt shieldedEval = Factory.macroStmt(shieldedEvalName, ((String[])Conversions.unwrapArray(indexNames, String.class)), shieldedExpr);
+    return Collections.<MacroStmt>unmodifiableList(CollectionLiterals.<MacroStmt>newArrayList(eval, shieldedEval));
   }
 
   public static Program convert(final AlphaSystem system, final Scheduler scheduler, final CodegenOptions options) {
