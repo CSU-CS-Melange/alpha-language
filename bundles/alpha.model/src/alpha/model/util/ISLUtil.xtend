@@ -195,6 +195,32 @@ class ISLUtil {
 	}
 	
 	/** 
+	 * Converts an equality constraint into two matching inequality constraints, 
+	 * whose intersection is the same as the original.
+	 */
+	def static Iterable<ISLConstraint> toInequalityConstraints(ISLConstraint constraint) {
+		val space = constraint.space
+		var inequality1 = ISLConstraint.buildInequality(space.copy)
+		var inequality2 = ISLConstraint.buildInequality(space.copy)
+		
+		// Copy all of the coefficients.
+		val dimTypes = #[ISLDimType.isl_dim_param, ISLDimType.isl_dim_in, ISLDimType.isl_dim_out, ISLDimType.isl_dim_div]
+		for (dimType : dimTypes) {
+			val count = space.dim(dimType)
+			for (i : 0 ..< count) {
+				val coeff = constraint.getCoefficientVal(dimType, i)
+				inequality1 = inequality1.setCoefficient(dimType, i, coeff.copy)
+				inequality2 = inequality2.setCoefficient(dimType, i, coeff.neg)
+			}
+		}
+		
+		inequality1 = inequality1.setConstant(constraint.constant)
+		inequality2 = inequality2.setConstant(constraint.constant)
+		
+		return #[inequality1, inequality2]
+	}
+	
+	/** 
 	 * Given the ISLAff of an effectively saturated constraint return a long[] of the linear part
 	 * the first non-zero value is guaranteed to be positive
 	 */
@@ -454,6 +480,13 @@ class ISLUtil {
 	 *	         Conversion Methods        * 
 	 ***************************************/
 	 
+	def static ISLSet convertToSet(Iterable<ISLConstraint> constraints) {
+		if(constraints.empty) return null
+		return constraints.fold(ISLSet.buildUniverse(constraints.head.getSpace),
+			[ s, c | s.addConstraint(c) ]
+		)
+	}
+	 
 	/**
 	 * Generates a union set out of a list of ISLSets
 	 * The method in ISLUnionSet is bugged
@@ -626,7 +659,7 @@ class ISLUtil {
 		for(var i = 0; i < aff1.getAffs.size; i++) {
 			val ISLSet EQSet = ISLSet.buildEQSet(aff1.getAffs.get(i).copy, aff2.getAffs.get(i).copy)
 			val ISLSet GTSet = ISLSet.buildGTSet(aff1.getAffs.get(i).copy, aff2.getAffs.get(i).copy)
-			val ISLSet GESet = lexSet === null ? GTSet : GTSet.intersect(lexSet.copy)
+			val ISLSet GESet = lexSet === null ? GTSet : GTSet.union(lexSet.copy)
 			set = set === null ? GESet : set.union(GESet)
 			lexSet = lexSet === null ? EQSet : lexSet.intersect(EQSet)
 		}

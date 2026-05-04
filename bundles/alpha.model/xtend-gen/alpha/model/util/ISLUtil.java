@@ -264,6 +264,33 @@ public class ISLUtil {
   }
 
   /**
+   * Converts an equality constraint into two matching inequality constraints,
+   * whose intersection is the same as the original.
+   */
+  public static Iterable<ISLConstraint> toInequalityConstraints(final ISLConstraint constraint) {
+    final ISLSpace space = constraint.getSpace();
+    ISLConstraint inequality1 = ISLConstraint.buildInequality(space.copy());
+    ISLConstraint inequality2 = ISLConstraint.buildInequality(space.copy());
+    final List<ISLDimType> dimTypes = Collections.<ISLDimType>unmodifiableList(CollectionLiterals.<ISLDimType>newArrayList(ISLDimType.isl_dim_param, ISLDimType.isl_dim_in, ISLDimType.isl_dim_out, ISLDimType.isl_dim_div));
+    for (final ISLDimType dimType : dimTypes) {
+      {
+        final int count = space.dim(dimType);
+        ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, count, true);
+        for (final Integer i : _doubleDotLessThan) {
+          {
+            final ISLVal coeff = constraint.getCoefficientVal(dimType, (i).intValue());
+            inequality1 = inequality1.setCoefficient(dimType, (i).intValue(), coeff.copy());
+            inequality2 = inequality2.setCoefficient(dimType, (i).intValue(), coeff.neg());
+          }
+        }
+      }
+    }
+    inequality1 = inequality1.setConstant(constraint.getConstant());
+    inequality2 = inequality2.setConstant(constraint.getConstant());
+    return Collections.<ISLConstraint>unmodifiableList(CollectionLiterals.<ISLConstraint>newArrayList(inequality1, inequality2));
+  }
+
+  /**
    * Given the ISLAff of an effectively saturated constraint return a long[] of the linear part
    * the first non-zero value is guaranteed to be positive
    */
@@ -523,6 +550,20 @@ public class ISLUtil {
   }
 
   /**
+   * Conversion Methods
+   */
+  public static ISLSet convertToSet(final Iterable<ISLConstraint> constraints) {
+    boolean _isEmpty = IterableExtensions.isEmpty(constraints);
+    if (_isEmpty) {
+      return null;
+    }
+    final Function2<ISLSet, ISLConstraint, ISLSet> _function = (ISLSet s, ISLConstraint c) -> {
+      return s.addConstraint(c);
+    };
+    return IterableExtensions.<ISLConstraint, ISLSet>fold(constraints, ISLSet.buildUniverse(IterableExtensions.<ISLConstraint>head(constraints).getSpace()), _function);
+  }
+
+  /**
    * Generates a union set out of a list of ISLSets
    * The method in ISLUnionSet is bugged
    */
@@ -754,7 +795,7 @@ public class ISLUtil {
         if ((lexSet == null)) {
           _xifexpression = GTSet;
         } else {
-          _xifexpression = GTSet.intersect(lexSet.copy());
+          _xifexpression = GTSet.union(lexSet.copy());
         }
         final ISLSet GESet = _xifexpression;
         ISLSet _xifexpression_1 = null;
