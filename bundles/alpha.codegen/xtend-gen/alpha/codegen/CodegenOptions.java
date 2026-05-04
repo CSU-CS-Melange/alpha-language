@@ -56,6 +56,12 @@ public class CodegenOptions {
   private boolean ompPragmas = false;
 
   /**
+   * Whether to attempt to parallelize reduction functions, if the above flag is set to true.
+   * Generally a poor idea, as the parallelism is very fine-grain and causes slowdown.
+   */
+  private boolean ompReductions = false;
+
+  /**
    * Whether to allocate only the memory needed for variables, as opposed to allocating the bounding box.
    */
   private boolean polyhedralMemory = false;
@@ -147,6 +153,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setOmpReductions() {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.ompReductions = true;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public CodegenOptions setPolyhedralMemory() {
     CodegenOptions _xblockexpression = null;
     {
@@ -219,6 +234,15 @@ public class CodegenOptions {
     return _xblockexpression;
   }
 
+  public CodegenOptions setOmpReductions(final boolean b) {
+    CodegenOptions _xblockexpression = null;
+    {
+      this.ompReductions = b;
+      _xblockexpression = this;
+    }
+    return _xblockexpression;
+  }
+
   public CodegenOptions setPolyhedralMemory(final boolean b) {
     CodegenOptions _xblockexpression = null;
     {
@@ -271,6 +295,10 @@ public class CodegenOptions {
 
   public boolean getOmpPragmas() {
     return this.ompPragmas;
+  }
+
+  public boolean getOmpReductions() {
+    return this.ompReductions;
   }
 
   public boolean getPolyhedralMemory() {

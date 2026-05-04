@@ -36,6 +36,10 @@ class CodegenOptions {
 	/* Whether to insert OpenMP parallel pragmas automatically. */
 	boolean ompPragmas			= false		
 	
+	/* Whether to attempt to parallelize reduction functions, if the above flag is set to true. 
+	 * Generally a poor idea, as the parallelism is very fine-grain and causes slowdown. */
+	boolean ompReductions		= false		
+	
 	/* Whether to allocate only the memory needed for variables, as opposed to allocating the bounding box. */
 	boolean polyhedralMemory 	= false 	
 	
@@ -61,6 +65,7 @@ class CodegenOptions {
 	def setScheduledReductions()	{scheduledReductions = true;	this}
 	def setCycleDetection()			{cycleDetection = true;			this}
 	def setOmpPragmas()				{ompPragmas = true;				this}
+	def setOmpReductions()			{ompReductions = true;    		this}
 	def setPolyhedralMemory()		{polyhedralMemory = true;       this}
 	def setOldAlphaZCompatible()	{oldAlphaZCompatible = true;    this}
 	
@@ -70,6 +75,7 @@ class CodegenOptions {
 	def setScheduledReductions(boolean b)	{scheduledReductions = b;		this}
 	def setCycleDetection(boolean b)		{cycleDetection = b;			this}
 	def setOmpPragmas(boolean b)			{ompPragmas = b;				this}
+	def setOmpReductions(boolean b)			{ompReductions = b;    			this}
 	def setPolyhedralMemory(boolean b)		{polyhedralMemory = b; 			this}
 	def setOldAlphaZCompatible(boolean b)	{oldAlphaZCompatible = b;		this}
 	
@@ -83,6 +89,7 @@ class CodegenOptions {
 	def getScheduledReductions() 	{scheduledReductions}
 	def getCycleDetection() 		{cycleDetection}
 	def getOmpPragmas() 			{ompPragmas}
+	def getOmpReductions() 			{ompReductions}
 	def getPolyhedralMemory() 		{polyhedralMemory}
 	def getOldAlphaZCompatible() 	{oldAlphaZCompatible}
 }

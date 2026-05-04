@@ -175,7 +175,7 @@ class ScheduledExprConverter extends ExprConverter {
 		loopResult.declarations.forEach[function.addVariable(typeGenerator.indexType, it)]
 		
 		// Add OMP parallel reduce pragma, if desired
-		if(options.ompPragmas) {
+		if(options.ompPragmas && options.ompReductions) {
 			var pragmaString = "#pragma omp parallel for "
 				+ "private(" + loopResult.declarations.join(",") + ") "
 				+ "reduction(" + expr.operator + ":" + reduceVarName + ")"

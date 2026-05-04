@@ -218,8 +218,7 @@ public class ScheduledExprConverter extends ExprConverter {
       function.addVariable(this.typeGenerator.getIndexType(), it);
     };
     loopResult.getDeclarations().forEach(_function_1);
-    boolean _ompPragmas = this.options.getOmpPragmas();
-    if (_ompPragmas) {
+    if ((this.options.getOmpPragmas() && this.options.getOmpReductions())) {
       String _join = IterableExtensions.join(loopResult.getDeclarations(), ",");
       String _plus = (("#pragma omp parallel for " + "private(") + _join);
       String _plus_1 = (_plus + ") ");
