@@ -155,7 +155,11 @@ class SplitReduction {
 		EcoreUtil.replace(are.body, caseExpr)
 		AlphaInternalStateConstructor.recomputeContextDomain(are)
 		Normalize.apply(are)
-		PermutationCaseReduce.apply(are)
+		try {
+			PermutationCaseReduce.apply(are)
+		} catch(IllegalArgumentException e) {
+			return DS
+		}
 		
 		return DS
 	}

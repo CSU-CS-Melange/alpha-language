@@ -189,7 +189,15 @@ public class SplitReduction {
       EcoreUtil.replace(are.getBody(), caseExpr);
       AlphaInternalStateConstructor.recomputeContextDomain(are);
       Normalize.apply(are);
-      PermutationCaseReduce.apply(are);
+      try {
+        PermutationCaseReduce.apply(are);
+      } catch (final Throwable _t) {
+        if (_t instanceof IllegalArgumentException) {
+          return DS;
+        } else {
+          throw Exceptions.sneakyThrow(_t);
+        }
+      }
       return DS;
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
