@@ -383,7 +383,7 @@ public class OptimallySplitReductions {
     };
     final ISLVal gcd = IterableExtensions.<ISLVal>reduce(IterableExtensions.<ISLVal, ISLVal>map(IterableExtensions.<ISLVal>reject(coeffs, _function_1), _function_2), _function_3);
     final Function1<ISLAff, ISLAff> _function_4 = (ISLAff it) -> {
-      return it.copy().setConstant(0).scaleDown(gcd);
+      return it.copy().scaleDown(gcd);
     };
     return IterableExtensions.<ISLAff, ISLAff>map(affs, _function_4);
   }

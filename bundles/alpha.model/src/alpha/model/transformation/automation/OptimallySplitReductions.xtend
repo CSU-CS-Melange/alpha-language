@@ -19,6 +19,7 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.ISLUtil.*
+import alpha.model.util.Show
 
 class OptimallySplitReductions {
 	
@@ -289,6 +290,7 @@ class OptimallySplitReductions {
 	 */
 	private static def ISLMap processDummySchedule(PRDGNode dummyNode, PRDGNode reductionNode, Scheduler scheduler) {
 		val identMaff = reductionNode.getDomain.identity
+		
 		val productMap = identMaff.copy
 			.rangeProduct(identMaff.copy)
 			.rangeProduct(ISLAff.buildZero(reductionNode.getLocalSpace).toMultiAff.toMap).flatten
@@ -310,6 +312,6 @@ class OptimallySplitReductions {
 			.map[abs]
 			.reduce[a, b| a.gcd(b)]
 			
-		return affs.map[copy.setConstant(0).scaleDown(gcd)]
+		return affs.map[copy.scaleDown(gcd)]
 	}
 }
