@@ -101,6 +101,15 @@ public class Factory {
     return macro;
   }
 
+  public static MacroStmt shieldedMacroStmt(final String name, final String[] arguments, final String replacement) {
+    final Function2<String, String, String> _function = (String a, String b) -> {
+      return a.replace(b, (("(" + b) + ")"));
+    };
+    final String shieldedReplacement = IterableExtensions.<String, String>fold(((Iterable<String>)Conversions.doWrapArray(arguments)), replacement, _function);
+    final CustomExpr replacementExpr = Factory.customExpr(shieldedReplacement);
+    return Factory.macroStmt(name, arguments, replacementExpr);
+  }
+
   public static UndefStmt undefStmt(final String name) {
     final UndefStmt undef = Factory.factory.createUndefStmt();
     undef.setName(name);

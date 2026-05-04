@@ -95,12 +95,19 @@ class Factory {
 		return macroStmt(name, arguments, replacementExpr)
 	}
 	
+	
 	def static macroStmt(String name, String[] arguments, Expression replacement) {
 		val macro = factory.createMacroStmt
 		macro.name = name
 		macro.arguments.addAll(arguments)
 		macro.replacement = replacement
 		return macro
+	}
+	
+	def static shieldedMacroStmt(String name, String[] arguments, String replacement) {
+		val shieldedReplacement = arguments.fold(replacement, [a, b | a.replace(b, "(" + b + ")")])
+		val replacementExpr = shieldedReplacement.customExpr
+		return macroStmt(name, arguments, replacementExpr)
 	}
 	
 	def static undefStmt(String name) {
