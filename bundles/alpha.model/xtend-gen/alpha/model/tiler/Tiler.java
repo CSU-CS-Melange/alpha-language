@@ -16,8 +16,6 @@ public interface Tiler {
    * Returns a map that takes in the indices of a tile, and outputs
    * the corresponding region in spacetime
    */
-  ISLMap getUntileMap();
-
   Set<Integer> getTiledDims();
 
   ISLSet getApproximateOutset(final ISLUnionSet domains);

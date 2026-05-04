@@ -2,41 +2,34 @@ package alpha.model.tiler;
 
 import alpha.model.scheduler.Scheduler;
 import alpha.model.util.ISLUtil;
+import alpha.model.util.ISLValUtil;
 import com.google.common.collect.Iterables;
 import fr.irisa.cairn.jnimap.isl.ISLAff;
+import fr.irisa.cairn.jnimap.isl.ISLBasicSet;
+import fr.irisa.cairn.jnimap.isl.ISLConstraint;
 import fr.irisa.cairn.jnimap.isl.ISLMap;
+import fr.irisa.cairn.jnimap.isl.ISLMultiAff;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLSpace;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
-import java.util.ArrayList;
+import fr.irisa.cairn.jnimap.isl.ISLVal;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.IntegerRange;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
 @SuppressWarnings("all")
 public class WavefrontTiler extends DTiler {
-  private ISLMap tileDimsMap;
-
-  private ISLMap iteratorMap;
-
   public WavefrontTiler(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim) {
     super(tileSizes, scheduleSpace, startDim, endDim);
-    final int nTiles = ((endDim - startDim) + 1);
-    final List<ISLAff> affs = ISLUtil.toMultiAff(this.tileMap).getAffs();
-    ArrayList<ISLAff> newAffs = new ArrayList<ISLAff>();
-    final Function2<ISLAff, ISLAff, ISLAff> _function = (ISLAff a, ISLAff b) -> {
-      return a.copy().add(b.copy());
-    };
-    ISLAff _reduce = IterableExtensions.<ISLAff>reduce(affs.subList(0, nTiles), _function);
-    newAffs.add(_reduce);
-    List<ISLAff> _subList = affs.subList(0, (nTiles - 1));
-    Iterables.<ISLAff>addAll(newAffs, _subList);
-    this.tileDimsMap = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(newAffs)).toMap();
-    this.iteratorMap = ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(affs.subList(nTiles, affs.size()))).toMap();
   }
 
   @Override
@@ -53,28 +46,166 @@ public class WavefrontTiler extends DTiler {
     final Function<Integer, String> _function = (Integer it) -> {
       return this.indexName((it).intValue());
     };
-    return ISLUtil.<ISLMap>setDimNames(map.copy().applyRange(this.tileDimsMap.copy()).rangeProduct(map.copy().applyRange(this.iteratorMap.copy())).flatten(), ISLUtil.Dims.OUT, _function);
+    return ISLUtil.<ISLMap>setDimNames(map.copy().applyRange(this.getTileMaff().toMap()).rangeProduct(map.copy()).flatten(), ISLUtil.Dims.OUT, _function);
+  }
+
+  /**
+   * Maps the schedule space to the tile space.
+   */
+  private ISLMultiAff getTileMaff() {
+    final ISLMultiAff maff = this.getPreTileMaff();
+    int _size = this.tileSizes.size();
+    final Function1<Integer, ISLAff> _function = (Integer it) -> {
+      return maff.getAff((it).intValue()).scaleDown((this.tileSizes.get((it).intValue())).intValue()).floor();
+    };
+    return this.getWavefrontMaff().pullback(
+      ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(IterableExtensions.<Integer, ISLAff>map(new ExclusiveRange(0, _size, true), _function))));
   }
 
   @Override
-  public ISLSet getApproximateOutset(final ISLUnionSet domains) {
-    final Function<Integer, String> _function = (Integer it) -> {
+  public ISLSet getApproximateOutset(final ISLUnionSet ranges) {
+    final Function1<ISLSet, ISLSet> _function = (ISLSet it) -> {
+      return it.clearTupleName();
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet a, ISLSet b) -> {
+      return a.union(b);
+    };
+    final Function1<ISLBasicSet, ISLSet> _function_2 = (ISLBasicSet it) -> {
+      return this.applyWavefront(it);
+    };
+    final Function2<ISLSet, ISLSet, ISLSet> _function_3 = (ISLSet a, ISLSet b) -> {
+      return a.union(b);
+    };
+    final ISLSet outset = IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLBasicSet, ISLSet>map(IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(ranges.copy().getSets(), _function), _function_1).apply(this.getPreTileMaff().toMap()).getBasicSets(), _function_2), _function_3);
+    return outset;
+  }
+
+  private ISLSet applyWavefront(final ISLBasicSet bset) {
+    final Function1<ISLConstraint, ISLConstraint> _function = (ISLConstraint it) -> {
+      return this.scaleDownConstraint(it);
+    };
+    final Function1<ISLConstraint, Iterable<ISLConstraint>> _function_1 = (ISLConstraint it) -> {
+      return this.extendConstraint(it);
+    };
+    final Function<Integer, String> _function_2 = (Integer it) -> {
       return this.indexName((it).intValue());
     };
-    return ISLUtil.<ISLSet>setDimNames(this.getOutset(domains), ISLUtil.Dims.OUT, _function);
+    return ISLUtil.<ISLSet>setDimNames(ISLUtil.convertToSet(IterableExtensions.<ISLConstraint, ISLConstraint>flatMap(ListExtensions.<ISLConstraint, ISLConstraint>map(bset.getConstraints(), _function), _function_1)).apply(this.getWavefrontMaff().toMap()), ISLUtil.Dims.OUT, _function_2);
+  }
+
+  private ISLMultiAff getWavefrontMaff() {
+    int _size = this.tileSizes.size();
+    final Function1<Integer, ISLAff> _function = (Integer it) -> {
+      return ISLAff.buildVarOnDomain(this.getPreTileMaff().toMap().getRange().getSpace().toLocalSpace(), ISLUtil.Dims.SET, (it).intValue());
+    };
+    Iterable<ISLAff> idAffs = IterableExtensions.<Integer, ISLAff>map(new ExclusiveRange(0, _size, true), _function);
+    final Function2<ISLAff, ISLAff, ISLAff> _function_1 = (ISLAff a, ISLAff b) -> {
+      return a.copy().add(b.copy());
+    };
+    ISLAff waveAff = IterableExtensions.<ISLAff>reduce(idAffs, _function_1);
+    List<ISLAff> _list = IterableExtensions.<ISLAff>toList(idAffs);
+    int _size_1 = IterableExtensions.size(idAffs);
+    int _minus = (_size_1 - 1);
+    List<ISLAff> _subList = _list.subList(0, _minus);
+    return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(Iterables.<ISLAff>concat(Collections.<ISLAff>unmodifiableList(CollectionLiterals.<ISLAff>newArrayList(waveAff)), _subList)));
+  }
+
+  /**
+   * The map applied to the schedule space before scaling it down, and before adding the wavefront dim.
+   */
+  private ISLMultiAff getPreTileMaff() {
+    final Function1<Integer, ISLAff> _function = (Integer it) -> {
+      return ISLAff.buildVarOnDomain(this.scheduleSpace.copy().toLocalSpace(), ISLUtil.Dims.SET, (it).intValue());
+    };
+    Iterable<ISLAff> idAffs = IterableExtensions.<Integer, ISLAff>map(new IntegerRange(this.startDim, this.endDim), _function);
+    return ISLUtil.convertToMultiAff(IterableExtensions.<ISLAff>toList(idAffs));
+  }
+
+  @Override
+  public ISLUnionMap getParameterizedIterators(final ISLUnionMap maps) {
+    ISLUnionMap _xblockexpression = null;
+    {
+      final Function<Integer, String> _function = (Integer it) -> {
+        return this.indexName((it).intValue());
+      };
+      final ISLSet tileConstraintSet = ISLUtil.<ISLMap>setDimNames(this.getTileMaff().toMap(), ISLUtil.Dims.OUT, _function).moveDims(ISLUtil.Dims.PARAM, 0, ISLUtil.Dims.OUT, 0, this.tileSizes.size()).getDomain();
+      final Function1<ISLMap, ISLMap> _function_1 = (ISLMap it) -> {
+        return it.alignParams(tileConstraintSet.getSpace().copy());
+      };
+      final Function1<ISLMap, ISLMap> _function_2 = (ISLMap it) -> {
+        return it.intersectRange(tileConstraintSet.copy());
+      };
+      final Function1<ISLMap, ISLMap> _function_3 = (ISLMap it) -> {
+        final Function<Integer, String> _function_4 = (Integer it_1) -> {
+          return ("c" + it_1);
+        };
+        return ISLUtil.<ISLMap>setDimNames(it, ISLUtil.Dims.OUT, _function_4);
+      };
+      _xblockexpression = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLMap, ISLMap>map(maps.getMaps(), _function_1), _function_2), _function_3)));
+    }
+    return _xblockexpression;
+  }
+
+  /**
+   * Transforms a constraint such that it includes the tile origin of any tiles it originally touched.
+   */
+  private Iterable<ISLConstraint> extendConstraint(final ISLConstraint con) {
+    boolean _isEquality = con.isEquality();
+    if (_isEquality) {
+      final Function1<ISLConstraint, Iterable<ISLConstraint>> _function = (ISLConstraint it) -> {
+        return this.extendConstraint(it);
+      };
+      return IterableExtensions.<ISLConstraint, ISLConstraint>flatMap(ISLUtil.toInequalityConstraints(con), _function);
+    }
+    int _nbDims = con.getNbDims(ISLUtil.Dims.SET);
+    final Function1<Integer, ISLVal> _function_1 = (Integer it) -> {
+      return con.getCoefficientVal(ISLUtil.Dims.SET, (it).intValue());
+    };
+    final Function1<ISLVal, ISLVal> _function_2 = (ISLVal it) -> {
+      ISLVal _xifexpression = null;
+      boolean _isPositive = it.isPositive();
+      if (_isPositive) {
+        _xifexpression = it;
+      } else {
+        _xifexpression = ISLValUtil.asVal(Integer.valueOf(0));
+      }
+      return _xifexpression;
+    };
+    final Iterable<ISLVal> betas = IterableExtensions.<ISLVal, ISLVal>map(IterableExtensions.<Integer, ISLVal>map(new ExclusiveRange(0, _nbDims, true), _function_1), _function_2);
+    int _nbDims_1 = con.getNbDims(ISLUtil.Dims.SET);
+    final Function1<Integer, ISLVal> _function_3 = (Integer it) -> {
+      return ((ISLVal[])Conversions.unwrapArray(betas, ISLVal.class))[(it).intValue()];
+    };
+    final Function2<ISLVal, ISLVal, ISLVal> _function_4 = (ISLVal a, ISLVal b) -> {
+      return ISLValUtil.operator_plus(a, b);
+    };
+    final ISLVal bias = IterableExtensions.<ISLVal>reduce(IterableExtensions.<Integer, ISLVal>map(new ExclusiveRange(0, _nbDims_1, true), _function_3), _function_4).add(con.getConstantVal());
+    ISLConstraint _setConstant = con.setConstant(bias);
+    return Collections.<ISLConstraint>unmodifiableList(CollectionLiterals.<ISLConstraint>newArrayList(_setConstant));
+  }
+
+  private ISLConstraint scaleDownConstraint(final ISLConstraint con) {
+    int _nbDims = con.getNbDims(ISLUtil.Dims.SET);
+    final Function2<ISLConstraint, Integer, ISLConstraint> _function = (ISLConstraint c, Integer i) -> {
+      ISLVal _coefficientVal = c.getCoefficientVal(ISLUtil.Dims.SET, (i).intValue());
+      Integer _get = this.tileSizes.get((i).intValue());
+      ISLVal _multiply = ISLValUtil.operator_multiply(_coefficientVal, _get);
+      return c.setCoefficient(ISLUtil.Dims.SET, (i).intValue(), _multiply);
+    };
+    return IterableExtensions.<Integer, ISLConstraint>fold(new ExclusiveRange(0, _nbDims, true), con.copy(), _function);
   }
 
   private String indexName(final int i) {
     if ((i == 0)) {
       return "tw";
     } else {
-      int _nbOutputs = this.tileDimsMap.getNbOutputs();
-      boolean _lessThan = (i < _nbOutputs);
+      int _size = this.tileSizes.size();
+      boolean _lessThan = (i < _size);
       if (_lessThan) {
         return ("t" + Integer.valueOf(i));
       } else {
-        int _nbOutputs_1 = this.tileDimsMap.getNbOutputs();
-        int _minus = (i - _nbOutputs_1);
+        int _size_1 = this.tileSizes.size();
+        int _minus = (i - _size_1);
         return ("c" + Integer.valueOf(_minus));
       }
     }

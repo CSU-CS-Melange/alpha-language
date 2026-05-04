@@ -31,11 +31,14 @@ public class DTiler implements Tiler {
 
   protected List<Integer> tileSizes;
 
+  protected ISLSpace scheduleSpace;
+
   /**
    * Creates a D-Tiler with rectangular tiles of the given size,
    * from the start to the end dimension, inclusive.
    */
   public DTiler(final List<Integer> tileSizes, final ISLSpace scheduleSpace, final int startDim, final int endDim) {
+    this.scheduleSpace = scheduleSpace;
     this.tileSizes = tileSizes;
     this.startDim = startDim;
     this.endDim = endDim;
@@ -89,17 +92,15 @@ public class DTiler implements Tiler {
     return IterableExtensions.<ISLMap>head(this.tileSchedule(map.copy().toUnionMap()).getMaps());
   }
 
-  @Override
-  public ISLMap getUntileMap() {
-    ISLMap _copy = this.tileMap.copy();
-    int _size = this.getTiledDims().size();
-    int _dim = this.tileMap.dim(ISLDimType.isl_dim_out);
-    int _size_1 = this.getTiledDims().size();
-    int _minus = (_dim - _size_1);
-    return _copy.projectOut(
-      ISLDimType.isl_dim_out, _size, _minus).reverse();
-  }
-
+  /**
+   * override ISLMap getUntileMap() {
+   * return tileMap.copy.projectOut(
+   * ISLDimType.isl_dim_out,
+   * tiledDims.size,
+   * tileMap.dim(ISLDimType.isl_dim_out)-tiledDims.size
+   * ).reverse
+   * }
+   */
   @Override
   public ISLUnionMap getParameterizedIterators(final ISLUnionMap maps) {
     final Function1<ISLMap, ISLMap> _function = (ISLMap it) -> {
@@ -131,28 +132,14 @@ public class DTiler implements Tiler {
     final Function1<ISLSet, ISLSet> _function = (ISLSet it) -> {
       return it.clearTupleName();
     };
-    final Function1<ISLSet, ISLMap> _function_1 = (ISLSet it) -> {
-      return it.toIdentityMap();
-    };
-    final Function1<ISLMap, ISLMap> _function_2 = (ISLMap it) -> {
-      return this.tileSchedule(it);
-    };
-    final Function1<ISLMap, ISLSet> _function_3 = (ISLMap it) -> {
-      return it.getRange();
-    };
-    final Function1<ISLSet, ISLSet> _function_4 = (ISLSet it) -> {
-      int _nbOutputs = this.tileMap.getNbOutputs();
-      int _minus = (_nbOutputs - this.endDim);
-      int _minus_1 = (_minus - 1);
-      return it.projectOut(ISLUtil.Dims.OUT, (this.endDim + 1), _minus_1);
-    };
-    final Function1<ISLSet, ISLSet> _function_5 = (ISLSet it) -> {
-      return it.projectOut(ISLUtil.Dims.OUT, 0, this.startDim);
-    };
-    final Function2<ISLSet, ISLSet, ISLSet> _function_6 = (ISLSet a, ISLSet b) -> {
+    final Function2<ISLSet, ISLSet, ISLSet> _function_1 = (ISLSet a, ISLSet b) -> {
       return a.union(b);
     };
-    return IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLSet, ISLSet>map(ListExtensions.<ISLMap, ISLSet>map(ListExtensions.<ISLMap, ISLMap>map(ListExtensions.<ISLSet, ISLMap>map(ListExtensions.<ISLSet, ISLSet>map(domains.copy().getSets(), _function), _function_1), _function_2), _function_3), _function_4), _function_5), _function_6).simpleHull().toSet();
+    ISLSet _range = this.tileSchedule(IterableExtensions.<ISLSet>reduce(ListExtensions.<ISLSet, ISLSet>map(domains.copy().getSets(), _function), _function_1).toIdentityMap()).getRange();
+    int _nbOutputs = this.tileMap.getNbOutputs();
+    int _minus = (_nbOutputs - this.endDim);
+    int _minus_1 = (_minus - 1);
+    return _range.projectOut(ISLUtil.Dims.OUT, (this.endDim + 1), _minus_1).projectOut(ISLUtil.Dims.OUT, 0, this.startDim).simpleHull().toSet();
   }
 
   @Override

@@ -21,12 +21,14 @@ class DTiler implements Tiler {
 	protected int startDim
 	protected int endDim
 	protected List<Integer> tileSizes
+	protected ISLSpace scheduleSpace
 	
 	/*
 	 * Creates a D-Tiler with rectangular tiles of the given size, 
 	 * from the start to the end dimension, inclusive.
 	 */
 	new(List<Integer> tileSizes, ISLSpace scheduleSpace, int startDim, int endDim) {
+		this.scheduleSpace = scheduleSpace
 		this.tileSizes = tileSizes
 		this.startDim = startDim
 		this.endDim = endDim
@@ -75,14 +77,14 @@ class DTiler implements Tiler {
 		tileSchedule(map.copy.toUnionMap).maps.head
 	}
 	
-	override ISLMap getUntileMap() {
+	/*override ISLMap getUntileMap() {
 		return tileMap.copy.projectOut(
 			ISLDimType.isl_dim_out, 
 			tiledDims.size,
 			tileMap.dim(ISLDimType.isl_dim_out)-tiledDims.size
 		).reverse
 	}
-	
+	*/
 	override ISLUnionMap getParameterizedIterators(ISLUnionMap maps) {
 		return tileSchedule(maps).maps
 			.map[moveDims(Dims.PARAM, 0, Dims.OUT, startDim, endDim-startDim+1)]
@@ -108,12 +110,12 @@ class DTiler implements Tiler {
 	def ISLSet getOutset(ISLUnionSet domains) {
 		domains.copy.sets
 			.map[clearTupleName]
-			.map[toIdentityMap]
-			.map[tileSchedule]
-			.map[getRange]
-			.map[projectOut(Dims.OUT, endDim+1, tileMap.getNbOutputs-endDim-1)]
-			.map[projectOut(Dims.OUT, 0, startDim)]
 			.reduce[a, b | a.union(b)]
+			.toIdentityMap
+			.tileSchedule
+			.getRange
+			.projectOut(Dims.OUT, endDim+1, tileMap.getNbOutputs-endDim-1)
+			.projectOut(Dims.OUT, 0, startDim)
 			.simpleHull.toSet
 	}
 	
