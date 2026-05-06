@@ -657,6 +657,43 @@ public interface CodegenPackage extends EPackage {
 	int UNDEF_STMT_OPERATION_COUNT = STATEMENT_OPERATION_COUNT + 0;
 
 	/**
+	 * The meta object id for the '{@link alpha.codegen.impl.OmpStmtImpl <em>Omp Stmt</em>}' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see alpha.codegen.impl.OmpStmtImpl
+	 * @see alpha.codegen.impl.CodegenPackageImpl#getOmpStmt()
+	 * @generated
+	 */
+	int OMP_STMT = 12;
+
+	/**
+	 * The feature id for the '<em><b>Private Vars</b></em>' attribute list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int OMP_STMT__PRIVATE_VARS = STATEMENT_FEATURE_COUNT + 0;
+
+	/**
+	 * The number of structural features of the '<em>Omp Stmt</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int OMP_STMT_FEATURE_COUNT = STATEMENT_FEATURE_COUNT + 1;
+
+	/**
+	 * The number of operations of the '<em>Omp Stmt</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int OMP_STMT_OPERATION_COUNT = STATEMENT_OPERATION_COUNT + 0;
+
+	/**
 	 * The meta object id for the '{@link alpha.codegen.impl.IfStmtImpl <em>If Stmt</em>}' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -664,7 +701,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getIfStmt()
 	 * @generated
 	 */
-	int IF_STMT = 12;
+	int IF_STMT = 13;
 
 	/**
 	 * The feature id for the '<em><b>If Branch</b></em>' containment reference.
@@ -719,7 +756,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getBranch()
 	 * @generated
 	 */
-	int BRANCH = 13;
+	int BRANCH = 14;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference list.
@@ -756,7 +793,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getConditionalBranch()
 	 * @generated
 	 */
-	int CONDITIONAL_BRANCH = 14;
+	int CONDITIONAL_BRANCH = 15;
 
 	/**
 	 * The feature id for the '<em><b>Body</b></em>' containment reference list.
@@ -802,7 +839,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getLoopStmt()
 	 * @generated
 	 */
-	int LOOP_STMT = 15;
+	int LOOP_STMT = 16;
 
 	/**
 	 * The feature id for the '<em><b>Loop Variable</b></em>' attribute.
@@ -875,7 +912,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getAssignmentStmt()
 	 * @generated
 	 */
-	int ASSIGNMENT_STMT = 16;
+	int ASSIGNMENT_STMT = 17;
 
 	/**
 	 * The feature id for the '<em><b>Left</b></em>' containment reference.
@@ -930,7 +967,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getReturnStmt()
 	 * @generated
 	 */
-	int RETURN_STMT = 17;
+	int RETURN_STMT = 18;
 
 	/**
 	 * The feature id for the '<em><b>Expression</b></em>' containment reference.
@@ -967,7 +1004,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getExpression()
 	 * @generated
 	 */
-	int EXPRESSION = 18;
+	int EXPRESSION = 19;
 
 	/**
 	 * The number of structural features of the '<em>Expression</em>' class.
@@ -995,7 +1032,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getCustomExpr()
 	 * @generated
 	 */
-	int CUSTOM_EXPR = 19;
+	int CUSTOM_EXPR = 20;
 
 	/**
 	 * The feature id for the '<em><b>Expression</b></em>' attribute.
@@ -1032,7 +1069,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getParenthesizedExpr()
 	 * @generated
 	 */
-	int PARENTHESIZED_EXPR = 20;
+	int PARENTHESIZED_EXPR = 21;
 
 	/**
 	 * The feature id for the '<em><b>Expression</b></em>' containment reference.
@@ -1069,7 +1106,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getCastExpr()
 	 * @generated
 	 */
-	int CAST_EXPR = 21;
+	int CAST_EXPR = 22;
 
 	/**
 	 * The feature id for the '<em><b>Data Type</b></em>' containment reference.
@@ -1115,7 +1152,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getArrayAccessExpr()
 	 * @generated
 	 */
-	int ARRAY_ACCESS_EXPR = 22;
+	int ARRAY_ACCESS_EXPR = 23;
 
 	/**
 	 * The feature id for the '<em><b>Variable Name</b></em>' attribute.
@@ -1161,7 +1198,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getCallExpr()
 	 * @generated
 	 */
-	int CALL_EXPR = 23;
+	int CALL_EXPR = 24;
 
 	/**
 	 * The feature id for the '<em><b>Function Name</b></em>' attribute.
@@ -1207,7 +1244,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getUnaryExpr()
 	 * @generated
 	 */
-	int UNARY_EXPR = 24;
+	int UNARY_EXPR = 25;
 
 	/**
 	 * The feature id for the '<em><b>Operator</b></em>' attribute.
@@ -1253,7 +1290,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getBinaryExpr()
 	 * @generated
 	 */
-	int BINARY_EXPR = 25;
+	int BINARY_EXPR = 26;
 
 	/**
 	 * The feature id for the '<em><b>Operator</b></em>' attribute.
@@ -1308,7 +1345,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getTernaryExpr()
 	 * @generated
 	 */
-	int TERNARY_EXPR = 26;
+	int TERNARY_EXPR = 27;
 
 	/**
 	 * The feature id for the '<em><b>Conditional</b></em>' containment reference.
@@ -1363,7 +1400,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getBaseDataType()
 	 * @generated
 	 */
-	int BASE_DATA_TYPE = 27;
+	int BASE_DATA_TYPE = 28;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.AssignmentOperator <em>Assignment Operator</em>}' enum.
@@ -1373,7 +1410,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getAssignmentOperator()
 	 * @generated
 	 */
-	int ASSIGNMENT_OPERATOR = 28;
+	int ASSIGNMENT_OPERATOR = 29;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.UnaryOperator <em>Unary Operator</em>}' enum.
@@ -1383,7 +1420,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getUnaryOperator()
 	 * @generated
 	 */
-	int UNARY_OPERATOR = 29;
+	int UNARY_OPERATOR = 30;
 
 	/**
 	 * The meta object id for the '{@link alpha.codegen.BinaryOperator <em>Binary Operator</em>}' enum.
@@ -1393,7 +1430,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getBinaryOperator()
 	 * @generated
 	 */
-	int BINARY_OPERATOR = 30;
+	int BINARY_OPERATOR = 31;
 
 	/**
 	 * The meta object id for the '<em>String Iterable</em>' data type.
@@ -1403,7 +1440,7 @@ public interface CodegenPackage extends EPackage {
 	 * @see alpha.codegen.impl.CodegenPackageImpl#getStringIterable()
 	 * @generated
 	 */
-	int STRING_ITERABLE = 31;
+	int STRING_ITERABLE = 32;
 
 
 	/**
@@ -1843,6 +1880,27 @@ public interface CodegenPackage extends EPackage {
 	 * @generated
 	 */
 	EAttribute getUndefStmt_Name();
+
+	/**
+	 * Returns the meta object for class '{@link alpha.codegen.OmpStmt <em>Omp Stmt</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for class '<em>Omp Stmt</em>'.
+	 * @see alpha.codegen.OmpStmt
+	 * @generated
+	 */
+	EClass getOmpStmt();
+
+	/**
+	 * Returns the meta object for the attribute list '{@link alpha.codegen.OmpStmt#getPrivateVars <em>Private Vars</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute list '<em>Private Vars</em>'.
+	 * @see alpha.codegen.OmpStmt#getPrivateVars()
+	 * @see #getOmpStmt()
+	 * @generated
+	 */
+	EAttribute getOmpStmt_PrivateVars();
 
 	/**
 	 * Returns the meta object for class '{@link alpha.codegen.IfStmt <em>If Stmt</em>}'.
@@ -2749,6 +2807,24 @@ public interface CodegenPackage extends EPackage {
 		 * @generated
 		 */
 		EAttribute UNDEF_STMT__NAME = eINSTANCE.getUndefStmt_Name();
+
+		/**
+		 * The meta object literal for the '{@link alpha.codegen.impl.OmpStmtImpl <em>Omp Stmt</em>}' class.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see alpha.codegen.impl.OmpStmtImpl
+		 * @see alpha.codegen.impl.CodegenPackageImpl#getOmpStmt()
+		 * @generated
+		 */
+		EClass OMP_STMT = eINSTANCE.getOmpStmt();
+
+		/**
+		 * The meta object literal for the '<em><b>Private Vars</b></em>' attribute list feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute OMP_STMT__PRIVATE_VARS = eINSTANCE.getOmpStmt_PrivateVars();
 
 		/**
 		 * The meta object literal for the '{@link alpha.codegen.impl.IfStmtImpl <em>If Stmt</em>}' class.

@@ -25,6 +25,7 @@ import alpha.codegen.IfStmt;
 import alpha.codegen.Include;
 import alpha.codegen.LoopStmt;
 import alpha.codegen.MacroStmt;
+import alpha.codegen.OmpStmt;
 import alpha.codegen.Parameter;
 import alpha.codegen.ParenthesizedExpr;
 import alpha.codegen.Program;
@@ -137,6 +138,13 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * @generated
 	 */
 	private EClass undefStmtEClass = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass ompStmtEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -716,6 +724,24 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EClass getOmpStmt() {
+		return ompStmtEClass;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public EAttribute getOmpStmt_PrivateVars() {
+		return (EAttribute)ompStmtEClass.getEStructuralFeatures().get(0);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public EClass getIfStmt() {
 		return ifStmtEClass;
 	}
@@ -1242,6 +1268,9 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		undefStmtEClass = createEClass(UNDEF_STMT);
 		createEAttribute(undefStmtEClass, UNDEF_STMT__NAME);
 
+		ompStmtEClass = createEClass(OMP_STMT);
+		createEAttribute(ompStmtEClass, OMP_STMT__PRIVATE_VARS);
+
 		ifStmtEClass = createEClass(IF_STMT);
 		createEReference(ifStmtEClass, IF_STMT__IF_BRANCH);
 		createEReference(ifStmtEClass, IF_STMT__ELSE_IF_BRANCHES);
@@ -1348,6 +1377,7 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 		expressionStmtEClass.getESuperTypes().add(this.getStatement());
 		macroStmtEClass.getESuperTypes().add(this.getStatement());
 		undefStmtEClass.getESuperTypes().add(this.getStatement());
+		ompStmtEClass.getESuperTypes().add(this.getStatement());
 		ifStmtEClass.getESuperTypes().add(this.getStatement());
 		conditionalBranchEClass.getESuperTypes().add(this.getBranch());
 		loopStmtEClass.getESuperTypes().add(this.getStatement());
@@ -1418,6 +1448,9 @@ public class CodegenPackageImpl extends EPackageImpl implements CodegenPackage {
 
 		initEClass(undefStmtEClass, UndefStmt.class, "UndefStmt", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEAttribute(getUndefStmt_Name(), theEcorePackage.getEString(), "name", null, 0, 1, UndefStmt.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
+		initEClass(ompStmtEClass, OmpStmt.class, "OmpStmt", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+		initEAttribute(getOmpStmt_PrivateVars(), theEcorePackage.getEString(), "privateVars", null, 0, -1, OmpStmt.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, !IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		initEClass(ifStmtEClass, IfStmt.class, "IfStmt", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getIfStmt_IfBranch(), this.getConditionalBranch(), null, "ifBranch", null, 0, 1, IfStmt.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

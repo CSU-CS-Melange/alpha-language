@@ -116,6 +116,12 @@ public class Factory {
     return undef;
   }
 
+  public static OmpStmt ompStmt(final String[] privateVars) {
+    final OmpStmt omp = Factory.factory.createOmpStmt();
+    CollectionExtensions.<String>addAll(omp.getPrivateVars(), privateVars);
+    return omp;
+  }
+
   public static LoopStmt loopStmt(final String loopVariable, final Expression initializer, final Expression conditional, final Expression incrementBy, final Statement... body) {
     final LoopStmt stmt = Factory.factory.createLoopStmt();
     stmt.setLoopVariable(loopVariable);

@@ -195,6 +195,11 @@ class UndefStmt extends Statement {
 	String name
 }
 
+/** Inserts an omp statement. */
+class OmpStmt extends Statement {
+	String[] privateVars
+}
+
 /**
  * An entire if..else if..else block.
  * The "ifBranch" is required, but the other fields are optional.

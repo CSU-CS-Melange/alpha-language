@@ -121,6 +121,15 @@ public interface CodegenFactory extends EFactory {
 	UndefStmt createUndefStmt();
 
 	/**
+	 * Returns a new object of class '<em>Omp Stmt</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>Omp Stmt</em>'.
+	 * @generated
+	 */
+	OmpStmt createOmpStmt();
+
+	/**
 	 * Returns a new object of class '<em>If Stmt</em>'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

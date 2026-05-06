@@ -116,6 +116,12 @@ class Factory {
 		return undef
 	}
 	
+	def static ompStmt(String[] privateVars) {
+		val omp = factory.createOmpStmt
+		omp.privateVars.addAll(privateVars)
+		return omp
+	}
+	
 	def static loopStmt(String loopVariable, Expression initializer, Expression conditional, Expression incrementBy, Statement... body) {
 		val stmt = factory.createLoopStmt
 		stmt.loopVariable = loopVariable

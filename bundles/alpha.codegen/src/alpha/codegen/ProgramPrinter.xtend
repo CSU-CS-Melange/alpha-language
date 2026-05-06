@@ -176,6 +176,10 @@ class ProgramPrinter {
 		return '''#define «stmt.name»(«stmt.arguments.join(",")») «stmt.replacement.printExpr»'''
 	}
 	
+	def static dispatch printStmt(OmpStmt stmt) {
+		return '''#pragma omp parallel for private(«stmt.privateVars.join(",")»)'''
+	}
+	
 	def static undefine(MacroStmt stmt) '''
 		#undef «stmt.name»
 	'''

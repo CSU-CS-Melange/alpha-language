@@ -71,7 +71,7 @@ class OmpPragmaInserter extends CExpressionVisitor {
 	}
 	
 	def protected Statement buildMacro(Iterable<String> privateVars) {
-		return Factory.customStmt("#pragma omp parallel for private(" + privateVars.join(",") + ")")
+		return Factory.ompStmt(privateVars)
 	}
 	
 	def protected getPrivateVars() {

@@ -116,6 +116,10 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 				return createUndefStmtAdapter();
 			}
 			@Override
+			public Adapter caseOmpStmt(OmpStmt object) {
+				return createOmpStmtAdapter();
+			}
+			@Override
 			public Adapter caseIfStmt(IfStmt object) {
 				return createIfStmtAdapter();
 			}
@@ -360,6 +364,20 @@ public class CodegenAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createUndefStmtAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link alpha.codegen.OmpStmt <em>Omp Stmt</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see alpha.codegen.OmpStmt
+	 * @generated
+	 */
+	public Adapter createOmpStmtAdapter() {
 		return null;
 	}
 

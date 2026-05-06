@@ -68,6 +68,7 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 			case CodegenPackage.EXPRESSION_STMT: return createExpressionStmt();
 			case CodegenPackage.MACRO_STMT: return createMacroStmt();
 			case CodegenPackage.UNDEF_STMT: return createUndefStmt();
+			case CodegenPackage.OMP_STMT: return createOmpStmt();
 			case CodegenPackage.IF_STMT: return createIfStmt();
 			case CodegenPackage.BRANCH: return createBranch();
 			case CodegenPackage.CONDITIONAL_BRANCH: return createConditionalBranch();
@@ -241,6 +242,16 @@ public class CodegenFactoryImpl extends EFactoryImpl implements CodegenFactory {
 	public UndefStmt createUndefStmt() {
 		UndefStmtImpl undefStmt = new UndefStmtImpl();
 		return undefStmt;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public OmpStmt createOmpStmt() {
+		OmpStmtImpl ompStmt = new OmpStmtImpl();
+		return ompStmt;
 	}
 
 	/**

@@ -366,6 +366,15 @@ public class ProgramPrinter {
     return _builder.toString();
   }
 
+  protected static CharSequence _printStmt(final OmpStmt stmt) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("#pragma omp parallel for private(");
+    String _join = IterableExtensions.join(stmt.getPrivateVars(), ",");
+    _builder.append(_join);
+    _builder.append(")");
+    return _builder.toString();
+  }
+
   public static CharSequence undefine(final MacroStmt stmt) {
     StringConcatenation _builder = new StringConcatenation();
     _builder.append("#undef ");
@@ -813,6 +822,8 @@ public class ProgramPrinter {
       return _printStmt((LoopStmt)stmt);
     } else if (stmt instanceof MacroStmt) {
       return _printStmt((MacroStmt)stmt);
+    } else if (stmt instanceof OmpStmt) {
+      return _printStmt((OmpStmt)stmt);
     } else if (stmt instanceof ReturnStmt) {
       return _printStmt((ReturnStmt)stmt);
     } else if (stmt instanceof UndefStmt) {

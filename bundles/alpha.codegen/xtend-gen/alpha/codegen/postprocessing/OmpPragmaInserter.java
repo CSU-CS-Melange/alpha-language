@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.xtext.xbase.lib.Conversions;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 
@@ -88,10 +89,7 @@ public class OmpPragmaInserter extends CExpressionVisitor {
   }
 
   protected Statement buildMacro(final Iterable<String> privateVars) {
-    String _join = IterableExtensions.join(privateVars, ",");
-    String _plus = ("#pragma omp parallel for private(" + _join);
-    String _plus_1 = (_plus + ")");
-    return Factory.customStmt(_plus_1);
+    return Factory.ompStmt(((String[])Conversions.unwrapArray(privateVars, String.class)));
   }
 
   protected Iterable<String> getPrivateVars() {
