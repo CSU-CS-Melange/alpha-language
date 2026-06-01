@@ -14,11 +14,13 @@ import fr.irisa.cairn.jnimap.isl.ISLSet;
 import fr.irisa.cairn.jnimap.isl.ISLUnionMap;
 import fr.irisa.cairn.jnimap.isl.ISLUnionSet;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
 public class HybridScheduler extends Scheduler {
@@ -53,15 +55,32 @@ public class HybridScheduler extends Scheduler {
       final Function1<ISLMap, String> _function = (ISLMap it) -> {
         return it.getInputTupleName();
       };
-      final Function1<String, ISLMap> _function_1 = (String it) -> {
-        return this.generateHybridMap(it);
+      final Comparator<String> _function_1 = (String a, String b) -> {
+        int _xifexpression = (int) 0;
+        boolean _isReductionNode = this.prdg.getNode(a).isReductionNode();
+        if (_isReductionNode) {
+          _xifexpression = 0;
+        } else {
+          _xifexpression = (-1);
+        }
+        int _xifexpression_1 = (int) 0;
+        boolean _isReductionNode_1 = this.prdg.getNode(b).isReductionNode();
+        if (_isReductionNode_1) {
+          _xifexpression_1 = 0;
+        } else {
+          _xifexpression_1 = 1;
+        }
+        return (_xifexpression + _xifexpression_1);
       };
-      _xblockexpression = this.spacetimeMap = ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<String, ISLMap>map(IterableExtensions.<ISLMap, String>map(this.feautrierMaps, _function), _function_1)));
+      final Function1<Pair<Integer, String>, ISLMap> _function_2 = (Pair<Integer, String> it) -> {
+        return this.generateHybridMap((it.getKey()).intValue(), it.getValue());
+      };
+      _xblockexpression = this.spacetimeMap = ISLUtil.liftSpacetimeFactors(ISLUtil.convertToUnionMap(IterableExtensions.<ISLMap>toList(IterableExtensions.<Pair<Integer, String>, ISLMap>map(IterableExtensions.<String>indexed(IterableExtensions.<String>sortWith(IterableExtensions.<ISLMap, String>map(this.feautrierMaps, _function), _function_1)), _function_2))));
     }
     return _xblockexpression;
   }
 
-  private ISLMap generateHybridMap(final String name) {
+  private ISLMap generateHybridMap(final int index, final String name) {
     final boolean isReduction = this.prdg.getNode(name).isReductionNode();
     PRDGEdge _xifexpression = null;
     if (isReduction) {
@@ -77,13 +96,7 @@ public class HybridScheduler extends Scheduler {
       _xifexpression_1 = name;
     }
     final String mapName = _xifexpression_1;
-    int _xifexpression_2 = (int) 0;
-    if (isReduction) {
-      _xifexpression_2 = 1;
-    } else {
-      _xifexpression_2 = 0;
-    }
-    final int scheduleOffset = _xifexpression_2;
+    final int scheduleOffset = index;
     final Function1<ISLMap, Boolean> _function = (ISLMap it) -> {
       String _inputTupleName = it.getInputTupleName();
       return Boolean.valueOf(Objects.equal(_inputTupleName, mapName));

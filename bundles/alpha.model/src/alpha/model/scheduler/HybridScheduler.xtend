@@ -37,16 +37,19 @@ class HybridScheduler extends Scheduler {
 		timeDims = system.countTimeDimensions(feautrierSchedule.map)
 		
 		spacetimeMap = feautrierMaps.map[inputTupleName]
-			.map[generateHybridMap]
+			.sortWith[a, b | (prdg.getNode(a).isReductionNode ? 0 : -1) + (prdg.getNode(b).isReductionNode ? 0 : 1)]
+			.indexed
+			.map[generateHybridMap(it.key, it.value)]
 			.toList.convertToUnionMap
+			.liftSpacetimeFactors
 	}
 	
-	def private ISLMap generateHybridMap(String name) {
+	def private ISLMap generateHybridMap(int index, String name) {
 		val isReduction = prdg.getNode(name).isReductionNode
 		
 		val dominantEdge = isReduction ? prdg.dominantDependence(name) : null
 		val mapName = isReduction ? dominantEdge.dest.name : name
-		val scheduleOffset = isReduction ? 1 : 0
+		val scheduleOffset = index
 			
 		var timeAffs = feautrierMaps.findFirst[inputTupleName == mapName].copy.clearInputTupleName
 			.toMultiAff.affs.subList(0, timeDims)
