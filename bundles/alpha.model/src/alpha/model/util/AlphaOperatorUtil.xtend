@@ -9,6 +9,7 @@ import alpha.model.MultiArgExpression
 import alpha.model.REDUCTION_OP
 import alpha.model.RealExpression
 import alpha.model.AbstractReduceExpression
+import alpha.model.DependenceExpression
 
 class AlphaOperatorUtil {
 	
@@ -30,11 +31,10 @@ class AlphaOperatorUtil {
 	}
 	
 	static def boolean hasInverse(REDUCTION_OP op) {
-		try {
-			val invOp = reductionOPtoBinaryInverseOP(op)
-			return true
-		} catch (Exception e) {
-			return false
+		switch (op) {
+			case SUM,
+			case PROD: true
+			default: false
 		}
 	}
 	
@@ -44,66 +44,58 @@ class AlphaOperatorUtil {
 	
 	static def BINARY_OP reductionOPtoBinaryInverseOP(REDUCTION_OP op) {
 		switch (op) {
-			case MIN,
-			case MAX, 
-			case AND,
-			case OR,
-			case XOR: { 
-				throw new RuntimeException("[AlphaOperatorUtil] Operator does not have an inverse.");
-			}
 			case PROD: { BINARY_OP.DIV }
 			case SUM: { BINARY_OP.SUB }
 			case EX: {
 				throw new RuntimeException("[AlphaOperatorUtil] ExternalFunctions cannot be used as BinaryOP.");
 			}
-			
+			default: {
+				throw new RuntimeException("[AlphaOperatorUtil] Operator does not have an inverse.");
+			}
 		}
 	}
 	
 	static def boolean isIdentity(BINARY_OP op, AlphaExpression expr) {
 		switch (op) {
-			case MIN,
-			case MAX: {
-				//FIXME should add inf and -inf
-				return false
-			}
+			case MIN: expr.valueIs(Float.POSITIVE_INFINITY)
+			case MAX: expr.valueIs(Float.NEGATIVE_INFINITY)
 			case MUL,
 			case DIV,
-			case MOD: {
-				if (expr instanceof IntegerExpression) {
-					return expr.value == 1
-				}
-				if (expr instanceof RealExpression) {
-					return expr.value == 1
-				}
-			}
+			case MOD: expr.valueIs(1)
 			case ADD,
-			case SUB: {
-				if (expr instanceof IntegerExpression) {
-					return expr.value == 0
-				}
-				if (expr instanceof RealExpression) {
-					return expr.value == 0
-				}
-			}
-			case AND: {
-				if (expr instanceof BooleanExpression) {
-					return expr.value
-				}
-			}
-			case OR: {
-				if (expr instanceof BooleanExpression) {
-					return !expr.value
-				}
-			}
-			default: {
-				return false
-			}
-			
+			case SUB: expr.valueIs(0)
+			case AND: expr.valueIs(true)
+			case OR:  expr.valueIs(false)
+			default:  false
 		}
-		
-		false
 	}
+	
+	static def boolean isAbsorbing(BINARY_OP op, AlphaExpression expr) {
+		switch (op) {
+			case MIN: expr.valueIs(Float.NEGATIVE_INFINITY)
+			case MAX: expr.valueIs(Float.POSITIVE_INFINITY)
+			case MUL,
+			case DIV,
+			case MOD: expr.valueIs(0)
+			case ADD,
+			case SUB: expr.valueIs(Float.POSITIVE_INFINITY) || expr.valueIs(Float.NEGATIVE_INFINITY)
+			case AND: expr.valueIs(false)
+			case OR:  expr.valueIs(true)
+			default:  false
+		}
+	}
+	
+	/**
+	 * Returns whether an AlphaExpression has a constant value equal to a given number or boolean
+	 * Recurses inside DependenceExpressions, because Alpha syntax allows (requires?)
+	 * constants to be wrapped inside them
+	 */
+	static def dispatch boolean valueIs(AlphaExpression expr, Object other) {false}
+	static def dispatch boolean valueIs(DependenceExpression expr, Object other) {expr.expr.valueIs(other)}
+	static def dispatch boolean valueIs(IntegerExpression expr, Object other) {expr.value == other}
+	static def dispatch boolean valueIs(RealExpression expr, Object other) {expr.value == other}
+	static def dispatch boolean valueIs(BooleanExpression expr, Object other) {expr.value == other}
+
 	
 	/**
 	 * Tests if op1 distributes over op2.
@@ -138,12 +130,8 @@ class AlphaOperatorUtil {
 			case MIN,
 			case MAX,
 			case AND,
-			case OR: {
-				true
-			}
-			default: {
-				false
-			}
+			case OR: true
+			default: false
 		}
 	}
 	
@@ -153,12 +141,8 @@ class AlphaOperatorUtil {
 	 */
 	static def hasHigherOrderOperator(REDUCTION_OP op) {
 		switch (op) {
-			case SUM: {
-				true
-			}
-			default: {
-				false
-			}
+			case SUM: true
+			default: false
 		}
 	}
 	

@@ -96,6 +96,15 @@ public class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
       boolean _isIdentity = AlphaOperatorUtil.isIdentity(be.getOperator(), be.getRight());
       if (_isIdentity) {
         EcoreUtil.replace(be, be.getLeft());
+      } else {
+        boolean _isAbsorbing = AlphaOperatorUtil.isAbsorbing(be.getOperator(), be.getLeft());
+        if (_isAbsorbing) {
+          EcoreUtil.replace(be, be.getLeft());
+        } else {
+          if (((AlphaOperatorUtil.isAbsorbing(be.getOperator(), be.getRight()) && (!Objects.equal(be.getOperator(), BINARY_OP.DIV))) && (!Objects.equal(be.getOperator(), BINARY_OP.MOD)))) {
+            EcoreUtil.replace(be, be.getRight());
+          }
+        }
       }
     }
   }

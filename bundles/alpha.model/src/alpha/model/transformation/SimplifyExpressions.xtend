@@ -73,6 +73,10 @@ class SimplifyExpressions extends AbstractAlphaCompleteVisitor {
 			EcoreUtil.replace(be, be.right);
 		} else if (AlphaOperatorUtil.isIdentity(be.operator, be.right)) {
 			EcoreUtil.replace(be, be.left);
+		} else if (AlphaOperatorUtil.isAbsorbing(be.operator, be.left)) {
+			EcoreUtil.replace(be, be.left);
+		} else if (AlphaOperatorUtil.isAbsorbing(be.operator, be.right) && be.operator != BINARY_OP.DIV && be.operator != BINARY_OP.MOD) {
+			EcoreUtil.replace(be, be.right);
 		}
 	}
 	

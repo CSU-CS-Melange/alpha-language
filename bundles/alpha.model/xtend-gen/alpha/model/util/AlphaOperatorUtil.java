@@ -5,13 +5,13 @@ import alpha.model.AlphaExpression;
 import alpha.model.BINARY_OP;
 import alpha.model.BinaryExpression;
 import alpha.model.BooleanExpression;
+import alpha.model.DependenceExpression;
 import alpha.model.IntegerExpression;
 import alpha.model.MultiArgExpression;
 import alpha.model.REDUCTION_OP;
 import alpha.model.RealExpression;
 import com.google.common.base.Objects;
 import java.util.Arrays;
-import org.eclipse.xtext.xbase.lib.Exceptions;
 
 @SuppressWarnings("all")
 public class AlphaOperatorUtil {
@@ -50,16 +50,21 @@ public class AlphaOperatorUtil {
   }
 
   public static boolean hasInverse(final REDUCTION_OP op) {
-    try {
-      final BINARY_OP invOp = AlphaOperatorUtil.reductionOPtoBinaryInverseOP(op);
-      return true;
-    } catch (final Throwable _t) {
-      if (_t instanceof Exception) {
-        return false;
-      } else {
-        throw Exceptions.sneakyThrow(_t);
+    boolean _switchResult = false;
+    if (op != null) {
+      switch (op) {
+        case SUM:
+        case PROD:
+          _switchResult = true;
+          break;
+        default:
+          _switchResult = false;
+          break;
       }
+    } else {
+      _switchResult = false;
     }
+    return _switchResult;
   }
 
   public static boolean hasNoInverse(final REDUCTION_OP op) {
@@ -71,12 +76,6 @@ public class AlphaOperatorUtil {
     BINARY_OP _switchResult = null;
     if (op != null) {
       switch (op) {
-        case MIN:
-        case MAX:
-        case AND:
-        case OR:
-        case XOR:
-          throw new RuntimeException("[AlphaOperatorUtil] Operator does not have an inverse.");
         case PROD:
           _switchResult = BINARY_OP.DIV;
           break;
@@ -86,63 +85,110 @@ public class AlphaOperatorUtil {
         case EX:
           throw new RuntimeException("[AlphaOperatorUtil] ExternalFunctions cannot be used as BinaryOP.");
         default:
-          break;
+          throw new RuntimeException("[AlphaOperatorUtil] Operator does not have an inverse.");
       }
+    } else {
+      throw new RuntimeException("[AlphaOperatorUtil] Operator does not have an inverse.");
     }
     return _switchResult;
   }
 
   public static boolean isIdentity(final BINARY_OP op, final AlphaExpression expr) {
-    boolean _xblockexpression = false;
-    {
-      if (op != null) {
-        switch (op) {
-          case MIN:
-          case MAX:
-            return false;
-          case MUL:
-          case DIV:
-          case MOD:
-            if ((expr instanceof IntegerExpression)) {
-              Integer _value = ((IntegerExpression)expr).getValue();
-              return ((_value).intValue() == 1);
-            }
-            if ((expr instanceof RealExpression)) {
-              Float _value_1 = ((RealExpression)expr).getValue();
-              return ((_value_1).floatValue() == 1);
-            }
-            break;
-          case ADD:
-          case SUB:
-            if ((expr instanceof IntegerExpression)) {
-              Integer _value_2 = ((IntegerExpression)expr).getValue();
-              return ((_value_2).intValue() == 0);
-            }
-            if ((expr instanceof RealExpression)) {
-              Float _value_3 = ((RealExpression)expr).getValue();
-              return ((_value_3).floatValue() == 0);
-            }
-            break;
-          case AND:
-            if ((expr instanceof BooleanExpression)) {
-              return (((BooleanExpression)expr).getValue()).booleanValue();
-            }
-            break;
-          case OR:
-            if ((expr instanceof BooleanExpression)) {
-              Boolean _value_4 = ((BooleanExpression)expr).getValue();
-              return (!(_value_4).booleanValue());
-            }
-            break;
-          default:
-            return false;
-        }
-      } else {
-        return false;
+    boolean _switchResult = false;
+    if (op != null) {
+      switch (op) {
+        case MIN:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.POSITIVE_INFINITY));
+          break;
+        case MAX:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.NEGATIVE_INFINITY));
+          break;
+        case MUL:
+        case DIV:
+        case MOD:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Integer.valueOf(1));
+          break;
+        case ADD:
+        case SUB:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Integer.valueOf(0));
+          break;
+        case AND:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Boolean.valueOf(true));
+          break;
+        case OR:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Boolean.valueOf(false));
+          break;
+        default:
+          _switchResult = false;
+          break;
       }
-      _xblockexpression = false;
+    } else {
+      _switchResult = false;
     }
-    return _xblockexpression;
+    return _switchResult;
+  }
+
+  public static boolean isAbsorbing(final BINARY_OP op, final AlphaExpression expr) {
+    boolean _switchResult = false;
+    if (op != null) {
+      switch (op) {
+        case MIN:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.NEGATIVE_INFINITY));
+          break;
+        case MAX:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.POSITIVE_INFINITY));
+          break;
+        case MUL:
+        case DIV:
+        case MOD:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Integer.valueOf(0));
+          break;
+        case ADD:
+        case SUB:
+          _switchResult = (AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.POSITIVE_INFINITY)) || AlphaOperatorUtil.valueIs(expr, Float.valueOf(Float.NEGATIVE_INFINITY)));
+          break;
+        case AND:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Boolean.valueOf(false));
+          break;
+        case OR:
+          _switchResult = AlphaOperatorUtil.valueIs(expr, Boolean.valueOf(true));
+          break;
+        default:
+          _switchResult = false;
+          break;
+      }
+    } else {
+      _switchResult = false;
+    }
+    return _switchResult;
+  }
+
+  /**
+   * Returns whether an AlphaExpression has a constant value equal to a given number or boolean
+   * Recurses inside DependenceExpressions, because Alpha syntax allows (requires?)
+   * constants to be wrapped inside them
+   */
+  protected static boolean _valueIs(final AlphaExpression expr, final Object other) {
+    return false;
+  }
+
+  protected static boolean _valueIs(final DependenceExpression expr, final Object other) {
+    return AlphaOperatorUtil.valueIs(expr.getExpr(), other);
+  }
+
+  protected static boolean _valueIs(final IntegerExpression expr, final Object other) {
+    Integer _value = expr.getValue();
+    return Objects.equal(_value, other);
+  }
+
+  protected static boolean _valueIs(final RealExpression expr, final Object other) {
+    Float _value = expr.getValue();
+    return Objects.equal(_value, other);
+  }
+
+  protected static boolean _valueIs(final BooleanExpression expr, final Object other) {
+    Boolean _value = expr.getValue();
+    return Objects.equal(_value, other);
   }
 
   /**
@@ -244,6 +290,23 @@ public class AlphaOperatorUtil {
 
   protected static BINARY_OP _getBinaryOP(final AbstractReduceExpression expr) {
     return AlphaOperatorUtil.reductionOPtoBinaryOP(expr.getOperator());
+  }
+
+  public static boolean valueIs(final AlphaExpression expr, final Object other) {
+    if (expr instanceof BooleanExpression) {
+      return _valueIs((BooleanExpression)expr, other);
+    } else if (expr instanceof IntegerExpression) {
+      return _valueIs((IntegerExpression)expr, other);
+    } else if (expr instanceof RealExpression) {
+      return _valueIs((RealExpression)expr, other);
+    } else if (expr instanceof DependenceExpression) {
+      return _valueIs((DependenceExpression)expr, other);
+    } else if (expr != null) {
+      return _valueIs(expr, other);
+    } else {
+      throw new IllegalArgumentException("Unhandled parameter types: " +
+        Arrays.<Object>asList(expr, other).toString());
+    }
   }
 
   public static BINARY_OP getBinaryOP(final AlphaExpression expr) {
