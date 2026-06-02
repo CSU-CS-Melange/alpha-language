@@ -27,6 +27,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
  * 
  * The simplification rules implemented are:
  *  - remove BinaryExpression when one of the operand is identity
+ *  - remove BinaryExpression when one of the operand is absorbing
  *  - replace IndexExpression with ConstantExpression when applicable
  *  - replace ReduceExpression with its body when it has scalar domain
  */
