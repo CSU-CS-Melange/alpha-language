@@ -374,7 +374,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
       return;
     }
     AlphaInternalStateConstructor.recomputeContextDomain(re);
-    if (((re.getExpressionDomain().isEqual(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re)))) {
+    if (((re.getExpressionDomain().isSubset(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re)))) {
       this.debug("redundant restrict", "D : E -> E");
       EcoreUtil.replace(re, re.getExpr());
     }
