@@ -16,6 +16,7 @@ import alpha.model.IfExpression;
 import alpha.model.IndexExpression;
 import alpha.model.ModelPackage;
 import alpha.model.MultiArgExpression;
+import alpha.model.ReduceExpression;
 import alpha.model.RestrictExpression;
 import alpha.model.UnaryExpression;
 import alpha.model.VariableExpression;
@@ -362,6 +363,11 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     return (_eContainer instanceof RestrictExpression);
   }
 
+  public static boolean childOfReduceExpression(final AlphaExpression expr) {
+    EObject _eContainer = expr.eContainer();
+    return (_eContainer instanceof ReduceExpression);
+  }
+
   @Override
   public void outRestrictExpression(final RestrictExpression re) {
     boolean _invalidState = this.invalidState(re);
@@ -374,7 +380,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
       return;
     }
     AlphaInternalStateConstructor.recomputeContextDomain(re);
-    if (((re.getExpressionDomain().isSubset(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re)))) {
+    if ((((re.getExpressionDomain().isSubset(re.getExpr().getExpressionDomain()) && (!Normalize.childOfCaseExpression(re))) && (!Normalize.childOfRestrictExpression(re))) && (!Normalize.childOfReduceExpression(re)))) {
       this.debug("redundant restrict", "D : E -> E");
       EcoreUtil.replace(re, re.getExpr());
     }

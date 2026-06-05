@@ -41,6 +41,7 @@ import static alpha.model.factory.AlphaUserFactory.createVariableExpression
 import static extension alpha.model.util.ISLUtil.isNoneToNone
 import alpha.model.VariableExpression
 import alpha.model.util.ISLUtil
+import alpha.model.ReduceExpression
 
 /**
  * Normalization of Alpha programs.
@@ -363,6 +364,10 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 	static def childOfRestrictExpression(AlphaExpression expr) {
 		expr.eContainer instanceof RestrictExpression
 	}
+	
+	static def childOfReduceExpression(AlphaExpression expr) {
+		expr.eContainer instanceof ReduceExpression
+	}
 
 	override outRestrictExpression(RestrictExpression re) {
 		if (invalidState(re)) return;
@@ -374,7 +379,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 		AlphaInternalStateConstructor.recomputeContextDomain(re)
 		// D : E -> E if expression domain ofD : E and E are the same (i.e., restrict has no effect)
 		if (re.expressionDomain.isSubset(re.expr.expressionDomain) 
-			&& !re.childOfCaseExpression && !re.childOfRestrictExpression) {
+			&& !re.childOfCaseExpression && !re.childOfRestrictExpression && !re.childOfReduceExpression) {
 			debug("redundant restrict", "D : E -> E");
 			EcoreUtil.replace(re, re.expr);
 		}
