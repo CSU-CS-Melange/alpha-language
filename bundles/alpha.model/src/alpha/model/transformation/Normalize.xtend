@@ -378,7 +378,7 @@ class Normalize extends AbstractAlphaCompleteVisitor {
 
 		AlphaInternalStateConstructor.recomputeContextDomain(re)
 		// D : E -> E if expression domain ofD : E and E are the same (i.e., restrict has no effect)
-		if (re.expressionDomain.isSubset(re.expr.expressionDomain) 
+		if (re.expressionDomain.isEqual(re.expr.expressionDomain) 
 			&& !re.childOfCaseExpression && !re.childOfRestrictExpression && !re.childOfReduceExpression) {
 			debug("redundant restrict", "D : E -> E");
 			EcoreUtil.replace(re, re.expr);
