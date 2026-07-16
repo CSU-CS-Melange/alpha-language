@@ -22,6 +22,10 @@ public interface Tiler {
 
   ISLUnionMap getParameterizedIterators(final ISLUnionMap maps);
 
+  Iterable<String> getTileDimNames();
+
+  Iterable<String> getIteratorDimNames();
+
   boolean fixedTileSizes();
 
   int getTileSize(final int dim);

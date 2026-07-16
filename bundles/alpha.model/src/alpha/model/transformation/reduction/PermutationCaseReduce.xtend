@@ -13,6 +13,10 @@ import alpha.model.util.AlphaOperatorUtil
 import java.util.LinkedList
 import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.xtext.EcoreUtil2
+import fr.irisa.cairn.jnimap.isl.ISLMap
+import fr.irisa.cairn.jnimap.isl.ISLSet
+import alpha.model.util.ISLUtil.Dims
+import alpha.model.util.ISLUtil
 
 /**
  * Permutation Case-Reduce is a transformation that moves a CaseExpression
@@ -95,7 +99,8 @@ class PermutationCaseReduce {
 		
 		val D12 = fDE1.copy.intersect(fDE2.copy)
 		val D1 = fDE1.copy.subtract(fDE2.copy)
-		val D2 = fDE2.subtract(fDE1)
+		val D2 = fDE2.copy.subtract(fDE1.copy)
+		val D0 = are.contextDomain.copy.subtract(fDE1).subtract(fDE2)
 		
 		val outerCase = AlphaUserFactory.createCaseExpression
 		val recurseTarget = new LinkedList<AlphaExpression>
@@ -119,12 +124,25 @@ class PermutationCaseReduce {
 			AlphaUserFactory.createRestrictExpression(D12, X12);
 		}
 		
+		val newE0 = if(!D0.isEmpty) {
+			val id = AlphaOperatorUtil.createIdentityExpression(are.operator)
+			val universe = ISLSet.buildUniverse(D0.copy.space)
+			val zero_dim = universe.copy.projectOut(Dims.SET, 0, universe.dim(Dims.SET))
+			val maff = ISLMap.buildFromDomainAndRange(universe, zero_dim)
+			val X0 = AlphaUserFactory.createDependenceExpression(ISLUtil.toMultiAff(maff), id)
+			AlphaUserFactory.createRestrictExpression(D0, X0);
+		}
+		
 		if (newE1 !== null)
 			outerCase.exprs.add(newE1)
 		if (newE12 !== null)
 			outerCase.exprs.add(newE12)
 		if (newE2 !== null)
 			outerCase.exprs.add(newE2)
+		if (newE0 !== null)
+			outerCase.exprs.add(newE0)
+		
+		println(newE0)
 		
 		EcoreUtil.replace(are, outerCase)
 		AlphaInternalStateConstructor.recomputeContextDomain(outerCase)

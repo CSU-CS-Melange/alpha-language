@@ -19,7 +19,6 @@ import fr.irisa.cairn.jnimap.isl.ISLMultiAff
 import fr.irisa.cairn.jnimap.isl.ISLSet
 
 import static extension alpha.model.util.ISLUtil.*
-import alpha.model.util.Show
 
 class OptimallySplitReductions {
 	
@@ -42,7 +41,7 @@ class OptimallySplitReductions {
 	/**
 	 * Applies the optimal splitting process to a system.
 	 */
-	def static void apply(AlphaSystem sys) {
+	def static Scheduler apply(AlphaSystem sys) {
 		// NormalizeReduction must be applied so that reduction PRDGNodes can be mapped back
 		// to the corresponding ReduceExpression.
 		NormalizeReduction.apply(sys)
@@ -54,12 +53,14 @@ class OptimallySplitReductions {
 		]
 		
 		// Only extend the PRDG if there are reductions that can be split
-		if(splittableEdges.empty) return
+		if(splittableEdges.empty) return null
 		
 		val extendedPrdg = extendPRDG(prdg, splittableEdges)
 		val scheduler = new FoutrierScheduler(extendedPrdg)
 		
 		split(sys, scheduler, extendedPrdg)
+		
+		return scheduler
 	}
 	
 	def static private PRDG extendPRDG(PRDG prdg, Iterable<PRDGEdge> splittableEdges) {

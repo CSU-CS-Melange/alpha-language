@@ -122,4 +122,20 @@ class DTiler implements Tiler {
 	override int getTileSize(int dim) {
 		return this.tileSizes.get(dim - startDim)
 	}
+	
+	def protected String indexName(int i) {
+		if(i == 0) return "tw"
+		else if(i < tileSizes.size) return "t" + i
+		else return "c" + (i - tileSizes.size)
+	}
+	
+	override getTileDimNames() {
+		return (0..<tileSizes.size)
+			.map[indexName]
+	}
+	
+	override getIteratorDimNames() {
+		return (tileSizes.size..<tileSizes.size)
+			.map[indexName]
+	}
 }

@@ -6,12 +6,16 @@ import alpha.model.AlphaInternalStateConstructor;
 import alpha.model.AlphaSystem;
 import alpha.model.BinaryExpression;
 import alpha.model.CaseExpression;
+import alpha.model.ConstantExpression;
+import alpha.model.DependenceExpression;
 import alpha.model.RestrictExpression;
 import alpha.model.SystemBody;
 import alpha.model.factory.AlphaUserFactory;
 import alpha.model.transformation.Normalize;
 import alpha.model.util.AlphaExpressionUtil;
 import alpha.model.util.AlphaOperatorUtil;
+import alpha.model.util.ISLUtil;
+import fr.irisa.cairn.jnimap.isl.ISLMap;
 import fr.irisa.cairn.jnimap.isl.ISLSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,6 +23,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ListExtensions;
 
@@ -135,7 +140,8 @@ public class PermutationCaseReduce {
     final ISLSet fDE2 = E2.getExpressionDomain().apply(are.getProjection().toMap());
     final ISLSet D12 = fDE1.copy().intersect(fDE2.copy());
     final ISLSet D1 = fDE1.copy().subtract(fDE2.copy());
-    final ISLSet D2 = fDE2.subtract(fDE1);
+    final ISLSet D2 = fDE2.copy().subtract(fDE1.copy());
+    final ISLSet D0 = are.getContextDomain().copy().subtract(fDE1).subtract(fDE2);
     final CaseExpression outerCase = AlphaUserFactory.createCaseExpression();
     final LinkedList<AlphaExpression> recurseTarget = new LinkedList<AlphaExpression>();
     RestrictExpression _xifexpression_1 = null;
@@ -178,6 +184,22 @@ public class PermutationCaseReduce {
       _xifexpression_3 = _xblockexpression_3;
     }
     final RestrictExpression newE12 = _xifexpression_3;
+    RestrictExpression _xifexpression_4 = null;
+    boolean _isEmpty_3 = D0.isEmpty();
+    boolean _not_4 = (!_isEmpty_3);
+    if (_not_4) {
+      RestrictExpression _xblockexpression_4 = null;
+      {
+        final ConstantExpression id = AlphaOperatorUtil.createIdentityExpression(are.getOperator());
+        final ISLSet universe = ISLSet.buildUniverse(D0.copy().getSpace());
+        final ISLSet zero_dim = universe.copy().projectOut(ISLUtil.Dims.SET, 0, universe.dim(ISLUtil.Dims.SET));
+        final ISLMap maff = ISLMap.buildFromDomainAndRange(universe, zero_dim);
+        final DependenceExpression X0 = AlphaUserFactory.createDependenceExpression(ISLUtil.toMultiAff(maff), id);
+        _xblockexpression_4 = AlphaUserFactory.createRestrictExpression(D0, X0);
+      }
+      _xifexpression_4 = _xblockexpression_4;
+    }
+    final RestrictExpression newE0 = _xifexpression_4;
     if ((newE1 != null)) {
       outerCase.getExprs().add(newE1);
     }
@@ -187,6 +209,10 @@ public class PermutationCaseReduce {
     if ((newE2 != null)) {
       outerCase.getExprs().add(newE2);
     }
+    if ((newE0 != null)) {
+      outerCase.getExprs().add(newE0);
+    }
+    InputOutput.<RestrictExpression>println(newE0);
     EcoreUtil.replace(are, outerCase);
     AlphaInternalStateConstructor.recomputeContextDomain(outerCase);
     int Tcount = 1;

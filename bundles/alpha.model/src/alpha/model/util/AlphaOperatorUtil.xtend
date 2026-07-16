@@ -10,6 +10,8 @@ import alpha.model.REDUCTION_OP
 import alpha.model.RealExpression
 import alpha.model.AbstractReduceExpression
 import alpha.model.DependenceExpression
+import alpha.model.ConstantExpression
+import static extension alpha.model.factory.AlphaUserFactory.*
 
 class AlphaOperatorUtil {
 	
@@ -82,6 +84,22 @@ class AlphaOperatorUtil {
 			case AND: expr.valueIs(false)
 			case OR:  expr.valueIs(true)
 			default:  false
+		}
+	}
+	
+	static def ConstantExpression createIdentityExpression(REDUCTION_OP op) {
+		switch (op) {
+			case MIN: { Float.POSITIVE_INFINITY.createRealExpression }
+			case MAX: { Float.NEGATIVE_INFINITY.createRealExpression }
+			case PROD: { 1.createRealExpression }
+			case SUM: { 0.createRealExpression } 
+			case AND: { true.createBooleanExpression }
+			case OR: { false.createBooleanExpression }
+			case XOR: { false.createBooleanExpression }
+			case EX: {
+				throw new RuntimeException("[AlphaOperatorUtil] ExternalFunctions have no identity.");
+			}
+			
 		}
 	}
 	

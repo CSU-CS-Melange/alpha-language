@@ -5,11 +5,13 @@ import alpha.model.AlphaExpression;
 import alpha.model.BINARY_OP;
 import alpha.model.BinaryExpression;
 import alpha.model.BooleanExpression;
+import alpha.model.ConstantExpression;
 import alpha.model.DependenceExpression;
 import alpha.model.IntegerExpression;
 import alpha.model.MultiArgExpression;
 import alpha.model.REDUCTION_OP;
 import alpha.model.RealExpression;
+import alpha.model.factory.AlphaUserFactory;
 import com.google.common.base.Objects;
 import java.util.Arrays;
 
@@ -159,6 +161,40 @@ public class AlphaOperatorUtil {
       }
     } else {
       _switchResult = false;
+    }
+    return _switchResult;
+  }
+
+  public static ConstantExpression createIdentityExpression(final REDUCTION_OP op) {
+    ConstantExpression _switchResult = null;
+    if (op != null) {
+      switch (op) {
+        case MIN:
+          _switchResult = AlphaUserFactory.createRealExpression(Float.POSITIVE_INFINITY);
+          break;
+        case MAX:
+          _switchResult = AlphaUserFactory.createRealExpression(Float.NEGATIVE_INFINITY);
+          break;
+        case PROD:
+          _switchResult = AlphaUserFactory.createRealExpression(1);
+          break;
+        case SUM:
+          _switchResult = AlphaUserFactory.createRealExpression(0);
+          break;
+        case AND:
+          _switchResult = AlphaUserFactory.createBooleanExpression(true);
+          break;
+        case OR:
+          _switchResult = AlphaUserFactory.createBooleanExpression(false);
+          break;
+        case XOR:
+          _switchResult = AlphaUserFactory.createBooleanExpression(false);
+          break;
+        case EX:
+          throw new RuntimeException("[AlphaOperatorUtil] ExternalFunctions have no identity.");
+        default:
+          break;
+      }
     }
     return _switchResult;
   }

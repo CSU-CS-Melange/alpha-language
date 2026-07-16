@@ -443,7 +443,7 @@ public class ScheduledC extends CodeGeneratorBase {
         final Function1<String, Parameter> _function_7 = (String it) -> {
           return Factory.parameter(this.typeGenerator.getIndexType(), it);
         };
-        final ArrayList<Parameter> tileParameters = CommonExtensions.<Parameter>toArrayList(IterableExtensions.<String, Parameter>map(IterableExtensions.<String>toSet(loopResult.getDeclarations()), _function_7));
+        final ArrayList<Parameter> tileParameters = CommonExtensions.<Parameter>toArrayList(IterableExtensions.<String, Parameter>map(this.tiler.getTileDimNames(), _function_7));
         final Function1<String, VariableDecl> _function_8 = (String it) -> {
           return Factory.variableDecl(this.typeGenerator.getIndexType(), it);
         };

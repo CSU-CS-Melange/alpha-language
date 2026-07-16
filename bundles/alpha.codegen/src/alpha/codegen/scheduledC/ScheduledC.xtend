@@ -394,8 +394,7 @@ class ScheduledC extends CodeGeneratorBase {
 			
 			val iterFunction = FunctionBuilder.start(BaseDataType.VOID, "iteratorLoop", nameChecker);
 			
-			val tileParameters = loopResult.declarations
-				.toSet
+			val tileParameters = tiler.tileDimNames
 				.map[Factory.parameter(typeGenerator.indexType, it)]
 				.toArrayList
 			val iterVariables = iterResult.declarations

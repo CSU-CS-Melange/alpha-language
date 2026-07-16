@@ -146,4 +146,39 @@ public class DTiler implements Tiler {
   public int getTileSize(final int dim) {
     return (this.tileSizes.get((dim - this.startDim))).intValue();
   }
+
+  protected String indexName(final int i) {
+    if ((i == 0)) {
+      return "tw";
+    } else {
+      int _size = this.tileSizes.size();
+      boolean _lessThan = (i < _size);
+      if (_lessThan) {
+        return ("t" + Integer.valueOf(i));
+      } else {
+        int _size_1 = this.tileSizes.size();
+        int _minus = (i - _size_1);
+        return ("c" + Integer.valueOf(_minus));
+      }
+    }
+  }
+
+  @Override
+  public Iterable<String> getTileDimNames() {
+    int _size = this.tileSizes.size();
+    final Function1<Integer, String> _function = (Integer it) -> {
+      return this.indexName((it).intValue());
+    };
+    return IterableExtensions.<Integer, String>map(new ExclusiveRange(0, _size, true), _function);
+  }
+
+  @Override
+  public Iterable<String> getIteratorDimNames() {
+    int _size = this.tileSizes.size();
+    int _size_1 = this.tileSizes.size();
+    final Function1<Integer, String> _function = (Integer it) -> {
+      return this.indexName((it).intValue());
+    };
+    return IterableExtensions.<Integer, String>map(new ExclusiveRange(_size, _size_1, true), _function);
+  }
 }

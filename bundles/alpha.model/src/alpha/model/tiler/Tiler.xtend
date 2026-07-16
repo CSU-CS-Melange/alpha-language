@@ -19,6 +19,9 @@ interface Tiler {
 	
 	def ISLUnionMap getParameterizedIterators(ISLUnionMap maps)
 	
+	def Iterable<String> getTileDimNames()
+	def Iterable<String> getIteratorDimNames()
+	
 	//Whether or not the implementation makes use of fixed tile sizes
 	//if so, it should implement getTileSize
 	def boolean fixedTileSizes()

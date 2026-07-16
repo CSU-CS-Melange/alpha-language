@@ -54,7 +54,7 @@ public class OptimallySplitReductions {
   /**
    * Applies the optimal splitting process to a system.
    */
-  public static void apply(final AlphaSystem sys) {
+  public static Scheduler apply(final AlphaSystem sys) {
     NormalizeReduction.apply(sys);
     final PRDG prdg = PRDGGenerator.apply(sys);
     final Function1<PRDGEdge, Boolean> _function = (PRDGEdge it) -> {
@@ -70,11 +70,12 @@ public class OptimallySplitReductions {
     final Iterable<PRDGEdge> splittableEdges = IterableExtensions.<PRDGEdge>filter(reductionEdges, _function_1);
     boolean _isEmpty = IterableExtensions.isEmpty(splittableEdges);
     if (_isEmpty) {
-      return;
+      return null;
     }
     final PRDG extendedPrdg = OptimallySplitReductions.extendPRDG(prdg, splittableEdges);
     final FoutrierScheduler scheduler = new FoutrierScheduler(extendedPrdg);
     OptimallySplitReductions.split(sys, scheduler, extendedPrdg);
+    return scheduler;
   }
 
   private static PRDG extendPRDG(final PRDG prdg, final Iterable<PRDGEdge> splittableEdges) {

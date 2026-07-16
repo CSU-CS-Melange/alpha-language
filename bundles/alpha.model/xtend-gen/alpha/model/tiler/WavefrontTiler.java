@@ -32,6 +32,9 @@ public class WavefrontTiler extends DTiler {
     super(tileSizes, scheduleSpace, startDim, endDim);
   }
 
+  /**
+   * Converts a d dimensional schedule map to a 2d dimensional wavefront tile map
+   */
   @Override
   public ISLUnionMap tileSchedule(final ISLUnionMap umap) {
     final Function1<ISLMap, ISLMap> _function = (ISLMap it) -> {
@@ -41,6 +44,9 @@ public class WavefrontTiler extends DTiler {
     return tiledMaps;
   }
 
+  /**
+   * Converts a single variable's d dimensional schedule map to a 2d dimensional wavefront tile map
+   */
   @Override
   public ISLMap tileSchedule(final ISLMap map) {
     final Function<Integer, String> _function = (Integer it) -> {
@@ -50,7 +56,7 @@ public class WavefrontTiler extends DTiler {
   }
 
   /**
-   * Maps the schedule space to the tile space.
+   * Maps a point in the schedule to its corresponding tile index.
    */
   private ISLMultiAff getTileMaff() {
     final ISLMultiAff maff = this.getPreTileMaff();
@@ -111,7 +117,8 @@ public class WavefrontTiler extends DTiler {
   }
 
   /**
-   * The map applied to the schedule space before scaling it down, and before adding the wavefront dim.
+   * A map that isolates the dimensions in the tiling band.
+   * Will be the identity map in the case of a full tiling.
    */
   private ISLMultiAff getPreTileMaff() {
     final Function1<Integer, ISLAff> _function = (Integer it) -> {
@@ -162,14 +169,7 @@ public class WavefrontTiler extends DTiler {
       return con.getCoefficientVal(ISLUtil.Dims.SET, (it).intValue());
     };
     final Function1<ISLVal, ISLVal> _function_2 = (ISLVal it) -> {
-      ISLVal _xifexpression = null;
-      boolean _isPositive = it.isPositive();
-      if (_isPositive) {
-        _xifexpression = it;
-      } else {
-        _xifexpression = ISLValUtil.asVal(Integer.valueOf(0));
-      }
-      return _xifexpression;
+      return it.abs();
     };
     final Iterable<ISLVal> betas = IterableExtensions.<ISLVal, ISLVal>map(IterableExtensions.<Integer, ISLVal>map(new ExclusiveRange(0, _nbDims, true), _function_1), _function_2);
     int _nbDims_1 = con.getNbDims(ISLUtil.Dims.SET);
@@ -193,22 +193,6 @@ public class WavefrontTiler extends DTiler {
       return c.setCoefficient(ISLUtil.Dims.SET, (i).intValue(), _multiply);
     };
     return IterableExtensions.<Integer, ISLConstraint>fold(new ExclusiveRange(0, _nbDims, true), con.copy(), _function);
-  }
-
-  private String indexName(final int i) {
-    if ((i == 0)) {
-      return "tw";
-    } else {
-      int _size = this.tileSizes.size();
-      boolean _lessThan = (i < _size);
-      if (_lessThan) {
-        return ("t" + Integer.valueOf(i));
-      } else {
-        int _size_1 = this.tileSizes.size();
-        int _minus = (i - _size_1);
-        return ("c" + Integer.valueOf(_minus));
-      }
-    }
   }
 
   public WavefrontTiler(final List<Integer> tileSizes, final Scheduler scheduler, final int startDim, final int endDim) {

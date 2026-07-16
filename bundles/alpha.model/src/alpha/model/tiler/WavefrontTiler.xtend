@@ -23,6 +23,7 @@ class WavefrontTiler extends DTiler {
 		super(tileSizes, scheduleSpace, startDim, endDim)
 	}
 	
+	/** Converts a d dimensional schedule map to a 2d dimensional wavefront tile map */
 	override ISLUnionMap tileSchedule(ISLUnionMap umap) {
 		var tiledMaps = umap.maps
 			.map[tileSchedule]
@@ -31,6 +32,7 @@ class WavefrontTiler extends DTiler {
 		return tiledMaps
 	}
 	
+	/** Converts a single variable's d dimensional schedule map to a 2d dimensional wavefront tile map */
 	override ISLMap tileSchedule(ISLMap map) {
 		return map.copy.applyRange(getTileMaff.toMap)
 			.rangeProduct(map.copy)
@@ -38,7 +40,7 @@ class WavefrontTiler extends DTiler {
 			.setDimNames(Dims.OUT, [indexName])
 	}
 	
-	/** Maps the schedule space to the tile space. */
+	/** Maps a point in the schedule to its corresponding tile index. */
 	def private ISLMultiAff getTileMaff() {
 		val maff = preTileMaff
 		
@@ -65,6 +67,7 @@ class WavefrontTiler extends DTiler {
 			.convertToSet
 			.apply(wavefrontMaff.toMap)
 			.setDimNames(Dims.OUT, [indexName])
+	
 	}
 	
 	def private ISLMultiAff getWavefrontMaff() {
@@ -78,7 +81,10 @@ class WavefrontTiler extends DTiler {
 			.toList.convertToMultiAff
 	}
 	
-	/** The map applied to the schedule space before scaling it down, and before adding the wavefront dim. */
+	/** 
+	 * A map that isolates the dimensions in the tiling band.
+	 * Will be the identity map in the case of a full tiling.
+	 */
 	def private ISLMultiAff getPreTileMaff() {
 		var idAffs = (startDim..endDim)
 			.map[ISLAff.buildVarOnDomain(scheduleSpace.copy.toLocalSpace, Dims.SET, it)]
@@ -104,7 +110,7 @@ class WavefrontTiler extends DTiler {
 		
 		val Iterable<ISLVal> betas = (0..<con.getNbDims(Dims.SET))
 			.map[con.getCoefficientVal(Dims.SET, it)]
-			.map[isPositive ? it : 0.asVal]
+			.map[it.abs]
 			
 		val ISLVal bias = (0..<con.getNbDims(Dims.SET))
 			.map[betas.get(it)]
@@ -119,12 +125,6 @@ class WavefrontTiler extends DTiler {
 			.fold(con.copy, 
 				[c, i | c.setCoefficient(Dims.SET, i, c.getCoefficientVal(Dims.SET, i) * tileSizes.get(i))]
 			)
-	}
-	
-	def private String indexName(int i) {
-		if(i == 0) return "tw"
-		else if(i < tileSizes.size) return "t" + i
-		else return "c" + (i - tileSizes.size)
 	}
 	
 	new(List<Integer> tileSizes, Scheduler scheduler, int startDim, int endDim) {

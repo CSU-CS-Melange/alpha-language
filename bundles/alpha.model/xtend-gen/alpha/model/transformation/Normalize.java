@@ -524,6 +524,7 @@ public class Normalize extends AbstractAlphaCompleteVisitor {
     EObject _eContainer = be.eContainer();
     final AlphaCompleteVisitable origContainer = ((AlphaCompleteVisitable) _eContainer);
     this.binaryExpressionRules(be, aeLeft);
+    this.binaryExpressionRules(be, aeRight);
     EObject _eContainer_1 = be.eContainer();
     boolean _notEquals = (!Objects.equal(origContainer, _eContainer_1));
     if (_notEquals) {

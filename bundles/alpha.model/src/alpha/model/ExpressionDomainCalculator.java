@@ -247,7 +247,7 @@ public class ExpressionDomainCalculator extends AbstractAlphaExpressionVisitor {
 	public void outAbstractReduceExpression(AbstractReduceExpression re) {
 		runISLoperations(re, ()->{
 			ISLSet proj = re.getBody().getExpressionDomain().apply(re.getProjection().toMap());
-			re.setExpressionDomain(proj);
+			re.setExpressionDomain(ISLSet.buildUniverse(proj.getSpace()));
 		});
 	}
 	
